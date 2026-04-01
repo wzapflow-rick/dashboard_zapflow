@@ -1,5 +1,38 @@
 # Changelog - ZapFlow Dashboard
 
+## [2.1.0] - 2026-04-01
+
+### 🎁 Novas Funcionalidades
+
+#### Cupons de Desconto
+- **Novo**: Sistema completo de cupons de desconto
+- **Tipos**: Percentual (%) ou Valor Fixo (R$)
+- **Configurações**: Valor mínimo, limite de uso, datas de validade
+- **Validação**: Cupons validados automaticamente no pedido
+- **Dashboard**: Estatísticas de uso de cupons
+
+#### Programa de Fidelidade
+- **Novo**: Sistema de pontos para clientes
+- **Acúmulo**: Configurável pontos por real gasto
+- **Resgate**: Desconto em dinheiro ou produtos gratuitos
+- **Dashboard**: Ranking dos top clientes com mais pontos
+- **Configuração**: Ativar/desativar, regras de acúmulo e resgate
+
+### 📝 Novos Arquivos
+
+- `app/actions/coupons.ts` - Server actions para cupons
+- `app/actions/loyalty.ts` - Server actions para programa de fidelidade
+- `components/coupons-management.tsx` - UI para gerenciar cupons
+- `components/loyalty-management.tsx` - UI para programa de fidelidade
+
+### 🔧 Integrações
+
+- Cupons aplicados automaticamente no pedido quando informado
+- Pontos de fidelidade adicionados quando pedido é finalizado
+- Uso de cupom incrementado após finalização do pedido
+
+---
+
 ## [2.0.0] - 2026-04-01
 
 ### 🎨 Interface do Usuário (UI)

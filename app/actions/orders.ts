@@ -7,6 +7,8 @@ import { getReceitaDoComplemento, getInsumosDoGrupo } from './complements';
 import { getReceitaDoItemBase } from './itens-base';
 import { OrderStatusSchema } from '@/lib/validations';
 import { logAction } from '@/lib/audit';
+import { incrementCouponUsage } from './coupons';
+import { addPointsForOrder } from './loyalty';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
@@ -143,10 +145,27 @@ export async function updateOrderStatus(id: number, status: string) {
             body: JSON.stringify({ id, status })
         });
 
-        // Se o status for finalizado, disparar dedução de estoque
+        // Se o status for finalizado, disparar dedução de estoque, cupom e fidelidade
         if (status === 'finalizado') {
             // Executamos de forma assíncrona mas não bloqueante para a resposta rápida da UI
             deduzirInsumosDoPedido(id).catch(err => console.error('Falha na dedução de estoque:', err));
+            
+            // Incrementar uso do cupom se houver
+            if (orderData.cupom_id) {
+                incrementCouponUsage(orderData.cupom_id).catch(err => 
+                    console.error('Falha ao incrementar uso do cupom:', err)
+                );
+            }
+            
+            // Adicionar pontos de fidelidade
+            if (orderData.telefone_cliente && orderData.valor_total) {
+                addPointsForOrder(
+                    orderData.telefone_cliente,
+                    orderData.cliente_nome || 'Cliente',
+                    Number(orderData.valor_total),
+                    id
+                ).catch(err => console.error('Falha ao adicionar pontos:', err));
+            }
         }
 
         // Enviar notificação via Evolution API para o cliente

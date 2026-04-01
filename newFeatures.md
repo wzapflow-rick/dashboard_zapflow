@@ -11,6 +11,8 @@
 - Gráfico "Vendas por Hora" com fuso horário corrigido
 - Cardápio Online Público (/menu/[slug])
 - Notificações Push com Alerta Sonoro
+- **Cupons de Desconto** (percentual ou valor fixo)
+- **Programa de Fidelidade** (pontos por compra, resgate de descontos)
 
 ---
 
@@ -34,16 +36,6 @@
 ### 🖨️ Impressora Térmica
 - Integração via API local com impressora térmica
 - Imprimir comanda automaticamente ao aceitar um pedido no Kanban
-
-### 🎫 Cupons de Desconto
-- Criar códigos de cupom com % ou valor fixo
-- O cliente informa o cupom no pedido via WhatsApp
-- Dashboard mostra uso e economia gerada
-
-### 💎 Programa de Fidelidade
-- Pontos acumulados a cada pedido
-- Dashboard do cliente com seus pontos
-- Troca de pontos por desconto ou item grátis
 
 ### 📱 PWA (App Mobile)
 - Transformar em Progressive Web App instalável

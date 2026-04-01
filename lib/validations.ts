@@ -132,3 +132,34 @@ export const CustomerUpsertSchema = z.object({
     bairro_entrega: z.string().optional().transform(val => val ? sanitizeString(val) : val),
     endereco_completo: z.string().optional().transform(val => val ? sanitizeString(val) : val),
 });
+
+// Cupons de Desconto
+export const CouponSchema = z.object({
+    id: z.number().optional().or(z.string().optional()),
+    codigo: z.string().min(3, 'Código muito curto').max(20, 'Código muito longo').transform(v => v.toUpperCase().trim()),
+    tipo: z.enum(['percentual', 'valor_fixo']),
+    valor: z.coerce.number().positive('Valor deve ser positivo'),
+    valor_minimo_pedido: z.coerce.number().min(0).default(0),
+    limite_uso: z.coerce.number().int().min(1).optional(),
+    usos_atuais: z.coerce.number().int().min(0).default(0),
+    data_inicio: z.string().optional(),
+    data_fim: z.string().optional(),
+    ativo: z.boolean().default(true),
+});
+
+// Programa de Fidelidade - Configuração
+export const LoyaltyConfigSchema = z.object({
+    pontos_por_real: z.coerce.number().min(0.01, 'Mínimo 0.01 ponto por real').default(1),
+    valor_ponto: z.coerce.number().min(0.01, 'Mínimo R$ 0.01 por ponto').default(0.10),
+    pontos_para_desconto: z.coerce.number().int().min(1, 'Mínimo 1 ponto').default(100),
+    desconto_tipo: z.enum(['percentual', 'valor_fixo']).default('valor_fixo'),
+    desconto_valor: z.coerce.number().min(0).default(10),
+    pontos_para_item_gratis: z.coerce.number().int().min(1).optional(),
+    ativo: z.boolean().default(true),
+});
+
+// Resgate de Pontos
+export const LoyaltyRedeemSchema = z.object({
+    cliente_telefone: z.string().min(10, 'Telefone inválido'),
+    pontos_resgatar: z.coerce.number().int().min(1, 'Mínimo 1 ponto'),
+});

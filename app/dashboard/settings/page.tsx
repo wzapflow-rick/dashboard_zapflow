@@ -16,7 +16,9 @@ import {
   Package,
   ShoppingBag,
   Info,
-  Bot
+  Bot,
+  Ticket,
+  Award
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -30,12 +32,16 @@ import { getDeliveryRates, upsertDeliveryRate, deleteDeliveryRate } from '@/app/
 import { changePassword } from '@/app/actions/security';
 import { getHorariosFuncionamento, saveHorariosFuncionamento, HorarioItem } from '@/app/actions/horarios';
 import { toast } from 'sonner';
+import CouponsManagement from '@/components/coupons-management';
+import LoyaltyManagement from '@/components/loyalty-management';
 
 const sections = [
   { id: 'general', name: 'Geral', icon: Store },
   { id: 'hours', name: 'Horários', icon: Clock },
   { id: 'delivery', name: 'Entrega', icon: MapPin },
   { id: 'generalRules', name: 'Regras Gerais', icon: Package },
+  { id: 'coupons', name: 'Cupons', icon: Ticket },
+  { id: 'loyalty', name: 'Fidelidade', icon: Award },
   { id: 'notifications', name: 'Notificações', icon: Bell },
   { id: 'security', name: 'Segurança', icon: Shield },
   { id: 'bot', name: 'Bot', icon: Bot },
@@ -555,6 +561,14 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 </div>
+              )}
+
+              {activeSection === 'coupons' && (
+                <CouponsManagement />
+              )}
+
+              {activeSection === 'loyalty' && (
+                <LoyaltyManagement />
               )}
 
               {activeSection === 'security' && (
