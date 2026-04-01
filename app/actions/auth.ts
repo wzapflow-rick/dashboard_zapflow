@@ -5,6 +5,11 @@ import bcrypt from 'bcryptjs';
 import { revalidatePath } from 'next/cache';
 import { encrypt, decrypt } from '@/lib/session';
 
+// Rate limiting para login
+const loginAttempts = new Map<string, { count: number; lastAttempt: number }>();
+const MAX_ATTEMPTS = 5;
+const WINDOW_MS = 15 * 60 * 1000; // 15 minutos
+
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
 const EMPRESAS_TABLE_ID = process.env.EMPRESAS_TABLE_ID || 'mrlxbm1guwn9iv8';
@@ -49,6 +54,22 @@ export async function login(data: any) {
 
         const { email, password } = validated.data;
 
+        // Rate limiting por email
+        const now = Date.now();
+        const attemptKey = email.toLowerCase();
+        const attempt = loginAttempts.get(attemptKey);
+        
+        if (attempt && attempt.count >= MAX_ATTEMPTS) {
+            const timeSinceLast = now - attempt.lastAttempt;
+            if (timeSinceLast < WINDOW_MS) {
+                const remainingTime = Math.ceil((WINDOW_MS - timeSinceLast) / 1000 / 60);
+                return { error: `Muitas tentativas de login. Tente novamente em ${remainingTime} minutos.` };
+            } else {
+                // Reset após janela de tempo
+                loginAttempts.delete(attemptKey);
+            }
+        }
+
         // Buscamos por Email OU Login na tabela EMPRESAS
         const filter = `(email,eq,${email})~or(login,eq,${email})`;
         const res = await nocoFetch(`/records?where=${filter}`, {}, EMPRESAS_TABLE_ID);
@@ -59,6 +80,12 @@ export async function login(data: any) {
         const empresa = resData.list?.[0];
 
         if (!empresa || (!bcrypt.compareSync(password, empresa.senha) && password !== empresa.password)) {
+            // Incrementar tentativas
+            const currentAttempt = loginAttempts.get(attemptKey) || { count: 0, lastAttempt: now };
+            currentAttempt.count += 1;
+            currentAttempt.lastAttempt = now;
+            loginAttempts.set(attemptKey, currentAttempt);
+            
             // Delay anti-brute force
             await new Promise(resolve => setTimeout(resolve, 1000));
             return { error: 'E-mail ou senha inválidos' };
@@ -75,7 +102,16 @@ export async function login(data: any) {
             role: 'admin'
         });
 
-        (await cookies()).set('session', session, { expires, httpOnly: true, path: '/' });
+        const isProduction = process.env.NODE_ENV === 'production';
+        (await cookies()).set('session', session, {
+            expires,
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: 'strict',
+            path: '/',
+        });
+        // Reset tentativas de login
+        loginAttempts.delete(attemptKey);
         return { success: true };
     } catch (error) {
         console.error('Login Error:', error);
@@ -108,7 +144,7 @@ export async function register(formData: FormData) {
             password: password,
             nome_admin: nome,
             nome_fantasia: `Loja de ${nome}`,        // Atualizado no onboarding
-            instancia_evolution: `zapflow_${Date.now()}`, // Placeholder único
+            instancia_evolution: '', // Removido temporariamente -ativar quando o bot estiver pronto
             status: 'ativo'
         })
     }, EMPRESAS_TABLE_ID);
@@ -126,7 +162,14 @@ export async function register(formData: FormData) {
         onboarded: false, // Novo registro sempre precisa de onboarding
         controle_estoque: false
     });
-    (await cookies()).set('session', session, { expires, httpOnly: true, path: '/' });
+    const isProduction = process.env.NODE_ENV === 'production';
+    (await cookies()).set('session', session, {
+        expires,
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: 'strict',
+        path: '/',
+    });
 
     console.log('Register success, session set (onboarded: false). User ID:', empresa.id);
     return { success: true };
@@ -171,9 +214,16 @@ export async function updateOnboarding(onboardingData: any) {
 
     if (!res) return { error: 'Erro ao salvar configurações' };
 
-    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    const newSession = await encrypt({ ...payload, nome: onboardingData.nome, onboarded: true, controle_estoque: !!onboardingData.controle_estoque });
-    (await cookies()).set('session', newSession, { expires, httpOnly: true, path: '/' });
+        const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        const newSession = await encrypt({ ...payload, nome: onboardingData.nome, onboarded: true, controle_estoque: !!onboardingData.controle_estoque });
+        const isProduction = process.env.NODE_ENV === 'production';
+        (await cookies()).set('session', newSession, {
+            expires,
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: 'strict',
+            path: '/',
+        });
 
     return { success: true };
 }

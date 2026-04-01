@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { getMe } from './auth';
 import { encrypt } from '@/lib/session';
+import { CompanyUpdateSchema } from '@/lib/validations';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
@@ -48,11 +49,18 @@ export async function updateCompany(data: any) {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
+        // Validate input
+        const validated = CompanyUpdateSchema.safeParse(data);
+        if (!validated.success) {
+            const errors = validated.error.issues.map((issue: any) => issue.message).join(', ');
+            throw new Error('Dados inválidos: ' + errors);
+        }
+
         // Mapeamento de campos da UI para o NocoDB (conforme identificamos ou supomos)
         const payload = {
             Id: user.empresaId,
             id: user.empresaId,
-            ...data
+            ...validated.data
         };
 
         const res = await nocoFetch(`/records`, {
@@ -78,7 +86,14 @@ export async function updateCompany(data: any) {
                     ? (record.controle_estoque === true || record.controle_estoque === 1 || record.controle_estoque === '1')
                     : (data.controle_estoque !== undefined ? !!data.controle_estoque : !!user.controle_estoque)
             });
-            (await cookies()).set('session', newSession, { expires, httpOnly: true, path: '/' });
+            const isProduction = process.env.NODE_ENV === 'production';
+            (await cookies()).set('session', newSession, {
+                expires,
+                httpOnly: true,
+                secure: isProduction,
+                sameSite: 'strict',
+                path: '/',
+            });
             revalidatePath('/', 'layout');
         }
 

@@ -29,7 +29,6 @@ export default function CustomerBase() {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<any>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
-  const [isNeighborhoodDropdownOpen, setIsNeighborhoodDropdownOpen] = useState(false);
   const [customers, setCustomers] = useState<any[]>([]);
   const [toast, setToast] = useState<any>(null); // Quick fix for toast requirement if not already globally available or used as hook
 
@@ -58,37 +57,44 @@ export default function CustomerBase() {
     loadCustomers();
   }, []);
 
-  const neighborhoods = Array.from(new Set(customers.map(c => c.bairro_entrega).filter(Boolean)));
+  // Contagem de clientes por bairro - verificar todos os campos possíveis
+  const neighborhoodCounts = customers.reduce((acc, c) => {
+    // Tentar diferentes nomes de campo que podem vir do NocoDB
+    const bairro = c.bairro_entrega || c.bairro || c.neighborhood || c.bairroEntrega || c.delivery_neighborhood;
+    if (bairro && typeof bairro === 'string' && bairro.trim() !== '') {
+      const bairroTrimmed = bairro.trim();
+      acc[bairroTrimmed] = (acc[bairroTrimmed] || 0) + 1;
+    }
+    return acc;
+  }, {} as Record<string, number>);
+  
+  const neighborhoods = Object.keys(neighborhoodCounts).sort();
 
   const filteredCustomers = customers.filter(c => {
     const name = c.nome || '';
     const phone = c.telefone || '';
-    const matchesSearch =
+    
+    // Apply search filter
+    const matchesSearch = !searchQuery || 
       name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       phone.includes(searchQuery);
-
-    if (activeFilter === 'Novos') return matchesSearch && c.qtd_pedidos === 1;
-    if (activeFilter === 'Recorrentes') return matchesSearch && c.qtd_pedidos > 1;
-    if (activeFilter === 'VIP') return matchesSearch && c.valor_total_gasto > 500;
-    if (activeFilter && neighborhoods.includes(activeFilter)) return matchesSearch && c.bairro_entrega === activeFilter;
-
-    return matchesSearch;
+    
+    if (!matchesSearch) return false;
+    
+    // Apply category filter
+    if (activeFilter === 'Novos') return c.qtd_pedidos === 1;
+    if (activeFilter === 'Recorrentes') return c.qtd_pedidos > 1;
+    if (activeFilter && neighborhoods.includes(activeFilter)) return c.bairro_entrega === activeFilter;
+    
+    return true;
   });
 
   const handleFilterClick = (filter: string) => {
     if (activeFilter === filter) {
       setActiveFilter(null);
-      setSearchQuery('');
     } else {
       setActiveFilter(filter);
-      setSearchQuery(filter);
     }
-  };
-
-  const handleNeighborhoodSelect = (neighborhood: string) => {
-    setActiveFilter(neighborhood);
-    setSearchQuery(neighborhood);
-    setIsNeighborhoodDropdownOpen(false);
   };
 
   const openHistory = async (customer: any) => {
@@ -138,15 +144,18 @@ export default function CustomerBase() {
 
         <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
           <button
-            onClick={() => setActiveFilter(null)}
+            onClick={() => {
+              setActiveFilter(null);
+              setSearchQuery('');
+            }}
             className={cn(
               "px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border",
-              !activeFilter ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+              !activeFilter && !searchQuery ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
             )}
           >
             Todos
           </button>
-          {['Novos', 'Recorrentes', 'VIP'].map((filter) => (
+          {['Novos', 'Recorrentes'].map((filter) => (
             <button
               key={filter}
               onClick={() => handleFilterClick(filter)}
@@ -160,42 +169,15 @@ export default function CustomerBase() {
           ))}
           <div className="relative">
             <button
-              onClick={() => setIsNeighborhoodDropdownOpen(!isNeighborhoodDropdownOpen)}
-              className={cn(
-                "px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border flex items-center gap-2",
-                activeFilter && neighborhoods.includes(activeFilter) ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
-              )}
+              type="button"
+              disabled
+              title="Em breve - filtros por bairro"
+              className="px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border flex items-center gap-2 bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-60"
             >
               <Filter className="size-3" />
               Bairros
               <ChevronDown className="size-3" />
             </button>
-            <AnimatePresence>
-              {isNeighborhoodDropdownOpen && (
-                <>
-                  <div className="absolute inset-0 z-40 fixed" onClick={() => setIsNeighborhoodDropdownOpen(false)} />
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 py-2 z-50 max-h-60 overflow-y-auto"
-                  >
-                    {neighborhoods.map((n: any) => (
-                      <button
-                        key={n}
-                        onClick={() => handleNeighborhoodSelect(n)}
-                        className="w-full text-left px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-primary transition-all"
-                      >
-                        {n}
-                      </button>
-                    ))}
-                    {neighborhoods.length === 0 && (
-                      <p className="px-4 py-2 text-[10px] text-slate-400 italic">Nenhum bairro encontrado</p>
-                    )}
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
           </div>
         </div>
       </div>
@@ -254,7 +236,19 @@ export default function CustomerBase() {
                           {customer.image ? <Image src={customer.image} alt="" width={40} height={40} /> : (customer.nome?.[0] || 'C')}
                         </div>
                         <div>
-                          <h4 className="text-sm font-bold text-slate-900">{customer.nome}</h4>
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-sm font-bold text-slate-900">{customer.nome}</h4>
+                            <span className={cn(
+                              "text-[9px] font-bold px-1.5 py-0.5 rounded uppercase",
+                              customer.qtd_pedidos === 1 ? "bg-emerald-100 text-emerald-700" :
+                              customer.qtd_pedidos > 1 && customer.valor_total_gasto > 500 ? "bg-amber-100 text-amber-700" :
+                              "bg-blue-100 text-blue-700"
+                            )}>
+                              {customer.qtd_pedidos === 1 ? 'Novo' :
+                               customer.qtd_pedidos > 1 && customer.valor_total_gasto > 500 ? 'VIP' :
+                               'Recorrente'}
+                            </span>
+                          </div>
                           <p className="text-xs text-slate-500 font-medium">{customer.telefone}</p>
                         </div>
                       </div>
@@ -277,7 +271,7 @@ export default function CustomerBase() {
                       </p>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                      <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => openHistory(customer)}
                           className="p-2 bg-white border border-slate-200 rounded-lg text-slate-500 hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all shadow-sm"

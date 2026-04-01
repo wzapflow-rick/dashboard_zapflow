@@ -19,7 +19,7 @@ if (process.env.NODE_ENV === 'development') {
 export interface Category {
   id: number;
   nome: string;
-  empresa_id: number;
+  empresa_id: number | string;
   ordem?: number;
 }
 
@@ -152,7 +152,7 @@ export async function upsertCategory(categoryData: any) {
   }
 }
 
-export async function deleteCategory(id: number) {
+export async function deleteCategory(id: number | string) {
   try {
     const user = await getMe();
     if (!user?.empresaId) throw new Error('Não autorizado');
@@ -177,7 +177,7 @@ export async function deleteCategory(id: number) {
   }
 }
 
-export async function updateProductAvailability(id: number, disponivel: boolean) {
+export async function updateProductAvailability(id: number | string, disponivel: boolean) {
   try {
     await nocoFetch('/records', {
       method: 'PATCH',
@@ -191,7 +191,7 @@ export async function updateProductAvailability(id: number, disponivel: boolean)
   }
 }
 
-export async function deleteProduct(id: number) {
+export async function deleteProduct(id: number | string) {
   try {
     const user = await getMe();
     if (!user?.empresaId) throw new Error('Não autorizado');
@@ -216,7 +216,7 @@ export async function deleteProduct(id: number) {
   }
 }
 
-export async function upsertProduct(productData: any, selectedInsumos?: { insumo_id: number, quantidade_necessaria: number }[]) {
+export async function upsertProduct(productData: any, selectedInsumos?: { insumo_id: number | string, quantidade_necessaria: number }[]) {
   try {
     const user = await getMe();
     if (!user?.empresaId) throw new Error('Não autorizado');

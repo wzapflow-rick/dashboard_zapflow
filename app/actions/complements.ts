@@ -11,6 +11,8 @@ const GRUPOS_TABLE_ID = 'mqo0m1qpbxueoox';
 const COMPLEMENTOS_TABLE_ID = 'mde9hhb5oho8dsv';
 const P_GRUPOS_TABLE_ID = 'mm1zymth858by6q';
 const C_INSUMO_TABLE_ID = 'mqmy3bdny8otkkt';
+// New table for fixed group ingredients (e.g., pizza dough, box) — user must provide table ID
+const GRUPO_INSUMOS_TABLE_ID = 'mqmy3bdny8otkkt'; // mesma tabela de complemento_insumo, filtrada por grupo_id
 
 async function nocoFetch(tableId: string, endpoint: string, options: RequestInit = {}) {
     if (!tableId || tableId.startsWith('PLACEHOLDER')) {
@@ -243,7 +245,7 @@ export async function saveReceitaDoComplemento(complementoId: number, insumosLis
 }
 
 // --- CADASTRO EM MASSA (PRODUTOS -> COMPLEMENTOS) ---
-export async function bulkCreateComplements(grupoId: number, products: any[]) {
+export async function bulkCreateComplements(grupoId: number, products: any[], fator: number = 1) {
     try {
         for (const product of products) {
             // 1. Criar o complemento
@@ -252,6 +254,7 @@ export async function bulkCreateComplements(grupoId: number, products: any[]) {
                 nome: product.nome,
                 preco: product.preco,
                 descricao: product.descricao || '',
+                fator_proporcao: fator,
                 status: true
             };
             const resComp = await nocoFetch(COMPLEMENTOS_TABLE_ID, '/records', {
@@ -278,3 +281,52 @@ export async function bulkCreateComplements(grupoId: number, products: any[]) {
     }
 }
 
+// --- INSUMOS FIXOS DO GRUPO (BASE — ex: Massa, Caixa de Papelão) ---
+// Deduzidos uma vez por produto vendido, independente dos sabores escolhidos.
+
+export async function getInsumosDoGrupo(grupoId: number) {
+    try {
+        if (GRUPO_INSUMOS_TABLE_ID.startsWith('PLACEHOLDER')) return [];
+        const res = await nocoFetch(GRUPO_INSUMOS_TABLE_ID, `/records?where=(grupo_id,eq,${grupoId})`);
+        const data = await res.json();
+        return (data.list || []).map((i: any) => ({ ...i, id: i.Id || i.id }));
+    } catch (e) {
+        console.error('getInsumosDoGrupo error:', e);
+        return [];
+    }
+}
+
+export async function saveInsumosDoGrupo(grupoId: number, insumosList: { insumo_id: number, quantidade_necessaria: number }[]) {
+    try {
+        if (GRUPO_INSUMOS_TABLE_ID.startsWith('PLACEHOLDER')) return { success: false, reason: 'table_not_configured' };
+
+        // 1. Deletar registros atuais
+        const existingRes = await nocoFetch(GRUPO_INSUMOS_TABLE_ID, `/records?where=(grupo_id,eq,${grupoId})`);
+        const existingData = await existingRes.json();
+        if (existingData.list?.length > 0) {
+            for (const r of existingData.list) {
+                await nocoFetch(GRUPO_INSUMOS_TABLE_ID, '/records', {
+                    method: 'DELETE',
+                    body: JSON.stringify({ id: r.Id || r.id })
+                });
+            }
+        }
+
+        // 2. Inserir novos
+        if (insumosList.length > 0) {
+            const records = insumosList.map(item => ({
+                grupo_id: grupoId,
+                insumo_id: item.insumo_id,
+                quantidade_necessaria: item.quantidade_necessaria
+            }));
+            await nocoFetch(GRUPO_INSUMOS_TABLE_ID, '/records', {
+                method: 'POST',
+                body: JSON.stringify(records)
+            });
+        }
+        return { success: true };
+    } catch (e) {
+        console.error('saveInsumosDoGrupo error:', e);
+        throw e;
+    }
+}

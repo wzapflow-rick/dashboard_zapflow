@@ -10,17 +10,22 @@ interface CurrencyInputProps extends Omit<React.InputHTMLAttributes<HTMLInputEle
 
 export function CurrencyInput({ className, onValueChange, defaultValue, name, ...props }: CurrencyInputProps) {
     const [displayValue, setDisplayValue] = useState('');
+    const previousDefaultRef = React.useRef<number | string | null>(null);
 
     // Format initial value
     useEffect(() => {
         if (defaultValue !== undefined && defaultValue !== null) {
             const numericVal = Number(defaultValue);
             if (!isNaN(numericVal)) {
-                const formatted = numericVal.toLocaleString('pt-BR', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                });
-                setDisplayValue(formatted);
+                // Check if defaultValue actually changed (including same numeric value from different source)
+                if (previousDefaultRef.current !== defaultValue) {
+                    previousDefaultRef.current = defaultValue;
+                    const formatted = numericVal.toLocaleString('pt-BR', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                    });
+                    setDisplayValue(formatted);
+                }
             }
         }
     }, [defaultValue]);

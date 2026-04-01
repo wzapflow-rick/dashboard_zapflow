@@ -16,11 +16,24 @@ interface ProductFormModalProps {
     insumosList: Insumo[];
     productInsumos?: { insumo_id: number; quantidade_necessaria: number }[];
     gruposComplemento?: any[];
-    productGrupos?: number[];
-    onSubmit: (formData: FormData, isCreatingCategory: boolean, selectedInsumos: { insumo_id: number, quantidade_necessaria: number }[], selectedGrupos: number[]) => Promise<void>;
+    gruposSlots?: any[];
+    productGrupos?: (number | string)[];
+    productSlots?: string[];
+    onSubmit: (formData: FormData, isCreatingCategory: boolean, selectedInsumos: { insumo_id: string, quantidade_necessaria: number }[], selectedGrupos: number[], selectedSlots: string[]) => Promise<void>;
 }
 
-export default function ProductFormModal({ isOpen, onClose, editingProduct, categories, insumosList, productInsumos = [], gruposComplemento = [], productGrupos = [], onSubmit }: ProductFormModalProps) {
+export default function ProductFormModal({
+    isOpen,
+    onClose,
+    editingProduct,
+    categories,
+    insumosList,
+    productInsumos = [],
+    gruposComplemento = [],
+    gruposSlots = [],
+    productGrupos = [],
+    onSubmit
+}: ProductFormModalProps) {
     const [isCreatingCategory, setIsCreatingCategory] = useState(false);
     const [user, setUser] = useState<any>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,6 +45,7 @@ export default function ProductFormModal({ isOpen, onClose, editingProduct, cate
 
     // Complementos State
     const [selectedGrupos, setSelectedGrupos] = useState<number[]>([]);
+    const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
 
     useEffect(() => {
         import('@/app/actions/auth').then(({ getMe }) => {
@@ -53,9 +67,11 @@ export default function ProductFormModal({ isOpen, onClose, editingProduct, cate
         }
 
         if (productGrupos) {
-            setSelectedGrupos(productGrupos);
+            setSelectedGrupos(productGrupos.filter(id => typeof id === 'number') as number[]);
+            setSelectedSlots(productGrupos.filter(id => typeof id === 'string') as string[]);
         } else {
             setSelectedGrupos([]);
+            setSelectedSlots([]);
         }
     }, [isOpen, editingProduct, productInsumos, productGrupos]);
 
@@ -66,7 +82,13 @@ export default function ProductFormModal({ isOpen, onClose, editingProduct, cate
         setIsSubmitting(true);
         const formData = new FormData(e.currentTarget);
         try {
-            await onSubmit(formData, isCreatingCategory, usaInsumos ? selectedInsumos : [], selectedGrupos);
+            await onSubmit(
+                formData,
+                isCreatingCategory,
+                usaInsumos ? selectedInsumos.map(i => ({ ...i, insumo_id: String(i.insumo_id) })) : [],
+                selectedGrupos,
+                selectedSlots
+            );
         } finally {
             setIsSubmitting(false);
         }
@@ -210,6 +232,47 @@ export default function ProductFormModal({ isOpen, onClose, editingProduct, cate
                                         defaultValue={editingProduct?.preco}
                                         className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                                     />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Slot Groups Section (NEW) */}
+                        <div className="pt-4 border-t border-slate-100">
+                            <div className="mb-4">
+                                <div className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors flex items-center gap-2">
+                                    Grupos de Slots
+                                    <span className="px-1.5 py-0.5 bg-primary/10 text-primary text-[8px] font-black uppercase rounded">Novo</span>
+                                </div>
+                                <div className="text-[10px] sm:text-xs text-slate-500">O novo sistema de slots para produtos fracionados e combos.</div>
+                            </div>
+
+                            <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    {gruposSlots?.map(grupo => (
+                                        <label key={grupo.id} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-200 cursor-pointer hover:border-primary/50 transition-colors">
+                                            <input
+                                                type="checkbox"
+                                                className="size-4 rounded border-slate-300 text-primary focus:ring-primary/20"
+                                                checked={selectedSlots.includes(grupo.id)}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                        setSelectedSlots([...selectedSlots, grupo.id]);
+                                                    } else {
+                                                        setSelectedSlots(selectedSlots.filter(id => id !== grupo.id));
+                                                    }
+                                                }}
+                                            />
+                                            <div>
+                                                <div className="text-sm font-semibold text-slate-800">{grupo.nome}</div>
+                                                <div className="text-[10px] text-slate-500">{grupo.tipo === 'fracionado' ? 'Fracionado' : 'Adicional'} • {grupo.qtd_slots} slots</div>
+                                            </div>
+                                        </label>
+                                    ))}
+                                    {(!gruposSlots || gruposSlots.length === 0) && (
+                                        <div className="col-span-1 sm:col-span-2 text-center py-4 text-sm text-slate-500 italic">
+                                            Nenhum grupo de slots cadastrado na aba de complementos.
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

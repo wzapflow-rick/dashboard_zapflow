@@ -29,6 +29,7 @@ import {
 } from '@/app/actions/products';
 import { getGruposComplementos, getGruposDoProduto, updateGruposDoProduto } from '@/app/actions/complements';
 import { getInsumos, getReceitaDoProduto, getTodasReceitas, type Insumo } from '@/app/actions/insumos';
+import { getGruposSlots, getGruposDoProduto as getGruposSlotsDoProduto, updateGruposDoProduto as atualizarGruposSlotsDoProduto } from '@/app/actions/grupos-slots';
 import { toast } from 'sonner';
 import dynamic from 'next/dynamic';
 import ProductTable from './menu/product-table';
@@ -48,7 +49,7 @@ export default function MenuManagement() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number>(0); // 0 means 'Todos'
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | string>(0); // 0 means 'Todos'
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [insumosList, setInsumosList] = useState<Insumo[]>([]);
@@ -56,6 +57,8 @@ export default function MenuManagement() {
   const [editingProductInsumos, setEditingProductInsumos] = useState<{ insumo_id: number; quantidade_necessaria: number }[]>([]);
   const [gruposComplemento, setGruposComplemento] = useState<any[]>([]);
   const [editingProductGrupos, setEditingProductGrupos] = useState<number[]>([]);
+  const [gruposSlots, setGruposSlots] = useState<any[]>([]);
+  const [editingProductSlots, setEditingProductSlots] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [sortBy, setSortBy] = useState('recent');
@@ -74,18 +77,20 @@ export default function MenuManagement() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [productsData, categoriesData, insumosData, receitasData, gruposData] = await Promise.all([
+      const [productsData, categoriesData, insumosData, receitasData, gruposData, slotsData] = await Promise.all([
         getProducts(),
         getCategories(),
         getInsumos(),
         getTodasReceitas(),
-        getGruposComplementos()
+        getGruposComplementos(),
+        getGruposSlots()
       ]);
       setProducts(productsData);
       setCategories(categoriesData);
       setInsumosList(insumosData);
       setProductRecipes(receitasData);
       setGruposComplemento(gruposData);
+      setGruposSlots(slotsData);
     } catch (error) {
       console.error('Erro ao buscar dados:', error);
       toast.error('Erro ao carregar dados do banco de dados.');
@@ -102,7 +107,7 @@ export default function MenuManagement() {
   }, []);
 
   // Toggle availability with Optimistic UI
-  const toggleDisponibilidade = async (produtoId: number, statusAtual: boolean) => {
+  const toggleDisponibilidade = async (produtoId: number | string, statusAtual: boolean) => {
     const novoStatus = !statusAtual;
 
     // Optimistic Update
@@ -158,7 +163,7 @@ export default function MenuManagement() {
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: number | string) => {
     if (confirm('Tem certeza que deseja excluir este produto?')) {
       try {
         await deleteProduct(id);
@@ -183,15 +188,15 @@ export default function MenuManagement() {
       setEditingProductInsumos([]);
     }
     try {
-      const prodGrupos = await getGruposDoProduto(product.id);
-      setEditingProductGrupos(prodGrupos.map((g: any) => g.grupo_id));
+      const prodSlots = await getGruposSlotsDoProduto(Number(product.id));
+      setEditingProductSlots(prodSlots.map(String));
     } catch {
-      setEditingProductGrupos([]);
+      setEditingProductSlots([]);
     }
     setIsModalOpen(true);
   };
 
-  const handleSaveProduct = async (formData: FormData, isCreatingCategory: boolean, selectedInsumos?: { insumo_id: number, quantidade_necessaria: number }[], selectedGrupos?: number[]) => {
+  const handleSaveProduct = async (formData: FormData, isCreatingCategory: boolean, selectedInsumos?: { insumo_id: string | number, quantidade_necessaria: number }[], selectedGrupos?: number[], selectedSlots?: string[]) => {
     try {
       let finalCategoryId = Number(formData.get('categoria_id'));
 
@@ -236,6 +241,10 @@ export default function MenuManagement() {
 
       if (selectedGrupos) {
         await updateGruposDoProduto(savedProduct.id, selectedGrupos);
+      }
+
+      if (selectedSlots) {
+        await atualizarGruposSlotsDoProduto(Number(savedProduct.id), selectedSlots.map(s => Number(s)));
       }
 
       if (editingProduct) {
@@ -407,7 +416,8 @@ export default function MenuManagement() {
           insumosList={insumosList}
           productInsumos={editingProductInsumos}
           gruposComplemento={gruposComplemento}
-          productGrupos={editingProductGrupos}
+          productGrupos={[...editingProductGrupos, ...editingProductSlots]}
+          gruposSlots={gruposSlots}
           onSubmit={handleSaveProduct}
         />
       )}

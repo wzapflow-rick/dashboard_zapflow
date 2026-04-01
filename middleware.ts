@@ -6,17 +6,30 @@ const authRoutes = ['/login', '/register']
 
 export default async function middleware(req: NextRequest) {
     const path = req.nextUrl.pathname
+    
+    // Force HTTPS in production
+    if (process.env.NODE_ENV === 'production') {
+        const proto = req.headers.get('x-forwarded-proto');
+        if (proto && proto !== 'https') {
+            const httpsUrl = new URL(req.url);
+            httpsUrl.protocol = 'https';
+            return NextResponse.redirect(httpsUrl);
+        }
+    }
+
     const isProtectedRoute = protectedRoutes.some(route => path.startsWith(route))
     const isAuthRoute = authRoutes.includes(path)
 
     const cookie = req.cookies.get('session')?.value
     const session = cookie ? await decrypt(cookie) : null
 
-    console.log(`Middleware Path: ${path} | Session: ${!!session} | Onboarded: ${session?.onboarded}`);
+    // Remove console.log in production for security
+    if (process.env.NODE_ENV !== 'production') {
+        console.log(`Middleware Path: ${path} | Session: ${!!session} | Onboarded: ${session?.onboarded}`);
+    }
 
     // 1. Se tentar acessar rota protegida sem sessão -> login
     if (isProtectedRoute && !session) {
-        console.log('Middleware: Protecting route -> redirect to login');
         return NextResponse.redirect(new URL('/login', req.nextUrl))
     }
 
@@ -29,13 +42,11 @@ export default async function middleware(req: NextRequest) {
 
     // 3. Se logado mas NÃO onboarded -> obriga onboarding (exceto se já estiver lá)
     if (session && !session.onboarded && !path.startsWith('/onboarding')) {
-        console.log('Middleware: Not onboarded -> redirect to onboarding');
         return NextResponse.redirect(new URL('/onboarding', req.nextUrl))
     }
 
     // 4. Se logado E já onboarded mas tenta voltar no onboarding -> dashboard
     if (session && session.onboarded && path.startsWith('/onboarding')) {
-        console.log('Middleware: Already onboarded -> redirect to dashboard');
         return NextResponse.redirect(new URL('/dashboard', req.nextUrl))
     }
 

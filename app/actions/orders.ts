@@ -3,12 +3,19 @@
 import { revalidatePath } from 'next/cache';
 import { getMe } from './auth';
 import { getReceitaDoProduto, atualizarEstoqueInsumo, getInsumos } from './insumos';
-import { getReceitaDoComplemento } from './complements';
-
+import { getReceitaDoComplemento, getInsumosDoGrupo } from './complements';
+import { getReceitaDoItemBase } from './itens-base';
+import { OrderStatusSchema } from '@/lib/validations';
+import { logAction } from '@/lib/audit';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
 const TABLE_ID = 'm2ic8zof3feve3l'; // pedidos-pedidos
+
+// Rate limiting para atualização de status
+const orderUpdateAttempts = new Map<string, { count: number; lastAttempt: number }>();
+const MAX_ORDER_UPDATES = 30;
+const ORDER_WINDOW_MS = 60 * 1000; // 1 minuto
 
 const CLIENTS_TABLE_ID = 'mfpwzmya0e4ej1k'; // clientes
 
@@ -72,6 +79,27 @@ export async function updateOrderStatus(id: number, status: string) {
     try {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
+
+        // Validação com Zod
+        const validated = OrderStatusSchema.safeParse({ orderId: id, status });
+        if (!validated.success) {
+            const errorMsg = validated.error.issues.map((issue: any) => issue.message).join(', ');
+            throw new Error(`Dados inválidos: ${errorMsg}`);
+        }
+
+        // Rate limiting por empresa
+        const now = Date.now();
+        const attemptKey = `${user.empresaId}:order_update`;
+        const attempt = orderUpdateAttempts.get(attemptKey);
+        
+        if (attempt && attempt.count >= MAX_ORDER_UPDATES) {
+            const timeSinceLast = now - attempt.lastAttempt;
+            if (timeSinceLast < ORDER_WINDOW_MS) {
+                throw new Error('Muitas atualizações. Aguarde um momento.');
+            } else {
+                orderUpdateAttempts.delete(attemptKey);
+            }
+        }
 
         // Buscar detalhes do pedido para obter o telefone do cliente
         const orderRes = await nocoFetchForTable(TABLE_ID, `/records/${id}`);
@@ -165,12 +193,21 @@ export async function updateOrderStatus(id: number, status: string) {
             }
         }
 
+        // Log da ação
+        await logAction('UPDATE_ORDER_STATUS', `Pedido #${id} atualizado para: ${status}`);
+
+        // Incrementar rate limiting
+        const currentAttempt = orderUpdateAttempts.get(attemptKey) || { count: 0, lastAttempt: now };
+        currentAttempt.count += 1;
+        currentAttempt.lastAttempt = now;
+        orderUpdateAttempts.set(attemptKey, currentAttempt);
+
         revalidatePath('/dashboard/expedition');
         revalidatePath('/dashboard/customers');
         return await res.json();
-    } catch (error) {
+    } catch (error: any) {
         console.error('API Error:', error);
-        throw new Error('Failed to update order status');
+        throw new Error(error.message || 'Failed to update order status');
     }
 }
 
@@ -223,38 +260,115 @@ export async function deduzirInsumosDoPedido(orderId: number) {
                 await Promise.all(basePromises);
             }
 
-            // B. Receita dos Complementos/Adicionais
-            // Esperamos que item.complements seja um array de objetos com: { id, grupo_id, tipo_calculo, ... }
-            const complements = item.complements || item.adicionais || [];
-            if (Array.isArray(complements) && complements.length > 0) {
-                console.log(`Processando ${complements.length} complementos para ${item.produto}.`);
+            // B. Receita dos Complementos/Adicionais ou Itens Compostos
+            // Verificar se é produto composto (grupos de slots)
+            if (item.isComposite) {
+                // Produto composto: processar complementos como itens base
+                const complements = item.complements || [];
+                if (Array.isArray(complements) && complements.length > 0) {
+                    console.log(`Processando ${complements.length} itens base para produto composto ${item.produto}.`);
+                    
+                    // Agrupar por grupo_id
+                    const groups = new Map<number, any[]>();
+                    complements.forEach((c: any) => {
+                        if (c.id) {
+                            const gId = c.grupo_id || 0;
+                            if (!groups.has(gId)) groups.set(gId, []);
+                            groups.get(gId)?.push(c);
+                        }
+                    });
 
-                // Agrupar por grupo para calcular proporção (se for pizza meio-a-meio por exemplo)
-                const groups = new Map<number, any[]>();
-                complements.forEach((c: any) => {
-                    if (c.id) {
-                        const gId = c.grupo_id || 0;
-                        if (!groups.has(gId)) groups.set(gId, []);
-                        groups.get(gId)?.push(c);
+                    for (const [gId, itemsInGroup] of groups.entries()) {
+                        // Insumos fixos do grupo (se existirem)
+                        if (gId > 0) {
+                            const insumosDoGrupo = await getInsumosDoGrupo(gId);
+                            if (insumosDoGrupo.length > 0) {
+                                console.log(`- Deduzindo insumos fixos do grupo ${gId}: ${insumosDoGrupo.length} insumos`);
+                                const grupoFixoPromises = insumosDoGrupo.map((r: any) => {
+                                    const totalADeduzir = Number(r.quantidade_necessaria) * quantidadeVendida;
+                                    return atualizarEstoqueInsumo(r.insumo_id, -totalADeduzir);
+                                });
+                                await Promise.all(grupoFixoPromises);
+                            }
+                        }
+
+                        // Processar cada item base
+                        for (const itemBase of itemsInGroup) {
+                            let proportion: number;
+                            if (itemBase.fator_proporcao !== undefined && itemBase.fator_proporcao !== null) {
+                                proportion = Number(itemBase.fator_proporcao);
+                            } else {
+                                // Fallback: divide igualmente
+                                const isProportional = item.tipo_calculo === 'media' || item.tipo_calculo === 'maior_valor' || item.cobrar_mais_caro;
+                                proportion = isProportional ? (1 / itemsInGroup.length) : 1;
+                            }
+
+                            const receitaItemBase = await getReceitaDoItemBase(itemBase.id);
+                            if (receitaItemBase && receitaItemBase.length > 0) {
+                                const itemPromises = receitaItemBase.map((r: any) => {
+                                    const totalADeduzir = Number(r.quantidade) * proportion * quantidadeVendida;
+                                    console.log(`- Deduzindo Item Base ${itemBase.nome}: Insumo ${r.insumo}, Qtd: ${totalADeduzir.toFixed(4)} (Fator: ${proportion})`);
+                                    return atualizarEstoqueInsumo(r.insumo, -totalADeduzir);
+                                });
+                                await Promise.all(itemPromises);
+                            }
+                        }
                     }
-                });
+                }
+            } else {
+                // Produto normal: processar complementos tradicionais
+                const complements = item.complements || item.adicionais || [];
+                if (Array.isArray(complements) && complements.length > 0) {
+                    console.log(`Processando ${complements.length} complementos para ${item.produto}.`);
 
-                for (const [gId, itemsInGroup] of groups.entries()) {
-                    // Se o grupo for de calculo 'media' ou 'maior_valor', assumimos que divide o espaço
-                    // Se for 'soma', cada um é 100% (ex: adicional de bacon)
-                    const firstItem = itemsInGroup[0];
-                    const isProportional = firstItem.tipo_calculo === 'media' || firstItem.tipo_calculo === 'maior_valor';
-                    const proportion = isProportional ? (1 / itemsInGroup.length) : 1;
+                    // Agrupar por grupo para controlar dedução de insumos fixos por grupo
+                    const groups = new Map<number, any[]>();
+                    complements.forEach((c: any) => {
+                        if (c.id) {
+                            const gId = c.grupo_id || 0;
+                            if (!groups.has(gId)) groups.set(gId, []);
+                            groups.get(gId)?.push(c);
+                        }
+                    });
 
-                    for (const comp of itemsInGroup) {
-                        const receitaComp = await getReceitaDoComplemento(comp.id);
-                        if (receitaComp && receitaComp.length > 0) {
-                            const compPromises = receitaComp.map((r: any) => {
-                                const totalADeduzir = Number(r.quantidade_necessaria) * proportion * quantidadeVendida;
-                                console.log(`- Deduzindo Complemento ${comp.nome}: Insumo ${r.insumo_id}, Qtd: ${totalADeduzir} (Prop: ${proportion})`);
-                                return atualizarEstoqueInsumo(r.insumo_id, -totalADeduzir);
-                            });
-                            await Promise.all(compPromises);
+                    for (const [gId, itemsInGroup] of groups.entries()) {
+                        // C. Insumos fixos do grupo (base) — deduzidos UMA vez por unidade vendida
+                        // Ex: massa da pizza, caixa de papelão, etc.
+                        if (gId > 0) {
+                            const insumosDoGrupo = await getInsumosDoGrupo(gId);
+                            if (insumosDoGrupo.length > 0) {
+                                console.log(`- Deduzindo insumos fixos do grupo ${gId}: ${insumosDoGrupo.length} insumos`);
+                                const grupoFixoPromises = insumosDoGrupo.map((r: any) => {
+                                    const totalADeduzir = Number(r.quantidade_necessaria) * quantidadeVendida;
+                                    return atualizarEstoqueInsumo(r.insumo_id, -totalADeduzir);
+                                });
+                                await Promise.all(grupoFixoPromises);
+                            }
+                        }
+
+                        const firstItem = itemsInGroup[0];
+                        // Prioridade: usar fator_proporcao manual do payload se disponível
+                        // Fallback: calcular automaticamente baseado no tipo_calculo do grupo
+                        for (const comp of itemsInGroup) {
+                            let proportion: number;
+                            if (comp.fator_proporcao !== undefined && comp.fator_proporcao !== null) {
+                                // Fator manual definido pelo cliente ao montar o pedido
+                                proportion = Number(comp.fator_proporcao);
+                            } else {
+                                // Fallback automático: divide igualmente entre os itens do grupo
+                                const isProportional = firstItem?.tipo_calculo === 'media' || firstItem?.tipo_calculo === 'maior_valor' || firstItem?.cobrar_mais_caro;
+                                proportion = isProportional ? (1 / itemsInGroup.length) : 1;
+                            }
+
+                            const receitaComp = await getReceitaDoComplemento(comp.id);
+                            if (receitaComp && receitaComp.length > 0) {
+                                const compPromises = receitaComp.map((r: any) => {
+                                    const totalADeduzir = Number(r.quantidade_necessaria) * proportion * quantidadeVendida;
+                                    console.log(`- Deduzindo Complemento ${comp.nome}: Insumo ${r.insumo_id}, Qtd: ${totalADeduzir.toFixed(4)} (Fator: ${proportion})`);
+                                    return atualizarEstoqueInsumo(r.insumo_id, -totalADeduzir);
+                                });
+                                await Promise.all(compPromises);
+                            }
                         }
                     }
                 }

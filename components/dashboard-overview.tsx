@@ -29,6 +29,7 @@ export default function DashboardOverview() {
   const [orders, setOrders] = useState<any[]>([]);
   const [selectedPeriod, setSelectedPeriod] = useState('Hoje');
   const [dashboardData, setDashboardData] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -38,27 +39,30 @@ export default function DashboardOverview() {
         const me = await getMe();
         setUser(me);
 
-        // Then attempt to get dashboard data
-        try {
-          const data = await getDashboardData(selectedPeriod);
-          setDashboardData(data);
+          // Then attempt to get dashboard data
+          try {
+            const data = await getDashboardData(selectedPeriod);
+            setDashboardData(data);
+            setError(null);
 
-          if (data.rawOrders) {
-            const formattedOrders = data.rawOrders.map((o: any) => ({
-              id: `#${o.id}`,
-              customer: o.telefone_cliente || 'Cliente',
-              phone: o.telefone_cliente || '',
-              time: o.criado_em ? new Date(o.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '...',
-              value: `R$ ${Number(o.valor_total || 0).toFixed(2).replace('.', ',')}`,
-              status: o.status === 'pendente' ? 'Pendente' : o.status === 'preparando' ? 'Preparando' : 'Finalizado',
-              statusColor: o.status === 'pendente' ? 'amber' : o.status === 'preparando' ? 'blue' : 'emerald',
-              raw: o
-            }));
-            setOrders(formattedOrders);
+            if (data.rawOrders) {
+              const formattedOrders = data.rawOrders.map((o: any) => ({
+                id: `#${o.id}`,
+                customer: o.telefone_cliente || 'Cliente',
+                phone: o.telefone_cliente || '',
+                time: o.criado_em ? new Date(o.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '...',
+                value: `R$ ${Number(o.valor_total || 0).toFixed(2).replace('.', ',')}`,
+                status: o.status === 'pendente' ? 'Pendente' : o.status === 'preparando' ? 'Preparando' : 'Finalizado',
+                statusColor: o.status === 'pendente' ? 'amber' : o.status === 'preparando' ? 'blue' : 'emerald',
+                raw: o
+              }));
+              setOrders(formattedOrders);
+            }
+            // Debug: console.log('Dashboard data loaded:', data);
+          } catch (dashError: any) {
+            console.error('Erro ao carregar dados da dashboard:', dashError);
+            setError(dashError.message || 'Erro ao carregar dados');
           }
-        } catch (dashError) {
-          console.error('Erro ao carregar dados da dashboard:', dashError);
-        }
       } catch (err) {
         console.error('Erro crítico no dashboard:', err);
       } finally {
@@ -111,6 +115,12 @@ export default function DashboardOverview() {
         </div>
       </header>
 
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+          ⚠️ {error}
+        </div>
+      )}
+
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statsWithIcons.map((stat: any, i: number) => (
@@ -127,33 +137,35 @@ export default function DashboardOverview() {
               <Clock className="size-3" /> Atualizado agora
             </span>
           </div>
-          <div className="h-[240px] flex items-end justify-between gap-[2px] md:gap-1 px-1">
-            {(dashboardData?.chartData || new Array(24).fill(0)).map((val: number, i: number) => {
-              const maxVal = Math.max(...(dashboardData?.chartData || [1]));
-              const height = val === 0 ? 4 : Math.max(8, Math.round((val / Math.max(maxVal, 1)) * 95));
-              return (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1 group relative">
-                  <div
-                    className={cn(
-                      "w-full rounded-t-md transition-all duration-500 ease-out",
-                      val > 0 ? "bg-primary shadow-[0_-4px_12px_rgba(var(--primary-rgb),0.2)]" : "bg-slate-100 group-hover:bg-slate-200"
-                    )}
-                    style={{ height: `${height}%` }}
-                  >
-                    {val > 0 && (
-                      <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                        {val} {val === 1 ? 'pedido' : 'pedidos'}
-                      </div>
-                    )}
-                  </div>
-                  {i % 3 === 0 && (
-                    <span className={cn("text-[8px] font-bold transition-colors", val > 0 ? "text-slate-700" : "text-slate-300")}>
+          {/* Chart de vendas por hora */}
+          <div className="h-[240px] flex items-end justify-between gap-1 bg-slate-50 rounded-lg p-2 border border-slate-200">
+            {dashboardData?.chartData && dashboardData.chartData.length > 0 ? (
+              dashboardData.chartData.map((val: number, i: number) => {
+                const maxVal = Math.max(...dashboardData.chartData);
+                const height = val === 0 ? 10 : Math.max(15, Math.round((val / Math.max(maxVal, 1)) * 180));
+                
+                return (
+                  <div key={i} className="flex-1 flex flex-col items-center relative group">
+                    <div
+                      className="w-full bg-blue-500 rounded-t transition-all duration-300 hover:bg-blue-600"
+                      style={{ height: `${height}px`, minHeight: '15px' }}
+                      title={`${val} pedidos`}
+                    />
+                    <span className="text-[8px] font-bold mt-2 text-slate-600">
                       {i}h
                     </span>
-                  )}
-                </div>
-              );
-            })}
+                    {/* Tooltip on hover */}
+                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                      {val} pedidos
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="w-full flex items-center justify-center text-slate-400">
+                Nenhum dado disponível
+              </div>
+            )}
           </div>
         </div>
 

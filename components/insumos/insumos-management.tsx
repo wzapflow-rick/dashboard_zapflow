@@ -62,7 +62,9 @@ export default function InsumosManagement() {
     const handleSubmit = async (formData: FormData) => {
         try {
             const rawValue = formData.get('custo_por_unidade') as string || '0';
-            const numericCusto = parseFloat(rawValue.replace(/\./g, '').replace(',', '.'));
+            // O input hidden já envia o valor numérico com ponto decimal (ex: 10.5)
+            // Não remover pontos, apenas substituir vírgula por ponto caso exista
+            const numericCusto = parseFloat(rawValue.replace(',', '.'));
 
             const numQs = parseFloat(String(formData.get('quantidade_atual')).replace(',', '.'));
             const numMin = parseFloat(String(formData.get('estoque_minimo')).replace(',', '.'));

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import DashboardLayout, { SidebarProvider } from '@/components/dashboard-layout';
 import MenuManagement from '@/components/menu-management';
-import ComplementsManagement from '@/components/complements-management';
+import SlotGroupsManagement from '@/components/slot-groups-management';
 import { cn } from '@/lib/utils';
 import { PackageSearch, Layers } from 'lucide-react';
 
@@ -36,7 +36,7 @@ export default function MenuPage() {
           </button>
         </div>
 
-        {activeTab === 'produtos' ? <MenuManagement /> : <ComplementsManagement />}
+        {activeTab === 'produtos' ? <MenuManagement /> : <SlotGroupsManagement />}
       </DashboardLayout>
     </SidebarProvider>
   );

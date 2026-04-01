@@ -2,10 +2,17 @@
 
 import { revalidatePath } from 'next/cache';
 import { getMe } from './auth';
+import { CustomerUpsertSchema } from '@/lib/validations';
+import { logAction } from '@/lib/audit';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
 const TABLE_ID = 'mfpwzmya0e4ej1k'; // clientes-clientes
+
+// Rate limiting para upsert de clientes
+const customerUpsertAttempts = new Map<string, { count: number; lastAttempt: number }>();
+const MAX_CUSTOMER_ATTEMPTS = 10;
+const CUSTOMER_WINDOW_MS = 60 * 1000; // 1 minuto
 
 async function nocoFetch(endpoint: string, options: RequestInit = {}) {
     const url = `${NOCODB_URL}/api/v2/tables/${TABLE_ID}${endpoint}`;
@@ -96,10 +103,30 @@ export async function upsertCustomer(customerData: any) {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        const { telefone, nome, bairro_entrega, endereco_completo } = customerData;
+        // Validação com Zod
+        const validated = CustomerUpsertSchema.safeParse(customerData);
+        if (!validated.success) {
+            const errorMsg = validated.error.issues.map((issue: any) => issue.message).join(', ');
+            throw new Error(`Dados inválidos: ${errorMsg}`);
+        }
+
+        const { telefone, nome, bairro_entrega, endereco_completo } = validated.data;
+
+        // Rate limiting por empresa
+        const now = Date.now();
+        const attemptKey = `${user.empresaId}:${telefone}`;
+        const attempt = customerUpsertAttempts.get(attemptKey);
+        
+        if (attempt && attempt.count >= MAX_CUSTOMER_ATTEMPTS) {
+            const timeSinceLast = now - attempt.lastAttempt;
+            if (timeSinceLast < CUSTOMER_WINDOW_MS) {
+                throw new Error('Muitas tentativas. Aguarde um momento.');
+            } else {
+                customerUpsertAttempts.delete(attemptKey);
+            }
+        }
 
         // 1. Verificar se o cliente já existe para esta empresa
-        // Usando 'empresas' conforme visto no print do usuário
         const checkRes = await nocoFetch(`/records?where=(empresas,eq,${user.empresaId})~and(telefone,eq,${telefone})`);
         const checkData = await checkRes.json();
         const existingCustomer = checkData.list?.[0];
@@ -112,29 +139,37 @@ export async function upsertCustomer(customerData: any) {
                     id: existingCustomer.id,
                     nome: nome || existingCustomer.nome,
                     bairro_entrega: bairro_entrega || existingCustomer.bairro_entrega,
-                    endereco: endereco_completo || existingCustomer.endereco // Mudado para 'endereco'
+                    endereco: endereco_completo || existingCustomer.endereco
                 })
             });
+            await logAction('UPDATE_CUSTOMER', `Cliente atualizado: ${telefone}`);
         } else {
             // 3. Criar se não existir (POST)
             await nocoFetch('/records', {
                 method: 'POST',
                 body: JSON.stringify({
-                    empresas: user.empresaId, // Mudado de 'empresa_id' para 'empresas'
+                    empresas: user.empresaId,
                     nome: nome || 'Cliente sem nome',
                     telefone,
                     bairro_entrega,
-                    endereco: endereco_completo || '' // Mudado para 'endereco'
+                    endereco: endereco_completo || ''
                 })
             });
+            await logAction('CREATE_CUSTOMER', `Novo cliente cadastrado: ${telefone}`);
         }
+
+        // Incrementar tentativas
+        const currentAttempt = customerUpsertAttempts.get(attemptKey) || { count: 0, lastAttempt: now };
+        currentAttempt.count += 1;
+        currentAttempt.lastAttempt = now;
+        customerUpsertAttempts.set(attemptKey, currentAttempt);
 
         revalidatePath('/dashboard/customers');
         revalidatePath('/dashboard/expedition');
 
         return { success: true };
-    } catch (error) {
+    } catch (error: any) {
         console.error('API Error (upsertCustomer):', error);
-        throw new Error('Falha ao processar registro do cliente');
+        throw new Error(error.message || 'Falha ao processar registro do cliente');
     }
 }

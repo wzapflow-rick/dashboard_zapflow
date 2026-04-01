@@ -19,8 +19,8 @@ interface ProductTableProps {
     itemsPerPage: number;
     onPageChange: (page: number) => void;
     onEdit: (product: any) => void;
-    onDelete: (id: number) => void;
-    onToggleAvailability: (id: number, currentStatus: boolean) => void;
+    onDelete: (id: number | string) => void;
+    onToggleAvailability: (id: number | string, currentStatus: boolean) => void;
     user: any;
 }
 
@@ -42,8 +42,8 @@ export default function ProductTable({
     user
 }: ProductTableProps) {
 
-    const getCategoryName = (id: number) => {
-        const cat = categories.find(c => c.id === id);
+    const getCategoryName = (id: number | string) => {
+        const cat = categories.find(c => String(c.id) === String(id));
         return cat ? cat.nome : 'Sem Categoria';
     };
 

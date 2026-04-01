@@ -1,7 +1,7 @@
 import { getPublicMenu } from '@/app/actions/public-menu';
-import Image from 'next/image';
 import { UtensilsCrossed, MessageCircle } from 'lucide-react';
 import MenuProductSelection from '@/components/menu/menu-product-selection';
+import CompositeProductCard from '@/components/menu/composite-product-card';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,13 +21,9 @@ export default async function PublicMenuPage({ params }: { params: Promise<{ slu
         );
     }
 
-    const { empresa, grouped } = data;
+    const { empresa, grouped, compositeProducts } = data;
     const whatsappNumber = empresa.telefone?.replace(/\D/g, '');
-
-    const formatPrice = (price: any) => {
-        const num = Number(price || 0);
-        return `R$ ${num.toFixed(2).replace('.', ',')}`;
-    };
+    const hasComposites = compositeProducts && compositeProducts.length > 0;
 
     return (
         <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)' }}>
@@ -59,7 +55,29 @@ export default async function PublicMenuPage({ params }: { params: Promise<{ slu
             </div>
 
             <div className="max-w-2xl mx-auto px-4 py-8 space-y-10">
-                {grouped.length === 0 ? (
+
+                {/* Produtos Compostos (Pizzas Meio a Meio, etc.) */}
+                {hasComposites && (
+                    <section>
+                        <h2 className="text-lg font-black text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
+                            <span className="h-1 w-6 rounded-full bg-amber-400 inline-block" />
+                            🍕 Monte seu Pedido
+                        </h2>
+                        <div className="space-y-3">
+                            {compositeProducts.map((composite: any) => (
+                                <CompositeProductCard
+                                    key={composite.id}
+                                    product={composite}
+                                    whatsappNumber={whatsappNumber || ''}
+                                    empresaNome={empresa.nome}
+                                />
+                            ))}
+                        </div>
+                    </section>
+                )}
+
+                {/* Produtos regulares por categoria */}
+                {grouped.length === 0 && !hasComposites ? (
                     <div className="text-center py-20">
                         <UtensilsCrossed className="size-12 text-slate-300 mx-auto mb-3" />
                         <p className="text-slate-500">Nenhum produto disponível no momento.</p>
@@ -78,14 +96,12 @@ export default async function PublicMenuPage({ params }: { params: Promise<{ slu
                                         product={product}
                                         whatsappNumber={whatsappNumber || ''}
                                         empresaNome={empresa.nome}
-                                        formatPrice={formatPrice}
                                     />
                                 ))}
                             </div>
                         </section>
                     ))
                 )}
-
 
                 <footer className="text-center pt-4 pb-8">
                     <p className="text-xs text-slate-400">Cardápio digital por <span className="font-bold text-violet-500">ZapFlow</span></p>

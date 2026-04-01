@@ -40,6 +40,7 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   transpilePackages: ['motion'],
   async headers() {
+    const isProduction = process.env.NODE_ENV === 'production';
     return [
       {
         source: '/(.*)',
@@ -58,12 +59,30 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin',
+            value: 'strict-origin-when-cross-origin',
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=()',
+          },
+          {
+            key: 'Strict-Transport-Security',
+            value: isProduction ? 'max-age=31536000; includeSubDomains; preload' : 'max-age=0',
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' *.google.com *.gstatic.com; style-src 'self' 'unsafe-inline' *.googleapis.com; img-src 'self' data: https:; font-src 'self' *.gstatic.com *.googleapis.com; connect-src 'self' https://db.wzapflow.com.br *.evolution-api.com;"
-          }
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.google.com https://*.gstatic.com",
+              "style-src 'self' 'unsafe-inline' https://*.googleapis.com",
+              "img-src 'self' data: https:",
+              "font-src 'self' https://*.gstatic.com https://*.googleapis.com",
+              "connect-src 'self' https://db.wzapflow.com.br https://*.evolution-api.com",
+              "frame-ancestors 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+            ].join('; '),
+          },
         ],
       },
     ];

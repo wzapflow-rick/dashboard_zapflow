@@ -2,10 +2,15 @@
 
 import { cookies } from 'next/headers';
 import { decrypt } from '@/lib/session';
+import { HorarioSchema } from '@/lib/validations';
+import { z } from 'zod';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
 const HORARIOS_TABLE_ID = 'm6jqxzkwfw6o4ga';
+
+// Schema para array de horários
+const HorariosArraySchema = z.array(HorarioSchema).min(1, 'Adicione pelo menos um horário');
 
 async function nocoFetch(tableId: string, endpoint: string, options: RequestInit = {}) {
     try {
@@ -45,49 +50,44 @@ export async function saveHorariosFuncionamento(horarios: HorarioItem[], nomeEmp
         const payload = await decrypt(sessionValue);
         if (!payload) return { error: 'Sessão inválida' };
 
+        // Validação com Zod
+        const validated = HorariosArraySchema.safeParse(horarios);
+        if (!validated.success) {
+            const errorMsg = validated.error.issues.map((issue: any) => issue.message).join(', ');
+            return { error: `Dados inválidos: ${errorMsg}` };
+        }
+
         const empresaId = payload.empresaId;
-        console.log('=== saveHorariosFuncionamento ===');
-        console.log('empresaId:', empresaId);
-        console.log('nomeEmpresa:', nomeEmpresa);
 
         // Busca registros existentes para deletar
-        // Filtra por empresa_id (campo que criamos no banco) ou nome_empresa (backup)
         const existing = await nocoFetch(HORARIOS_TABLE_ID, `/records?where=(empresa_id,eq,${empresaId})`);
         if (existing) {
             const data = await existing.json();
-            console.log('Registros existentes:', data.list?.length || 0);
 
             // Deleta registros existentes
             if (data.list && data.list.length > 0) {
                 const idsToDelete = data.list.map((r: { id: number }) => ({ id: r.id }));
-                const delRes = await nocoFetch(HORARIOS_TABLE_ID, '/records', {
+                await nocoFetch(HORARIOS_TABLE_ID, '/records', {
                     method: 'DELETE',
                     body: JSON.stringify(idsToDelete),
                 });
-                console.log('Delete status:', delRes?.status);
             }
         }
 
-        // Insere os novos horários
-        const records = horarios.map(h => ({
+        // Insere os novos horários validados
+        const records = validated.data.map(h => ({
             empresa_id: empresaId,
             nome_empresa: nomeEmpresa,
             dia_semana: h.dia_semana,
             hora_abertura: h.hora_abertura,
             hora_fechamento: h.hora_fechamento,
-            fechado_o_dia_todo: !!h.fechado_o_dia_todo,
+            fechado_o_dia_todo: h.fechado_o_dia_todo,
         }));
 
-        console.log('Inserindo', records.length, 'registros...');
         const insertRes = await nocoFetch(HORARIOS_TABLE_ID, '/records', {
             method: 'POST',
             body: JSON.stringify(records),
         });
-
-        console.log('Insert status:', insertRes?.status);
-        if (insertRes && !insertRes.ok) {
-            console.log('Erro detalhado:', await insertRes.text());
-        }
 
         if (!insertRes) {
             return { error: 'Erro ao inserir horários no NocoDB' };
