@@ -18,18 +18,72 @@
 - **Dashboard**: Ranking dos top clientes com mais pontos
 - **Configuração**: Ativar/desativar, regras de acúmulo e resgate
 
+#### 🛒 Carrinho de Compras Digital
+- **Novo**: Carrinho completo no cardápio online
+- **Cupom**: Input para aplicar cupom com validação em tempo real
+- **Pontos**: Preview de pontos que o cliente ganhará na compra
+- **Upsell**: Sugestões automáticas de produtos (bebidas, sobremesas) vindos do banco de dados
+- **Quantidade**: Ajuste de quantidades antes de enviar pedido
+
 ### 📝 Novos Arquivos
 
 - `app/actions/coupons.ts` - Server actions para cupons
 - `app/actions/loyalty.ts` - Server actions para programa de fidelidade
 - `components/coupons-management.tsx` - UI para gerenciar cupons
 - `components/loyalty-management.tsx` - UI para programa de fidelidade
+- `components/menu/cart-context.tsx` - Contexto global do carrinho
+- `components/menu/cart.tsx` - Componente do carrinho com cupom, pontos e upsell
+- `components/menu/menu-client-wrapper.tsx` - Wrapper com CartProvider
 
 ### 🔧 Integrações
 
 - Cupons aplicados automaticamente no pedido quando informado
 - Pontos de fidelidade adicionados quando pedido é finalizado
 - Uso de cupom incrementado após finalização do pedido
+- Upsell busca produtos reais do banco (bebidas, sobremesas)
+- Configuração de fidelidade vem do banco de dados
+
+### 📱 Checkout Direto do Cardápio
+
+#### Novo Fluxo de Pedido
+- **Checkout completo**: Cliente informa dados e finaliza pedido direto no cardápio
+- **Cadastro automático**: Cliente é cadastrado automaticamente se não existir
+- **Pagamento integrado**: PIX, Dinheiro ou Cartão
+- **Sem WhatsApp obrigatório**: Pedido vai direto para o Kanban
+- **Produtos salvos corretamente**: Itens com nomes e complementos visíveis no dashboard
+
+#### Kanban - Status Pagamento Pendente
+- **Nova coluna**: "Aguardando Pagamento" (laranja)
+- **Fluxo**: Pagamento Pendente → Confirmar → Novos Pedidos → Preparando → Entrega → Concluído
+- **Notificação sonora**: Toca som ao confirmar pagamento
+- **Polling automático**: Atualiza a cada 10 segundos
+- **Dinheiro pula etapa**: Pedidos em dinheiro vão direto para "Novos Pedidos"
+
+#### Fidelidade Integrada
+- **Pontos na tela de checkout**: Mostra pontos do cliente ao informar telefone
+- **Notificação de desconto**: Avisa quando cliente tem 100+ pontos
+- **Pontos na aba de clientes**: Coluna de pontos na lista de clientes
+- **Usar pontos no pagamento**: Toggle para aplicar desconto com pontos
+- **Desconto automático**: Calcula automaticamente o valor do desconto
+
+#### Checkout Melhorado
+- **Opção de Retirada**: Cliente pode escolher entre Delivery e Retirada
+- **Taxa de Entrega**: R$ 5,00 para delivery, grátis para retirada
+- **Detecção automática**: Pedido mostra corretamente se é delivery ou retirada
+
+#### Kanban
+- **Modal de Detalhes**: Ícone de olho para ver detalhes completos do pedido
+- **WhatsApp notificações**: Mensagem enviada ao confirmar pagamento (status pendente)
+
+#### Correções
+- **Cupom desativa após limite**: Agora desativa automaticamente quando atinge limite de uso
+- **Produtos salvos corretamente**: Itens com nomes e complementos visíveis no dashboard
+- **Retirada vs Delivery**: Corrigido para mostrar corretamente o tipo de entrega
+
+### 📝 Novos Arquivos
+
+- `app/actions/public-orders.ts` - Server actions para pedidos do cardápio
+- `components/menu/cart.tsx` - Carrinho com checkout completo
 
 ---
 

@@ -2,8 +2,10 @@
 
 import React, { useState, useMemo } from 'react';
 import Image from 'next/image';
-import { X, MessageCircle, Check, ChevronDown } from 'lucide-react';
+import { X, ShoppingCart, Check, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useCart } from './cart-context';
+import { toast } from 'sonner';
 
 interface ComplementItem {
     id: number;
@@ -51,8 +53,8 @@ export default function MenuProductSelection({
     empresaNome,
 }: MenuProductSelectionProps) {
     const [isOpen, setIsOpen] = useState(false);
-    // selections: { [grupoId]: SelectedItem[] }
     const [selections, setSelections] = useState<Record<number, SelectedItem[]>>({});
+    const { addItem } = useCart();
 
     const hasComplements = product.complementGroups && product.complementGroups.length > 0;
 
@@ -129,29 +131,35 @@ export default function MenuProductSelection({
         return price;
     }, [product, selections, hasComplements]);
 
-    // Build WhatsApp message
-    const handleOrder = () => {
-        let message = `*Novo Pedido - ${empresaNome}*\n\n`;
-        message += `*Item:* ${product.nome}\n`;
-
-        product.complementGroups?.forEach((grupo: ComplementGroup) => {
+    // Add to cart
+    const handleAddToCart = () => {
+        const complementos = product.complementGroups?.map((grupo: ComplementGroup) => {
             const selected = selections[grupo.id] || [];
-            if (selected.length > 0) {
-                message += `\n*${grupo.nome}:*\n`;
-                selected.forEach(i => {
-                    const pct = Math.round(i.fator_proporcao * 100);
-                    const hasFraction = i.fator_proporcao < 1;
-                    const label = hasFraction ? `${i.nome} (${pct}%)` : i.nome;
-                    const precoStr = Number(i.preco) > 0 ? ` +${defaultFormatPrice(i.preco)}` : '';
-                    message += `- ${label}${precoStr}\n`;
-                });
-            }
+            if (selected.length === 0) return null;
+            return {
+                grupoId: grupo.id,
+                grupoNome: grupo.nome,
+                items: selected.map(i => ({
+                    id: i.id,
+                    nome: i.nome,
+                    preco: Number(i.preco || 0),
+                    fator_proporcao: i.fator_proporcao
+                }))
+            };
+        }).filter(Boolean);
+
+        addItem({
+            productId: product.id,
+            nome: product.nome,
+            preco: finalPrice,
+            quantidade: 1,
+            imagem: product.imagem,
+            complementos: complementos.length > 0 ? complementos : undefined
         });
 
-        message += `\n*Total:* ${defaultFormatPrice(finalPrice)}`;
-        const url = `https://wa.me/${whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
-        window.open(url, '_blank');
+        toast.success(`${product.nome} adicionado ao carrinho!`);
         setIsOpen(false);
+        setSelections({});
     };
 
     // Validate: all required groups met + fractional groups sum to 1.0
@@ -199,18 +207,26 @@ export default function MenuProductSelection({
                                 {defaultFormatPrice(product.preco)}
                             </span>
                             {whatsappNumber && (
-                                <div className="text-xs font-bold text-green-600 bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg transition-all">
-                                    {hasComplements ? 'Escolher 🛒' :
-                                        <a
-                                            href={`https://wa.me/${whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá! Quero pedir: ${product.nome} - ${defaultFormatPrice(product.preco)}`)}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            onClick={(e) => e.stopPropagation()}
-                                        >
-                                            Pedir 🛒
-                                        </a>
-                                    }
-                                </div>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (!hasComplements) {
+                                            addItem({
+                                                productId: product.id,
+                                                nome: product.nome,
+                                                preco: Number(product.preco || 0),
+                                                quantidade: 1,
+                                                imagem: product.imagem
+                                            });
+                                            toast.success(`${product.nome} adicionado ao carrinho!`);
+                                        } else {
+                                            setIsOpen(true);
+                                        }
+                                    }}
+                                    className="text-xs font-bold text-green-600 bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg transition-all"
+                                >
+                                    {hasComplements ? 'Escolher' : 'Adicionar'}
+                                </button>
                             )}
                         </div>
                     </div>
@@ -360,11 +376,11 @@ export default function MenuProductSelection({
                                 )}
                                 <button
                                     disabled={!isSelectionValid}
-                                    onClick={handleOrder}
+                                    onClick={handleAddToCart}
                                     className="w-full bg-green-500 hover:bg-green-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl shadow-lg shadow-green-500/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
                                 >
-                                    <MessageCircle className="size-5" />
-                                    {isSelectionValid ? 'Confirmar Pedido via WhatsApp' : 'Selecione os sabores'}
+                                    <ShoppingCart className="size-5" />
+                                    {isSelectionValid ? 'Adicionar ao Carrinho' : 'Selecione os sabores'}
                                 </button>
                             </div>
                         </motion.div>

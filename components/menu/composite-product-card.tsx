@@ -2,8 +2,10 @@
 
 import React, { useState, useMemo } from 'react';
 import Image from 'next/image';
-import { X, MessageCircle, Check, Info } from 'lucide-react';
+import { X, ShoppingCart, Check, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useCart } from './cart-context';
+import { toast } from 'sonner';
 
 interface CompositeItem {
     id: number;
@@ -40,6 +42,7 @@ const fmt = (price: number) => `R$ ${price.toFixed(2).replace('.', ',')}`;
 export default function CompositeProductCard({ product, whatsappNumber, empresaNome }: Props) {
     const [isOpen, setIsOpen] = useState(false);
     const [selected, setSelected] = useState<CompositeItem[]>([]);
+    const { addItem } = useCart();
 
     const max = Number(product.maximo || 1);
     const min = Number(product.minimo || 1);
@@ -79,17 +82,30 @@ export default function CompositeProductCard({ product, whatsappNumber, empresaN
 
     const isValid = selected.length >= min;
 
-    const handleOrder = () => {
+    const handleAddToCart = () => {
         if (!isValid) return;
-        let message = `*Pedido - ${empresaNome}*\n\n`;
-        message += `*${product.nome}*\n`;
-        selected.forEach(item => {
-            const pct = Math.round((item.fator_proporcao || 1) * 100);
-            const pctLabel = item.fator_proporcao < 1 ? ` (${pct}%)` : '';
-            message += `  - ${item.nome}${pctLabel}\n`;
+        
+        addItem({
+            productId: product._grupoId,
+            nome: product.nome,
+            preco: finalPrice,
+            quantidade: 1,
+            imagem: product.imagem,
+            isComposite: true,
+            grupoId: product._grupoId,
+            complementos: [{
+                grupoId: product._grupoId,
+                grupoNome: product.nome,
+                items: selected.map(i => ({
+                    id: i.id,
+                    nome: i.nome,
+                    preco: i.preco,
+                    fator_proporcao: i.fator_proporcao
+                }))
+            }]
         });
-        message += `\n*Total:* ${fmt(finalPrice)}`;
-        window.open(`https://wa.me/${whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`, '_blank');
+        
+        toast.success(`${product.nome} adicionado ao carrinho!`);
         setIsOpen(false);
         setSelected([]);
     };
@@ -262,11 +278,11 @@ export default function CompositeProductCard({ product, whatsappNumber, empresaN
                                 )}
                                 <button
                                     disabled={!isValid}
-                                    onClick={handleOrder}
+                                    onClick={handleAddToCart}
                                     className="w-full bg-green-500 hover:bg-green-600 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl shadow-lg shadow-green-500/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
                                 >
-                                    <MessageCircle className="size-5" />
-                                    {isValid ? 'Confirmar via WhatsApp' : `Escolha ${min - selected.length} sabore${(min - selected.length) !== 1 ? 's' : ''} ainda`}
+                                    <ShoppingCart className="size-5" />
+                                    {isValid ? 'Adicionar ao Carrinho' : `Escolha ${min - selected.length} sabore${(min - selected.length) !== 1 ? 's' : ''} ainda`}
                                 </button>
                             </div>
                         </motion.div>

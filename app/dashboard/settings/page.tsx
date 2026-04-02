@@ -53,6 +53,7 @@ export default function SettingsPage() {
   const [activeSection, setActiveSection] = React.useState('general');
   const [autoRadius, setAutoRadius] = React.useState(false);
   const [valorPorKm, setValorPorKm] = React.useState<number>(0);
+  const [taxaEntregaFixa, setTaxaEntregaFixa] = React.useState<number>(0);
   const [packagingFeeEnabled, setPackagingFeeEnabled] = React.useState(false);
   const [neighborhoods, setNeighborhoods] = React.useState<any[]>([]);
   const [horarios, setHorarios] = React.useState<HorarioItem[]>([]);
@@ -82,6 +83,7 @@ export default function SettingsPage() {
           setValorEmbalagem(compData.valor_embalagem || 0);
           setAutoRadius(!!compData.raio_entrega_automatico);
           setValorPorKm(compData.valor_por_km || 0);
+          setTaxaEntregaFixa(compData.taxa_entrega_fixa || 0);
           setInventoryControlEnabled(!!compData.controle_estoque);
         }
       } catch (err) {
@@ -126,6 +128,7 @@ export default function SettingsPage() {
         await updateCompany({
           raio_entrega_automatico: autoRadius,
           valor_por_km: valorPorKm,
+          taxa_entrega_fixa: taxaEntregaFixa,
           lat_loja: deliveryData.lat_loja ? parseFloat(deliveryData.lat_loja as string) : undefined,
           lng_loja: deliveryData.lng_loja ? parseFloat(deliveryData.lng_loja as string) : undefined,
         });
@@ -426,6 +429,25 @@ export default function SettingsPage() {
                         animate={{ opacity: 1, y: 0 }}
                         className="space-y-4 pt-4 border-t border-slate-100"
                       >
+                        {/* Taxa de Entrega Fixa */}
+                        <div className="p-4 bg-green-50 rounded-xl border border-green-100 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-bold text-slate-900">Taxa de Entrega Fixa</p>
+                              <p className="text-xs text-slate-500">Valor cobrado para todas as entregas (quando raio automático está desativado)</p>
+                            </div>
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Valor da Taxa (R$)</label>
+                            <CurrencyInput
+                              defaultValue={taxaEntregaFixa}
+                              onValueChange={(val) => setTaxaEntregaFixa(val)}
+                              className="w-full pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                              placeholder="0.00"
+                            />
+                          </div>
+                        </div>
+
                         <div className="flex items-center justify-between">
                           <h4 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Cadastro Manual de Bairros</h4>
                           <button

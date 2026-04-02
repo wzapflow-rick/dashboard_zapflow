@@ -12,7 +12,8 @@ import {
   ChevronDown,
   Calendar,
   ShoppingBag,
-  ArrowRight
+  ArrowRight,
+  Star
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -262,6 +263,18 @@ export default function CustomerBase() {
                         <div>
                           <p className="text-[10px] font-bold text-slate-400 uppercase">Total</p>
                           <p className="text-sm font-black text-primary">R$ {Number(customer.valor_total_gasto).toFixed(2).replace('.', ',')}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1">
+                            <Star className="size-3 text-amber-500" />
+                            Pontos
+                          </p>
+                          <p className={cn(
+                            "text-sm font-black",
+                            (customer.pontos_fidelidade || 0) >= 100 ? "text-green-600" : "text-slate-700"
+                          )}>
+                            {customer.pontos_fidelidade || 0}
+                          </p>
                         </div>
                       </div>
                     </td>

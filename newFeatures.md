@@ -13,6 +13,9 @@
 - Notificações Push com Alerta Sonoro
 - **Cupons de Desconto** (percentual ou valor fixo)
 - **Programa de Fidelidade** (pontos por compra, resgate de descontos)
+- **Carrinho de Compras Digital** (com cupom, pontos e upsell)
+- **Checkout Direto** (sem WhatsApp, pagamento integrado)
+- **Kanban Pagamento Pendente** (nova coluna laranja)
 
 ---
 

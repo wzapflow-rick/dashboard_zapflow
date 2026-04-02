@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Printer } from 'lucide-react';
+import { Search, Printer, Eye } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { KanbanColumn } from './expedition/kanban-column';
 import { getOrders, updateOrderStatus, verificarEstoqueDoPedido } from '@/app/actions/orders';
 import RegisterCustomerModal from './expedition/register-customer-modal';
 import StockWarningModal from './expedition/stock-warning-modal';
+import OrderDetailsModal from './expedition/order-details-modal';
 import { toast } from 'sonner';
 import { Plus } from 'lucide-react';
 import OrderCreatorModal from './order-creator-modal';
@@ -14,6 +15,7 @@ const PrintModal = dynamic(() => import('./expedition/print-modal'), {
 });
 
 const columns = [
+  { id: 'pagamento_pendente', title: 'Aguardando Pagamento', color: 'orange' },
   { id: 'pendente', title: 'Novos Pedidos', color: 'red' },
   { id: 'preparando', title: 'Preparando', color: 'amber' },
   { id: 'entrega', title: 'Saiu para Entrega', color: 'blue' },
@@ -32,6 +34,8 @@ export default function ExpeditionMonitor() {
   const [stockClient, setStockClient] = useState<{ nome: string, telefone: string } | null>(null);
   const [pendingMove, setPendingMove] = useState<{ id: number, nextStatus: string } | null>(null);
   const [isOrderCreatorOpen, setIsOrderCreatorOpen] = useState(false);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [selectedOrderForDetails, setSelectedOrderForDetails] = useState<any>(null);
 
   const loadOrders = async () => {
     try {
@@ -44,12 +48,46 @@ export default function ExpeditionMonitor() {
     }
   };
 
+  const playNotificationSound = () => {
+    try {
+      // Toca um som de notificação simples
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 800;
+      oscillator.type = 'sine';
+      gainNode.gain.value = 0.3;
+      
+      oscillator.start();
+      setTimeout(() => {
+        oscillator.frequency.value = 1000;
+      }, 100);
+      setTimeout(() => {
+        oscillator.stop();
+      }, 200);
+    } catch (e) {
+      console.log('Não foi possível tocar som');
+    }
+  };
+
   useEffect(() => {
     loadOrders();
+    
+    // Polling para novos pedidos a cada 10 segundos
+    const interval = setInterval(() => {
+      loadOrders();
+    }, 10000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const handleMoveOrder = async (orderId: number, currentStatus: string) => {
     const statusFlow: { [key: string]: string } = {
+      'pagamento_pendente': 'pendente',  // Pagamento confirmado → Novo pedido
       'pendente': 'preparando',
       'preparando': 'entrega',
       'entrega': 'finalizado'
@@ -57,6 +95,11 @@ export default function ExpeditionMonitor() {
 
     const nextStatus = statusFlow[currentStatus];
     if (!nextStatus) return;
+
+    // Tocar som de notificação ao confirmar pagamento
+    if (currentStatus === 'pagamento_pendente') {
+      playNotificationSound();
+    }
 
     // VALIDAÇÃO DE ESTOQUE: Se estiver indo para "preparando"
     if (nextStatus === 'preparando') {
@@ -102,6 +145,11 @@ export default function ExpeditionMonitor() {
   const openRegisterModal = (order: any) => {
     setSelectedOrderForRegister(order);
     setIsRegisterModalOpen(true);
+  };
+
+  const openDetailsModal = (order: any) => {
+    setSelectedOrderForDetails(order);
+    setIsDetailsOpen(true);
   };
 
   const handleConfirmPrint = () => {
@@ -155,6 +203,7 @@ export default function ExpeditionMonitor() {
               onOpenPrintModal={openPrintModal}
               onMoveOrder={handleMoveOrder}
               onRegisterCustomer={openRegisterModal}
+              onOpenDetails={openDetailsModal}
             />
           );
         })}
@@ -206,6 +255,17 @@ export default function ExpeditionMonitor() {
           isOpen={isOrderCreatorOpen}
           onClose={() => setIsOrderCreatorOpen(false)}
           onSuccess={loadOrders}
+        />
+      )}
+
+      {isDetailsOpen && (
+        <OrderDetailsModal
+          isOpen={isDetailsOpen}
+          onClose={() => {
+            setIsDetailsOpen(false);
+            setSelectedOrderForDetails(null);
+          }}
+          order={selectedOrderForDetails}
         />
       )}
     </div>

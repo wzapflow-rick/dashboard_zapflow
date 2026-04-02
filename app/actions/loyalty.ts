@@ -7,8 +7,8 @@ import { logAction } from '@/lib/audit';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const LOYALTY_CONFIG_TABLE_ID = 'm_loyalty_config'; // Configuração do programa
-const LOYALTY_POINTS_TABLE_ID = 'm_loyalty_points'; // Pontos dos clientes
+const LOYALTY_CONFIG_TABLE_ID = 'mdgax4hwh9lrnfo'; // Configuração do programa
+const LOYALTY_POINTS_TABLE_ID = 'm7fg9pyp2odct7m'; // Pontos dos clientes
 
 async function nocoFetch(tableId: string, endpoint: string, options: RequestInit = {}) {
     const url = `${NOCODB_URL}/api/v2/tables/${tableId}${endpoint}`;
@@ -302,6 +302,56 @@ export async function redeemPoints(data: { cliente_telefone: string; pontos_resg
     } catch (error: any) {
         console.error('redeemPoints error:', error);
         throw new Error(error.message || 'Erro ao resgatar pontos');
+    }
+}
+
+// Deduzir pontos no pedido (usado pelo sistema de pedidos)
+export async function deductPointsForOrder(
+    clienteTelefone: string, 
+    pontosParaDeduzir: number,
+    valorDesconto: number,
+    pedidoId: number | string
+) {
+    try {
+        const user = await getMe();
+        if (!user?.empresaId) throw new Error('Não autorizado');
+
+        // Buscar pontos do cliente
+        const clientPoints = await getClientPoints(clienteTelefone);
+        if (!clientPoints) return null;
+
+        const pontosDisponiveis = (clientPoints.pontos_acumulados || 0) - (clientPoints.pontos_gastos || 0);
+        if (pontosParaDeduzir > pontosDisponiveis) {
+            return null; // Não tem pontos suficientes
+        }
+
+        // Atualizar pontos do cliente
+        await nocoFetch(LOYALTY_POINTS_TABLE_ID, '/records', {
+            method: 'PATCH',
+            body: JSON.stringify({
+                id: clientPoints.id,
+                pontos_gastos: (clientPoints.pontos_gastos || 0) + pontosParaDeduzir,
+                ultima_atualizacao: new Date().toISOString(),
+            }),
+        });
+
+        // Registrar no histórico
+        await addPointsHistory(
+            clienteTelefone, 
+            'resgate', 
+            pontosParaDeduzir, 
+            `Resgate via pedido #${pedidoId} - R$ ${valorDesconto.toFixed(2).replace('.', ',')}`,
+            pedidoId
+        );
+
+        return { 
+            success: true, 
+            pontosDeduzidos: pontosParaDeduzir,
+            valorDesconto
+        };
+    } catch (error) {
+        console.error('deductPointsForOrder error:', error);
+        return null;
     }
 }
 

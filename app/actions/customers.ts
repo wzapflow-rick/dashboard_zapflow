@@ -8,6 +8,7 @@ import { logAction } from '@/lib/audit';
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
 const TABLE_ID = 'mfpwzmya0e4ej1k'; // clientes-clientes
+const LOYALTY_TABLE_ID = 'm7fg9pyp2odct7m'; // loyalty_points
 
 // Rate limiting para upsert de clientes
 const customerUpsertAttempts = new Map<string, { count: number; lastAttempt: number }>();
@@ -54,7 +55,14 @@ export async function getCustomers() {
         const ordersData = await ordersRes.json();
         const allOrders = ordersData.list || [];
 
-        // 3. Mapear pedidos por telefone
+        // 3. Buscar Pontos de Fidelidade
+        const pointsRes = await fetch(`${NOCODB_URL}/api/v2/tables/${LOYALTY_TABLE_ID}/records?limit=1000&where=(empresa_id,eq,${user.empresaId})`, {
+            headers: { 'xc-token': NOCODB_TOKEN }
+        });
+        const pointsData = await pointsRes.json();
+        const pointsList = pointsData.list || [];
+
+        // 4. Mapear pedidos por telefone
         const ordersByPhone = new Map();
         allOrders.forEach((order: any) => {
             const phone = order.telefone_cliente;
@@ -62,15 +70,24 @@ export async function getCustomers() {
             ordersByPhone.get(phone).push(order);
         });
 
-        // 4. Enriquecer clientes com dados reais
+        // 5. Mapear pontos por telefone
+        const pointsByPhone = new Map();
+        pointsList.forEach((p: any) => {
+            const pontos = (p.pontos_acumulados || 0) - (p.pontos_gastos || 0);
+            pointsByPhone.set(p.cliente_telefone, pontos);
+        });
+
+        // 6. Enriquecer clientes com dados reais
         return clients.map((client: any) => {
             const history = ordersByPhone.get(client.telefone) || [];
             const totalSpent = history.reduce((sum: number, o: any) => sum + Number(o.valor_total || 0), 0);
+            const pontos = pointsByPhone.get(client.telefone) || 0;
 
             return {
                 ...client,
                 qtd_pedidos: history.length,
                 valor_total_gasto: totalSpent,
+                pontos_fidelidade: pontos,
                 // Garantir campos para o frontend
                 nome: client.nome || 'Sem Nome',
                 telefone: client.telefone || 'N/A'

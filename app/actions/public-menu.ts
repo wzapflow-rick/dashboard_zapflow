@@ -9,6 +9,7 @@ const CATEGORIES_TABLE_ID = 'mv81fy54qtamim2';
 const GRUPOS_SLOTS_TABLE_ID = 'momln55c27s3k9j';
 const ITENS_BASE_TABLE_ID = 'micgsgj6jtr8i8m';
 const ITEM_BASE_INSUMO_TABLE_ID = 'mlfza849t9slguc';
+const LOYALTY_CONFIG_TABLE_ID = 'mdgax4hwh9lrnfo';
 
 async function nocoFetch(tableId: string, endpoint: string) {
     const url = `${NOCODB_URL}/api/v2/tables/${tableId}${endpoint}`;
@@ -215,14 +216,42 @@ export async function getPublicMenu(slug: string) {
                 };
             });
 
+        // 6. Buscar configuração de fidelidade
+        const loyaltyData = await nocoFetch(LOYALTY_CONFIG_TABLE_ID, `/records?where=(empresa_id,eq,${empresa.id})`);
+        const loyaltyConfig = loyaltyData?.list?.[0] || null;
+
+        // 7. Buscar produtos para upsell (bebidas, sobremesas e complementos baratos)
+        // Identifica categorias que contenham palavras como "bebida", "refrigerante", "suco", "sobremesa", "doce", "adicional"
+        const upsellKeywords = ['bebida', 'refrigerante', 'suco', 'soda', 'cerveja', 'água', 'sobremesa', 'doce', 'brownie', 'petit', 'adicional', 'extra'];
+        const upsellProducts = productsWithGroups
+            .filter((p: any) => {
+                const nome = (p.nome || '').toLowerCase();
+                const catName = categories.find((c: any) => String(c.id) === String(p.categoria_id))?.nome?.toLowerCase() || '';
+                return upsellKeywords.some(kw => nome.includes(kw) || catName.includes(kw));
+            })
+            .slice(0, 5) // Limitar a 5 sugestões
+            .map((p: any) => ({
+                id: p.id,
+                nome: p.nome,
+                preco: Number(p.preco || 0),
+                imagem: p.imagem || null,
+                descricao: p.descricao || '',
+            }));
+
         return {
             empresa: {
+                id: empresa.id,
                 nome: empresa.nome_fantasia,
                 telefone: empresa.telefone || empresa.login || '',
                 nincho: empresa.nincho || '',
             },
             grouped,
             compositeProducts,
+            upsellProducts,
+            loyaltyConfig: loyaltyConfig ? {
+                pontos_por_real: Number(loyaltyConfig.pontos_por_real || 1),
+                ativo: loyaltyConfig.ativo === true || loyaltyConfig.ativo === 1,
+            } : null,
             slug,
         };
     } catch (err) {

@@ -52,6 +52,17 @@ export async function getOrders() {
         const ordersData = await ordersRes.json();
         const orders = ordersData.list || [];
 
+        // Debug: Log first order structure
+        if (orders.length > 0) {
+            console.log('[getOrders] First order fields:', {
+                id: orders[0].id,
+                endereco_entrega: orders[0].endereco_entrega,
+                bairro_entrega: orders[0].bairro_entrega,
+                tipo_entrega: orders[0].tipo_entrega,
+                allKeys: Object.keys(orders[0]).sort()
+            });
+        }
+
         if (orders.length === 0) return [];
 
         // 2. Buscar Clientes da Empresa
@@ -172,7 +183,9 @@ export async function updateOrderStatus(id: number, status: string) {
         console.log(`[WhatsApp API] Verificando envio. Status: ${status}, Telefone: ${orderData.telefone_cliente}`);
         if (orderData.telefone_cliente) {
             let mensagem = '';
-            if (status === 'preparando') {
+            if (status === 'pendente') {
+                mensagem = `✅ *Pedido Confirmado!*\nSeu pagamento foi confirmado e seu pedido #${id} já está sendo preparado!\n\nAgradecemos a preferência! 🍕`;
+            } else if (status === 'preparando') {
                 mensagem = `👨‍🍳 *Oba!* Seu pedido #${id} acabou de entrar em *preparação*.\nEm breve sairá para entrega!`;
             } else if (status === 'entrega') {
                 mensagem = `🛵 *Aí sim!* Seu pedido #${id} *saiu para entrega*.\nFique de olho, o motoboy já está a caminho!`;
@@ -184,8 +197,8 @@ export async function updateOrderStatus(id: number, status: string) {
 
             if (mensagem) {
                 const EVO_API_URL = process.env.EVOLUTION_API_URL || 'https://evo.wzapflow.com.br';
-                const apiKey = 'RiquelmoBarbosaSantos147258369RiquelmoBarbosaSantos147258369RiquelmoBarbosaSantos147258369';
-                const instance = 'zapflow_testes';
+                const apiKey = process.env.EVOLUTION_API_KEY || 'RiquelmoBarbosaSantos147258369RiquelmoBarbosaSantos147258369RiquelmoBarbosaSantos147258369';
+                const instance = process.env.EVOLUTION_INSTANCE || 'zapflow_testes';
 
                 const url = `${EVO_API_URL}/message/sendText/${instance}`;
                 const payload = {

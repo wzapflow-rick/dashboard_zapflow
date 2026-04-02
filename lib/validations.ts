@@ -45,6 +45,7 @@ export const CompanyUpdateSchema = z.object({
     nincho: z.string().optional(),
     raio_entrega_automatico: z.boolean().optional(),
     valor_por_km: z.coerce.number().min(0).optional(),
+    taxa_entrega_fixa: z.coerce.number().min(0).optional(),
     lat_loja: z.coerce.number().optional(),
     lng_loja: z.coerce.number().optional(),
     cobra_embalagem: z.boolean().optional(),
@@ -55,7 +56,7 @@ export const CompanyUpdateSchema = z.object({
 // Orders (Admin update)
 export const OrderStatusSchema = z.object({
     orderId: z.coerce.number().int(),
-    status: z.enum(['pendente', 'preparando', 'saiu_entrega', 'concluido', 'cancelado']),
+    status: z.enum(['pagamento_pendente', 'pendente', 'preparando', 'entrega', 'finalizado', 'cancelado']),
 });
 
 // Customers

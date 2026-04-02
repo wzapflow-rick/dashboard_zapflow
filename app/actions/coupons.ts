@@ -7,7 +7,7 @@ import { logAction } from '@/lib/audit';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const COUPONS_TABLE_ID = 'm_couponshj2k'; // Tabela de cupons
+const COUPONS_TABLE_ID = 'myfkyl2km6bvp4p'; // Tabela de cupons
 
 async function nocoFetch(endpoint: string, options: RequestInit = {}) {
     const url = `${NOCODB_URL}/api/v2/tables/${COUPONS_TABLE_ID}${endpoint}`;
@@ -194,12 +194,17 @@ export async function incrementCouponUsage(couponId: number | string) {
     try {
         const res = await nocoFetch(`/records/${couponId}`);
         const cupom = await res.json();
-
+        const novosUsos = (cupom.usos_atuais || 0) + 1;
+        
+        // Verificar se atingiu o limite para desativar
+        const shouldDeactivate = cupom.limite_uso && novosUsos >= cupom.limite_uso;
+        
         await nocoFetch('/records', {
             method: 'PATCH',
             body: JSON.stringify({
                 id: couponId,
-                usos_atuais: (cupom.usos_atuais || 0) + 1
+                usos_atuais: novosUsos,
+                ativo: shouldDeactivate ? false : cupom.ativo
             }),
         });
 
