@@ -13,7 +13,6 @@ import {
     Bolt,
     X,
     PackageOpen,
-    Tags,
     FlaskConical
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -23,7 +22,6 @@ import Image from 'next/image';
 const navItems = [
     { name: 'Visão Geral', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Cardápio', href: '/dashboard/menu', icon: UtensilsCrossed },
-    { name: 'Categorias', href: '/dashboard/categories', icon: Tags },
     { name: 'Insumos', href: '/dashboard/insumos', icon: PackageOpen },
     { name: 'Expedição', href: '/dashboard/expedition', icon: Truck },
     { name: 'Clientes', href: '/dashboard/customers', icon: Users },
