@@ -50,7 +50,7 @@ export function useCart() {
 
 export function CartProvider({ children, pontosPorReal = 1 }: { children: React.ReactNode; pontosPorReal?: number }) {
   const [items, setItems] = useState<CartItem[]>([]);
-  const [cupom, setCupomState] = useState<{ codigo: string; desconto: number; tipo: string } | null>(null);
+  const [cupom, setCupomState] = useState<{ id?: number; codigo: string; desconto: number; tipo: string } | null>(null);
 
   const addItem = useCallback((item: Omit<CartItem, 'id'>) => {
     const id = `${item.productId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;

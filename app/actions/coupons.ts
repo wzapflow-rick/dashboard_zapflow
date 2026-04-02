@@ -147,14 +147,68 @@ export async function validateCoupon(codigo: string, valorPedido: number) {
             return { valid: false, error: 'Cupom não encontrado' };
         }
 
+        // Debug: ver o que veio do banco
+        console.log('[Cupom DEBUG] Dados recebidos:', {
+            id: cupom.id,
+            codigo: cupom.codigo,
+            ativo: cupom.ativo,
+            data_inicio: cupom.data_inicio,
+            data_fim: cupom.data_fim,
+            usos_atuais: cupom.usos_atuais,
+            limite_uso: cupom.limite_uso
+        });
+
         // Verificar limite de uso
         if (cupom.limite_uso && cupom.usos_atuais >= cupom.limite_uso) {
             return { valid: false, error: 'Limite de uso do cupom atingido' };
         }
 
         // Verificar data de validade
-        if (cupom.data_fim && new Date(cupom.data_fim) < new Date()) {
+        const agora = new Date();
+        const rawDataFim = cupom.data_fim;
+        const rawDataInicio = cupom.data_inicio;
+        
+        // Tratar datas - são strings ISO (ex: "2026-04-02")
+        // Para data_fim: considerar válido ATÉ o fim do dia (até 23:59:59)
+        // Para data_inicio: considerar válido A PARTIR do início do dia (00:00:00)
+        
+        let dataFimValida = false;
+        let dataInicioValida = false;
+        
+        if (rawDataFim && rawDataFim.trim() !== '') {
+            const parts = rawDataFim.split('T')[0].split('-');
+            if (parts.length === 3) {
+                const ano = parseInt(parts[0]);
+                const mes = parseInt(parts[1]) - 1;
+                const dia = parseInt(parts[2]);
+                // Data fim válida ATÉ o fim do dia (23:59:59)
+                const dataFimFimDia = new Date(ano, mes, dia, 23, 59, 59);
+                dataFimValida = dataFimFimDia > agora;
+            }
+        } else {
+            dataFimValida = true; // Sem data fim = válido para sempre
+        }
+        
+        if (rawDataInicio && rawDataInicio.trim() !== '') {
+            const parts = rawDataInicio.split('T')[0].split('-');
+            if (parts.length === 3) {
+                const ano = parseInt(parts[0]);
+                const mes = parseInt(parts[1]) - 1;
+                const dia = parseInt(parts[2]);
+                // Data início válida a partir do início do dia
+                const dataInicioInicioDia = new Date(ano, mes, dia, 0, 0, 0);
+                dataInicioValida = agora >= dataInicioInicioDia;
+            }
+        } else {
+            dataInicioValida = true; // Sem data início = válido já
+        }
+        
+        if (!dataFimValida) {
             return { valid: false, error: 'Cupom expirado' };
+        }
+        
+        if (!dataInicioValida) {
+            return { valid: false, error: 'Cupom ainda não está válido' };
         }
 
         // Verificar valor mínimo
@@ -184,7 +238,6 @@ export async function validateCoupon(codigo: string, valorPedido: number) {
             }
         };
     } catch (error: any) {
-        console.error('validateCoupon error:', error);
         return { valid: false, error: 'Erro ao validar cupom' };
     }
 }

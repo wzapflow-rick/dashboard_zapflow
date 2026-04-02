@@ -269,10 +269,10 @@ export default function SlotGroupsManagement() {
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-3">
                         <Layers className="w-7 h-7 text-primary" />
-                        Sistema de Opcionais
+                        Sistema de Compostos
                     </h1>
                     <p className="text-slate-500 text-sm mt-1">
-                        Gerencie sabores, frações e grupos de opcionais para seus produtos.
+                        Monte pizzas, burgers, combos e produtos com opcionais. Defina grupos de ingredientes, escolhas e preços.
                     </p>
                 </div>
                 <div className="flex items-center gap-2">

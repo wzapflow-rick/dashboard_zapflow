@@ -150,6 +150,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
       const result = await validateCoupon(cupomInput.trim(), subtotal);
       if (result.valid && result.cupom) {
         setCupom({
+          id: result.cupom.id,
           codigo: result.cupom.codigo,
           desconto: result.cupom.valor,
           tipo: result.cupom.tipo
@@ -232,6 +233,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
         desconto: desconto + descontoPontos,
         total: totalFinal,
         cupomCodigo: cupom?.codigo,
+        cupomId: cupom?.id,
         pontosGanhos,
         pontosUsados: pontosASeremUsados,
         descontoPontos: descontoPontos,

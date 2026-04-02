@@ -14,7 +14,8 @@ import {
   Check,
   Loader2,
   CheckCircle2,
-  Sparkles
+  Sparkles,
+  Folder
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -27,6 +28,7 @@ import {
   deleteProduct,
   upsertProduct,
   upsertCategory,
+  deleteCategory,
   uploadImageAction,
   type Category
 } from '@/app/actions/products';
@@ -194,6 +196,8 @@ export default function MenuManagement() {
   const [sortBy, setSortBy] = useState('recent');
   const [availabilityFilter, setAvailabilityFilter] = useState('all');
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const itemsPerPage = 5;
 
 
@@ -326,6 +330,44 @@ export default function MenuManagement() {
     setIsModalOpen(true);
   };
 
+  const handleSaveCategory = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const data: Partial<Category> = {
+      id: editingCategory?.id,
+      nome: formData.get('nome') as string,
+      ordem: Number(formData.get('ordem') || 0)
+    };
+
+    try {
+      const saved = await upsertCategory(data);
+      if (editingCategory) {
+        setCategories(categories.map(c => c.id === editingCategory.id ? saved as Category : c));
+        toast.success('Categoria atualizada!');
+      } else {
+        setCategories([...categories, saved as Category]);
+        toast.success('Categoria criada!');
+      }
+      setIsCategoryModalOpen(false);
+      setEditingCategory(null);
+    } catch (error) {
+      toast.error('Erro ao salvar categoria.');
+    }
+  };
+
+  const handleDeleteCategory = async (id: number) => {
+    if (confirm('Tem certeza que deseja excluir esta categoria? Os produtos vinculados perderão a referência.')) {
+      try {
+        await deleteCategory(id);
+        setCategories(categories.filter(c => c.id !== id));
+        toast.success('Categoria excluída com sucesso!');
+      } catch (error) {
+        console.error('Erro ao excluir:', error);
+        toast.error('Erro ao excluir a categoria.');
+      }
+    }
+  };
+
   const handleSaveProduct = async (formData: FormData, isCreatingCategory: boolean, selectedInsumos?: { insumo_id: string | number, quantidade_necessaria: number }[], selectedGrupos?: number[], selectedSlots?: string[]) => {
     try {
       let finalCategoryId = Number(formData.get('categoria_id'));
@@ -405,6 +447,13 @@ export default function MenuManagement() {
           <p className="text-slate-500 text-sm mt-1 font-medium">Crie, edite e organize seus produtos do catálogo WhatsApp.</p>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => { setEditingCategory(null); setIsCategoryModalOpen(true); }}
+            className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2.5 rounded-lg text-sm font-semibold shadow-sm flex items-center gap-2 transition-all active:scale-95"
+          >
+            <Folder className="size-4 text-amber-500" />
+            Gerenciar Categorias
+          </button>
           <button
             onClick={startTour}
             className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2.5 rounded-lg text-sm font-semibold shadow-sm flex items-center gap-2 transition-all active:scale-95"
@@ -559,6 +608,94 @@ export default function MenuManagement() {
           gruposSlots={gruposSlots}
           onSubmit={handleSaveProduct}
         />
+      )}
+
+      {/* Category Management Modal */}
+      {isCategoryModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            onClick={() => { setIsCategoryModalOpen(false); setEditingCategory(null); }}
+          />
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-4 sm:p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <h2 className="text-lg font-bold text-slate-900">{editingCategory ? 'Editar' : 'Nova'} Categoria</h2>
+              <button
+                type="button"
+                onClick={() => { setIsCategoryModalOpen(false); setEditingCategory(null); }}
+                className="p-2 hover:bg-slate-200 rounded-full transition-colors"
+              >
+                <X className="size-5 text-slate-500" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCategory} className="p-4 sm:p-6 space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] sm:text-xs font-bold text-slate-700 uppercase tracking-wider">Nome</label>
+                <input
+                  name="nome"
+                  defaultValue={editingCategory?.nome}
+                  required
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                  placeholder="Ex: Pizzas Salgadas"
+                  autoFocus
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] sm:text-xs font-bold text-slate-700 uppercase tracking-wider">Ordem de Exibição</label>
+                <input
+                  name="ordem"
+                  type="number"
+                  defaultValue={editingCategory?.ordem || 0}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                />
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  className="w-full px-6 py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 text-sm"
+                >
+                  <Check className="size-4" />
+                  Salvar Categoria
+                </button>
+              </div>
+            </form>
+
+            {categories.length > 0 && (
+              <div className="p-4 sm:p-6 border-t border-slate-100 overflow-y-auto">
+                <h3 className="text-sm font-bold text-slate-700 mb-3">Categorias Existentes</h3>
+                <div className="space-y-2">
+                  {categories.map(cat => (
+                    <div key={cat.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                      <div>
+                        <span className="font-medium text-slate-900">{cat.nome}</span>
+                        <span className="text-xs text-slate-500 ml-2">Ordem: {cat.ordem || 0}</span>
+                      </div>
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setEditingCategory(cat)}
+                          className="p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
+                        >
+                          <Edit3 className="size-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCategory(cat.id)}
+                          className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Bulk Complement Modal */}

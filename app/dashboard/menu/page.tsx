@@ -5,10 +5,10 @@ import DashboardLayout, { SidebarProvider } from '@/components/dashboard-layout'
 import MenuManagement from '@/components/menu-management';
 import SlotGroupsManagement from '@/components/slot-groups-management';
 import { cn } from '@/lib/utils';
-import { PackageSearch, Layers } from 'lucide-react';
+import { Package, PlusCircle } from 'lucide-react';
 
 export default function MenuPage() {
-  const [activeTab, setActiveTab] = useState<'produtos' | 'complementos'>('produtos');
+  const [activeTab, setActiveTab] = useState<'produtos' | 'compostos'>('produtos');
 
   return (
     <SidebarProvider>
@@ -21,18 +21,18 @@ export default function MenuPage() {
               activeTab === 'produtos' ? "border-primary text-primary" : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
             )}
           >
-            <PackageSearch className="size-4" />
-            Produtos do Cardápio
+            <Package className="size-4" />
+            Produtos
           </button>
           <button
-            onClick={() => setActiveTab('complementos')}
+            onClick={() => setActiveTab('compostos')}
             className={cn(
               "flex items-center gap-2 px-6 py-3 text-sm font-semibold border-b-2 transition-colors",
-              activeTab === 'complementos' ? "border-primary text-primary" : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+              activeTab === 'compostos' ? "border-primary text-primary" : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
             )}
           >
-            <Layers className="size-4" />
-            Grupos e Opcionais
+            <PlusCircle className="size-4" />
+            Produtos Compostos
           </button>
         </div>
 
