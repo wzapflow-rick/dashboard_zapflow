@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-    Plus, Edit3, Trash2, ChefHat, Layers, List, Settings, Loader2
+    Plus, Edit3, Trash2, ChefHat, Layers, List, Settings, Loader2, Sparkles
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
 
 import { getGruposSlots, deleteGrupoSlot, type GrupoSlot, getCompositeProductsStock } from '@/app/actions/grupos-slots';
 import { getItensBase, deleteItemBase, type ItemBase } from '@/app/actions/itens-base';
@@ -23,6 +25,7 @@ const REGRA_LABELS: Record<string, string> = {
 
 export default function SlotGroupsManagement() {
     const [activeTab, setActiveTab] = useState<'grupos' | 'biblioteca'>('grupos');
+    const driverRef = useRef<any>(null);
 
     // --- Grupos ---
     const [grupos, setGrupos] = useState<GrupoSlot[]>([]);
@@ -42,6 +45,120 @@ export default function SlotGroupsManagement() {
         fetchGrupos();
         fetchBiblioteca();
     }, []);
+
+    // Driver.js tour for grupos e opcionais
+    useEffect(() => {
+        const tourSteps = activeTab === 'grupos' ? [
+            {
+                element: '#slot-header',
+                popover: {
+                    title: '🍕 Grupos de Slots (Complementos)',
+                    description: 'Crie grupos de opcionais para produtos como pizzas, burgers, etc. Ex: adicionais de pizza.',
+                    side: 'bottom' as const,
+                    align: 'start' as const
+                }
+            },
+            {
+                element: '#btn-novo-grupo',
+                popover: {
+                    title: '➕ Criar Grupo',
+                    description: 'Crie um novo grupo de opcionais. Defina nome, tipo de seleção (múltipla, única), preço, estoque, etc.',
+                    side: 'bottom' as const,
+                    align: 'center' as const
+                }
+            },
+            {
+                element: '#grupos-list',
+                popover: {
+                    title: '📋 Lista de Grupos',
+                    description: 'Aqui estão todos os seus grupos. Clique em "Itens" para configurar os opcionais de cada grupo.',
+                    side: 'top' as const,
+                    align: 'start' as const
+                }
+            },
+            {
+                element: '#grupo-items',
+                popover: {
+                    title: '🎯 Configurar Itens',
+                    description: 'Adicione os itens/opções que o cliente pode escolher. Cada item pode ter preço adicional e controle de estoque.',
+                    side: 'top' as const,
+                    align: 'center' as const
+                }
+            },
+            {
+                element: '#estoque-info',
+                popover: {
+                    title: '📦 Controle de Estoque',
+                    description: 'O sistema calcula automaticamente quantos produtos podem ser feitos com base nos ingredientes.',
+                    side: 'left' as const,
+                    align: 'start' as const
+                }
+            },
+            {
+                element: '#biblioteca-tab',
+                popover: {
+                    title: '📚 Biblioteca de Itens',
+                    description: 'Crie Itens Base reutilizáveis. Útil quando o mesmo item (ex: bacon) é usado em vários grupos diferentes.',
+                    side: 'bottom' as const,
+                    align: 'center' as const
+                }
+            },
+            {
+                popover: {
+                    title: '💡 Dicas Finais',
+                    description: '• Use "Regra de Preço" para definir como o preço é calculado\n• Configure "Quantidade Mínima/Máxima" para limitar escolhas\n• O sistema integra automaticamente com os produtos',
+                    side: 'top' as const,
+                    align: 'center' as const
+                }
+            }
+        ] : [
+            {
+                element: '#biblioteca-header',
+                popover: {
+                    title: '📚 Biblioteca de Itens Base',
+                    description: 'Crie itens reutilizáveis que podem ser usados em qualquer grupo. Ex: Queijo mussarela, Bacon, Cebola, etc.',
+                    side: 'bottom' as const,
+                    align: 'start' as const
+                }
+            },
+            {
+                element: '#btn-novo-item',
+                popover: {
+                    title: '➕ Novo Item Base',
+                    description: 'Crie um item base com nome e custo. Depois você pode usar este mesmo item em diferentes grupos.',
+                    side: 'bottom' as const,
+                    align: 'center' as const
+                }
+            },
+            {
+                element: '#biblioteca-list',
+                popover: {
+                    title: '📋 Itens Cadastrados',
+                    description: 'Lista de todos os itens base. Você pode editar ou excluir. Um item pode ser usado em quantos grupos quiser.',
+                    side: 'top' as const,
+                    align: 'start' as const
+                }
+            }
+        ];
+
+        driverRef.current = driver({
+            showProgress: true,
+            animate: true,
+            allowClose: true,
+            overlayOpacity: 0.7,
+            smoothScroll: true,
+            steps: tourSteps as any
+        });
+    }, [activeTab]);
+
+    const startTour = () => {
+        if (driverRef.current) {
+            driverRef.current.destroy();
+            setTimeout(() => {
+                driverRef.current.drive();
+            }, 100);
+        }
+    };
 
     const fetchGrupos = async () => {
         setLoadingGrupos(true);
@@ -148,7 +265,7 @@ export default function SlotGroupsManagement() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <header className="flex items-center justify-between">
+            <header id="slot-header" className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-3">
                         <Layers className="w-7 h-7 text-primary" />
@@ -158,13 +275,23 @@ export default function SlotGroupsManagement() {
                         Gerencie sabores, frações e grupos de opcionais para seus produtos.
                     </p>
                 </div>
-                <button
-                    onClick={activeTab === 'grupos' ? handleNewGrupo : handleNewItemBase}
-                    className="bg-primary hover:bg-primary/90 text-white px-4 py-2.5 rounded-lg text-sm font-semibold shadow-lg shadow-primary/20 flex items-center gap-2 transition-all active:scale-95"
-                >
-                    <Plus className="w-4 h-4" />
-                    {activeTab === 'grupos' ? 'Novo Grupo' : 'Novo Sabor'}
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={startTour}
+                        className="bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2"
+                    >
+                        <Sparkles className="w-4 h-4" />
+                        Tour
+                    </button>
+                    <button
+                        id={activeTab === 'grupos' ? 'btn-novo-grupo' : 'btn-novo-item'}
+                        onClick={activeTab === 'grupos' ? handleNewGrupo : handleNewItemBase}
+                        className="bg-primary hover:bg-primary/90 text-white px-4 py-2.5 rounded-lg text-sm font-semibold shadow-lg shadow-primary/20 flex items-center gap-2 transition-all active:scale-95"
+                    >
+                        <Plus className="w-4 h-4" />
+                        {activeTab === 'grupos' ? 'Novo Grupo' : 'Novo Sabor'}
+                    </button>
+                </div>
             </header>
 
             {/* Tabs */}

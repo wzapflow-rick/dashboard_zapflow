@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Search,
   Plus,
@@ -13,10 +13,13 @@ import {
   Image as ImageIcon,
   Check,
   Loader2,
-  CheckCircle2
+  CheckCircle2,
+  Sparkles
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
 import {
   getProducts,
   getCategories,
@@ -48,6 +51,133 @@ export default function MenuManagement() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const driverRef = useRef<any>(null);
+
+  // Initialize Driver.js tour
+  useEffect(() => {
+    driverRef.current = driver({
+      showProgress: true,
+      animate: true,
+      allowClose: true,
+      overlayOpacity: 0.7,
+      smoothScroll: true,
+      steps: [
+        {
+          element: '#menu-header',
+          popover: {
+            title: '🍽️ Gestão de Cardápio',
+            description: 'Aqui você gerencia TODOS os produtos do seu restaurante. Esta é a parte mais importante do sistema!',
+            side: 'bottom',
+            align: 'start'
+          }
+        },
+        {
+          element: '#btn-novo-produto',
+          popover: {
+            title: '➕ Novo Produto',
+            description: 'Clique aqui para criar um novo produto. Você pode definir nome, preço, foto, categoria, estoque e complementos.',
+            side: 'bottom',
+            align: 'center'
+          }
+        },
+        {
+          element: '#btn-cadastro-massa',
+          popover: {
+            title: '⚡ Cadastro em Massa',
+            description: 'Atribua complementos a vários produtos de uma vez só. Economize tempo!',
+            side: 'bottom',
+            align: 'center'
+          }
+        },
+        {
+          element: '#search-bar',
+          popover: {
+            title: '🔍 Busca Rápida',
+            description: 'Pesquise produtos por nome ou código. Útil quando você tem muitos itens no cardápio.',
+            side: 'bottom',
+            align: 'start'
+          }
+        },
+        {
+          element: '#category-filters',
+          popover: {
+            title: '📂 Filtro por Categorias',
+            description: 'Filtre os produtos por categoria (Lanches, Bebidas, Sobremesas, etc). Clique em "Todos" para ver tudo.',
+            side: 'bottom',
+            align: 'start'
+          }
+        },
+        {
+          element: '#filter-dropdown',
+          popover: {
+            title: '⚙️ Filtros Avançados',
+            description: 'Filtre por disponibilidade (disponível/esgotado) e ordene por nome, preço ou data de criação.',
+            side: 'left',
+            align: 'start'
+          }
+        },
+        {
+          element: '#product-table',
+          popover: {
+            title: '📋 Tabela de Produtos',
+            description: 'Aqui estão todos os seus produtos. Cada linha mostra nome, preço, categoria, estoque e disponibilidade.',
+            side: 'top',
+            align: 'start'
+          }
+        },
+        {
+          element: '#product-availability',
+          popover: {
+            title: '✅ Disponibilidade',
+            description: 'Clique no botão para ativar/desativar um produto. Produtos desativados não aparecem no cardápio público.',
+            side: 'top',
+            align: 'center'
+          }
+        },
+        {
+          element: '#product-actions',
+          popover: {
+            title: '✏️ Ações do Produto',
+            description: 'Edite, exclua ou configure estoque/insumos de cada produto. O ícone de estoque mostra quanto de cada ingrediente você tem.',
+            side: 'top',
+            align: 'end'
+          }
+        },
+        {
+          element: '#pagination',
+          popover: {
+            title: '📄 Paginação',
+            description: 'Navegue entre as páginas para ver todos os produtos. Você pode ajustar quantos itens por página.',
+            side: 'top',
+            align: 'center'
+          }
+        },
+        {
+          popover: {
+            title: '🎉 Pronto!',
+            description: 'Agora você conhece a Gestão de Cardápio! Dica: use "Produtos em Slot" na aba ao lado para criar combos e montáveis (pizzas meio a meio, etc).',
+            side: 'top',
+            align: 'center'
+          }
+        }
+      ],
+      onNextClick: (element, step) => {
+        driverRef.current.moveNext();
+      },
+      onPrevClick: (element, step) => {
+        driverRef.current.movePrevious();
+      },
+      onCloseClick: () => {
+        driverRef.current.destroy();
+      }
+    });
+  }, []);
+
+  const startTour = () => {
+    if (driverRef.current) {
+      driverRef.current.drive();
+    }
+  };
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | string>(0); // 0 means 'Todos'
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -269,13 +399,21 @@ export default function MenuManagement() {
 
   return (
     <div className="space-y-8">
-      <header className="flex flex-wrap items-center justify-between gap-4">
+      <header id="menu-header" className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Gestão de Cardápio</h1>
           <p className="text-slate-500 text-sm mt-1 font-medium">Crie, edite e organize seus produtos do catálogo WhatsApp.</p>
         </div>
         <div className="flex items-center gap-3">
           <button
+            onClick={startTour}
+            className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2.5 rounded-lg text-sm font-semibold shadow-sm flex items-center gap-2 transition-all active:scale-95"
+          >
+            <Sparkles className="size-4 text-amber-500" />
+            Tour
+          </button>
+          <button
+            id="btn-cadastro-massa"
             onClick={() => setIsBulkModalOpen(true)}
             className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm flex items-center gap-2 transition-all active:scale-95"
           >
@@ -283,6 +421,7 @@ export default function MenuManagement() {
             Cadastrar em Massa
           </button>
           <button
+            id="btn-novo-produto"
             onClick={() => { setEditingProduct(null); setEditingProductInsumos([]); setEditingProductGrupos([]); setIsModalOpen(true); }}
             className="bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-lg shadow-primary/20 flex items-center gap-2 transition-all active:scale-95"
           >
@@ -295,7 +434,7 @@ export default function MenuManagement() {
 
       {/* Filters & Search */}
       <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1 group">
+        <div id="search-bar" className="relative flex-1 group">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400 group-focus-within:text-primary transition-colors" />
           <input
             className="w-full pl-10 pr-4 py-2 bg-slate-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-primary/20 placeholder:text-slate-400 transition-all outline-none"
@@ -305,7 +444,7 @@ export default function MenuManagement() {
             onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
           />
         </div>
-        <div className="flex items-center gap-1 overflow-x-auto pb-2 md:pb-0 no-scrollbar flex-1">
+        <div id="category-filters" className="flex items-center gap-1 overflow-x-auto pb-2 md:pb-0 no-scrollbar flex-1">
           <button
             onClick={() => { setSelectedCategoryId(0); setCurrentPage(1); }}
             className={cn(
@@ -331,7 +470,7 @@ export default function MenuManagement() {
 
         <div className="flex items-center shrink-0">
           <div className="w-px h-6 bg-slate-200 mx-2"></div>
-          <div className="relative">
+          <div id="filter-dropdown" className="relative">
             <button
               onClick={() => setIsFilterOpen(!isFilterOpen)}
               className={cn("p-2 text-slate-400 hover:text-slate-600 rounded-lg transition-colors", isFilterOpen && "bg-slate-100 text-slate-900")}
