@@ -117,7 +117,7 @@ export function BibliotecaItemModal({ isOpen, editingItem, onClose, onSaved }: B
     };
 
     const atualizarQuantidade = (insumoId: number, quantidade: number) => {
-        setReceita(prev => prev.map(r => 
+        setReceita(prev => prev.map(r =>
             r.insumo === insumoId ? { ...r, quantidade } : r
         ));
     };
@@ -154,7 +154,7 @@ export function BibliotecaItemModal({ isOpen, editingItem, onClose, onSaved }: B
     };
 
     const inputClass =
-        'w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors';
+        'w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700';
 
     return (
         <AnimatePresence>
@@ -179,13 +179,13 @@ export function BibliotecaItemModal({ isOpen, editingItem, onClose, onSaved }: B
                                 <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
                                     <ChefHat className="w-5 h-5 text-primary" />
                                 </div>
-                                <h2 className="text-lg font-semibold text-slate-900">
+                                <h2 className="text-lg font-semibold text-slate-900 dark:text-zinc-200">
                                     {editingItem?.id ? 'Editar Sabor' : 'Novo Sabor na Biblioteca'}
                                 </h2>
                             </div>
                             <button
                                 onClick={onClose}
-                                className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                                className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors dark:text-zinc-200 dark:hover:bg-zinc-600/50"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -194,7 +194,7 @@ export function BibliotecaItemModal({ isOpen, editingItem, onClose, onSaved }: B
                         <div className="space-y-4">
                             {/* Nome */}
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1.5">Nome do Sabor *</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-1.5 dark:text-slate-200">Nome do Sabor *</label>
                                 <input
                                     type="text"
                                     value={nome}
@@ -207,7 +207,7 @@ export function BibliotecaItemModal({ isOpen, editingItem, onClose, onSaved }: B
                             {/* Preços com formatação automática */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Preço Sugerido *</label>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1.5 dark:text-slate-200">Preço Sugerido *</label>
                                     <div className="relative">
                                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium pointer-events-none">R$</span>
                                         <input
@@ -221,7 +221,7 @@ export function BibliotecaItemModal({ isOpen, editingItem, onClose, onSaved }: B
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-1.5">Preço de Custo</label>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1.5 dark:text-slate-200">Preço de Custo</label>
                                     <div className="relative">
                                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium pointer-events-none">R$</span>
                                         <input
@@ -238,7 +238,7 @@ export function BibliotecaItemModal({ isOpen, editingItem, onClose, onSaved }: B
 
                             {/* Insumos do sabor */}
                             <div className="space-y-3">
-                                <label className="block text-sm font-medium text-slate-700 mb-1.5">Insumos (Ficha Técnica)</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-1.5 dark:text-slate-200">Insumos (Ficha Técnica)</label>
                                 {loadingInsumos ? (
                                     <div className="text-sm text-slate-500">Carregando insumos...</div>
                                 ) : (
@@ -276,8 +276,8 @@ export function BibliotecaItemModal({ isOpen, editingItem, onClose, onSaved }: B
                                                 {receita.map(item => {
                                                     const insumo = insumosDisponiveis.find(i => i.id === item.insumo);
                                                     return (
-                                                        <div key={item.insumo} className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg">
-                                                            <span className="flex-1 text-sm text-slate-700">
+                                                        <div key={item.insumo} className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700">
+                                                            <span className="flex-1 text-sm text-slate-700 dark:text-zinc-200">
                                                                 {insumo?.nome || `Insumo #${item.insumo}`}
                                                             </span>
                                                             <input

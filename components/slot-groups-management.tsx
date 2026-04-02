@@ -267,7 +267,7 @@ export default function SlotGroupsManagement() {
             {/* Header */}
             <header id="slot-header" className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-3">
+                    <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-3 dark:text-zinc-200">
                         <Layers className="w-7 h-7 text-primary" />
                         Sistema de Compostos
                     </h1>
@@ -278,7 +278,7 @@ export default function SlotGroupsManagement() {
                 <div className="flex items-center gap-2">
                     <button
                         onClick={startTour}
-                        className="bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2"
+                        className="bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2 dark:bg-amber-900 dark:border-amber-800 dark:text-amber-200 dark:hover:bg-amber-800"
                     >
                         <Sparkles className="w-4 h-4" />
                         Tour
@@ -295,7 +295,7 @@ export default function SlotGroupsManagement() {
             </header>
 
             {/* Tabs */}
-            <div className="flex gap-1 bg-slate-100 border border-slate-200 rounded-xl p-1 w-fit">
+            <div className="flex gap-1 bg-slate-100 border border-slate-200 rounded-xl p-1 w-fit dark:bg-slate-800 dark:border-slate-600">
                 {([
                     { key: 'grupos', label: 'Grupos de Opcionais', icon: List },
                     { key: 'biblioteca', label: 'Biblioteca de Sabores', icon: ChefHat },
@@ -307,7 +307,7 @@ export default function SlotGroupsManagement() {
                             'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
                             activeTab === key
                                 ? 'bg-primary text-white shadow'
-                                : 'text-slate-500 hover:text-slate-700'
+                                : 'text-slate-500 hover:text-slate-700 dark:text-slate-200 dark:hover:text-slate-400'
                         )}
                     >
                         <Icon className="w-4 h-4" />
@@ -351,11 +351,11 @@ export default function SlotGroupsManagement() {
                                     <motion.div
                                         key={grupo.id}
                                         layout
-                                        className="flex items-center gap-4 p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-all"
+                                        className="flex items-center gap-4 p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-all dark:bg-slate-800 dark:border-slate-600"
                                     >
                                         {/* Icon */}
                                         <div className={cn(
-                                            'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-lg',
+                                            'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-lg dark:bg-slate-800 dark:border-slate-600',
                                             grupo.tipo === 'fracionado'
                                                 ? 'bg-orange-100 text-orange-600'
                                                 : 'bg-blue-100 text-blue-600'
@@ -366,7 +366,7 @@ export default function SlotGroupsManagement() {
                                         {/* Info */}
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 flex-wrap">
-                                                <p className="text-sm font-semibold text-slate-900">{grupo.nome}</p>
+                                                <p className="text-sm font-semibold text-slate-900 dark:text-slate-200">{grupo.nome}</p>
                                                 <span className={cn(
                                                     'text-xs px-2 py-0.5 rounded-full font-medium',
                                                     grupo.tipo === 'fracionado'
@@ -384,8 +384,8 @@ export default function SlotGroupsManagement() {
                                                 {estoqueMap.has(grupo.id) && (
                                                     <span className={cn(
                                                         'text-xs px-2 py-0.5 rounded-full font-medium',
-                                                        estoqueMap.get(grupo.id)! === 0 
-                                                            ? 'bg-red-100 text-red-700' 
+                                                        estoqueMap.get(grupo.id)! === 0
+                                                            ? 'bg-red-100 text-red-700'
                                                             : 'bg-emerald-100 text-emerald-700'
                                                     )}>
                                                         Estoque: {estoqueMap.get(grupo.id)} unid.
@@ -393,7 +393,7 @@ export default function SlotGroupsManagement() {
                                                 )}
                                             </div>
                                             {grupo.descricao && (
-                                                <p className="text-xs text-slate-500 mt-0.5 truncate">{grupo.descricao}</p>
+                                                <p className="text-xs text-slate-500 mt-0.5 truncate dark:text-slate-300">{grupo.descricao}</p>
                                             )}
                                         </div>
 
@@ -401,7 +401,7 @@ export default function SlotGroupsManagement() {
                                         <div className="flex items-center gap-2 flex-shrink-0">
                                             <button
                                                 onClick={() => setActiveGrupoItens(grupo)}
-                                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs font-medium transition-all"
+                                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs font-medium transition-all dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-500/10"
                                             >
                                                 <Settings className="w-3.5 h-3.5" />
                                                 Gerenciar Itens
@@ -462,22 +462,22 @@ export default function SlotGroupsManagement() {
                                     <motion.div
                                         key={item.id}
                                         layout
-                                        className="flex flex-col p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-all"
+                                        className="flex flex-col p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-all dark:bg-slate-800 dark:border-slate-500"
                                     >
                                         <div className="flex items-start justify-between gap-2 mb-3">
                                             <div className="min-w-0">
-                                                <p className="text-sm font-semibold text-slate-900 truncate">{item.nome}</p>
+                                                <p className="text-sm font-semibold text-slate-900 truncate dark:text-slate-200">{item.nome}</p>
                                             </div>
                                             <div className="flex gap-1 flex-shrink-0">
                                                 <button
                                                     onClick={() => handleEditItemBase(item)}
-                                                    className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                                                    className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors dark:hover:bg-slate-500/10"
                                                 >
                                                     <Edit3 className="w-3.5 h-3.5" />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDeleteItemBase(item)}
-                                                    className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
+                                                    className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors dark:hover:bg-red-500/10"
                                                 >
                                                     <Trash2 className="w-3.5 h-3.5" />
                                                 </button>
@@ -485,15 +485,15 @@ export default function SlotGroupsManagement() {
                                         </div>
                                         <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-100">
                                             <div>
-                                                <p className="text-xs text-slate-500">Preço sugerido</p>
-                                                <p className="text-sm font-semibold text-primary">
+                                                <p className="text-xs text-slate-500 dark:text-zinc-100">Preço sugerido</p>
+                                                <p className="text-sm font-semibold text-primary dark:text-blue-400">
                                                     R$ {Number(item.preco_sugerido).toFixed(2)}
                                                 </p>
                                             </div>
                                             {item.preco_custo != null && (
                                                 <div className="text-right">
-                                                    <p className="text-xs text-slate-500">Custo</p>
-                                                    <p className="text-xs text-slate-600">R$ {Number(item.preco_custo).toFixed(2)}</p>
+                                                    <p className="text-xs text-slate-500 dark:text-zinc-300">Custo</p>
+                                                    <p className="text-xs text-slate-600 dark:text-zinc-200">R$ {Number(item.preco_custo).toFixed(2)}</p>
                                                 </div>
                                             )}
                                         </div>

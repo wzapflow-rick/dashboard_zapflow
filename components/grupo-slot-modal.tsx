@@ -82,7 +82,7 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved }: Grupo
             {isOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <motion.div
-                        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+                        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm dark:bg-slate-900/50"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
@@ -95,13 +95,13 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved }: Grupo
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
                     >
                         {/* Header */}
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-lg font-semibold text-slate-900">
+                        <div className="flex items-center justify-between mb-6 ">
+                            <h2 className="text-lg font-semibold text-slate-900 dark:text-zinc-200">
                                 {editingGrupo?.id ? 'Editar Grupo' : 'Novo Grupo de Opcionais'}
                             </h2>
                             <button
                                 onClick={onClose}
-                                className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                                className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50 text-slate-400 dark:text-zinc-200 hover:text-slate-600 transition-colors dark:bg-slate-800 dark:border-slate-700 dark:hover:text-slate-100"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -110,31 +110,31 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved }: Grupo
                         <div className="space-y-5">
                             {/* Nome */}
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1.5">Nome do Grupo</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-1.5 dark:text-zinc-200">Nome do Grupo</label>
                                 <input
                                     type="text"
                                     value={nome}
                                     onChange={e => setNome(e.target.value)}
                                     placeholder="Ex: Sabores, Bordas, Adicionais..."
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700"
                                 />
                             </div>
 
                             {/* Descrição */}
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1.5">Descrição (opcional)</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-1.5 dark:text-zinc-200">Descrição (opcional)</label>
                                 <input
                                     type="text"
                                     value={descricao}
                                     onChange={e => setDescricao(e.target.value)}
                                     placeholder="Ex: Escolha os sabores da sua pizza"
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700"
                                 />
                             </div>
 
                             {/* Tipo */}
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-2">Tipo de Grupo</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-zinc-200">Tipo de Grupo</label>
                                 <div className="grid grid-cols-2 gap-3">
                                     {(['fracionado', 'adicional'] as TipoGrupo[]).map(t => (
                                         <button
@@ -143,8 +143,8 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved }: Grupo
                                             className={cn(
                                                 'py-3 px-4 rounded-xl border text-sm font-medium transition-all',
                                                 tipo === t
-                                                    ? 'border-primary bg-primary/10 text-primary'
-                                                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300'
+                                                    ? 'border-primary bg-primary/10 text-primary dark:bg-primary/10 dark:text-blue-400'
+                                                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 dark:hover:border-slate-800 dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700'
                                             )}
                                         >
                                             {t === 'fracionado' ? '🍕 Fracionado' : '➕ Adicional'}
@@ -159,7 +159,7 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved }: Grupo
                             {/* Quantidade de Slots (só para fracionado) */}
                             {tipo === 'fracionado' && (
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-2">Divisão do Produto</label>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-zinc-200">Divisão do Produto</label>
                                     <div className="grid grid-cols-4 gap-2">
                                         {SLOT_OPTIONS.map(n => (
                                             <button
@@ -168,8 +168,8 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved }: Grupo
                                                 className={cn(
                                                     'py-3 rounded-xl border text-center transition-all',
                                                     qtdSlots === n
-                                                        ? 'border-primary bg-primary/10 text-primary'
-                                                        : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300'
+                                                        ? 'border-primary bg-primary/10 text-primary dark:bg-primary/10 dark:text-blue-400'
+                                                        : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 dark:hover:border-slate-800 dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700'
                                                 )}
                                             >
                                                 <div className="text-lg font-bold">{n}</div>
@@ -182,7 +182,7 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved }: Grupo
 
                             {/* Regra de Preço */}
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-2">Regra de Precificação</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-zinc-200">Regra de Precificação</label>
                                 <div className="space-y-2">
                                     {([
                                         { value: 'mais_caro', label: 'Cobrar pelo mais caro', desc: 'Preço do sabor mais caro da seleção' },
@@ -195,17 +195,17 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved }: Grupo
                                             className={cn(
                                                 'w-full flex items-start gap-3 p-3 rounded-xl border text-left transition-all',
                                                 regraPreco === r.value
-                                                    ? 'border-primary bg-primary/10 text-primary'
-                                                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300'
+                                                    ? 'border-primary bg-primary/10 text-primary dark:bg-primary/10 dark:text-blue-400'
+                                                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 dark:hover:border-slate-800 dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700'
                                             )}
                                         >
                                             <div className={cn(
                                                 'mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0',
-                                                regraPreco === r.value ? 'border-primary bg-primary' : 'border-slate-300'
+                                                regraPreco === r.value ? 'border-primary bg-primary dark:border-blue-400 dark:bg-blue-400' : 'border-slate-300 dark:border-slate-700'
                                             )} />
                                             <div>
-                                                <div className="text-sm font-medium text-slate-900">{r.label}</div>
-                                                <div className="text-xs text-slate-500">{r.desc}</div>
+                                                <div className="text-sm font-medium text-slate-900 dark:text-zinc-200">{r.label}</div>
+                                                <div className="text-xs text-slate-500 dark:text-zinc-200">{r.desc}</div>
                                             </div>
                                         </button>
                                     ))}
@@ -215,25 +215,25 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved }: Grupo
                             {/* Min / Max de seleção */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Mínimo de escolhas</label>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1.5 dark:text-zinc-200">Mínimo de escolhas</label>
                                     <input
                                         type="number"
                                         min={0}
                                         max={tipo === 'fracionado' ? qtdSlots : 99}
                                         value={minSlots}
                                         onChange={e => setMinSlots(Math.max(0, Number(e.target.value)))}
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Máximo de escolhas</label>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1.5 dark:text-zinc-200">Máximo de escolhas</label>
                                     <input
                                         type="number"
                                         min={1}
                                         max={tipo === 'fracionado' ? qtdSlots : 99}
                                         value={maxSlots}
                                         onChange={e => setMaxSlots(Math.max(1, Number(e.target.value)))}
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700"
                                     />
                                 </div>
                             </div>
@@ -243,7 +243,7 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved }: Grupo
                         <div className="flex gap-3 mt-6 pt-4 border-t border-slate-200">
                             <button
                                 onClick={onClose}
-                                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300 transition-colors text-sm font-medium"
+                                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300 transition-colors text-sm font-medium dark:hover:border-slate-800 dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700"
                             >
                                 Cancelar
                             </button>
