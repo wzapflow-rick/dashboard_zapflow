@@ -49,17 +49,17 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
     const bairro = order.bairro_entrega || '';
     const hasAddress = endereco && endereco !== 'Retirada no balcão' && endereco.length > 3;
     const hasNeighborhood = bairro && bairro.length > 0;
-    
+
     const isRetiradaExplicita = order.tipo_entrega === 'retirada';
     const hasDeliveryItem = Array.isArray(order.itens) && order.itens.some((item: any) => {
         const nome = (item.produto || item.nome || '').toLowerCase();
         return nome.includes('taxa de entrega') || nome.includes('delivery');
     });
-    
+
     const isDelivery = !isRetiradaExplicita && (
-        order.tipo_entrega === 'delivery' || 
-        hasAddress || 
-        hasNeighborhood || 
+        order.tipo_entrega === 'delivery' ||
+        hasAddress ||
+        hasNeighborhood ||
         hasDeliveryItem
     );
 
@@ -92,8 +92,11 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
         })
         : [];
 
-    // Calcular tempo relativo (simplificado)
-    const orderTime = order.criado_em ? new Date(order.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--';
+    // ✅ Formatar tempo - criado_em já vem como ISO string do servidor
+    // Não usar new Date() em Client Component!
+    const orderTime = order.criado_em
+        ? new Date(order.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        : '--:--';
 
     return (
         <div
@@ -152,8 +155,8 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
                     <p className="text-slate-600 flex items-center gap-1.5 line-clamp-1 flex-1">
                         <MapPin className="size-3.5 shrink-0" />
                         <span className="truncate">
-                            {!isDelivery 
-                                ? 'Retirada no balcão' 
+                            {!isDelivery
+                                ? 'Retirada no balcão'
                                 : order.endereco_entrega && order.endereco_entrega !== 'Retirada no balcão'
                                     ? `${order.endereco_entrega}${order.bairro_entrega ? ' - ' + order.bairro_entrega : ''}`
                                     : order.bairro_entrega || order.bairro || 'Endereço não informado'}
@@ -185,8 +188,8 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
                 <span className={cn(
                     "text-[10px] font-bold uppercase py-1.5 px-2.5 rounded flex items-center gap-1",
                     order.forma_pagamento === 'pix' ? "bg-purple-100 text-purple-700" :
-                    order.forma_pagamento === 'dinheiro' ? "bg-green-100 text-green-700" :
-                    "bg-slate-100 text-slate-700"
+                        order.forma_pagamento === 'dinheiro' ? "bg-green-100 text-green-700" :
+                            "bg-slate-100 text-slate-700"
                 )}>
                     {order.forma_pagamento || 'Pagar na Entrega'}
                 </span>
@@ -204,15 +207,15 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
                             disabled={assigning}
                             className={cn(
                                 "w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm transition-colors",
-                                selectedDriver 
-                                    ? "bg-green-50 border border-green-200 text-green-700" 
+                                selectedDriver
+                                    ? "bg-green-50 border border-green-200 text-green-700"
                                     : "bg-amber-50 border border-amber-200 text-amber-700"
                             )}
                         >
                             <span className="flex items-center gap-2">
                                 <Truck className="size-4" />
-                                {assigning ? 'Atribuindo...' : 
-                                    selectedDriver 
+                                {assigning ? 'Atribuindo...' :
+                                    selectedDriver
                                         ? drivers.find(d => d.id === selectedDriver)?.nome || 'Entregador atribuído'
                                         : 'Atribuir entregador'}
                             </span>

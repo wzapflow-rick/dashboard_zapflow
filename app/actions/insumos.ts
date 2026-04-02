@@ -117,16 +117,21 @@ export async function upsertInsumo(insumoData: any) {
 
 export async function deleteInsumo(id: number | string) {
     try {
+        const numericId = Number(id);
+        if (isNaN(numericId)) {
+            throw new Error('ID inválido');
+        }
+        
         await nocoFetch('/records', {
             method: 'DELETE',
-            body: JSON.stringify([{ Id: id, id: id }])
+            body: JSON.stringify([{ Id: numericId }])
         }, INSUMOS_TABLE_ID);
         revalidatePath('/dashboard/insumos');
         revalidatePath('/dashboard/menu');
         return { success: true };
-    } catch (error) {
-        console.error('API Error:', error);
-        throw new Error('Failed to delete insumo');
+    } catch (error: any) {
+        console.error('deleteInsumo Error:', error);
+        throw new Error(error.message || 'Failed to delete insumo');
     }
 }
 
@@ -224,19 +229,28 @@ export async function atualizarEstoqueInsumo(id: number, quantidade_alterada: nu
 
 export async function setNovoEstoqueInsumo(id: number, nova_quantidade: number) {
     try {
+        const numericId = Number(id);
+        if (isNaN(numericId) || numericId <= 0) {
+            throw new Error('ID do insumo inválido');
+        }
+        
+        const numericQty = Number(nova_quantidade);
+        if (isNaN(numericQty) || numericQty < 0) {
+            throw new Error('Quantidade inválida');
+        }
+        
         await nocoFetch('/records', {
             method: 'PATCH',
             body: JSON.stringify({
-                id: id,
-                Id: id,
-                quantidade_atual: nova_quantidade
+                Id: numericId,
+                quantidade_atual: numericQty
             })
         }, INSUMOS_TABLE_ID);
 
         revalidatePath('/dashboard/insumos');
-        return { success: true, newQuantity: nova_quantidade };
-    } catch (error) {
+        return { success: true, newQuantity: numericQty };
+    } catch (error: any) {
         console.error('Erro ao definir novo estoque:', error);
-        throw error;
+        throw new Error(error.message || 'Erro ao atualizar estoque');
     }
 }

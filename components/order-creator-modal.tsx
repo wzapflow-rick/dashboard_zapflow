@@ -134,7 +134,7 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                 data_pedido: new Date().toISOString()
             };
 
-            const TABLE_PEDIDOS_ID = 'm9icndofh9z4jmi';
+            const TABLE_PEDIDOS_ID = 'm2ic8zof3feve3l';
             await nocoFetch('/records', {
                 method: 'POST',
                 body: JSON.stringify(payload)

@@ -55,18 +55,6 @@ export async function getOrders() {
         const ordersData = await ordersRes.json();
         const orders = ordersData.list || [];
 
-        // Debug: Log first order structure
-        if (orders.length > 0) {
-            console.log('[getOrders] First order fields:', {
-                id: orders[0].id,
-                endereco_entrega: orders[0].endereco_entrega,
-                bairro_entrega: orders[0].bairro_entrega,
-                tipo_entrega: orders[0].tipo_entrega,
-                entregador_id: orders[0].entregador_id,
-                allKeys: Object.keys(orders[0]).sort()
-            });
-        }
-
         if (orders.length === 0) return [];
 
         // 2. Buscar Clientes da Empresa
@@ -89,18 +77,20 @@ export async function getOrders() {
         const clientsMap = new Map<string, any>(clients.map((c: any) => [c.telefone, c]));
         const driversMap = new Map<number, any>(drivers.map((d: any) => [d.id, d]));
 
-        // 5. Vincular dados
+        // 5. Vincular dados e SERIALIZAR tudo para remover classes/prototypes
         return orders.map((order: any) => {
             const client = clientsMap.get(order.telefone_cliente);
             const driver = order.entregador_id ? driversMap.get(order.entregador_id) : null;
-            return {
+            const merged = {
                 ...order,
                 nome_cliente: (client as any)?.nome || null,
-                is_recorrente: !!client, // Se está na base de clientes, é recorrente
+                is_recorrente: !!client,
                 entregador_nome: driver?.nome || null,
                 entregador_telefone: driver?.telefone || null,
                 entregador_veiculo: driver?.veiculo || null,
             };
+            // ✅ SERIALIZAR: Remove classes/prototypes que não podem ser passados a Client Components
+            return JSON.parse(JSON.stringify(merged));
         });
     } catch (error) {
         console.error('API Error:', error);
@@ -124,7 +114,7 @@ export async function updateOrderStatus(id: number, status: string) {
         const now = Date.now();
         const attemptKey = `${user.empresaId}:order_update`;
         const attempt = orderUpdateAttempts.get(attemptKey);
-        
+
         if (attempt && attempt.count >= MAX_ORDER_UPDATES) {
             const timeSinceLast = now - attempt.lastAttempt;
             if (timeSinceLast < ORDER_WINDOW_MS) {
@@ -180,14 +170,14 @@ export async function updateOrderStatus(id: number, status: string) {
         if (status === 'finalizado') {
             // Executamos de forma assíncrona mas não bloqueante para a resposta rápida da UI
             deduzirInsumosDoPedido(id).catch(err => console.error('Falha na dedução de estoque:', err));
-            
+
             // Incrementar uso do cupom se houver
             if (orderData.cupom_id) {
-                incrementCouponUsage(orderData.cupom_id).catch(err => 
+                incrementCouponUsage(orderData.cupom_id).catch(err =>
                     console.error('Falha ao incrementar uso do cupom:', err)
                 );
             }
-            
+
             // Adicionar pontos de fidelidade
             if (orderData.telefone_cliente && orderData.valor_total) {
                 addPointsForOrder(
@@ -197,7 +187,7 @@ export async function updateOrderStatus(id: number, status: string) {
                     id
                 ).catch(err => console.error('Falha ao adicionar pontos:', err));
             }
-            
+
             // Finalizar entrega e liberar entregador
             finishDelivery(id).catch(err => console.error('Falha ao finalizar entrega:', err));
         }
@@ -282,7 +272,7 @@ export async function deduzirInsumosDoPedido(orderId: number) {
                 const complements = item.complements || [];
                 if (Array.isArray(complements) && complements.length > 0) {
                     console.log(`Processando ${complements.length} itens base para produto composto ${item.produto}.`);
-                    
+
                     // Agrupar por grupo_id
                     const groups = new Map<number, any[]>();
                     complements.forEach((c: any) => {

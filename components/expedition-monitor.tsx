@@ -36,36 +36,88 @@ export default function ExpeditionMonitor() {
   const [isOrderCreatorOpen, setIsOrderCreatorOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedOrderForDetails, setSelectedOrderForDetails] = useState<any>(null);
+  const [knownOrderIds, setKnownOrderIds] = useState<Set<number>>(new Set());
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   const loadOrders = async () => {
     try {
       const data = await getOrders();
-      setOrders(data || []);
+      const cleanData = JSON.parse(JSON.stringify(data || []));
+
+      // 🔍 DEBUG TOTAL
+      if (cleanData.length > 0) {
+        const first = cleanData[0];
+        console.log('=== FULL ORDER OBJECT ===');
+        console.log(JSON.stringify(first, null, 2));
+
+        // Checar CADA propriedade
+        for (const [key, value] of Object.entries(first)) {
+          const type = typeof value;
+          const isClass = value && (value.constructor?.name !== 'Object' && value.constructor?.name !== 'Array');
+          console.log(`${key}: ${type} | Constructor: ${value?.constructor?.name} | IsClass: ${isClass}`);
+        }
+      }
+
+      setOrders(cleanData);
     } catch (err) {
-      console.error('Erro ao carregar pedidos:', err);
+      console.error('Erro:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const playNotificationSound = () => {
+  // Som para NOVO PEDIDO na expedição - Tom mais agudo e duplo
+  const playNewOrderSound = () => {
     try {
-      // Toca um som de notificação simples
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+
+      // Primeiro tom
+      const osc1 = audioContext.createOscillator();
+      const gain1 = audioContext.createGain();
+      osc1.connect(gain1);
+      gain1.connect(audioContext.destination);
+      osc1.type = 'sine';
+      osc1.frequency.value = 1200;
+      gain1.gain.value = 0.4;
+      osc1.start();
+      setTimeout(() => {
+        osc1.stop();
+      }, 100);
+
+      // Segundo tom
+      const osc2 = audioContext.createOscillator();
+      const gain2 = audioContext.createGain();
+      osc2.connect(gain2);
+      gain2.connect(audioContext.destination);
+      osc2.type = 'sine';
+      osc2.frequency.value = 1600;
+      gain2.gain.value = 0.4;
+      setTimeout(() => {
+        osc2.start();
+        setTimeout(() => {
+          osc2.stop();
+        }, 150);
+      }, 120);
+    } catch (e) {
+      console.log('Não foi possível tocar som');
+    }
+  };
+
+  // Som para PENDENTE na expedição - Tom mais grave e curto
+  const playPendingSound = () => {
+    try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
-      
+
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
-      
-      oscillator.frequency.value = 800;
-      oscillator.type = 'sine';
+
+      oscillator.frequency.value = 600;
+      oscillator.type = 'triangle';
       gainNode.gain.value = 0.3;
-      
+
       oscillator.start();
-      setTimeout(() => {
-        oscillator.frequency.value = 1000;
-      }, 100);
       setTimeout(() => {
         oscillator.stop();
       }, 200);
@@ -76,12 +128,12 @@ export default function ExpeditionMonitor() {
 
   useEffect(() => {
     loadOrders();
-    
+
     // Polling para novos pedidos a cada 10 segundos
     const interval = setInterval(() => {
       loadOrders();
     }, 10000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
@@ -96,9 +148,9 @@ export default function ExpeditionMonitor() {
     const nextStatus = statusFlow[currentStatus];
     if (!nextStatus) return;
 
-    // Tocar som de notificação ao confirmar pagamento
+    // Tocar som ao confirmar pagamento (pedido pendente)
     if (currentStatus === 'pagamento_pendente') {
-      playNotificationSound();
+      playPendingSound();
     }
 
     // VALIDAÇÃO DE ESTOQUE: Se estiver indo para "preparando"
@@ -138,17 +190,17 @@ export default function ExpeditionMonitor() {
   };
 
   const openPrintModal = (order: any) => {
-    setSelectedOrderForPrint(order);
+    setSelectedOrderForPrint(JSON.parse(JSON.stringify(order)));
     setIsPrintModalOpen(true);
   };
 
   const openRegisterModal = (order: any) => {
-    setSelectedOrderForRegister(order);
+    setSelectedOrderForRegister(JSON.parse(JSON.stringify(order)));
     setIsRegisterModalOpen(true);
   };
 
   const openDetailsModal = (order: any) => {
-    setSelectedOrderForDetails(order);
+    setSelectedOrderForDetails(JSON.parse(JSON.stringify(order)));
     setIsDetailsOpen(true);
   };
 

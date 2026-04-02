@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { type Category } from '@/app/actions/products';
 import { type Insumo } from '@/app/actions/insumos';
 import { CurrencyInput } from '@/components/ui/currency-input';
+import { toast } from 'sonner';
 
 interface ProductFormModalProps {
     isOpen: boolean;
@@ -81,6 +82,19 @@ export default function ProductFormModal({
         e.preventDefault();
         setIsSubmitting(true);
         const formData = new FormData(e.currentTarget);
+        
+        // Validar preço - garantir que não é NaN
+        const precoValue = formData.get('preco');
+        const precoNumerico = Number(String(precoValue).replace(/\./g, '').replace(',', '.'));
+        if (isNaN(precoNumerico) || precoNumerico <= 0) {
+            toast.error('Por favor, informe um preço válido maior que zero');
+            setIsSubmitting(false);
+            return;
+        }
+        
+        // Substituir o valor do preço com o valor numérico limpo
+        formData.set('preco', String(precoNumerico));
+        
         try {
             await onSubmit(
                 formData,

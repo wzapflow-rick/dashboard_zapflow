@@ -19,20 +19,51 @@ interface HeaderProps {
     setIsMobileMenuOpen: (open: boolean) => void;
 }
 
-// Beep via Web Audio API — no file needed
-function playNotificationBeep() {
+// Som para NOVO PEDIDO - Tom mais agudo e duplo
+function playNewOrderSound() {
+    try {
+        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        
+        // Primeiro tom (mais agudo)
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(1200, ctx.currentTime);
+        gain1.gain.setValueAtTime(0.4, ctx.currentTime);
+        gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+        osc1.start(ctx.currentTime);
+        osc1.stop(ctx.currentTime + 0.15);
+        
+        // Segundo tom (ainda mais agudo)
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(1600, ctx.currentTime + 0.15);
+        gain2.gain.setValueAtTime(0.4, ctx.currentTime + 0.15);
+        gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+        osc2.start(ctx.currentTime + 0.15);
+        osc2.stop(ctx.currentTime + 0.35);
+    } catch (_) { /* ignore */ }
+}
+
+// Som para PENDENTE - Tom mais grave e curto
+function playPendingSound() {
     try {
         const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
         const oscillator = ctx.createOscillator();
         const gainNode = ctx.createGain();
         oscillator.connect(gainNode);
         gainNode.connect(ctx.destination);
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(880, ctx.currentTime);
+        oscillator.type = 'triangle';
+        oscillator.frequency.setValueAtTime(600, ctx.currentTime);
         gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
         oscillator.start(ctx.currentTime);
-        oscillator.stop(ctx.currentTime + 0.4);
+        oscillator.stop(ctx.currentTime + 0.3);
     } catch (_) { /* ignore */ }
 }
 
@@ -79,7 +110,7 @@ export function Header({ isOpen, setIsOpen, setIsMobileMenuOpen }: HeaderProps) 
                 if (newOrders.length > 0) {
                     newOrders.forEach((id: number) => knownIds.current.add(id));
                     setNewPendingBadge(prev => prev + newOrders.length);
-                    playNotificationBeep();
+                    playNewOrderSound();
                 }
 
                 // Remove fulfilled orders from known set

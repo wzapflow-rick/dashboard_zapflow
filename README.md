@@ -26,10 +26,14 @@ O ZapFlow foi desenvolvido para oferecer uma experiência premium e robusta. Aba
 *   **Inteligência de Estoque**: Alertas visuais imediatos caso um pedido contenha itens com insumos insuficientes.
 *   **Pedidos Manuais**: Interface dedicada para registrar vendas presenciais ou por telefone diretamente no sistema.
 
-### 🍕 Gestão de Cardápio e Categorias
+### 🍕 Gestão de Cardápio (Produtos + Categorias)
 *   **Catálogo Digital**: Cadastro completo de produtos com suporte a imagens, descrições detalhadas e controle de disponibilidade.
-*   **Organização por Categorias**: Gestão total de categorias para um cardápio organizado e fácil de navegar.
+*   **Gestão Integrada de Categorias**: CRUD completo de categorias diretamente na aba de Produtos (modal dedicado).
+*   **Filtros Avançados**: Filtrar produtos por categoria, disponibilidade e ordenar por nome, preço ou data.
+*   **Busca Rápida**: Pesquisa por nome ou código do produto.
+*   **Cadastro em Massa**: Atribuir complementos a vários produtos de uma vez.
 *   **Formatador de Preços**: Input de moeda inteligente (R$) para evitar erros de digitação.
+*   **Produtos Compostos**: Gerenciamento de combos e produtos em slot (pizzas meio a meio, montáveis).
 
 ### 🧪 Controle de Insumos (Ficha Técnica)
 *   **Estoque Automatizado**: Dedução automática de insumos assim que um pedido é marcado como "Finalizado".
@@ -37,24 +41,89 @@ O ZapFlow foi desenvolvido para oferecer uma experiência premium e robusta. Aba
 *   **Reposição Express**: Botão de reposição rápida para atualizar níveis de estoque sem burocracia.
 *   **Modo Opcional**: Ative ou desative o controle de estoque globalmente nas configurações.
 
+### 🎁 Sistema de Complementos
+*   **Grupos de Complementos**: Crie grupos como "Bebidas", "Adicionais", "Sabores".
+*   **Vínculo com Produtos**: Associe complementos específicos a cada produto.
+*   **Cadastro em Massa**: Atribua múltiplos complementos a vários produtos de uma só vez.
+
+### 🏷️ Sistema de Cupons
+*   **Cupons de Desconto**: Crie cupons percentuais ou valores fixos.
+*   **Validação Automática**: Validação em tempo real no cardápio público.
+*   **Limite de Uso**: Controle de uso máximo por cupom.
+
+### ❤️ Programa de Fidelidade
+*   **Pontos por Compra**: Clientes acumulam pontos a cada pedido.
+*   **Resgate de Descontos**: Use pontos para obter descontos automaticamente.
+*   **Histórico de Pontos**: Acompanhe o saldo e histórico do cliente.
+
 ### 👥 Base de Clientes (CRM)
 *   **Perfil do Cliente**: Histórico completo de pedidos por cliente, incluindo datas e itens comprados.
 *   **Registro Automático**: Identificação e cadastro de novos clientes a partir do telefone.
 *   **Busca Inteligente**: Localize clientes rapidamente por nome ou número de WhatsApp.
 
+### 🚚 Gestão de Entregas
+*   **Taxas por Bairro**: Configure taxas específicas por região.
+*   **Cálculo Automático**: Cálculo baseado em distância (R$/km) via Google Maps API.
+*   **Configuração de Raio**: Defina raio máximo de entrega.
+*   **Taxa de Serviço**: Controle de custos fixos como taxas de serviço e embalagem.
+
+### 👨‍✈️ Gestão de Motoristas
+*   **Cadastro de Motoristas**: Gerencie sua equipe de entrega.
+*   **Histórico de Entregas**: Acompanhe desempenho individual.
+*   **Relatórios**: Análise de entregas por motorista.
+
 ### ⚙️ Configurações e Personalização
 *   **Identidade Visual**: Configure o nome da sua loja, dados de contato e informações de pagamento (PIX).
 *   **Operação Local**: Definição flexível de horários de funcionamento em formato 24h.
-*   **Logística de Entrega**: Configuração de taxas por bairro ou cálculo automático baseado em raio (R$/km).
-*   **Taxas e Embalagens**: Controle de custos fixos como taxas de serviço e embalagem.
+*   **Conexão WhatsApp**: Integração com Evolution API para automação.
 
 ### 🌐 Cardápio Online Público
 *   **Vitrine Digital**: Página exclusiva (`/menu/[slug]`) onde seus clientes podem visualizar produtos em tempo real com um design moderno e responsivo.
+*   **Carrinho de Compras**: Interface completa com adição/remoção de itens.
+*   **Cupons no Cardápio**: Aplicação de cupons diretamente na compra.
+*   **Múltiplas Formas de Pagamento**: PIX, Dinheiro (com troco), Cartão.
+*   **Cálculo de Entrega**: Taxa calculada automaticamente pelo endereço.
+*   **Programa de Fidelidade**: Clientes acumulam e usam pontos na compra.
+
+### 📱 Módulo do Motorista
+*   **Área do Entregador**: Login separado para motoristas.
+*   **Fila de Entregas**: Visualize entregas pendentes e em andamento.
+*   **Confirmação de Entrega**: Marque entregas como concluídas.
 
 ### 🔐 Segurança e Performance
-*   **Acesso Protejo**: Autenticação via JWT (JSON Web Token) com cookies `httpOnly` e criptografia BCrypt.
+*   **Acesso Protegido**: Autenticação via JWT (JSON Web Token) com cookies `httpOnly` e criptografia BCrypt.
 *   **Onboarding Simples**: Fluxo guiado para configuração inicial da loja e conexão com a Evolution API.
 *   **Alertas Sonoros**: Notificações sonoras premium para garantir que nenhum novo pedido passe despercebido.
+
+### 🏗️ Arquitetura e Código
+*   **Código Modular**: Hooks reutilizáveis para lógica de negócio (filtros, checkout, entrega, fidelidade).
+*   **Componentes Separados**: UI desacoplada e reutilizável.
+*   **Server Actions**: Comunicação segura com o banco via Next.js Server Actions.
+
+#### Estrutura de Hooks (`/hooks`)
+| Hook | Função |
+|------|--------|
+| `use-menu-data.ts` | Gerencia estado de produtos, categorias e insumos |
+| `use-menu-filters.ts` | Filtros, busca e paginação de produtos |
+| `use-driver-tour.ts` | Tour guiado do sistema |
+| `use-cart-checkout.ts` | Estado do checkout (carrinho → cliente → pagamento) |
+| `use-delivery-calc.ts` | Cálculo automático de taxa de entrega |
+| `use-loyalty.ts` | Sistema de fidelidade e pontos |
+
+#### Componentes Modulares (`/components/menu`)
+| Componente | Função |
+|------------|--------|
+| `category-modal.tsx` | Modal CRUD de categorias |
+| `product-form-modal.tsx` | Formulário de produto |
+| `product-table.tsx` | Tabela de produtos com ações |
+| `cart.tsx` | Carrinho de compras |
+| `cart-context.tsx` | Contexto global do carrinho |
+
+---
+
+## 📋 Documentação de Testes
+
+Consulte o arquivo **[TESTES.md](./TESTES.md)** para o checklist completo de testes e roteiro de gravação do vídeo.
 
 ---
 

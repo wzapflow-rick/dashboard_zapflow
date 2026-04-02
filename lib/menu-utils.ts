@@ -51,11 +51,32 @@ export async function saveProduct(
     }
   }
 
+  // Parse preco - garantir que é um número válido
+  const precoRaw = formData.get('preco');
+  let precoNumerico = 0;
+  
+  if (precoRaw !== null && precoRaw !== undefined && precoRaw !== '') {
+    // Remover pontos de milhar e converter vírgula para ponto
+    const precoStr = String(precoRaw);
+    const precoLimpo = precoStr.replace(/\./g, '').replace(',', '.');
+    precoNumerico = parseFloat(precoLimpo);
+  }
+  
+  // Se for NaN ou negativo, usar 0
+  if (isNaN(precoNumerico) || precoNumerico < 0) {
+    precoNumerico = 0;
+  }
+  
+  // Garantir que é um número finito
+  if (!isFinite(precoNumerico)) {
+    precoNumerico = 0;
+  }
+
   const productData: ProductData = {
     id: editingProduct?.id,
     nome: formData.get('nome') as string,
     categorias: finalCategoryId,
-    preco: parseFloat(formData.get('preco') as string),
+    preco: precoNumerico,
     descricao: formData.get('descricao') as string,
     disponivel: editingProduct ? editingProduct.disponivel : true,
     imagem: imagemUrl

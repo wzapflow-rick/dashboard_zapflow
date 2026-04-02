@@ -48,7 +48,7 @@ export default function DashboardOverview() {
             if (data.rawOrders) {
               const formattedOrders = data.rawOrders.map((o: any) => ({
                 id: `#${o.id}`,
-                customer: o.telefone_cliente || 'Cliente',
+                customer: o.cliente_nome || o.nome_cliente || 'Cliente',
                 phone: o.telefone_cliente || '',
                 time: o.criado_em ? new Date(o.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '...',
                 value: `R$ ${Number(o.valor_total || 0).toFixed(2).replace('.', ',')}`,
