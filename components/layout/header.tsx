@@ -75,11 +75,14 @@ export function Header({ isOpen, setIsOpen, setIsMobileMenuOpen }: HeaderProps) 
     const [newPendingBadge, setNewPendingBadge] = React.useState<number>(0);
     const knownIds = React.useRef<Set<number>>(new Set());
     const isFirstLoad = React.useRef(true);
+    const [lastSeenId, setLastSeenId] = React.useState<number>(0);
     const { theme, setTheme } = useTheme();
     const [mounted, setMounted] = React.useState(false);
 
     React.useEffect(() => {
         setMounted(true);
+        const saved = localStorage.getItem('lastSeenOrderId');
+        if (saved) setLastSeenId(parseInt(saved, 10));
     }, []);
 
     React.useEffect(() => {
@@ -130,9 +133,22 @@ export function Header({ isOpen, setIsOpen, setIsMobileMenuOpen }: HeaderProps) 
 
     const handleBellClick = () => {
         setNewPendingBadge(0);
+        if (notifications.length > 0) {
+            const maxId = Math.max(...notifications.map((n: any) => n.id || 0));
+            if (maxId > lastSeenId) {
+                setLastSeenId(maxId);
+                localStorage.setItem('lastSeenOrderId', String(maxId));
+            }
+        } else if (newCount > 0) {
+            // Se não temos a lista ainda mas temos o count, tentamos marcar como visto
+            // No próximo fetch ele virá filtrado
+            setLastSeenId(999999999); // Gambiarra temporária para limpar se não houver ids
+        }
     };
 
-    const totalBadge = newPendingBadge + newCount;
+    // Filtra o newCount vindo do banco pelo que já vimos
+    const activeNewCount = notifications.filter((n: any) => n.status === 'pendente' && n.id > lastSeenId).length;
+    const totalBadge = newPendingBadge + activeNewCount;
 
     const getIcon = (iconType: string) => {
         switch (iconType) {

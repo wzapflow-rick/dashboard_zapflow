@@ -68,6 +68,14 @@ export async function getNotifications() {
                     color: 'text-blue-500 bg-blue-50',
                     iconType: 'truck'
                 };
+            } else if (order.status === 'pagamento_pendente') {
+                return {
+                    ...baseNotif,
+                    title: 'Aguardando Pagamento',
+                    desc: `Pedido #${order.id} - ${customerName}`,
+                    color: 'text-orange-500 bg-orange-50',
+                    iconType: 'truck'
+                };
             } else if (order.status === 'preparando' || order.status === 'saiu_para_entrega') {
                 return {
                     ...baseNotif,
