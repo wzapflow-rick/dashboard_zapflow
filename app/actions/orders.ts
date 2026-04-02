@@ -9,6 +9,8 @@ import { OrderStatusSchema } from '@/lib/validations';
 import { logAction } from '@/lib/audit';
 import { incrementCouponUsage } from './coupons';
 import { addPointsForOrder } from './loyalty';
+import { finishDelivery } from './drivers';
+import { sendOrderStatusMessage } from './whatsapp';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
@@ -20,6 +22,7 @@ const MAX_ORDER_UPDATES = 30;
 const ORDER_WINDOW_MS = 60 * 1000; // 1 minuto
 
 const CLIENTS_TABLE_ID = 'mfpwzmya0e4ej1k'; // clientes
+const DRIVERS_TABLE_ID = 'mhevb5nu9nczggv'; // entregadores
 
 async function nocoFetchForTable(tableId: string, endpoint: string, options: RequestInit = {}) {
     const url = `${NOCODB_URL}/api/v2/tables/${tableId}${endpoint}`;
@@ -59,6 +62,7 @@ export async function getOrders() {
                 endereco_entrega: orders[0].endereco_entrega,
                 bairro_entrega: orders[0].bairro_entrega,
                 tipo_entrega: orders[0].tipo_entrega,
+                entregador_id: orders[0].entregador_id,
                 allKeys: Object.keys(orders[0]).sort()
             });
         }
@@ -70,16 +74,32 @@ export async function getOrders() {
         const clientsData = await clientsRes.json();
         const clients = clientsData.list || [];
 
-        // 3. Criar Map de Clientes por Telefone para busca rápida
-        const clientsMap = new Map<string, any>(clients.map((c: any) => [c.telefone, c]));
+        // 3. Buscar Entregadores da Empresa (pode não existir ainda)
+        let drivers: any[] = [];
+        try {
+            const driversRes = await nocoFetchForTable(DRIVERS_TABLE_ID, `/records?limit=1000&where=(empresa_id,eq,${user.empresaId})`);
+            const driversData = await driversRes.json();
+            drivers = driversData.list || [];
+        } catch (driverError) {
+            console.warn('Tabela de entregadores não encontrada ou erro ao buscar:', driverError);
+            drivers = [];
+        }
 
-        // 4. Vincular dados
+        // 4. Criar Maps para busca rápida
+        const clientsMap = new Map<string, any>(clients.map((c: any) => [c.telefone, c]));
+        const driversMap = new Map<number, any>(drivers.map((d: any) => [d.id, d]));
+
+        // 5. Vincular dados
         return orders.map((order: any) => {
             const client = clientsMap.get(order.telefone_cliente);
+            const driver = order.entregador_id ? driversMap.get(order.entregador_id) : null;
             return {
                 ...order,
                 nome_cliente: (client as any)?.nome || null,
                 is_recorrente: !!client, // Se está na base de clientes, é recorrente
+                entregador_nome: driver?.nome || null,
+                entregador_telefone: driver?.telefone || null,
+                entregador_veiculo: driver?.veiculo || null,
             };
         });
     } catch (error) {
@@ -177,52 +197,15 @@ export async function updateOrderStatus(id: number, status: string) {
                     id
                 ).catch(err => console.error('Falha ao adicionar pontos:', err));
             }
+            
+            // Finalizar entrega e liberar entregador
+            finishDelivery(id).catch(err => console.error('Falha ao finalizar entrega:', err));
         }
 
-        // Enviar notificação via Evolution API para o cliente
-        console.log(`[WhatsApp API] Verificando envio. Status: ${status}, Telefone: ${orderData.telefone_cliente}`);
+        // Enviar notificação WhatsApp para o cliente com link de rastreamento
         if (orderData.telefone_cliente) {
-            let mensagem = '';
-            if (status === 'pendente') {
-                mensagem = `✅ *Pedido Confirmado!*\nSeu pagamento foi confirmado e seu pedido #${id} já está sendo preparado!\n\nAgradecemos a preferência! 🍕`;
-            } else if (status === 'preparando') {
-                mensagem = `👨‍🍳 *Oba!* Seu pedido #${id} acabou de entrar em *preparação*.\nEm breve sairá para entrega!`;
-            } else if (status === 'entrega') {
-                mensagem = `🛵 *Aí sim!* Seu pedido #${id} *saiu para entrega*.\nFique de olho, o motoboy já está a caminho!`;
-            } else if (status === 'finalizado') {
-                mensagem = `✅ *Pedido Entregue!*\nEsperamos que você goste. Bom apetite! 🍕`;
-            }
-
-            console.log(`[WhatsApp API] Mensagem gerada:`, mensagem ? 'SIM' : 'NÃO', mensagem);
-
-            if (mensagem) {
-                const EVO_API_URL = process.env.EVOLUTION_API_URL || 'https://evo.wzapflow.com.br';
-                const apiKey = process.env.EVOLUTION_API_KEY || 'RiquelmoBarbosaSantos147258369RiquelmoBarbosaSantos147258369RiquelmoBarbosaSantos147258369';
-                const instance = process.env.EVOLUTION_INSTANCE || 'zapflow_testes';
-
-                const url = `${EVO_API_URL}/message/sendText/${instance}`;
-                const payload = {
-                    number: orderData.telefone_cliente,
-                    text: mensagem
-                };
-
-                console.log(`[WhatsApp API] Disparando POST para ${url} com payload:`, payload);
-
-                // Execução assíncrona não-bloqueante
-                fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'apikey': apiKey,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                })
-                    .then(async (response) => {
-                        const text = await response.text();
-                        console.log(`[WhatsApp API] Resposta Evolution (${response.status}):`, text);
-                    })
-                    .catch(e => console.error('[WhatsApp API] Erro ao enviar notificação:', e));
-            }
+            sendOrderStatusMessage(orderData.telefone_cliente, id, status)
+                .catch(err => console.error('Falha ao enviar notificação WhatsApp:', err));
         }
 
         // Log da ação

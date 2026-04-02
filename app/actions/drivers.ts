@@ -2,11 +2,15 @@
 
 import { revalidatePath } from 'next/cache';
 import { getMe } from './auth';
+import { sendWhatsAppMessage } from './whatsapp';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const DRIVERS_TABLE_ID = 'm7fg9pyp2odct7m_entregadores'; // Tabela de entregadores (precisa criar no NocoDB)
-const ORDERS_TABLE_ID = 'm2ic8zof3feve3l'; // Pedidos
+const DRIVERS_TABLE_ID = 'mhevb5nu9nczggv'; // entregadores
+const ORDERS_TABLE_ID = 'm2ic8zof3feve3l'; // pedidos
+const COMISSOES_TABLE_ID = 'mq9no1mvg98994s'; // comissoes_entregadores
+const CONFIG_ENTREGA_TABLE_ID = 'me3vc6ngpp32dkk'; // configuracoes_entregas
+const HISTORICO_TABLE_ID = 'mfs71qiyhv8vlo8'; // historico_entregas
 
 async function nocoFetch(tableId: string, endpoint: string, options: RequestInit = {}) {
     const url = `${NOCODB_URL}/api/v2/tables/${tableId}${endpoint}`;
@@ -33,12 +37,14 @@ export interface Driver {
     id?: number;
     nome: string;
     telefone: string;
+    email?: string;
     veiculo: string;
     placa?: string;
     foto_url?: string;
     status: 'disponivel' | 'ocupado' | 'offline';
     comissao_por_entrega: number;
     entregas_hoje: number;
+    entregas_total: number;
     avaliacao: number;
     ativo: boolean;
     empresa_id?: number;
@@ -66,10 +72,29 @@ export async function getAvailableDrivers() {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
+        // Buscar todos os entregadores para debug
         const res = await nocoFetch(DRIVERS_TABLE_ID, 
-            `/records?limit=1000&where=(empresa_id,eq,${user.empresaId})~and(status,neq,offline)~and(ativo,eq,true)`);
+            `/records?limit=1000&where=(empresa_id,eq,${user.empresaId})&sort=-id`);
         const data = await res.json();
-        return (data.list || []) as Driver[];
+        const allDrivers = data.list || [];
+
+        console.log('[getAvailableDrivers] Todos os entregadores:', allDrivers.map((d: any) => ({
+            id: d.id,
+            nome: d.nome,
+            status: d.status,
+            ativo: d.ativo,
+            empresa_id: d.empresa_id
+        })));
+
+        // Filtrar disponíveis
+        const available = allDrivers.filter((d: any) => 
+            d.status !== 'offline' && d.status !== 'Offline' &&
+            (d.ativo === true || d.ativo === 1 || d.ativo === 'true')
+        );
+
+        console.log('[getAvailableDrivers] Disponíveis:', available.length);
+
+        return available as Driver[];
     } catch (error) {
         console.error('Erro ao buscar entregadores disponíveis:', error);
         return [];
@@ -84,13 +109,15 @@ export async function createDriver(data: Omit<Driver, 'id' | 'empresa_id'>) {
 
         const payload = {
             ...data,
-            empresas: user.empresaId,
+            empresa_id: user.empresaId,
             status: data.status || 'offline',
             comissao_por_entrega: data.comissao_por_entrega || 0,
             entregas_hoje: 0,
             avaliacao: 5.0,
             ativo: true,
         };
+
+        console.log('[createDriver] Criando entregador:', payload);
 
         const res = await nocoFetch(DRIVERS_TABLE_ID, '/records', {
             method: 'POST',
@@ -188,33 +215,206 @@ export async function assignDriverToOrder(orderId: number, driverId: number | nu
     }
 }
 
-// Finalizar entrega (liberar entregador)
+// Finalizar entrega (liberar entregador e registrar histórico)
 export async function finishDelivery(orderId: number) {
     try {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
+        console.log(`[finishDelivery] Iniciando finalização do pedido ${orderId}`);
+
         // Buscar pedido para ver entregador
         const orderRes = await nocoFetch(ORDERS_TABLE_ID, `/records/${orderId}`);
         const order = await orderRes.json();
 
+        console.log(`[finishDelivery] Pedido encontrado:`, {
+            id: order.id,
+            entregador_id: order.entregador_id,
+            cliente: order.cliente_nome,
+            status: order.status
+        });
+
         if (order.entregador_id) {
+            // Buscar dados do entregador
+            const driverRes = await nocoFetch(DRIVERS_TABLE_ID, `/records/${order.entregador_id}`);
+            const driver = await driverRes.json();
+
+            const comissao = Number(driver.comissao_por_entrega) || 0;
+            const taxaEntrega = Number(order.taxa_entrega) || 0;
+            
+            // Comissão = valor configurado OU 50% da taxa de entrega (fallback)
+            const comissaoFinal = comissao > 0 ? comissao : (taxaEntrega * 0.5);
+
+            console.log(`[finishDelivery] Entregador: ${driver.nome}, Comissão config: ${comissao}, Taxa entrega: ${taxaEntrega}`);
+
+            // Registrar no histórico de entregas
+            const historicoPayload = {
+                pedido_id: orderId,
+                entregador_id: Number(order.entregador_id),
+                empresa_id: Number(user.empresaId),
+                endereco: order.endereco_entrega || '',
+                bairro: order.bairro_entrega || '',
+                valor_pedido: Number(order.valor_total) || 0,
+                taxa_entrega: taxaEntrega,
+                comissao: comissaoFinal,
+                status: 'entregue',
+                atribuida_em: order.criado_em || new Date().toISOString(),
+                entregue_em: new Date().toISOString(),
+            };
+
+            console.log(`[finishDelivery] Salvando histórico:`, historicoPayload);
+
+            try {
+                const historicoRes = await nocoFetch(HISTORICO_TABLE_ID, '/records', {
+                    method: 'POST',
+                    body: JSON.stringify(historicoPayload),
+                });
+
+                if (historicoRes.ok) {
+                    console.log(`[finishDelivery] ✅ Histórico salvo com sucesso`);
+                } else {
+                    console.error(`[finishDelivery] ❌ Erro ao salvar histórico:`, await historicoRes.text());
+                }
+            } catch (e) {
+                console.error(`[finishDelivery] ❌ Exceção ao salvar histórico:`, e);
+            }
+
+            // Registrar comissão diária
+            const today = new Date().toISOString().split('T')[0];
+            const comissaoPayload = {
+                entregador_id: Number(order.entregador_id),
+                empresa_id: Number(user.empresaId),
+                data: today,
+                total_entregas: 1,
+                valor_total_pedidos: Number(order.valor_total) || 0,
+                taxa_entrega_total: taxaEntrega,
+                comissao_total: comissaoFinal,
+                comissao_paga: false,
+            };
+
+            console.log(`[finishDelivery] Registrando comissão:`, comissaoPayload);
+
+            try {
+                // Verificar se já existe registro para hoje
+                const existingRes = await nocoFetch(COMISSOES_TABLE_ID,
+                    `/records?where=(entregador_id,eq,${order.entregador_id})~and(data,eq,${today})`);
+                const existingData = await existingRes.json();
+                const existing = existingData.list?.[0];
+
+                if (existing) {
+                    // Atualizar registro existente
+                    await nocoFetch(COMISSOES_TABLE_ID, '/records', {
+                        method: 'PATCH',
+                        body: JSON.stringify({
+                            id: existing.id,
+                            Id: existing.id,
+                            total_entregas: (existing.total_entregas || 0) + 1,
+                            valor_total_pedidos: (Number(existing.valor_total_pedidos) || 0) + (Number(order.valor_total) || 0),
+                            taxa_entrega_total: (Number(existing.taxa_entrega_total) || 0) + taxaEntrega,
+                            comissao_total: (Number(existing.comissao_total) || 0) + comissaoFinal,
+                        }),
+                    });
+                    console.log(`[finishDelivery] ✅ Comissão atualizada`);
+                } else {
+                    // Criar novo registro
+                    await nocoFetch(COMISSOES_TABLE_ID, '/records', {
+                        method: 'POST',
+                        body: JSON.stringify(comissaoPayload),
+                    });
+                    console.log(`[finishDelivery] ✅ Comissão criada`);
+                }
+            } catch (e) {
+                console.error(`[finishDelivery] ❌ Erro ao registrar comissão:`, e);
+            }
+
             // Marcar entregador como disponível
             await updateDriverStatus(order.entregador_id, 'disponivel');
             
             // Incrementar entregas do dia
-            const driverRes = await nocoFetch(DRIVERS_TABLE_ID, `/records/${order.entregador_id}`);
-            const driver = await driverRes.json();
-            
             await updateDriver(order.entregador_id, {
-                entregas_hoje: (driver.entregas_hoje || 0) + 1
+                entregas_hoje: (driver.entregas_hoje || 0) + 1,
+                entregas_total: (driver.entregas_total || 0) + 1
             });
+
+            console.log(`[finishDelivery] ✅ Entregador atualizado`);
+        } else {
+            console.log(`[finishDelivery] ⚠️ Pedido sem entregador atribuído`);
         }
 
         return { success: true };
     } catch (error) {
-        console.error('Erro ao finalizar entrega:', error);
-        throw new Error('Erro ao finalizar entrega');
+        console.error('[finishDelivery] ❌ Erro geral:', error);
+        return { success: false };
+    }
+}
+
+// Buscar histórico de entregas de um entregador
+export async function getDriverDeliveryHistory(driverId: number, limit = 50) {
+    try {
+        const res = await nocoFetch(HISTORICO_TABLE_ID, 
+            `/records?where=(entregador_id,eq,${driverId})&sort=-entregue_em&limit=${limit}`);
+        const data = await res.json();
+        return data.list || [];
+    } catch (error) {
+        console.error('Erro ao buscar histórico:', error);
+        return [];
+    }
+}
+
+// Buscar todas as entregas da empresa (usa pedidos finalizados com entregador)
+export async function getAllDeliveries(limit = 200) {
+    try {
+        const user = await getMe();
+        if (!user?.empresaId) throw new Error('Não autorizado');
+
+        console.log('[getAllDeliveries] Buscando pedidos com entregador...');
+
+        // Buscar TODOS os pedidos primeiro
+        const ordersRes = await nocoFetch(ORDERS_TABLE_ID, 
+            `/records?where=(empresa_id,eq,${user.empresaId})&sort=-id&limit=${limit}`);
+        const ordersData = await ordersRes.json();
+        const allOrders = ordersData.list || [];
+        
+        console.log(`[getAllDeliveries] Total de pedidos: ${allOrders.length}`);
+
+        // Filtrar apenas os que têm entregador
+        const orders = allOrders.filter((o: any) => o.entregador_id && o.entregador_id > 0);
+        
+        console.log(`[getAllDeliveries] Pedidos com entregador: ${orders.length}`);
+
+        // Buscar entregadores
+        const driversRes = await nocoFetch(DRIVERS_TABLE_ID, 
+            `/records?where=(empresa_id,eq,${user.empresaId})&limit=1000`);
+        const driversData = await driversRes.json();
+        const driversList: any[] = driversData.list || [];
+        const driversMap = new Map<number, any>(driversList.map((d: any) => [d.id, d]));
+
+        // Converter para formato de entrega com comissão calculada
+        return orders.map((o: any) => {
+            const driver = driversMap.get(o.entregador_id);
+            const comissaoConfig = Number(driver?.comissao_por_entrega) || 0;
+            const taxaEntrega = Number(o.taxa_entrega) || 0;
+            const comissao = comissaoConfig > 0 ? comissaoConfig : (taxaEntrega > 0 ? taxaEntrega * 0.5 : 0);
+
+            return {
+                id: o.id,
+                pedido_id: o.id,
+                entregador_id: o.entregador_id,
+                entregador_nome: driver?.nome || 'Não atribuído',
+                entregador_veiculo: driver?.veiculo || '-',
+                endereco: o.endereco_entrega || '',
+                bairro: o.bairro_entrega || '',
+                valor_pedido: o.valor_total || 0,
+                taxa_entrega: taxaEntrega,
+                comissao: comissao,
+                status: o.status,
+                atribuida_em: o.criado_em,
+                entregue_em: o.updated_at || o.criado_em,
+            };
+        });
+    } catch (error) {
+        console.error('[getAllDeliveries] Erro:', error);
+        return [];
     }
 }
 
@@ -225,40 +425,33 @@ async function sendDriverNotification(driverId: number, orderId: number) {
         const driverRes = await nocoFetch(DRIVERS_TABLE_ID, `/records/${driverId}`);
         const driver = await driverRes.json();
 
-        if (!driver.telefone) return;
+        if (!driver.telefone) {
+            console.log('[Driver Notification] Entregador sem telefone');
+            return;
+        }
 
         // Buscar dados do pedido
         const orderRes = await nocoFetch(ORDERS_TABLE_ID, `/records/${orderId}`);
         const order = await orderRes.json();
 
-        const mensagem = `🛵 *Nova entrega atribuída!*\n\n` +
-            `Pedido #${orderId}\n` +
-            `Cliente: ${order.cliente_nome || 'Cliente'}\n` +
-            `Endereço: ${order.endereco_entrega || order.bairro_entrega || 'Não informado'}\n` +
-            `Total: R$ ${Number(order.valor_total || 0).toFixed(2)}\n\n` +
-            `Acesse o painel para mais detalhes.`;
+        const mensagem = `🛵 *Nova entrega atribuída!*
 
-        const EVO_API_URL = process.env.EVOLUTION_API_URL || 'https://evo.wzapflow.com.br';
-        const apiKey = process.env.EVOLUTION_API_KEY || '';
-        const instance = process.env.EVOLUTION_INSTANCE || 'zapflow_testes';
+Pedido #${orderId}
+Cliente: ${order.cliente_nome || 'Cliente'}
+Endereço: ${order.endereco_entrega || order.bairro_entrega || 'Não informado'}
+Total: R$ ${Number(order.valor_total || 0).toFixed(2)}
 
-        const url = `${EVO_API_URL}/message/sendText/${instance}`;
+Acesse o painel para mais detalhes.`;
+
+        const success = await sendWhatsAppMessage(driver.telefone, mensagem);
         
-        await fetch(url, {
-            method: 'POST',
-            headers: {
-                'apikey': apiKey,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                number: driver.telefone,
-                text: mensagem
-            })
-        });
-
-        console.log(`Notificação enviada para entregador ${driver.nome}`);
+        if (success) {
+            console.log(`[Driver Notification] Notificação enviada para ${driver.nome}`);
+        } else {
+            console.error(`[Driver Notification] Falha ao enviar para ${driver.nome}`);
+        }
     } catch (error) {
-        console.error('Erro ao enviar notificação:', error);
+        console.error('[Driver Notification] Erro:', error);
     }
 }
 

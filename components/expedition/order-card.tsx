@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { Phone, MapPin, Printer, CheckCircle2, UserPlus, CreditCard, Banknote, QrCode, Eye } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Phone, MapPin, Printer, CheckCircle2, UserPlus, CreditCard, Banknote, QrCode, Eye, Truck, ChevronDown, User, X, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getAvailableDrivers, assignDriverToOrder, Driver } from '@/app/actions/drivers';
 
 interface OrderCardProps {
     order: any;
@@ -14,6 +15,11 @@ interface OrderCardProps {
 }
 
 export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRegisterCustomer, onOpenDetails }: OrderCardProps) {
+    const [drivers, setDrivers] = useState<Driver[]>([]);
+    const [selectedDriver, setSelectedDriver] = useState<number | null>(order.entregador_id || null);
+    const [assigning, setAssigning] = useState(false);
+    const [showDriverDropdown, setShowDriverDropdown] = useState(false);
+
     // Debug: Log order data structure
     useEffect(() => {
         if (order.id) {
@@ -21,23 +27,24 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
                 endereco_entrega: order.endereco_entrega,
                 bairro_entrega: order.bairro_entrega,
                 tipo_entrega: order.tipo_entrega,
+                entregador_id: order.entregador_id,
                 allKeys: Object.keys(order)
             });
         }
     }, [order]);
-    // Formatar itens do JSON do NocoDB
-    const formattedItems = Array.isArray(order.itens)
-        ? order.itens.map((item: any) => {
-            const nome = item.produto || item.nome || 'Item';
-            const qtd = item.quantidade || 1;
-            return `${qtd}x ${nome}`;
-        })
-        : [];
+
+    const loadDrivers = async () => {
+        try {
+            console.log('[OrderCard] Buscando entregadores disponíveis...');
+            const data = await getAvailableDrivers();
+            console.log('[OrderCard] Entregadores encontrados:', data.length);
+            setDrivers(data);
+        } catch (error) {
+            console.error('Erro ao carregar entregadores:', error);
+        }
+    };
 
     // Detectar automaticamente se é Delivery ou Retirada
-    // 1. Verificar campo tipo_entrega primeiro
-    // 2. Se tiver endereço de entrega, é delivery
-    // 3. Se não existir tipo_entrega, verificar se tem taxa de entrega nos itens
     const endereco = order.endereco_entrega || '';
     const bairro = order.bairro_entrega || '';
     const hasAddress = endereco && endereco !== 'Retirada no balcão' && endereco.length > 3;
@@ -49,13 +56,41 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
         return nome.includes('taxa de entrega') || nome.includes('delivery');
     });
     
-    // É delivery se: tipo_entrega for 'delivery' OU tiver endereço OU tiver item de entrega
     const isDelivery = !isRetiradaExplicita && (
         order.tipo_entrega === 'delivery' || 
         hasAddress || 
         hasNeighborhood || 
         hasDeliveryItem
     );
+
+    // Carregar entregadores quando for delivery
+    useEffect(() => {
+        if (isDelivery) {
+            loadDrivers();
+        }
+    }, [isDelivery, order.id]);
+
+    const handleAssignDriver = async (driverId: number | null) => {
+        setAssigning(true);
+        try {
+            await assignDriverToOrder(order.id, driverId);
+            setSelectedDriver(driverId);
+            setShowDriverDropdown(false);
+        } catch (error) {
+            console.error('Erro ao atribuir entregador:', error);
+        } finally {
+            setAssigning(false);
+        }
+    };
+
+    // Formatar itens do JSON do NocoDB
+    const formattedItems = Array.isArray(order.itens)
+        ? order.itens.map((item: any) => {
+            const nome = item.produto || item.nome || 'Item';
+            const qtd = item.quantidade || 1;
+            return `${qtd}x ${nome}`;
+        })
+        : [];
 
     // Calcular tempo relativo (simplificado)
     const orderTime = order.criado_em ? new Date(order.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--';
@@ -147,14 +182,104 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
             </div>
 
             <div className="flex items-center justify-between pt-2">
-                <span className="text-[10px] font-bold uppercase py-1.5 px-2.5 rounded bg-green-100 text-green-700 flex items-center gap-1">
-                    <span className="size-1.5 bg-green-500 rounded-full animate-pulse" />
+                <span className={cn(
+                    "text-[10px] font-bold uppercase py-1.5 px-2.5 rounded flex items-center gap-1",
+                    order.forma_pagamento === 'pix' ? "bg-purple-100 text-purple-700" :
+                    order.forma_pagamento === 'dinheiro' ? "bg-green-100 text-green-700" :
+                    "bg-slate-100 text-slate-700"
+                )}>
                     {order.forma_pagamento || 'Pagar na Entrega'}
                 </span>
                 <span className="text-base font-bold text-slate-900">
                     R$ {Number(order.valor_total || order.total || 0).toFixed(2).replace('.', ',')}
                 </span>
             </div>
+
+            {/* Seleção de Entregador - apenas para delivery */}
+            {isDelivery && columnId !== 'finalizado' && columnId !== 'pagamento_pendente' && (
+                <div className="pt-2 border-t border-slate-100">
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowDriverDropdown(!showDriverDropdown)}
+                            disabled={assigning}
+                            className={cn(
+                                "w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm transition-colors",
+                                selectedDriver 
+                                    ? "bg-green-50 border border-green-200 text-green-700" 
+                                    : "bg-amber-50 border border-amber-200 text-amber-700"
+                            )}
+                        >
+                            <span className="flex items-center gap-2">
+                                <Truck className="size-4" />
+                                {assigning ? 'Atribuindo...' : 
+                                    selectedDriver 
+                                        ? drivers.find(d => d.id === selectedDriver)?.nome || 'Entregador atribuído'
+                                        : 'Atribuir entregador'}
+                            </span>
+                            <ChevronDown className={cn("size-4 transition-transform", showDriverDropdown && "rotate-180")} />
+                        </button>
+
+                        {showDriverDropdown && (
+                            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                                {selectedDriver && (
+                                    <button
+                                        onClick={() => handleAssignDriver(null)}
+                                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                    >
+                                        <X className="size-4" />
+                                        Remover entregador
+                                    </button>
+                                )}
+                                {drivers.length === 0 ? (
+                                    <div className="px-3 py-4 text-center text-sm text-slate-400">
+                                        Nenhum entregador disponível
+                                    </div>
+                                ) : (
+                                    drivers.map((driver) => (
+                                        <button
+                                            key={driver.id}
+                                            onClick={() => handleAssignDriver(driver.id!)}
+                                            className={cn(
+                                                "w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50 transition-colors",
+                                                selectedDriver === driver.id && "bg-primary/10"
+                                            )}
+                                        >
+                                            <User className="size-4 text-slate-400" />
+                                            <span className="flex-1 text-left">{driver.veiculo} - {driver.nome}</span>
+                                            <span className="text-xs text-slate-400">{driver.telefone}</span>
+                                        </button>
+                                    ))
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Mostrar entregador atribuído em pedidos finalizados */}
+            {order.entregador_id && columnId === 'finalizado' && (
+                <div className="pt-2 border-t border-slate-100">
+                    <div className="flex items-center gap-2 text-sm text-green-600">
+                        <Truck className="size-4" />
+                        <span>Entregue por: {order.entregador_nome || 'Entregador'}</span>
+                    </div>
+                </div>
+            )}
+
+            {/* Link de rastreamento para delivery */}
+            {isDelivery && (columnId === 'entrega' || columnId === 'preparando') && (
+                <div className="pt-2 border-t border-slate-100">
+                    <a
+                        href={`/track/${order.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-purple-50 border border-purple-200 rounded-lg text-purple-700 text-sm font-medium hover:bg-purple-100 transition-colors"
+                    >
+                        <ExternalLink className="size-4" />
+                        Link de Rastreamento
+                    </a>
+                </div>
+            )}
 
             {columnId === 'pagamento_pendente' && (
                 <div className="grid grid-cols-6 gap-2 pt-1">

@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { incrementCouponUsage } from './coupons';
 import { deductPointsForOrder } from './loyalty';
+import { sendOrderCreatedMessage } from './whatsapp';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
@@ -273,6 +274,10 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
                 order.id
             ).catch(err => console.error('Erro ao deduzir pontos:', err));
         }
+        
+        // Enviar mensagem de confirmação com link de rastreamento
+        sendOrderCreatedMessage(data.clienteTelefone, order.id, data.total)
+            .catch(err => console.error('Erro ao enviar mensagem WhatsApp:', err));
         
         revalidatePath('/dashboard/expedition');
         

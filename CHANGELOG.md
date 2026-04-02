@@ -1,6 +1,66 @@
 # Changelog - ZapFlow Dashboard
 
-## [2.1.0] - 2026-04-01
+## [2.3.0] - 2026-04-01
+
+### 📱 Painel do Entregador
+
+#### Login do Entregador
+- **URL**: `/driver/login`
+- **Autenticação**: Email + telefone como senha
+- **Sessão**: Cookie seguro com expiração de 8 horas
+
+#### Dashboard Mobile
+- **URL**: `/driver`
+- **Lista de pedidos**: Pedidos atribuídos ao entregador
+- **Ações**: "Iniciar Entrega" e "Confirmar Entrega"
+- **Refresh**: Botão para atualizar pedidos em tempo real
+
+#### Comissão do Entregador
+- **Configuração**: Campo comissão no cadastro do entregador
+- **Fallback**: 50% da taxa de entrega se não configurado
+- **Registro**: Comissão salva por dia na tabela comissoes_entregadores
+
+#### Histórico de Entregas
+- **URL**: Settings > Histórico
+- **Filtros**: Por entregador, período, busca por texto
+- **Cards de resumo**: Total entregas, faturamento, taxas, comissões
+- **Resumo por entregador**: Ranking de desempenho
+
+### 🛵 Sistema de Entregadores
+
+#### Cadastro de Entregadores
+- **Novo**: CRUD completo de entregadores
+- **Campos**: Nome, email, telefone, veículo, placa, comissão por entrega
+- **Status**: Disponível / Ocupado / Offline
+
+#### Atribuição no Kanban
+- **Novo**: Dropdown para atribuir entregador aos pedidos
+- **Auto-status**: Entregador fica "Ocupado" ao receber entrega
+- **Liberação**: Entregador volta para "Disponível" ao finalizar
+
+#### Notificação WhatsApp
+- **Para cliente**: Link de rastreamento ao criar/atualizar pedido
+- **Para entregador**: Dados da entrega ao ser atribuído
+- **Formato**: Número com @s.whatsapp.net automático
+
+#### Página de Rastreamento Pública
+- **URL**: `/track/[orderId]`
+- **Info**: Status, timeline, entregador, endereço, resumo
+- **Auto-update**: Atualiza a cada 30 segundos
+
+#### Teste de WhatsApp
+- **URL**: Settings > Notificações
+- **Botão**: "Enviar Teste" para validar conexão
+
+### 🔧 Correções
+- **Badge de entrega**: Agora detecta corretamente delivery vs retirada
+- **Endereço no Kanban**: Exibe endereço completo quando disponível
+- **Geocoding**: Melhor formatação de endereços brasileiros
+- **Taxa fixa de entrega**: Configurável quando raio automático está desativado
+
+---
+
+## [2.2.0] - 2026-04-01
 
 ### 🎁 Novas Funcionalidades
 

@@ -18,7 +18,8 @@ import {
   Info,
   Bot,
   Ticket,
-  Award
+  Award,
+  Truck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -34,11 +35,15 @@ import { getHorariosFuncionamento, saveHorariosFuncionamento, HorarioItem } from
 import { toast } from 'sonner';
 import CouponsManagement from '@/components/coupons-management';
 import LoyaltyManagement from '@/components/loyalty-management';
+import DriversManagement from '@/components/drivers-management';
+import DeliveryHistory from '@/components/delivery-history';
 
 const sections = [
   { id: 'general', name: 'Geral', icon: Store },
   { id: 'hours', name: 'Horários', icon: Clock },
   { id: 'delivery', name: 'Entrega', icon: MapPin },
+  { id: 'drivers', name: 'Entregadores', icon: Truck },
+  { id: 'deliveryHistory', name: 'Histórico', icon: Package },
   { id: 'generalRules', name: 'Regras Gerais', icon: Package },
   { id: 'coupons', name: 'Cupons', icon: Ticket },
   { id: 'loyalty', name: 'Fidelidade', icon: Award },
@@ -591,6 +596,89 @@ export default function SettingsPage() {
 
               {activeSection === 'loyalty' && (
                 <LoyaltyManagement />
+              )}
+
+              {activeSection === 'drivers' && (
+                <DriversManagement />
+              )}
+
+              {activeSection === 'deliveryHistory' && (
+                <DeliveryHistory />
+              )}
+
+              {activeSection === 'notifications' && (
+                <div className="space-y-6">
+                  <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <Bell className="size-5 text-primary" />
+                    Notificações WhatsApp
+                  </h3>
+                  
+                  <div className="p-4 border border-slate-200 rounded-xl space-y-4">
+                    <div>
+                      <p className="text-sm font-bold text-slate-700">Testar Conexão</p>
+                      <p className="text-xs text-slate-500 mt-1">Envie uma mensagem de teste para verificar se o WhatsApp está funcionando</p>
+                    </div>
+                    
+                    <div className="flex gap-3">
+                      <input
+                        type="tel"
+                        placeholder="Número com DDD (ex: 79998618874)"
+                        id="test-phone"
+                        className="flex-1 px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                      />
+                      <button
+                        onClick={async () => {
+                          const input = document.getElementById('test-phone') as HTMLInputElement;
+                          const phone = input?.value;
+                          if (!phone || phone.length < 10) {
+                            toast.error('Informe um número válido com DDD');
+                            return;
+                          }
+                          toast.loading('Enviando mensagem de teste...', { id: 'whatsapp-test' });
+                          try {
+                            const { testWhatsApp } = await import('@/app/actions/whatsapp');
+                            const result = await testWhatsApp(phone);
+                            if (result.success) {
+                              toast.success(`Mensagem enviada para ${result.formattedPhone}!`, { id: 'whatsapp-test' });
+                            } else {
+                              toast.error(`Falha: ${result.error || 'Erro desconhecido'}`, { id: 'whatsapp-test' });
+                            }
+                          } catch (error: any) {
+                            toast.error(`Erro: ${error.message}`, { id: 'whatsapp-test' });
+                          }
+                        }}
+                        className="px-6 py-2 bg-green-500 text-white rounded-lg text-sm font-bold hover:bg-green-600 transition-colors"
+                      >
+                        Enviar Teste
+                      </button>
+                    </div>
+                    
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                      <p className="text-xs text-amber-700">
+                        <strong>Dica:</strong> Certifique-se de que a Evolution API está configurada corretamente nas variáveis de ambiente:
+                        <code className="block mt-1 bg-amber-100 px-2 py-1 rounded text-[10px]">EVOLUTION_API_URL, EVOLUTION_API_KEY, EVOLUTION_INSTANCE</code>
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 border border-slate-200 rounded-xl">
+                    <p className="text-sm font-bold text-slate-700 mb-3">Mensagens Automáticas</p>
+                    <div className="space-y-2 text-sm text-slate-600">
+                      <div className="flex items-center gap-2">
+                        <span className="size-2 bg-green-500 rounded-full"></span>
+                        <span>Pedido criado → Link de rastreamento</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="size-2 bg-green-500 rounded-full"></span>
+                        <span>Status atualizado → Notificação ao cliente</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="size-2 bg-green-500 rounded-full"></span>
+                        <span>Entregador atribuído → Dados da entrega</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               )}
 
               {activeSection === 'security' && (

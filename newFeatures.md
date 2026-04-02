@@ -16,6 +16,7 @@
 - **Carrinho de Compras Digital** (com cupom, pontos e upsell)
 - **Checkout Direto** (sem WhatsApp, pagamento integrado)
 - **Kanban Pagamento Pendente** (nova coluna laranja)
+- **Sistema de Entregadores** (cadastro, atribuição, rastreamento, relatório)
 
 ---
 
