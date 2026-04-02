@@ -72,31 +72,18 @@ export async function getAvailableDrivers() {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        // Buscar todos os entregadores para debug
         const res = await nocoFetch(DRIVERS_TABLE_ID, 
             `/records?limit=1000&where=(empresa_id,eq,${user.empresaId})&sort=-id`);
         const data = await res.json();
         const allDrivers = data.list || [];
 
-        console.log('[getAvailableDrivers] Todos os entregadores:', allDrivers.map((d: any) => ({
-            id: d.id,
-            nome: d.nome,
-            status: d.status,
-            ativo: d.ativo,
-            empresa_id: d.empresa_id
-        })));
-
-        // Filtrar disponíveis
         const available = allDrivers.filter((d: any) => 
             d.status !== 'offline' && d.status !== 'Offline' &&
             (d.ativo === true || d.ativo === 1 || d.ativo === 'true')
         );
 
-        console.log('[getAvailableDrivers] Disponíveis:', available.length);
-
         return available as Driver[];
     } catch (error) {
-        console.error('Erro ao buscar entregadores disponíveis:', error);
         return [];
     }
 }
@@ -117,8 +104,6 @@ export async function createDriver(data: Omit<Driver, 'id' | 'empresa_id'>) {
             ativo: true,
         };
 
-        console.log('[createDriver] Criando entregador:', payload);
-
         const res = await nocoFetch(DRIVERS_TABLE_ID, '/records', {
             method: 'POST',
             body: JSON.stringify(payload),
@@ -127,7 +112,6 @@ export async function createDriver(data: Omit<Driver, 'id' | 'empresa_id'>) {
         revalidatePath('/dashboard/settings');
         return await res.json();
     } catch (error) {
-        console.error('Erro ao criar entregador:', error);
         throw new Error('Erro ao criar entregador');
     }
 }
