@@ -26,7 +26,7 @@ interface HeaderProps {
 function playNewOrderSound() {
     try {
         const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-        
+
         const osc1 = ctx.createOscillator();
         const gain1 = ctx.createGain();
         osc1.connect(gain1);
@@ -37,7 +37,7 @@ function playNewOrderSound() {
         gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
         osc1.start(ctx.currentTime);
         osc1.stop(ctx.currentTime + 0.15);
-        
+
         const osc2 = ctx.createOscillator();
         const gain2 = ctx.createGain();
         osc2.connect(gain2);
@@ -76,6 +76,11 @@ export function Header({ isOpen, setIsOpen, setIsMobileMenuOpen }: HeaderProps) 
     const knownIds = React.useRef<Set<number>>(new Set());
     const isFirstLoad = React.useRef(true);
     const { theme, setTheme } = useTheme();
+    const [mounted, setMounted] = React.useState(false);
+
+    React.useEffect(() => {
+        setMounted(true);
+    }, []);
 
     React.useEffect(() => {
         import('@/app/actions/auth').then(({ getMe }) => {
@@ -235,13 +240,13 @@ export function Header({ isOpen, setIsOpen, setIsMobileMenuOpen }: HeaderProps) 
                 </div>
                 <div className="h-8 w-px bg-slate-200 hidden sm:block dark:bg-slate-700"></div>
                 <div className="relative group">
-                    <button 
+                    <button
                         className="hidden sm:flex items-center gap-2 text-slate-700 hover:text-slate-900 font-medium text-sm dark:text-slate-300 dark:hover:text-white"
                     >
                         <span>{user?.nome || 'Minha Loja'}</span>
                         <ChevronDown className="size-4" />
                     </button>
-                    
+
                     <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 dark:bg-slate-800 dark:border-slate-700">
                         <div className="p-4 border-b border-slate-100 dark:border-slate-700">
                             <p className="font-bold text-slate-800 truncate dark:text-white">{user?.nome || 'Minha Loja'}</p>
@@ -252,8 +257,8 @@ export function Header({ isOpen, setIsOpen, setIsMobileMenuOpen }: HeaderProps) 
                                 onClick={() => setTheme(isDark ? 'light' : 'dark')}
                                 className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50 rounded-lg transition-colors dark:text-slate-300 dark:hover:bg-slate-700"
                             >
-                                {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
-                                <span>{isDark ? 'Modo Claro' : 'Modo Escuro'}</span>
+                                {mounted ? (isDark ? <Sun className="size-4" /> : <Moon className="size-4" />) : <div className="size-4" />}
+                                <span>{mounted ? (isDark ? 'Modo Claro' : 'Modo Escuro') : 'Carregando...'}</span>
                             </button>
                             <button
                                 onClick={async () => {

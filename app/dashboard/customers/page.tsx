@@ -8,7 +8,7 @@ export default function CustomersPage() {
   return (
     <SidebarProvider>
       <DashboardLayout>
-        <div className="dark:bg-slate-800">
+        <div className="">
           <CustomerBase />
         </div>
       </DashboardLayout>

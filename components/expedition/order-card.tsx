@@ -111,7 +111,7 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
                         {!order.is_recorrente && (
                             <button
                                 onClick={() => onRegisterCustomer(order)}
-                                className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                                className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors dark:bg-primary/20 dark:text-primary-foreground dark:hover:bg-primary/30"
                                 title="Registrar Cliente"
                             >
                                 <UserPlus className="size-3" />

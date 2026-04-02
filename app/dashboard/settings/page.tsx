@@ -613,13 +613,13 @@ export default function SettingsPage() {
                     <Bell className="size-5 text-primary" />
                     Notificações WhatsApp
                   </h3>
-                  
+
                   <div className="p-4 border border-slate-200 dark:border-slate-600 rounded-xl space-y-4">
                     <div>
                       <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Testar Conexão</p>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Envie uma mensagem de teste para verificar se o WhatsApp está funcionando</p>
                     </div>
-                    
+
                     <div className="flex gap-3">
                       <input
                         type="tel"
@@ -653,7 +653,7 @@ export default function SettingsPage() {
                         Enviar Teste
                       </button>
                     </div>
-                    
+
                     <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg p-3">
                       <p className="text-xs text-amber-700 dark:text-amber-300">
                         <strong>Dica:</strong> Certifique-se de que a Evolution API está configurada corretamente nas variáveis de ambiente:
@@ -661,7 +661,7 @@ export default function SettingsPage() {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="p-4 border border-slate-200 dark:border-slate-600 rounded-xl">
                     <p className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3">Mensagens Automáticas</p>
                     <div className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
@@ -744,7 +744,7 @@ export default function SettingsPage() {
                     <Bot className="size-6 text-primary" />
                     Bot de Atendimento
                   </h3>
-                  
+
                   <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 p-1">
                     <div className="bg-white dark:bg-slate-800 rounded-xl p-8 sm:p-12">
                       <div className="text-center space-y-6">
@@ -757,7 +757,7 @@ export default function SettingsPage() {
                             </div>
                           </div>
                         </div>
-                        
+
                         {/* Título */}
                         <div>
                           <h4 className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent dark:from-violet-400 dark:to-fuchsia-400">
@@ -767,7 +767,7 @@ export default function SettingsPage() {
                             Estamos construindo algo incrível para você! Nosso Bot de Atendimento automatizado estará disponível em breve.
                           </p>
                         </div>
-                        
+
                         {/* Features */}
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
                           <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-xl">
@@ -795,7 +795,7 @@ export default function SettingsPage() {
                             <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Respostas Inteligentes</p>
                           </div>
                         </div>
-                        
+
                         {/* Barra de progresso fake */}
                         <div className="pt-4">
                           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-2">
@@ -806,7 +806,7 @@ export default function SettingsPage() {
                             <div className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full" style={{ width: '75%' }}></div>
                           </div>
                         </div>
-                        
+
                         {/* CTA */}
                         <div className="pt-4">
                           <p className="text-xs text-slate-400 dark:text-slate-500">

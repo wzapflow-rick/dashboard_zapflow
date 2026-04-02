@@ -353,23 +353,23 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                                     {/* Produtos Normais */}
                                     {filteredProducts.length > 0 && (
                                         <div>
-                                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">Produtos</h3>
+                                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 px-1 dark:text-slate-500">Produtos</h3>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                                 {filteredProducts.map(p => (
                                                     <button
                                                         key={p.id}
                                                         onClick={() => addToCart(p)}
-                                                        className="group p-4 bg-white border-2 border-slate-100 rounded-2xl text-left hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all active:scale-[0.98] flex flex-col justify-between gap-3"
+                                                        className="group p-4 bg-white border-2 border-slate-100 rounded-2xl text-left hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all active:scale-[0.98] flex flex-col justify-between gap-3 dark:bg-slate-700 dark:border-slate-600"
                                                     >
                                                         <div>
-                                                            <h4 className="font-black text-slate-900 group-hover:text-primary transition-colors line-clamp-1">{p.nome}</h4>
-                                                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Ref: {p.id}</span>
+                                                            <h4 className="font-black text-slate-900 group-hover:text-primary transition-colors line-clamp-1 dark:text-white dark:group-hover:text-primary">{p.nome}</h4>
+                                                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1 dark:text-slate-500">Ref: {p.id}</span>
                                                         </div>
                                                         <div className="flex items-center justify-between mt-auto">
-                                                            <span className="text-lg font-black text-slate-900">
+                                                            <span className="text-lg font-black text-slate-900 dark:text-white">
                                                                 {Number(p.preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                                             </span>
-                                                            <div className="size-8 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400 group-hover:bg-primary group-hover:text-white transition-all">
+                                                            <div className="size-8 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400 group-hover:bg-primary group-hover:text-white transition-all dark:bg-slate-600 dark:text-slate-300">
                                                                 <Plus className="size-5" />
                                                             </div>
                                                         </div>
@@ -382,25 +382,25 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                                     {/* Produtos Compostos (Grupos de Slots) */}
                                     {filteredComposite.length > 0 && (
                                         <div>
-                                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">Produtos Compostos</h3>
+                                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 px-1 dark:text-slate-500">Produtos Compostos</h3>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                                 {filteredComposite.map(comp => (
                                                     <button
                                                         key={comp.id}
                                                         onClick={() => openCompositeModal(comp)}
-                                                        className="group p-4 bg-amber-50 border-2 border-amber-100 rounded-2xl text-left hover:border-amber-300 hover:shadow-xl hover:shadow-amber-100 transition-all active:scale-[0.98] flex flex-col justify-between gap-3"
+                                                        className="group p-4 bg-amber-50 border-2 border-amber-100 rounded-2xl text-left hover:border-amber-300 hover:shadow-xl hover:shadow-amber-100 transition-all active:scale-[0.98] flex flex-col justify-between gap-3 dark:bg-amber-900/30 dark:border-amber-700"
                                                     >
                                                         <div>
-                                                            <h4 className="font-black text-amber-900 group-hover:text-amber-700 transition-colors line-clamp-1">{comp.nome}</h4>
-                                                            <span className="text-xs font-bold text-amber-600 uppercase tracking-widest mt-1">Montar</span>
+                                                            <h4 className="font-black text-amber-900 group-hover:text-amber-700 transition-colors line-clamp-1 dark:text-amber-400">{comp.nome}</h4>
+                                                            <span className="text-xs font-bold text-amber-600 uppercase tracking-widest mt-1 dark:text-amber-500">Montar</span>
                                                         </div>
                                                         <div className="flex items-center justify-between mt-auto">
-                                                            <span className="text-sm font-bold text-amber-700">
+                                                            <span className="text-sm font-bold text-amber-700 dark:text-amber-400">
                                                                 {comp.minimo === comp.maximo 
                                                                     ? `Escolha ${comp.maximo} item${comp.maximo > 1 ? 'ns' : ''}`
                                                                     : `De ${comp.minimo} a ${comp.maximo} itens`}
                                                             </span>
-                                                            <div className="size-8 bg-amber-100 rounded-lg flex items-center justify-center text-amber-600 group-hover:bg-amber-500 group-hover:text-white transition-all">
+                                                            <div className="size-8 bg-amber-100 rounded-lg flex items-center justify-center text-amber-600 group-hover:bg-amber-500 group-hover:text-white transition-all dark:bg-amber-800 dark:text-amber-400">
                                                                 <Plus className="size-5" />
                                                             </div>
                                                         </div>
@@ -412,7 +412,7 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
 
                                     {filteredProducts.length === 0 && filteredComposite.length === 0 && (
                                         <div className="col-span-full flex items-center justify-center py-20">
-                                            <p className="text-slate-400">Nenhum produto encontrado</p>
+                                            <p className="text-slate-400 dark:text-slate-500">Nenhum produto encontrado</p>
                                         </div>
                                     )}
                                 </>
@@ -421,15 +421,15 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                     </div>
 
                     {/* Carrinho e Cliente */}
-                    <div className="w-full md:w-[380px] bg-slate-50 flex flex-col shrink-0">
-                        <div className="p-6 bg-white border-b border-slate-100 hidden md:flex items-center justify-between">
+                    <div className="w-full md:w-[380px] bg-slate-50 flex flex-col shrink-0 dark:bg-slate-900">
+                        <div className="p-6 bg-white border-b border-slate-100 hidden md:flex items-center justify-between dark:bg-slate-800 dark:border-slate-700">
                             <div className="flex items-center gap-3">
                                 <div className="size-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
                                     <ShoppingCart className="size-5" />
                                 </div>
-                                <h3 className="font-black text-slate-900">Carrinho</h3>
+                                <h3 className="font-black text-slate-900 dark:text-white">Carrinho</h3>
                             </div>
-                            <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                            <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors dark:hover:bg-slate-700">
                                 <X className="size-6 text-slate-400" />
                             </button>
                         </div>
@@ -437,29 +437,29 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                         <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
                             {/* Itens do Carrinho */}
                             <div className="space-y-3">
-                                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Itens Selecionados</h4>
+                                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1 dark:text-slate-500">Itens Selecionados</h4>
                                 {cart.length === 0 ? (
-                                    <div className="py-10 text-center space-y-2 border-2 border-dashed border-slate-200 rounded-2xl bg-white">
-                                        <div className="size-12 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mx-auto">
+                                    <div className="py-10 text-center space-y-2 border-2 border-dashed border-slate-200 rounded-2xl bg-white dark:bg-slate-800 dark:border-slate-600">
+                                        <div className="size-12 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mx-auto dark:bg-slate-700">
                                             <ShoppingCart className="size-6" />
                                         </div>
-                                        <p className="text-xs font-bold text-slate-400">Nenhum item adicionado</p>
+                                        <p className="text-xs font-bold text-slate-400 dark:text-slate-500">Nenhum item adicionado</p>
                                     </div>
                                 ) : (
                                     cart.map(item => (
-                                        <div key={item.id} className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between gap-3">
+                                        <div key={item.id} className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between gap-3 dark:bg-slate-800 dark:border-slate-700">
                                             <div className="min-w-0">
-                                                <p className="text-sm font-black text-slate-900 line-clamp-1">{item.nome}</p>
+                                                <p className="text-sm font-black text-slate-900 line-clamp-1 dark:text-white">{item.nome}</p>
                                                 <p className="text-xs font-bold text-primary italic">
                                                     {(item.preco * item.quantidade).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                                 </p>
                                             </div>
-                                            <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-xl shrink-0">
-                                                <button onClick={() => removeFromCart(item.id)} className="size-7 flex items-center justify-center bg-white rounded-lg text-slate-400 hover:text-red-500 transition-colors shadow-sm">
+                                            <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-xl shrink-0 dark:bg-slate-700">
+                                                <button onClick={() => removeFromCart(item.id)} className="size-7 flex items-center justify-center bg-white rounded-lg text-slate-400 hover:text-red-500 transition-colors shadow-sm dark:bg-slate-600 dark:text-slate-300">
                                                     <Minus className="size-4" />
                                                 </button>
-                                                <span className="w-6 text-center text-xs font-black text-slate-900">{item.quantidade}</span>
-                                                <button onClick={() => addToCart(item)} className="size-7 flex items-center justify-center bg-white rounded-lg text-slate-400 hover:text-primary transition-colors shadow-sm">
+                                                <span className="w-6 text-center text-xs font-black text-slate-900 dark:text-white">{item.quantidade}</span>
+                                                <button onClick={() => addToCart(item)} className="size-7 flex items-center justify-center bg-white rounded-lg text-slate-400 hover:text-primary transition-colors shadow-sm dark:bg-slate-600 dark:text-slate-300">
                                                     <Plus className="size-4" />
                                                 </button>
                                             </div>
@@ -470,29 +470,29 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
 
                             {/* Informações do Cliente */}
                             <div className="space-y-4">
-                                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Dados do Cliente</h4>
-                                <div className="space-y-3 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1 dark:text-slate-500">Dados do Cliente</h4>
+                                <div className="space-y-3 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm dark:bg-slate-800 dark:border-slate-700">
                                     <div className="space-y-1.5 px-1">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nome Completo</label>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 dark:text-slate-500">Nome Completo</label>
                                         <div className="relative">
-                                            <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-300" />
+                                            <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-300 dark:text-slate-500" />
                                             <input
                                                 type="text"
                                                 placeholder="Ex: João Silva"
-                                                className="w-full h-11 pl-10 bg-slate-50 border-2 border-slate-50 rounded-xl text-sm font-bold outline-none focus:border-primary/20 transition-all"
+                                                className="w-full h-11 pl-10 bg-slate-50 border-2 border-slate-50 rounded-xl text-sm font-bold outline-none focus:border-primary/20 transition-all dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:placeholder:text-slate-400"
                                                 value={clienteNome}
                                                 onChange={(e) => setClienteNome(e.target.value)}
                                             />
                                         </div>
                                     </div>
                                     <div className="space-y-1.5 px-1">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">WhatsApp</label>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 dark:text-slate-500">WhatsApp</label>
                                         <div className="relative">
-                                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-300" />
+                                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-300 dark:text-slate-500" />
                                             <input
                                                 type="text"
                                                 placeholder="(79) 99999-9999"
-                                                className="w-full h-11 pl-10 bg-slate-50 border-2 border-slate-50 rounded-xl text-sm font-bold outline-none focus:border-primary/20 transition-all"
+                                                className="w-full h-11 pl-10 bg-slate-50 border-2 border-slate-50 rounded-xl text-sm font-bold outline-none focus:border-primary/20 transition-all dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:placeholder:text-slate-400"
                                                 value={clienteTelefone}
                                                 onChange={(e) => setClienteTelefone(e.target.value)}
                                             />
@@ -507,10 +507,10 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                                             )}
                                         </div>
                                         {!checkingCustomer && phoneChecked && isExistingCustomer && (
-                                            <p className="text-xs text-green-600 font-medium ml-1">Cliente encontrado! Dados preenchidos.</p>
+                                            <p className="text-xs text-green-600 font-medium ml-1 dark:text-green-400">Cliente encontrado! Dados preenchidos.</p>
                                         )}
                                         {!checkingCustomer && phoneChecked && !isExistingCustomer && clienteTelefone.length >= 10 && (
-                                            <p className="text-xs text-amber-600 font-medium ml-1">Cliente novo. Preencha os dados ou aguarde o modal de registro.</p>
+                                            <p className="text-xs text-amber-600 font-medium ml-1 dark:text-amber-400">Cliente novo. Preencha os dados ou aguarde o modal de registro.</p>
                                         )}
                                     </div>
                                 </div>
@@ -518,10 +518,10 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                         </div>
 
                         {/* Footer de Resumo */}
-                        <div className="p-6 bg-white border-t border-slate-100 space-y-4">
+                        <div className="p-6 bg-white border-t border-slate-100 space-y-4 dark:bg-slate-800 dark:border-slate-700">
                             <div className="flex items-center justify-between">
-                                <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Total do Pedido</span>
-                                <span className="text-2xl font-black text-slate-900">
+                                <span className="text-sm font-bold text-slate-400 uppercase tracking-widest dark:text-slate-500">Total do Pedido</span>
+                                <span className="text-2xl font-black text-slate-900 dark:text-white">
                                     {total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                 </span>
                             </div>
@@ -552,16 +552,16 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+                        className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] dark:bg-slate-800"
                     >
                         {/* Header */}
-                        <div className="p-6 border-b border-slate-100 flex items-start justify-between gap-4 bg-gradient-to-r from-amber-50 to-orange-50 shrink-0">
+                        <div className="p-6 border-b border-slate-100 flex items-start justify-between gap-4 bg-gradient-to-r from-amber-50 to-orange-50 shrink-0 dark:border-slate-700 dark:from-amber-900/30 dark:to-orange-900/30">
                             <div>
-                                <h2 className="text-xl font-bold text-slate-900">{selectedComposite.nome}</h2>
+                                <h2 className="text-xl font-bold text-slate-900 dark:text-white">{selectedComposite.nome}</h2>
                                 {selectedComposite.descricao && (
-                                    <p className="text-sm text-slate-500 mt-1">{selectedComposite.descricao}</p>
+                                    <p className="text-sm text-slate-500 mt-1 dark:text-slate-400">{selectedComposite.descricao}</p>
                                 )}
-                                <div className="flex items-center gap-1.5 mt-2 text-xs text-amber-700 font-medium bg-amber-100 w-fit px-2 py-1 rounded-lg">
+                                <div className="flex items-center gap-1.5 mt-2 text-xs text-amber-700 font-medium bg-amber-100 w-fit px-2 py-1 rounded-lg dark:text-amber-400 dark:bg-amber-900/50">
                                     Escolha {selectedComposite.minimo === selectedComposite.maximo 
                                         ? `${selectedComposite.maximo} item${selectedComposite.maximo > 1 ? 'ns' : ''}`
                                         : `${selectedComposite.minimo} a ${selectedComposite.maximo} itens`}
@@ -569,16 +569,16 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                             </div>
                             <button
                                 onClick={() => setIsCompositeModalOpen(false)}
-                                className="p-2 hover:bg-slate-100 rounded-full transition-colors shrink-0"
+                                className="p-2 hover:bg-slate-100 rounded-full transition-colors shrink-0 dark:hover:bg-slate-700"
                             >
-                                <X className="size-5 text-slate-500" />
+                                <X className="size-5 text-slate-500 dark:text-slate-400" />
                             </button>
                         </div>
 
                         {/* Lista de Itens */}
                         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-2 custom-scrollbar">
                             {selectedComposite.items.length === 0 ? (
-                                <p className="text-center text-slate-400 py-8">Nenhuma opção disponível.</p>
+                                <p className="text-center text-slate-400 py-8 dark:text-slate-500">Nenhuma opção disponível.</p>
                             ) : (
                                 selectedComposite.items.map(item => {
                                     const isSelected = selectedItems.some(i => i.id === item.id);
@@ -590,25 +590,25 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                                             onClick={() => canAdd ? toggleItemSelection(item) : undefined}
                                             disabled={!canAdd && !isSelected}
                                             className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${isSelected
-                                                ? 'border-amber-400 bg-amber-50 ring-1 ring-amber-200'
+                                                ? 'border-amber-400 bg-amber-50 ring-1 ring-amber-200 dark:border-amber-500 dark:bg-amber-900/30 dark:ring-amber-600'
                                                 : canAdd
-                                                    ? 'border-slate-100 bg-slate-50 hover:border-amber-200 hover:bg-amber-50/40'
-                                                    : 'border-slate-100 bg-slate-50 opacity-40 cursor-not-allowed'
+                                                    ? 'border-slate-100 bg-slate-50 hover:border-amber-200 hover:bg-amber-50/40 dark:border-slate-600 dark:bg-slate-700 dark:hover:border-amber-500 dark:hover:bg-amber-900/20'
+                                                    : 'border-slate-100 bg-slate-50 opacity-40 cursor-not-allowed dark:border-slate-600 dark:bg-slate-800'
                                                 }`}
                                         >
                                             <div className="flex-1 text-left">
-                                                <p className={`text-sm font-bold ${isSelected ? 'text-amber-700' : 'text-slate-800'}`}>
+                                                <p className={`text-sm font-bold ${isSelected ? 'text-amber-700 dark:text-amber-400' : 'text-slate-800 dark:text-white'}`}>
                                                     {item.nome}
                                                 </p>
                                                 {Number(item.preco) > 0 && (
-                                                    <p className="text-xs font-bold text-amber-600 mt-0.5">
+                                                    <p className="text-xs font-bold text-amber-600 mt-0.5 dark:text-amber-500">
                                                         {Number(item.preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                                     </p>
                                                 )}
                                             </div>
                                             <div className={`size-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${isSelected
                                                 ? 'bg-amber-500 border-amber-500'
-                                                : 'border-slate-300 bg-white'
+                                                : 'border-slate-300 bg-white dark:bg-slate-600 dark:border-slate-500'
                                                 }`}>
                                                 {isSelected && <Check className="size-3.5 text-white stroke-[3]" />}
                                             </div>
@@ -619,11 +619,11 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                         </div>
 
                         {/* Footer */}
-                        <div className="p-6 bg-slate-50 border-t border-slate-100 shrink-0">
+                        <div className="p-6 bg-slate-50 border-t border-slate-100 shrink-0 dark:bg-slate-700 dark:border-slate-600">
                             <button
                                 disabled={selectedItems.length < selectedComposite.minimo}
                                 onClick={handleAddCompositeToCart}
-                                className="w-full bg-amber-500 hover:bg-amber-600 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+                                className="w-full bg-amber-500 hover:bg-amber-600 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98] dark:disabled:bg-slate-600 dark:disabled:text-slate-400"
                             >
                                 <Plus className="size-5" />
                                 {selectedItems.length >= selectedComposite.minimo 
