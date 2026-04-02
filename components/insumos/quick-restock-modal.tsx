@@ -48,7 +48,7 @@ export default function QuickRestockModal({ isOpen, onClose, onConfirm, insumo }
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+                    className="relative w-full max-w-sm bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-slate-200 dark:border-slate-700"
                 >
                     <div className="p-6">
                         <div className="flex items-center justify-between mb-6">
@@ -57,33 +57,33 @@ export default function QuickRestockModal({ isOpen, onClose, onConfirm, insumo }
                                     <Package className="size-5" />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-black text-slate-900">Reposição Rápida</h3>
-                                    <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">{insumo.nome}</p>
+                                    <h3 className="text-lg font-black text-slate-900 dark:text-white">Reposição Rápida</h3>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">{insumo.nome}</p>
                                 </div>
                             </div>
-                            <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-                                <X className="size-5 text-slate-400" />
+                            <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors">
+                                <X className="size-5 text-slate-400 dark:text-slate-500" />
                             </button>
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="space-y-2">
-                                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Nova Quantidade Atual ({insumo.unidade_medida})</label>
+                                <label className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Nova Quantidade Atual ({insumo.unidade_medida})</label>
                                 <div className="relative">
                                     <input
                                         autoFocus
                                         type="text"
                                         placeholder={`Ex: 5.50`}
-                                        className="w-full h-14 bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 text-xl font-black focus:border-primary/30 focus:bg-white outline-none transition-all placeholder:text-slate-300"
+                                        className="w-full h-14 bg-slate-50 dark:bg-slate-700 border-2 border-slate-100 dark:border-slate-600 rounded-2xl px-5 text-xl font-black focus:border-primary/30 focus:bg-white dark:focus:bg-slate-600 outline-none transition-all placeholder:text-slate-300 dark:placeholder:text-slate-500 dark:text-white"
                                         value={quantity}
                                         onChange={(e) => setQuantity(e.target.value)}
                                         disabled={isSubmitting}
                                     />
-                                    <div className="absolute right-5 top-1/2 -translate-y-1/2 text-sm font-black text-slate-400">
+                                    <div className="absolute right-5 top-1/2 -translate-y-1/2 text-sm font-black text-slate-400 dark:text-slate-500">
                                         {insumo.unidade_medida}
                                     </div>
                                 </div>
-                                <p className="text-[10px] text-slate-400 font-bold px-1 italic">
+                                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold px-1 italic">
                                     * Informe o valor total que você tem agora no estoque.
                                 </p>
                             </div>

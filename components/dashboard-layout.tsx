@@ -32,7 +32,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-background-light">
+    <div className="flex min-h-screen bg-background-light dark:bg-slate-900">
       <Sidebar
         isOpen={isOpen}
         isMobileMenuOpen={isMobileMenuOpen}
@@ -50,7 +50,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           setIsOpen={setIsOpen}
           setIsMobileMenuOpen={setIsMobileMenuOpen}
         />
-        <div className="p-4 sm:p-6 lg:p-8 flex-1">
+        <div className="p-4 sm:p-6 lg:p-8 flex-1 dark:bg-slate-900">
           {children}
         </div>
       </main>

@@ -127,19 +127,19 @@ export default function CustomerBase() {
   return (
     <div className="space-y-8">
       <header className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold tracking-tight text-slate-900">Base de Clientes</h2>
+        <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Base de Clientes</h2>
       </header>
 
       {/* Search and Filters */}
       <div className="flex flex-col md:flex-row gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400 dark:text-slate-500" />
           <input
             type="text"
             placeholder="Buscar por nome ou telefone..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium"
+            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
           />
         </div>
 
@@ -151,7 +151,7 @@ export default function CustomerBase() {
             }}
             className={cn(
               "px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border",
-              !activeFilter && !searchQuery ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+              !activeFilter && !searchQuery ? "bg-slate-900 dark:bg-slate-700 text-white border-slate-900 dark:border-slate-600" : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-500"
             )}
           >
             Todos
@@ -162,7 +162,7 @@ export default function CustomerBase() {
               onClick={() => handleFilterClick(filter)}
               className={cn(
                 "px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border",
-                activeFilter === filter ? "bg-primary text-white border-primary" : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+                activeFilter === filter ? "bg-primary text-white border-primary" : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-500"
               )}
             >
               {filter}
@@ -173,7 +173,7 @@ export default function CustomerBase() {
               type="button"
               disabled
               title="Em breve - filtros por bairro"
-              className="px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border flex items-center gap-2 bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-60"
+              className="px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border flex items-center gap-2 bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-600 cursor-not-allowed opacity-60"
             >
               <Filter className="size-3" />
               Bairros
@@ -184,7 +184,7 @@ export default function CustomerBase() {
       </div>
 
       {/* Table Section */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
@@ -359,7 +359,7 @@ export default function CustomerBase() {
                 </div>
 
                 {/* Bot Status Control */}
-                <div className="p-4 bg-white rounded-2xl border-2 border-slate-100 shadow-sm space-y-3">
+                <div className="p-4 bg-white dark:bg-slate-800 rounded-2xl border-2 border-slate-100 dark:border-slate-700 shadow-sm space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className={cn(

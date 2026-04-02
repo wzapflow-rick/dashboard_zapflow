@@ -98,14 +98,14 @@ export default function DashboardOverview() {
     <div className="space-y-8">
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Olá, {user?.nome || 'Usuário'} 👋</h1>
-          <p className="text-slate-500 text-sm mt-1">Aqui está o que está acontecendo com sua loja {selectedPeriod.toLowerCase()}.</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Olá, {user?.nome || 'Usuário'} 👋</h1>
+          <p className="text-slate-500 text-sm mt-1 dark:text-slate-400">Aqui está o que está acontecendo com sua loja {selectedPeriod.toLowerCase()}.</p>
         </div>
         <div className="flex items-center gap-4 w-full sm:w-auto">
           <select
             value={selectedPeriod}
             onChange={(e) => setSelectedPeriod(e.target.value)}
-            className="w-full sm:w-auto bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer shadow-sm"
+            className="w-full sm:w-auto bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer shadow-sm dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300"
           >
             <option value="Hoje">Hoje</option>
             <option value="Últimos 7 dias">Últimos 7 dias</option>
@@ -116,7 +116,7 @@ export default function DashboardOverview() {
       </header>
 
       {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
           ⚠️ {error}
         </div>
       )}
@@ -130,15 +130,15 @@ export default function DashboardOverview() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Sales Chart */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm transition-all hover:shadow-md">
+        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm transition-all hover:shadow-md dark:bg-slate-800 dark:border-slate-700">
           <div className="flex justify-between items-center mb-6">
-            <h4 className="font-bold text-slate-800">Vendas por Hora</h4>
+            <h4 className="font-bold text-slate-800 dark:text-white">Vendas por Hora</h4>
             <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-1.5">
               <Clock className="size-3" /> Atualizado agora
             </span>
           </div>
           {/* Chart de vendas por hora */}
-          <div className="h-[240px] flex items-end justify-between gap-1 bg-slate-50 rounded-lg p-2 border border-slate-200">
+          <div className="h-[240px] flex items-end justify-between gap-1 bg-slate-50 rounded-lg p-2 border border-slate-200 dark:bg-slate-900 dark:border-slate-700">
             {dashboardData?.chartData && dashboardData.chartData.length > 0 ? (
               dashboardData.chartData.map((val: number, i: number) => {
                 const maxVal = Math.max(...dashboardData.chartData);

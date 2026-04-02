@@ -28,22 +28,22 @@ export default function PrintModal({ isOpen, onClose, order, onConfirm }: PrintM
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden"
+                    className="relative w-full max-w-sm bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-700"
                 >
                     <div className="p-6 text-center space-y-4">
                         <div className="size-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto">
                             <Printer className="size-8" />
                         </div>
                         <div>
-                            <h3 className="text-xl font-bold text-slate-900">Confirmar Impressão?</h3>
-                            <p className="text-sm text-slate-500 mt-1">
-                                Deseja imprimir o cupom do pedido <span className="font-bold text-slate-900">{order?.id}</span>?
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white">Confirmar Impressão?</h3>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                                Deseja imprimir o cupom do pedido <span className="font-bold text-slate-900 dark:text-white">{order?.id}</span>?
                             </p>
                         </div>
                         <div className="flex gap-3 pt-2">
                             <button
                                 onClick={onClose}
-                                className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all"
+                                className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
                             >
                                 Não
                             </button>

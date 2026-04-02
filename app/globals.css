@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-primary: #1337ec;
   --color-background-light: #f6f6f8;
@@ -15,6 +17,26 @@
   body {
     @apply bg-background-light text-slate-900 antialiased;
     font-family: var(--font-sans);
+  }
+
+  .dark {
+    --background: #0f172a;
+    --foreground: #f1f5f9;
+    color-scheme: dark;
+  }
+
+  .dark body {
+    @apply bg-slate-900 text-slate-100;
+  }
+
+  .dark input, 
+  .dark textarea,
+  .dark select {
+    @apply bg-slate-800 border-slate-700 text-slate-100;
+  }
+
+  .dark ::placeholder {
+    @apply text-slate-500;
   }
 }
 

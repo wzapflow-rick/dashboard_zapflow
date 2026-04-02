@@ -23,18 +23,18 @@ export function StatCard({ stat, index }: StatCardProps) {
             transition={{ delay: index * 0.1 }}
             className={cn(
                 "p-6 rounded-xl border shadow-sm",
-                stat.color === 'primary' ? "bg-primary text-white border-primary" : "bg-white border-slate-200"
+                stat.color === 'primary' ? "bg-primary text-white border-primary" : "bg-white border-slate-200 dark:bg-slate-800 dark:border-slate-700"
             )}
         >
             <div className="flex justify-between items-start mb-4">
                 <div className={cn(
                     "p-2 rounded-lg",
-                    stat.color === 'primary' ? "bg-white/20" : "bg-slate-50"
+                    stat.color === 'primary' ? "bg-white/20" : "bg-slate-50 dark:bg-slate-700"
                 )}>
-                    <stat.icon className={cn("size-5", stat.color === 'primary' ? "text-white" : "text-slate-600")} />
+                    <stat.icon className={cn("size-5", stat.color === 'primary' ? "text-white" : "text-slate-600 dark:text-slate-300")} />
                 </div>
                 {stat.trend === 'up' && (
-                    <span className="flex items-center text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
+                    <span className="flex items-center text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full dark:bg-emerald-900/30 dark:text-emerald-400">
                         {stat.change} <ArrowUpRight className="size-3 ml-0.5" />
                     </span>
                 )}
@@ -44,10 +44,10 @@ export function StatCard({ stat, index }: StatCardProps) {
                     </span>
                 )}
             </div>
-            <p className={cn("text-sm font-medium", stat.color === 'primary' ? "text-white/80" : "text-slate-500")}>
+            <p className={cn("text-sm font-medium", stat.color === 'primary' ? "text-white/80" : "text-slate-500 dark:text-slate-400")}>
                 {stat.label}
             </p>
-            <h3 className="text-2xl font-bold mt-1">{stat.value}</h3>
+            <h3 className="text-2xl font-bold mt-1 dark:text-white">{stat.value}</h3>
             {stat.trend === 'special' && (
                 <p className="text-xs text-white/70 mt-3 flex items-center gap-1">
                     <Zap className="size-3 fill-current" />

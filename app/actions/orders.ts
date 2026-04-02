@@ -50,51 +50,99 @@ export async function getOrders() {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        // 1. Buscar Pedidos
         const ordersRes = await nocoFetchForTable(TABLE_ID, `/records?limit=1000&where=(empresa_id,eq,${user.empresaId})&sort=-id`);
         const ordersData = await ordersRes.json();
         const orders = ordersData.list || [];
 
         if (orders.length === 0) return [];
 
-        // 2. Buscar Clientes da Empresa
         const clientsRes = await nocoFetchForTable(CLIENTS_TABLE_ID, `/records?limit=1000&where=(empresa_id,eq,${user.empresaId})`);
         const clientsData = await clientsRes.json();
         const clients = clientsData.list || [];
 
-        // 3. Buscar Entregadores da Empresa (pode não existir ainda)
         let drivers: any[] = [];
         try {
             const driversRes = await nocoFetchForTable(DRIVERS_TABLE_ID, `/records?limit=1000&where=(empresa_id,eq,${user.empresaId})`);
             const driversData = await driversRes.json();
             drivers = driversData.list || [];
         } catch (driverError) {
-            console.warn('Tabela de entregadores não encontrada ou erro ao buscar:', driverError);
             drivers = [];
         }
 
-        // 4. Criar Maps para busca rápida
-        const clientsMap = new Map<string, any>(clients.map((c: any) => [c.telefone, c]));
-        const driversMap = new Map<number, any>(drivers.map((d: any) => [d.id, d]));
+        // Create plain object lookups instead of Maps
+        const clientsByPhone: Record<string, any> = {};
+        clients.forEach((c: any) => {
+            if (c.telefone) clientsByPhone[String(c.telefone)] = c;
+        });
 
-        // 5. Vincular dados e SERIALIZAR tudo para remover classes/prototypes
+        const driversById: Record<string, any> = {};
+        drivers.forEach((d: any) => {
+            if (d.id) driversById[String(d.id)] = d;
+        });
+
         return orders.map((order: any) => {
-            const client = clientsMap.get(order.telefone_cliente);
-            const driver = order.entregador_id ? driversMap.get(order.entregador_id) : null;
-            const merged = {
-                ...order,
-                nome_cliente: (client as any)?.nome || null,
+            const phone = order.telefone_cliente ? String(order.telefone_cliente) : '';
+            const client = clientsByPhone[phone] || null;
+            const driverId = order.entregador_id ? String(order.entregador_id) : '';
+            const driver = driversById[driverId] || null;
+
+            return {
+                id: order.id,
+                status: order.status,
+                valor_total: order.valor_total,
+                criado_em: order.criado_em,
+                telefone_cliente: order.telefone_cliente,
+                endereco_entrega: order.endereco_entrega || '',
+                bairro_entrega: order.bairro_entrega || '',
+                tipo_entrega: order.tipo_entrega || '',
+                entregador_id: order.entregador_id || null,
+                itens: order.itens,
+                cupom_id: order.cupom_id || null,
+                canal: order.canal || '',
+                nome_cliente: client?.nome || order.cliente_nome || null,
                 is_recorrente: !!client,
                 entregador_nome: driver?.nome || null,
                 entregador_telefone: driver?.telefone || null,
                 entregador_veiculo: driver?.veiculo || null,
             };
-            // ✅ SERIALIZAR: Remove classes/prototypes que não podem ser passados a Client Components
-            return JSON.parse(JSON.stringify(merged));
         });
     } catch (error) {
         console.error('API Error:', error);
         throw new Error('Failed to fetch orders with client data');
+    }
+}
+
+export async function createManualOrder(data: {
+    cliente_nome: string;
+    telefone_cliente: string;
+    itens: string;
+    valor_total: number;
+}) {
+    try {
+        const user = await getMe();
+        if (!user?.empresaId) throw new Error('Não autorizado');
+
+        const payload = {
+            cliente_nome: data.cliente_nome || 'Cliente Manual',
+            telefone_cliente: data.telefone_cliente || '00000000000',
+            itens: data.itens,
+            valor_total: data.valor_total,
+            status: 'pendente',
+            canal: 'Painel',
+            empresa_id: user.empresaId,
+            criado_em: new Date().toISOString(),
+        };
+
+        const res = await nocoFetchForTable(TABLE_ID, '/records', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+
+        revalidatePath('/dashboard/expedition');
+        return await res.json();
+    } catch (error: any) {
+        console.error('Erro ao criar pedido manual:', error);
+        throw new Error(error.message || 'Failed to create manual order');
     }
 }
 
@@ -103,14 +151,12 @@ export async function updateOrderStatus(id: number, status: string) {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        // Validação com Zod
         const validated = OrderStatusSchema.safeParse({ orderId: id, status });
         if (!validated.success) {
             const errorMsg = validated.error.issues.map((issue: any) => issue.message).join(', ');
             throw new Error(`Dados inválidos: ${errorMsg}`);
         }
 
-        // Rate limiting por empresa
         const now = Date.now();
         const attemptKey = `${user.empresaId}:order_update`;
         const attempt = orderUpdateAttempts.get(attemptKey);
@@ -124,15 +170,12 @@ export async function updateOrderStatus(id: number, status: string) {
             }
         }
 
-        // Buscar detalhes do pedido para obter o telefone do cliente
         const orderRes = await nocoFetchForTable(TABLE_ID, `/records/${id}`);
         const orderData = await orderRes.json();
 
-        // Se o status for finalizado, atualizamos os dados do cliente
         if (status === 'finalizado') {
             try {
                 if (orderData.telefone_cliente) {
-                    // 2. Buscar o cliente na base pelo telefone e empresa
                     const clientsRes = await nocoFetchForTable(CLIENTS_TABLE_ID,
                         `/records?where=(empresa_id,eq,${user.empresaId})~and(telefone,eq,${orderData.telefone_cliente})`
                     );
@@ -140,9 +183,7 @@ export async function updateOrderStatus(id: number, status: string) {
                     const client = clientsData.list?.[0];
 
                     if (client) {
-                        // 3. Atualizar data e último pedido
                         const now = new Date();
-                        // Formatamos como YYYY-MM-DD para seguir o pedido do usuário ("só a data")
                         const dateOnly = now.toISOString().split('T')[0];
 
                         await nocoFetchForTable(CLIENTS_TABLE_ID, '/records', {
@@ -156,8 +197,7 @@ export async function updateOrderStatus(id: number, status: string) {
                     }
                 }
             } catch (err) {
-                console.error('Erro ao atualizar dados do cliente após finalizar pedido:', err);
-                // Não interrompemos o fluxo principal se a atualização do cliente falhar
+                console.error('Erro ao atualizar dados do cliente:', err);
             }
         }
 
@@ -166,19 +206,15 @@ export async function updateOrderStatus(id: number, status: string) {
             body: JSON.stringify({ id, status })
         });
 
-        // Se o status for finalizado, disparar dedução de estoque, cupom e fidelidade
         if (status === 'finalizado') {
-            // Executamos de forma assíncrona mas não bloqueante para a resposta rápida da UI
-            deduzirInsumosDoPedido(id).catch(err => console.error('Falha na dedução de estoque:', err));
+            deduzirInsumosDoPedido(id).catch(err => console.error('Falha na dedução:', err));
 
-            // Incrementar uso do cupom se houver
             if (orderData.cupom_id) {
                 incrementCouponUsage(orderData.cupom_id).catch(err =>
-                    console.error('Falha ao incrementar uso do cupom:', err)
+                    console.error('Falha ao incrementar cupom:', err)
                 );
             }
 
-            // Adicionar pontos de fidelidade
             if (orderData.telefone_cliente && orderData.valor_total) {
                 addPointsForOrder(
                     orderData.telefone_cliente,
@@ -188,20 +224,16 @@ export async function updateOrderStatus(id: number, status: string) {
                 ).catch(err => console.error('Falha ao adicionar pontos:', err));
             }
 
-            // Finalizar entrega e liberar entregador
             finishDelivery(id).catch(err => console.error('Falha ao finalizar entrega:', err));
         }
 
-        // Enviar notificação WhatsApp para o cliente com link de rastreamento
         if (orderData.telefone_cliente) {
             sendOrderStatusMessage(orderData.telefone_cliente, id, status)
-                .catch(err => console.error('Falha ao enviar notificação WhatsApp:', err));
+                .catch(err => console.error('Falha ao enviar WhatsApp:', err));
         }
 
-        // Log da ação
         await logAction('UPDATE_ORDER_STATUS', `Pedido #${id} atualizado para: ${status}`);
 
-        // Incrementar rate limiting
         const currentAttempt = orderUpdateAttempts.get(attemptKey) || { count: 0, lastAttempt: now };
         currentAttempt.count += 1;
         currentAttempt.lastAttempt = now;

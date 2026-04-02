@@ -62,36 +62,40 @@ export async function getCustomers() {
         const pointsData = await pointsRes.json();
         const pointsList = pointsData.list || [];
 
-        // 4. Mapear pedidos por telefone
-        const ordersByPhone = new Map();
+        // 4. Mapear pedidos por telefone (usando plain object em vez de Map)
+        const ordersByPhone: Record<string, any[]> = {};
         allOrders.forEach((order: any) => {
-            const phone = order.telefone_cliente;
-            if (!ordersByPhone.has(phone)) ordersByPhone.set(phone, []);
-            ordersByPhone.get(phone).push(order);
+            const phone = String(order.telefone_cliente || '');
+            if (!ordersByPhone[phone]) ordersByPhone[phone] = [];
+            ordersByPhone[phone].push(order);
         });
 
-        // 5. Mapear pontos por telefone
-        const pointsByPhone = new Map();
+        // 5. Mapear pontos por telefone (usando plain object em vez de Map)
+        const pointsByPhone: Record<string, number> = {};
         pointsList.forEach((p: any) => {
             const pontos = (p.pontos_acumulados || 0) - (p.pontos_gastos || 0);
-            pointsByPhone.set(p.cliente_telefone, pontos);
+            pointsByPhone[String(p.cliente_telefone || '')] = pontos;
         });
 
-        // 6. Enriquecer clientes com dados reais
+        // 6. Enriquecer clientes com dados reais e garantir serialização
         return clients.map((client: any) => {
-            const history = ordersByPhone.get(client.telefone) || [];
+            const phone = String(client.telefone || '');
+            const history = ordersByPhone[phone] || [];
             const totalSpent = history.reduce((sum: number, o: any) => sum + Number(o.valor_total || 0), 0);
-            const pontos = pointsByPhone.get(client.telefone) || 0;
+            const pontos = pointsByPhone[phone] || 0;
 
-            return {
-                ...client,
+            return JSON.parse(JSON.stringify({
+                id: client.id || client.Id,
+                nome: client.nome || 'Sem Nome',
+                telefone: phone || 'N/A',
+                bairro_entrega: client.bairro_entrega || '',
+                endereco_completo: client.endereco_completo || '',
                 qtd_pedidos: history.length,
                 valor_total_gasto: totalSpent,
                 pontos_fidelidade: pontos,
-                // Garantir campos para o frontend
-                nome: client.nome || 'Sem Nome',
-                telefone: client.telefone || 'N/A'
-            };
+                empresa_id: client.empresa_id,
+                criado_em: client.criado_em || null,
+            }));
         });
     } catch (error) {
         console.error('API Error:', error);

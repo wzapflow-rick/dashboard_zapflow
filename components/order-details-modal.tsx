@@ -43,7 +43,7 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+            className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] dark:bg-slate-800"
           >
             {/* Header */}
             <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-900 shrink-0">
@@ -66,33 +66,33 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
               {/* Status e Data */}
-              <div className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100">
+              <div className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100 dark:bg-slate-700 dark:border-slate-600">
                 <div className="flex items-center gap-3">
                   <Calendar className="size-4 text-slate-400" />
                   <div>
                     <p className="text-[10px] font-bold text-slate-400 uppercase">Data/Hora</p>
-                    <p className="text-sm font-bold text-slate-700">
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
                       {order.criado_em ? new Date(order.criado_em).toLocaleString('pt-BR') : '—'}
                     </p>
                   </div>
                 </div>
                 <span className={cn(
                   "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest",
-                  order.status === 'finalizado' ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
+                  order.status === 'finalizado' ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
                 )}>
                   {order.status}
                 </span>
               </div>
 
               {/* Cliente */}
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-4">
-                <div className="size-10 rounded-full bg-white shadow-sm flex items-center justify-center text-primary border border-slate-100">
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-4 dark:bg-slate-700 dark:border-slate-600">
+                <div className="size-10 rounded-full bg-white shadow-sm flex items-center justify-center text-primary border border-slate-100 dark:bg-slate-600 dark:border-slate-500">
                   <User className="size-5" />
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase leading-none mb-1">Cliente</p>
-                  <p className="text-sm font-bold text-slate-900">{order.nome_cliente || order.telefone_cliente || 'Cliente'}</p>
-                  <p className="text-xs text-slate-500 font-medium">{order.telefone_cliente}</p>
+                  <p className="text-sm font-bold text-slate-900 dark:text-white">{order.nome_cliente || order.telefone_cliente || 'Cliente'}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{order.telefone_cliente}</p>
                 </div>
               </div>
 
@@ -101,17 +101,17 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
                 <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
                   <Tag className="size-3" /> Itens do Pedido
                 </h4>
-                <div className="bg-white border border-slate-100 rounded-2xl divide-y divide-slate-50 overflow-hidden">
+                <div className="bg-white border border-slate-100 rounded-2xl divide-y divide-slate-50 overflow-hidden dark:bg-slate-700 dark:border-slate-600 dark:divide-slate-600">
                   {formattedItems.map((item: any, i: number) => (
-                    <div key={i} className="p-4 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
+                    <div key={i} className="p-4 flex items-center justify-between hover:bg-slate-50/50 transition-colors dark:hover:bg-slate-600/50">
                       <div className="flex items-center gap-3">
-                        <span className="size-7 flex items-center justify-center bg-slate-100 rounded font-black text-xs text-slate-500">{item.quantidade}x</span>
+                        <span className="size-7 flex items-center justify-center bg-slate-100 rounded font-black text-xs text-slate-500 dark:bg-slate-600 dark:text-slate-300">{item.quantidade}x</span>
                         <div>
-                          <p className="text-sm font-bold text-slate-900">{item.produto}</p>
+                          <p className="text-sm font-bold text-slate-900 dark:text-white">{item.produto}</p>
                           {item.observacao && <p className="text-[10px] text-red-500 font-medium italic">Obs: {item.observacao}</p>}
                         </div>
                       </div>
-                      <span className="text-sm font-bold text-slate-900">R$ {Number(item.preco_unitario || item.preco || 0).toFixed(2).replace('.', ',')}</span>
+                      <span className="text-sm font-bold text-slate-900 dark:text-white">R$ {Number(item.preco_unitario || item.preco || 0).toFixed(2).replace('.', ',')}</span>
                     </div>
                   ))}
                 </div>
@@ -119,35 +119,35 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
 
               {/* Extras */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-1 dark:bg-slate-700 dark:border-slate-600">
                   <p className="text-[10px] font-bold text-slate-400 uppercase">Pagamento</p>
                   <div className="flex items-center gap-2">
                     <CreditCard className="size-4 text-primary" />
-                    <span className="text-sm font-bold text-slate-700">{order.forma_pagamento || 'A combinar'}</span>
+                    <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{order.forma_pagamento || 'A combinar'}</span>
                   </div>
                 </div>
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-1 dark:bg-slate-700 dark:border-slate-600">
                   <p className="text-[10px] font-bold text-slate-400 uppercase">Local</p>
                   <div className="flex items-center gap-2 text-primary">
                     <MapPin className="size-4" />
-                    <span className="text-sm font-bold text-slate-700">{order.bairro_entrega || 'Retirada'}</span>
+                    <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{order.bairro_entrega || 'Retirada'}</span>
                   </div>
                 </div>
               </div>
 
               {order.observacoes && (
-                <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100">
+                <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 dark:bg-amber-900/20 dark:border-amber-800">
                   <p className="text-[10px] font-bold text-amber-500 uppercase mb-1">Nota do Pedido</p>
-                  <p className="text-xs text-amber-700 font-medium leading-relaxed italic">"{order.observacoes}"</p>
+                  <p className="text-xs text-amber-700 font-medium leading-relaxed italic dark:text-amber-400">"{order.observacoes}"</p>
                 </div>
               )}
             </div>
 
             {/* Total e Footer */}
-            <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between shrink-0">
+            <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between shrink-0 dark:border-slate-700 dark:bg-slate-700/50">
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase">Total do Pedido</p>
-                <p className="text-2xl font-black text-slate-900">R$ {Number(order.valor_total).toFixed(2).replace('.', ',')}</p>
+                <p className="text-2xl font-black text-slate-900 dark:text-white">R$ {Number(order.valor_total).toFixed(2).replace('.', ',')}</p>
               </div>
               <button
                 onClick={onClose}

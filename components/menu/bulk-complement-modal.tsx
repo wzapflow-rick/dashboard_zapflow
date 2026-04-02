@@ -86,10 +86,10 @@ export default function BulkComplementModal({
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+                        className="relative w-full max-w-2xl bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-slate-200 dark:border-slate-700"
                     >
                         {/* Header */}
-                        <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white relative z-10">
+                        <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-white dark:bg-slate-800 relative z-10">
                             <div>
                                 <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
                                     <CheckCircle2 className="size-5 text-violet-500" />

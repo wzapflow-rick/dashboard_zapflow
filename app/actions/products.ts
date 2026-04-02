@@ -51,7 +51,20 @@ export async function getProducts() {
 
     const res = await nocoFetch(`/records?limit=1000&where=(empresa_id,eq,${user.empresaId})&sort=-id`);
     const data = await res.json();
-    return (data.list || []).map((p: any) => ({ ...p, id: p.id || p.Id }));
+    const products = data.list || [];
+    
+    // Garantir que retornamos apenas objetos planos serializáveis
+    return products.map((p: any) => JSON.parse(JSON.stringify({
+      id: p.id || p.Id,
+      nome: p.nome || '',
+      preco: Number(p.preco || 0),
+      descricao: p.descricao || '',
+      imagem: p.imagem || '',
+      categoria_id: p.categoria_id || p.categorias || null,
+      disponivel: p.disponivel !== false && p.disponivel !== 0,
+      empresa_id: p.empresa_id,
+      criado_em: p.criado_em || null,
+    })));
   } catch (error) {
     console.error('API Error:', error);
     throw new Error('Failed to fetch products');
@@ -93,7 +106,15 @@ export async function getCategories(): Promise<Category[]> {
 
     const res = await nocoFetch(`/records?limit=1000&where=(empresa_id,eq,${user.empresaId})&sort=ordem`, {}, CATEGORIES_TABLE_ID);
     const data = await res.json();
-    return data.list || [];
+    const categories = data.list || [];
+    
+    // Garantir serialização
+    return categories.map((c: any) => JSON.parse(JSON.stringify({
+      id: c.id || c.Id,
+      nome: c.nome || '',
+      empresa_id: c.empresa_id,
+      ordem: Number(c.ordem || 0),
+    })));
   } catch (error) {
     console.error('API Error:', error);
     throw new Error('Failed to fetch categories');

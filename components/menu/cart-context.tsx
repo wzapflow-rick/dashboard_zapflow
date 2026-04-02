@@ -25,11 +25,11 @@ export interface CartItem {
 
 interface CartContextType {
   items: CartItem[];
-  cupom: { codigo: string; desconto: number; tipo: string } | null;
+  cupom: { id?: number; codigo: string; desconto: number; tipo: string } | null;
   addItem: (item: Omit<CartItem, 'id'>) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantidade: number) => void;
-  setCupom: (cupom: { codigo: string; desconto: number; tipo: string } | null) => void;
+  setCupom: (cupom: { id?: number; codigo: string; desconto: number; tipo: string } | null) => void;
   clearCart: () => void;
   subtotal: number;
   desconto: number;
@@ -69,7 +69,7 @@ export function CartProvider({ children, pontosPorReal = 1 }: { children: React.
     setItems(prev => prev.map(item => item.id === id ? { ...item, quantidade } : item));
   }, [removeItem]);
 
-  const setCupom = useCallback((cupomData: { codigo: string; desconto: number; tipo: string } | null) => {
+  const setCupom = useCallback((cupomData: { id?: number; codigo: string; desconto: number; tipo: string } | null) => {
     setCupomState(cupomData);
   }, []);
 

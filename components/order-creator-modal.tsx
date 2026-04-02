@@ -1,12 +1,16 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { X, Search, Plus, Minus, ShoppingCart, User, Phone, Check, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getProducts } from '@/app/actions/products';
 import { nocoFetch } from '@/app/actions/insumos';
 import { getCompositeProducts, type CompositeProduct, type CompositeItem } from '@/app/actions/grupos-slots';
+import { createManualOrder } from '@/app/actions/orders';
 import { toast } from 'sonner';
+import { checkCustomerByPhone } from '@/app/actions/public-orders';
+import RegisterCustomerModal from './expedition/register-customer-modal';
+import { getMe } from '@/app/actions/auth';
 
 interface Product {
     id: number;
@@ -41,12 +45,34 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
     const [isCompositeModalOpen, setIsCompositeModalOpen] = useState(false);
     const [selectedComposite, setSelectedComposite] = useState<CompositeProduct | null>(null);
     const [selectedItems, setSelectedItems] = useState<CompositeItem[]>([]);
+    
+    // Customer verification states
+    const [isExistingCustomer, setIsExistingCustomer] = useState(false);
+    const [checkingCustomer, setCheckingCustomer] = useState(false);
+    const [phoneChecked, setPhoneChecked] = useState(false);
+    const [showRegisterModal, setShowRegisterModal] = useState(false);
+    const [customerToRegister, setCustomerToRegister] = useState<any>(null);
+    const [empresaId, setEmpresaId] = useState<number | null>(null);
+    const lastCheckedPhoneRef = useRef<string>('');
+    const hasOpenedRegisterModalRef = useRef<boolean>(false);
 
     useEffect(() => {
         if (isOpen) {
             fetchProducts();
+            fetchUser();
         }
     }, [isOpen]);
+
+    const fetchUser = async () => {
+        try {
+            const user = await getMe();
+            if (user?.empresaId) {
+                setEmpresaId(user.empresaId);
+            }
+        } catch (error) {
+            console.error('Erro ao buscar usuário:', error);
+        }
+    };
 
     const fetchProducts = async () => {
         try {
@@ -62,6 +88,64 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
             setIsLoadingProducts(false);
         }
     };
+
+    const checkCustomerExists = useCallback(async (telefone: string) => {
+        const cleanPhone = telefone.replace(/\D/g, '');
+        if (cleanPhone.length < 10 || !empresaId) {
+            setPhoneChecked(false);
+            setIsExistingCustomer(false);
+            hasOpenedRegisterModalRef.current = false;
+            return;
+        }
+        
+        // Evitar verificar o mesmo telefone novamente se já verificamos e o cliente não existe
+        // mas permitir nova verificação se o telefone mudou
+        if (cleanPhone === lastCheckedPhoneRef.current && phoneChecked) {
+            return;
+        }
+        
+        setCheckingCustomer(true);
+        try {
+            const customer = await checkCustomerByPhone(empresaId, cleanPhone);
+            
+            if (customer) {
+                setIsExistingCustomer(true);
+                setClienteNome(customer.nome || '');
+                hasOpenedRegisterModalRef.current = false;
+                // Preencher outros dados se disponíveis
+                // Não vamos preencher endereço aqui, pois não temos campos no modal
+            } else {
+                setIsExistingCustomer(false);
+                // Se o cliente não existe, abrir modal de registro apenas se ainda não abrimos para este telefone
+                if (!hasOpenedRegisterModalRef.current) {
+                    setCustomerToRegister({
+                        telefone_cliente: cleanPhone,
+                        bairro_entrega: '',
+                    });
+                    setShowRegisterModal(true);
+                    hasOpenedRegisterModalRef.current = true;
+                }
+            }
+            setPhoneChecked(true);
+            lastCheckedPhoneRef.current = cleanPhone;
+        } catch (error) {
+            console.error('Erro ao verificar cliente:', error);
+            setIsExistingCustomer(false);
+            setPhoneChecked(true);
+        } finally {
+            setCheckingCustomer(false);
+        }
+    }, [empresaId, phoneChecked]);
+
+    // Debounce para verificar cliente quando telefone muda
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (clienteTelefone && empresaId) {
+                checkCustomerExists(clienteTelefone);
+            }
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [clienteTelefone, empresaId, checkCustomerExists]);
 
     const addToCart = (product: Product) => {
         setCart(prev => {
@@ -219,7 +303,7 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+            <div key="main-modal" className="fixed inset-0 z-[150] flex items-center justify-center p-4">
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -232,27 +316,27 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="relative w-full max-w-5xl h-[85vh] bg-white rounded-[32px] shadow-2xl overflow-hidden flex flex-col md:flex-row"
+                    className="relative w-full max-w-5xl h-[85vh] bg-white rounded-[32px] shadow-2xl overflow-hidden flex flex-col md:flex-row dark:bg-slate-800"
                 >
                     {/* Lista de Produtos */}
-                    <div className="flex-1 flex flex-col min-w-0 border-r border-slate-100">
-                        <header className="p-6 border-b border-slate-100 flex items-center justify-between">
+                    <div className="flex-1 flex flex-col min-w-0 border-r border-slate-100 dark:border-slate-700">
+                        <header className="p-6 border-b border-slate-100 flex items-center justify-between dark:border-slate-700">
                             <div>
-                                <h2 className="text-2xl font-black text-slate-900 tracking-tight">Novo Pedido</h2>
-                                <p className="text-sm text-slate-500 font-bold uppercase tracking-wider">Criação Manual • PDV</p>
+                                <h2 className="text-2xl font-black text-slate-900 tracking-tight dark:text-white">Novo Pedido</h2>
+                                <p className="text-sm text-slate-500 font-bold uppercase tracking-wider dark:text-slate-400">Criação Manual • PDV</p>
                             </div>
-                            <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors md:hidden">
+                            <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors md:hidden dark:hover:bg-slate-700">
                                 <X className="size-6 text-slate-400" />
                             </button>
                         </header>
 
-                        <div className="p-4 bg-slate-50/50">
+                        <div className="p-4 bg-slate-50/50 dark:bg-slate-900/50">
                             <div className="relative">
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 size-5" />
                                 <input
                                     type="text"
                                     placeholder="Buscar produto pelo nome..."
-                                    className="w-full h-12 pl-12 pr-4 bg-white border-2 border-slate-100 rounded-2xl text-sm font-bold focus:border-primary/30 outline-none transition-all"
+                                    className="w-full h-12 pl-12 pr-4 bg-white border-2 border-slate-100 rounded-2xl text-sm font-bold focus:border-primary/30 outline-none transition-all dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:placeholder:text-slate-400"
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                 />
@@ -412,7 +496,22 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                                                 value={clienteTelefone}
                                                 onChange={(e) => setClienteTelefone(e.target.value)}
                                             />
+                                            {checkingCustomer && (
+                                                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-primary animate-spin" />
+                                            )}
+                                            {!checkingCustomer && phoneChecked && isExistingCustomer && (
+                                                <Check className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-green-500" />
+                                            )}
+                                            {!checkingCustomer && phoneChecked && !isExistingCustomer && clienteTelefone.length >= 10 && (
+                                                <User className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-amber-500" />
+                                            )}
                                         </div>
+                                        {!checkingCustomer && phoneChecked && isExistingCustomer && (
+                                            <p className="text-xs text-green-600 font-medium ml-1">Cliente encontrado! Dados preenchidos.</p>
+                                        )}
+                                        {!checkingCustomer && phoneChecked && !isExistingCustomer && clienteTelefone.length >= 10 && (
+                                            <p className="text-xs text-amber-600 font-medium ml-1">Cliente novo. Preencha os dados ou aguarde o modal de registro.</p>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -441,7 +540,7 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
 
             {/* Modal de Seleção de Itens Compostos */}
             {isCompositeModalOpen && selectedComposite && (
-                <div className="fixed inset-0 z-[160] flex items-center justify-center p-4">
+                <div key="composite-modal" className="fixed inset-0 z-[160] flex items-center justify-center p-4">
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -533,6 +632,28 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                             </button>
                         </div>
                     </motion.div>
+                </div>
+            )}
+
+            {/* Modal de Registro de Cliente - posicionado ao lado */}
+            {showRegisterModal && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 pointer-events-none">
+                    <div className="pointer-events-auto ml-[30vw]">
+                        <RegisterCustomerModal
+                            key="register-modal"
+                            isOpen={showRegisterModal}
+                            onClose={() => {
+                                setShowRegisterModal(false);
+                                setCustomerToRegister(null);
+                            }}
+                            order={customerToRegister}
+                            onSuccess={() => {
+                                if (customerToRegister?.telefone_cliente) {
+                                    checkCustomerExists(customerToRegister.telefone_cliente);
+                                }
+                            }}
+                        />
+                    </div>
                 </div>
             )}
         </AnimatePresence>

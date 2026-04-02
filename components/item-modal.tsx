@@ -24,9 +24,9 @@ export function ItemModal({
             {isOpen && activeGrupo && (
                 <>
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50" />
-                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-2xl shadow-xl z-50 overflow-hidden">
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-xl z-50 overflow-hidden border border-slate-200 dark:border-slate-700">
                         <form onSubmit={onSubmit}>
-                            <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+                            <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
                                 <h3 className="text-xl font-bold text-slate-800">{editingItem ? 'Editar Opção' : 'Nova Opção'}</h3>
                                 <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600"><X className="size-5" /></button>
                             </div>

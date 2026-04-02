@@ -89,7 +89,7 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved }: Grupo
                         onClick={onClose}
                     />
                     <motion.div
-                        className="relative bg-white rounded-2xl w-full max-w-lg p-6 shadow-xl overflow-y-auto max-h-[90vh]"
+                        className="relative bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-xl overflow-y-auto max-h-[90vh] border border-slate-200 dark:border-slate-700"
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}

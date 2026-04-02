@@ -8,7 +8,9 @@ export default function CategoriesPage() {
     return (
         <SidebarProvider>
             <DashboardLayout>
-                <CategoryManagement />
+                <div className="dark:bg-slate-800">
+                    <CategoryManagement />
+                </div>
             </DashboardLayout>
         </SidebarProvider>
     );

@@ -36,93 +36,37 @@ export default function ExpeditionMonitor() {
   const [isOrderCreatorOpen, setIsOrderCreatorOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedOrderForDetails, setSelectedOrderForDetails] = useState<any>(null);
-  const [knownOrderIds, setKnownOrderIds] = useState<Set<number>>(new Set());
-  const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   const loadOrders = async () => {
     try {
       const data = await getOrders();
-      const cleanData = JSON.parse(JSON.stringify(data || []));
-
-      // 🔍 DEBUG TOTAL
-      if (cleanData.length > 0) {
-        const first = cleanData[0];
-        console.log('=== FULL ORDER OBJECT ===');
-        console.log(JSON.stringify(first, null, 2));
-
-        // Checar CADA propriedade
-        for (const [key, value] of Object.entries(first)) {
-          const type = typeof value;
-          const isClass = value && (value.constructor?.name !== 'Object' && value.constructor?.name !== 'Array');
-          console.log(`${key}: ${type} | Constructor: ${value?.constructor?.name} | IsClass: ${isClass}`);
-        }
-      }
-
-      setOrders(cleanData);
+      setOrders(data || []);
     } catch (err) {
-      console.error('Erro:', err);
+      console.error('Erro ao carregar pedidos:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Som para NOVO PEDIDO na expedição - Tom mais agudo e duplo
-  const playNewOrderSound = () => {
-    try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-
-      // Primeiro tom
-      const osc1 = audioContext.createOscillator();
-      const gain1 = audioContext.createGain();
-      osc1.connect(gain1);
-      gain1.connect(audioContext.destination);
-      osc1.type = 'sine';
-      osc1.frequency.value = 1200;
-      gain1.gain.value = 0.4;
-      osc1.start();
-      setTimeout(() => {
-        osc1.stop();
-      }, 100);
-
-      // Segundo tom
-      const osc2 = audioContext.createOscillator();
-      const gain2 = audioContext.createGain();
-      osc2.connect(gain2);
-      gain2.connect(audioContext.destination);
-      osc2.type = 'sine';
-      osc2.frequency.value = 1600;
-      gain2.gain.value = 0.4;
-      setTimeout(() => {
-        osc2.start();
-        setTimeout(() => {
-          osc2.stop();
-        }, 150);
-      }, 120);
-    } catch (e) {
-      console.log('Não foi possível tocar som');
-    }
-  };
-
-  // Som para PENDENTE na expedição - Tom mais grave e curto
-  const playPendingSound = () => {
+  const playNotificationSound = () => {
     try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
-
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
-
-      oscillator.frequency.value = 600;
-      oscillator.type = 'triangle';
+      oscillator.frequency.value = 800;
+      oscillator.type = 'sine';
       gainNode.gain.value = 0.3;
-
       oscillator.start();
+      setTimeout(() => {
+        oscillator.frequency.value = 1000;
+      }, 100);
       setTimeout(() => {
         oscillator.stop();
       }, 200);
     } catch (e) {
-      console.log('Não foi possível tocar som');
+      // ignore
     }
   };
 
@@ -148,9 +92,9 @@ export default function ExpeditionMonitor() {
     const nextStatus = statusFlow[currentStatus];
     if (!nextStatus) return;
 
-    // Tocar som ao confirmar pagamento (pedido pendente)
+    // Tocar som ao confirmar pagamento
     if (currentStatus === 'pagamento_pendente') {
-      playPendingSound();
+      playNotificationSound();
     }
 
     // VALIDAÇÃO DE ESTOQUE: Se estiver indo para "preparando"
@@ -211,40 +155,44 @@ export default function ExpeditionMonitor() {
   };
 
   return (
-    <div className="h-[calc(100vh-120px)] flex flex-col">
-      <header className="h-auto min-h-16 border-b border-slate-200 bg-white px-4 sm:px-8 py-3 flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0 rounded-t-xl">
+    <div className="h-[calc(100vh-120px)] flex flex-col bg-white dark:bg-slate-950">
+      <header className="h-auto min-h-16 border-b border-slate-200 dark:border-slate-800/50 bg-white dark:bg-gradient-to-r dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 px-4 sm:px-8 py-3 flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0 rounded-t-xl shadow-sm dark:shadow-2xl dark:shadow-black/30">
         <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
           <div className="flex items-center gap-4">
-            <h2 className="text-lg sm:text-xl font-bold">Monitor de Expedição</h2>
-            <span className="px-2 py-1 rounded bg-slate-100 text-[10px] sm:text-xs font-bold text-slate-600 uppercase">Live</span>
+            <h2 className="text-lg sm:text-xl font-bold text-slate-950 dark:text-white dark:font-extrabold">
+              Monitor de Expedição
+            </h2>
+            <span className="px-3 py-1.5 rounded-full bg-slate-100 dark:bg-gradient-to-r dark:from-emerald-900/75 dark:to-teal-500/25 text-[10px] sm:text-xs font-bold text-slate-700 dark:text-emerald-900 uppercase tracking-wide border border-slate-200 dark:border-emerald-500/50 backdrop-blur-sm">
+              ● Live
+            </span>
           </div>
-          <button className="sm:hidden size-9 flex items-center justify-center rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">
+          <button className="sm:hidden size-9 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-200 hover:shadow-lg">
             <Printer className="size-5" />
           </button>
         </div>
-        <div className="flex items-center gap-4 w-full sm:w-auto">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
           <div className="relative flex-1 sm:flex-none">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 size-4" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 size-4 pointer-events-none" />
             <input
-              className="pl-9 h-9 w-full sm:w-64 bg-slate-100 border-none rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+              className="pl-9 pr-3 h-9 w-full sm:w-64 bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/50 rounded-lg text-sm text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 dark:focus:ring-blue-500/40 dark:focus:border-blue-500/50 outline-none transition-all duration-200 hover:border-slate-300 dark:hover:border-slate-600/50"
               placeholder="Buscar pedido..."
               type="text"
             />
           </div>
           <button
             onClick={() => setIsOrderCreatorOpen(true)}
-            className="h-9 px-4 bg-primary text-white text-xs font-black rounded-lg hover:bg-primary/90 transition-all flex items-center gap-2 shadow-lg shadow-primary/20 uppercase tracking-wider"
+            className="h-9 px-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 dark:from-blue-600 dark:to-blue-700 dark:hover:from-blue-500 dark:hover:to-blue-600 text-white text-xs font-bold rounded-lg flex items-center gap-2 shadow-lg shadow-blue-500/30 dark:shadow-blue-500/20 uppercase tracking-wider transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/40 dark:hover:shadow-blue-500/30 active:scale-95"
           >
             <Plus className="size-4" />
             Novo Pedido
           </button>
-          <button className="hidden sm:flex size-9 items-center justify-center rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">
+          <button className="hidden sm:flex size-9 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-200 hover:shadow-lg">
             <Printer className="size-5" />
           </button>
         </div>
       </header>
 
-      <div className="flex-1 overflow-x-auto p-4 sm:p-6 flex gap-4 sm:gap-6 bg-slate-50/50 rounded-b-xl border-x border-b border-slate-200 custom-scrollbar">
+      <div className="flex-1 overflow-x-auto p-4 sm:p-6 flex gap-4 sm:gap-6 bg-gradient-to-br from-slate-50 via-slate-50 to-slate-100 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 rounded-b-xl border-x border-b border-slate-200 dark:border-slate-800/50 custom-scrollbar">
         {columns.map((col) => {
           const columnOrders = orders.filter(o => o.status === col.id);
           return (

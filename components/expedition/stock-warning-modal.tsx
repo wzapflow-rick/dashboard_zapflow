@@ -55,7 +55,7 @@ export default function StockWarningModal({ isOpen, onClose, onConfirm, shortage
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+                    className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-slate-200 dark:border-slate-700"
                 >
                     <div className="p-6 text-center space-y-4">
                         <div className="size-16 bg-red-100 rounded-2xl flex items-center justify-center text-red-600 mx-auto">
@@ -63,8 +63,8 @@ export default function StockWarningModal({ isOpen, onClose, onConfirm, shortage
                         </div>
 
                         <div>
-                            <h3 className="text-xl font-black text-slate-900 leading-tight">Estoque Insuficiente!</h3>
-                            <p className="text-sm text-slate-500 font-medium mt-1">
+                            <h3 className="text-xl font-black text-slate-900 dark:text-white leading-tight">Estoque Insuficiente!</h3>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">
                                 O pedido #{orderId} requer insumos que não estão disponíveis no momento.
                             </p>
                         </div>
@@ -73,44 +73,44 @@ export default function StockWarningModal({ isOpen, onClose, onConfirm, shortage
                             onClick={handleWhatsApp}
                             disabled={!cliente?.telefone}
                             className={`w-full py-3 rounded-2xl border flex items-center justify-center gap-2 text-sm font-black transition-all uppercase tracking-wider ${cliente?.telefone
-                                    ? "bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100"
-                                    : "bg-slate-50 text-slate-400 border-slate-100 cursor-not-allowed"
+                                    ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50"
+                                    : "bg-slate-50 dark:bg-slate-700 text-slate-400 dark:text-slate-500 border-slate-100 dark:border-slate-600 cursor-not-allowed"
                                 }`}
                         >
                             <MessageCircle className="size-5" />
                             {cliente?.telefone ? "Avisar Cliente no WhatsApp" : "Telefone não encontrado"}
                         </button>
 
-                        <div className="bg-slate-50 rounded-2xl border border-slate-100 divide-y divide-slate-200 overflow-y-auto max-h-[200px] custom-scrollbar">
+                        <div className="bg-slate-50 dark:bg-slate-700 rounded-2xl border border-slate-100 dark:border-slate-600 divide-y divide-slate-200 dark:divide-slate-600 overflow-y-auto max-h-[200px] custom-scrollbar">
                             {shortages.map((s) => (
                                 <div key={s.insumo_id} className="p-4 flex items-center justify-between text-left">
                                     <div>
-                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{s.nome}</p>
+                                        <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{s.nome}</p>
                                         <div className="flex items-center gap-2 mt-1">
-                                            <span className="text-sm font-bold text-red-600">{s.disponivel.toFixed(2)}{s.unidade}</span>
-                                            <ArrowRight className="size-3 text-slate-300" />
-                                            <span className="text-sm font-bold text-slate-900">{s.necessario.toFixed(2)}{s.unidade}</span>
+                                            <span className="text-sm font-bold text-red-600 dark:text-red-400">{s.disponivel.toFixed(2)}{s.unidade}</span>
+                                            <ArrowRight className="size-3 text-slate-300 dark:text-slate-500" />
+                                            <span className="text-sm font-bold text-slate-900 dark:text-white">{s.necessario.toFixed(2)}{s.unidade}</span>
                                         </div>
                                     </div>
-                                    <div className="bg-red-50 text-red-700 px-2 py-1 rounded text-[10px] font-black uppercase tracking-tighter">
+                                    <div className="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 px-2 py-1 rounded text-[10px] font-black uppercase tracking-tighter">
                                         Falta: {(s.necessario - s.disponivel).toFixed(2)}{s.unidade}
                                     </div>
                                 </div>
                             ))}
                         </div>
 
-                        <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl text-left">
-                            <AlertCircle className="size-5 text-amber-600 shrink-0 mt-0.5" />
-                            <p className="text-xs text-amber-700 leading-relaxed font-medium">
+                        <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-2xl text-left">
+                            <AlertCircle className="size-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                            <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed font-medium">
                                 Você pode forçar o aceite do pedido, mas o estoque ficará **negativo**. Deseja continuar?
                             </p>
                         </div>
                     </div>
 
-                    <div className="p-6 bg-slate-50 border-t border-slate-100 flex gap-3">
+                    <div className="p-6 bg-slate-50 dark:bg-slate-700 border-t border-slate-100 dark:border-slate-600 flex gap-3">
                         <button
                             onClick={onClose}
-                            className="flex-1 px-4 py-3 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all text-sm uppercase tracking-wider"
+                            className="flex-1 px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all text-sm uppercase tracking-wider"
                         >
                             Cancelar
                         </button>

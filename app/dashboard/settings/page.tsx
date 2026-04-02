@@ -191,8 +191,8 @@ export default function SettingsPage() {
         <div className="space-y-8">
           <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Configurações</h1>
-              <p className="text-slate-500 text-sm mt-1">Gerencie as preferências da sua unidade e regras de negócio.</p>
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Configurações</h1>
+              <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Gerencie as preferências da sua unidade e regras de negócio.</p>
             </div>
             <button
               onClick={handleSave}
@@ -213,8 +213,8 @@ export default function SettingsPage() {
                     className={cn(
                       "flex items-center justify-between px-4 py-3 rounded-xl transition-all whitespace-nowrap lg:w-full",
                       activeSection === section.id
-                        ? "bg-white border border-slate-200 shadow-sm text-primary font-bold"
-                        : "text-slate-500 hover:bg-slate-100"
+                        ? "bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 shadow-sm text-primary font-bold"
+                        : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
                     )}
                   >
                     <div className="flex items-center gap-3">
@@ -227,59 +227,59 @@ export default function SettingsPage() {
               </nav>
             </aside>
 
-            <div className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-8 space-y-8 min-w-0">
+            <div className="flex-1 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 sm:p-8 space-y-8 min-w-0">
               {activeSection === 'general' && (
                 <div className="space-y-6">
                   <form id="company-form" className="space-y-6">
-                    <h3 className="text-lg font-bold text-slate-900">Informações da Loja</h3>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Informações da Loja</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-1.5">
-                        <label className="text-sm font-bold text-slate-700">Nome da Unidade</label>
-                        <input name="nome_fantasia" type="text" defaultValue={company?.nome_fantasia || ''} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none" />
+                        <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Nome da Unidade</label>
+                        <input name="nome_fantasia" type="text" defaultValue={company?.nome_fantasia || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white" />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-sm font-bold text-slate-700">Responsável (Admin)</label>
-                        <input name="nome_admin" type="text" defaultValue={company?.nome_admin || ''} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none" />
+                        <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Responsável (Admin)</label>
+                        <input name="nome_admin" type="text" defaultValue={company?.nome_admin || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white" />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-sm font-bold text-slate-700">Chave PIX</label>
-                        <input name="chave_pix" type="text" defaultValue={company?.chave_pix || ''} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none" />
+                        <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Chave PIX</label>
+                        <input name="chave_pix" type="text" defaultValue={company?.chave_pix || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white" />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-sm font-bold text-slate-700">E-mail de Contato</label>
-                        <input name="email" type="email" defaultValue={company?.email || ''} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none" />
+                        <label className="text-sm font-bold text-slate-700 dark:text-slate-200">E-mail de Contato</label>
+                        <input name="email" type="email" defaultValue={company?.email || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white" />
                       </div>
                       <div className="space-y-1.5 md:col-span-2">
-                        <label className="text-sm font-bold text-slate-700">Responsável Financeiro</label>
-                        <input name="nome_recebedor_pix" type="text" defaultValue={company?.nome_recebedor_pix || ''} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none" />
+                        <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Responsável Financeiro</label>
+                        <input name="nome_recebedor_pix" type="text" defaultValue={company?.nome_recebedor_pix || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white" />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-sm font-bold text-slate-700">WhatsApp / Telefone da Loja</label>
-                        <input name="telefone_loja" type="text" defaultValue={company?.telefone_loja || ''} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none" placeholder="(00) 00000-0000" />
+                        <label className="text-sm font-bold text-slate-700 dark:text-slate-200">WhatsApp / Telefone da Loja</label>
+                        <input name="telefone_loja" type="text" defaultValue={company?.telefone_loja || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white placeholder:text-slate-400" placeholder="(00) 00000-0000" />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-sm font-bold text-slate-700">CNPJ (Opcional)</label>
-                        <input name="cnpj" type="text" defaultValue={company?.cnpj || ''} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none" placeholder="00.000.000/0000-00" />
+                        <label className="text-sm font-bold text-slate-700 dark:text-slate-200">CNPJ (Opcional)</label>
+                        <input name="cnpj" type="text" defaultValue={company?.cnpj || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white placeholder:text-slate-400" placeholder="00.000.000/0000-00" />
                       </div>
                       <div className="space-y-1.5 md:col-span-2">
-                        <label className="text-sm font-bold text-slate-700">Endereço Completo</label>
-                        <input name="endereco" type="text" defaultValue={company?.endereco || ''} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none" placeholder="Rua, Número, Bairro" />
+                        <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Endereço Completo</label>
+                        <input name="endereco" type="text" defaultValue={company?.endereco || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white placeholder:text-slate-400" placeholder="Rua, Número, Bairro" />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-sm font-bold text-slate-700">Cidade</label>
-                        <input name="cidade" type="text" defaultValue={company?.cidade || ''} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none" placeholder="Sua Cidade" />
+                        <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Cidade</label>
+                        <input name="cidade" type="text" defaultValue={company?.cidade || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white placeholder:text-slate-400" placeholder="Sua Cidade" />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-sm font-bold text-slate-700">Estado (UF)</label>
-                        <input name="estado" type="text" defaultValue={company?.estado || ''} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none" placeholder="Ex: SP, RJ, MG" maxLength={2} />
+                        <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Estado (UF)</label>
+                        <input name="estado" type="text" defaultValue={company?.estado || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white placeholder:text-slate-400" placeholder="Ex: SP, RJ, MG" maxLength={2} />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-sm font-bold text-slate-700">Instância Evolution API</label>
-                        <input name="instancia_evolution" type="text" defaultValue={company?.instancia_evolution || ''} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none" placeholder="ex: zapflow_123" />
+                        <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Instância Evolution API</label>
+                        <input name="instancia_evolution" type="text" defaultValue={company?.instancia_evolution || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white placeholder:text-slate-400" placeholder="ex: zapflow_123" />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-sm font-bold text-slate-700">Nicho do Negócio</label>
-                        <select name="nincho" defaultValue={company?.nincho || 'pizzaria'} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none">
+                        <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Nicho do Negócio</label>
+                        <select name="nincho" defaultValue={company?.nincho || 'pizzaria'} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white">
                           <option value="pizzaria">Pizzaria</option>
                           <option value="hamburgueria">Hamburgueria</option>
                           <option value="açaiteria">Açaiteria</option>
@@ -293,8 +293,8 @@ export default function SettingsPage() {
 
               {activeSection === 'hours' && (
                 <div className="space-y-6">
-                  <h3 className="text-lg font-bold text-slate-900">Horário de Funcionamento</h3>
-                  <div className="divide-y divide-slate-100">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">Horário de Funcionamento</h3>
+                  <div className="divide-y divide-slate-100 dark:divide-slate-700">
                     {DIAS_SEMANA.map((day: string, idx: number) => {
                       const h = horarios.find(item => item.dia_semana === idx) || { dia_semana: idx, hora_abertura: '18:00', hora_fechamento: '23:30', fechado_o_dia_todo: true };
                       return (
@@ -313,9 +313,9 @@ export default function SettingsPage() {
                                 }
                                 setHorarios(newH);
                               }}
-                              className="size-5 rounded border-slate-300 text-primary focus:ring-primary"
+                              className="size-5 rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary"
                             />
-                            <span className="font-bold text-slate-700">{day}</span>
+                            <span className="font-bold text-slate-700 dark:text-slate-200">{day}</span>
                           </div>
                           {!h.fechado_o_dia_todo && (
                             <div className="flex items-center gap-3">
@@ -327,7 +327,7 @@ export default function SettingsPage() {
                                   if (index >= 0) newH[index].hora_abertura = val;
                                   setHorarios(newH);
                                 }}
-                                className="px-3 py-1.5 bg-slate-100 border-none rounded-lg text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary/20"
+                                className="px-3 py-1.5 bg-slate-100 dark:bg-slate-600 border-none rounded-lg text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-primary/20"
                               />
                               <span className="text-slate-400 font-bold">às</span>
                               <TimeInput
@@ -338,11 +338,11 @@ export default function SettingsPage() {
                                   if (index >= 0) newH[index].hora_fechamento = val;
                                   setHorarios(newH);
                                 }}
-                                className="px-3 py-1.5 bg-slate-100 border-none rounded-lg text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary/20"
+                                className="px-3 py-1.5 bg-slate-100 dark:bg-slate-600 border-none rounded-lg text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-primary/20"
                               />
                             </div>
                           )}
-                          {h.fechado_o_dia_todo && <span className="text-xs text-slate-400 font-bold uppercase">Fechado</span>}
+                          {h.fechado_o_dia_todo && <span className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase">Fechado</span>}
                         </div>
                       );
                     })}
@@ -353,19 +353,19 @@ export default function SettingsPage() {
               {activeSection === 'delivery' && (
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-bold text-slate-900">Regras de Entrega</h3>
-                    <div className="flex items-center gap-2 px-3 py-1 bg-amber-50 border border-amber-100 rounded-lg">
-                      <Info className="size-3.5 text-amber-600" />
-                      <span className="text-[10px] font-bold text-amber-700 uppercase">Configuração de Frete</span>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Regras de Entrega</h3>
+                    <div className="flex items-center gap-2 px-3 py-1 bg-amber-50 dark:bg-amber-900/30 border border-amber-100 dark:border-amber-700 rounded-lg">
+                      <Info className="size-3.5 text-amber-600 dark:text-amber-400" />
+                      <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 uppercase">Configuração de Frete</span>
                     </div>
                   </div>
 
                   <div className="space-y-4">
-                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-4">
+                    <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-100 dark:border-slate-600 space-y-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-bold text-slate-900">Raio de Entrega Automático</p>
-                          <p className="text-xs text-slate-500">Calcular frete baseado na distância (Google Maps)</p>
+                          <p className="font-bold text-slate-900 dark:text-white">Raio de Entrega Automático</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">Calcular frete baseado na distância (Google Maps)</p>
                         </div>
                         <label className="relative inline-flex items-center cursor-pointer">
                           <input
@@ -374,7 +374,7 @@ export default function SettingsPage() {
                             checked={autoRadius}
                             onChange={() => setAutoRadius(!autoRadius)}
                           />
-                          <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                          <div className="w-11 h-6 bg-slate-200 dark:bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                         </label>
                       </div>
 
@@ -389,36 +389,36 @@ export default function SettingsPage() {
                             <form id="delivery-form" className="pt-2 space-y-4">
                               <div className="flex flex-col sm:flex-row items-center gap-4">
                                 <div className="flex-1 space-y-1.5 w-full">
-                                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Valor Cobrado por KM (R$)</label>
+                                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Valor Cobrado por KM (R$)</label>
                                   <div className="relative">
                                     <CurrencyInput
                                       defaultValue={valorPorKm}
                                       onValueChange={(val) => setValorPorKm(val)}
-                                      className="w-full pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                                      className="w-full pr-4 py-2 bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all dark:text-white"
                                     />
                                   </div>
                                 </div>
                               </div>
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
-                                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Latitude da Loja</label>
+                                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Latitude da Loja</label>
                                   <input
                                     name="lat_loja"
                                     type="number"
                                     step="any"
                                     defaultValue={company?.lat_loja || ''}
-                                    className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                                    className="w-full px-4 py-2 bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all dark:text-white"
                                     placeholder="-23.5505"
                                   />
                                 </div>
                                 <div className="space-y-1.5">
-                                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Longitude da Loja</label>
+                                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Longitude da Loja</label>
                                   <input
                                     name="lng_loja"
                                     type="number"
                                     step="any"
                                     defaultValue={company?.lng_loja || ''}
-                                    className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                                    className="w-full px-4 py-2 bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all dark:text-white"
                                     placeholder="-46.6333"
                                   />
                                 </div>
@@ -433,29 +433,29 @@ export default function SettingsPage() {
                       <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="space-y-4 pt-4 border-t border-slate-100"
+                        className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-600"
                       >
                         {/* Taxa de Entrega Fixa */}
-                        <div className="p-4 bg-green-50 rounded-xl border border-green-100 space-y-4">
+                        <div className="p-4 bg-green-50 dark:bg-green-900/30 rounded-xl border border-green-100 dark:border-green-800 space-y-4">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="font-bold text-slate-900">Taxa de Entrega Fixa</p>
-                              <p className="text-xs text-slate-500">Valor cobrado para todas as entregas (quando raio automático está desativado)</p>
+                              <p className="font-bold text-slate-900 dark:text-white">Taxa de Entrega Fixa</p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400">Valor cobrado para todas as entregas (quando raio automático está desativado)</p>
                             </div>
                           </div>
                           <div className="space-y-1.5">
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Valor da Taxa (R$)</label>
+                            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Valor da Taxa (R$)</label>
                             <CurrencyInput
                               defaultValue={taxaEntregaFixa}
                               onValueChange={(val) => setTaxaEntregaFixa(val)}
-                              className="w-full pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                              className="w-full pr-4 py-2 bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all dark:text-white"
                               placeholder="0.00"
                             />
                           </div>
                         </div>
 
                         <div className="flex items-center justify-between">
-                          <h4 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Cadastro Manual de Bairros</h4>
+                          <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">Cadastro Manual de Bairros</h4>
                           <button
                             onClick={addNeighborhood}
                             className="text-xs font-bold text-primary flex items-center gap-1 hover:underline"
@@ -466,9 +466,9 @@ export default function SettingsPage() {
 
                         <div className="space-y-3">
                           {neighborhoods.map((n, idx) => (
-                            <div key={n.id || idx} className="flex flex-col sm:grid sm:grid-cols-12 gap-3 items-end p-3 bg-white border border-slate-100 rounded-xl shadow-sm">
+                            <div key={n.id || idx} className="flex flex-col sm:grid sm:grid-cols-12 gap-3 items-end p-3 bg-white dark:bg-slate-700 border border-slate-100 dark:border-slate-600 rounded-xl shadow-sm">
                               <div className="w-full sm:col-span-5 space-y-1">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase">Bairro / Região</label>
+                                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Bairro / Região</label>
                                 <input
                                   type="text"
                                   value={n.bairro}
@@ -477,10 +477,10 @@ export default function SettingsPage() {
                                     updated[idx].bairro = e.target.value;
                                     setNeighborhoods(updated);
                                   }}
-                                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20" placeholder="Ex: Centro" />
+                                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white" placeholder="Ex: Centro" />
                               </div>
                               <div className="w-full sm:col-span-3 space-y-1">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase">Taxa (R$)</label>
+                                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Taxa (R$)</label>
                                 <CurrencyInput
                                   defaultValue={n.valor_taxa}
                                   onValueChange={(val) => {
@@ -488,10 +488,10 @@ export default function SettingsPage() {
                                     updated[idx].valor_taxa = val;
                                     setNeighborhoods(updated);
                                   }}
-                                  className="w-full pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                                  className="w-full pr-3 py-2 bg-slate-50 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20" />
                               </div>
                               <div className="w-full sm:col-span-3 space-y-1">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase">Tempo Est.</label>
+                                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Tempo Est.</label>
                                 <input
                                   type="text"
                                   value={n.tempo_estimado}
@@ -500,7 +500,7 @@ export default function SettingsPage() {
                                     updated[idx].tempo_estimado = e.target.value;
                                     setNeighborhoods(updated);
                                   }}
-                                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20" placeholder="Ex: 30-40" />
+                                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white" placeholder="Ex: 30-40" />
                               </div>
                               <div className="w-full sm:col-span-1 flex justify-center sm:pb-2">
                                 <button onClick={() => removeNeighborhood(n.id)} className="text-slate-300 hover:text-red-500 transition-colors p-2">
@@ -518,16 +518,16 @@ export default function SettingsPage() {
 
               {activeSection === 'generalRules' && (
                 <div className="space-y-6">
-                  <h3 className="text-lg font-bold text-slate-900">Taxas e Regras Gerais</h3>
-                  <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-6">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">Taxas e Regras Gerais</h3>
+                  <div className="p-6 bg-slate-50 dark:bg-slate-700 rounded-2xl border border-slate-100 dark:border-slate-600 space-y-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="size-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-slate-600">
+                        <div className="size-10 bg-white dark:bg-slate-600 rounded-xl shadow-sm flex items-center justify-center text-slate-600 dark:text-slate-300">
                           <Package className="size-5" />
                         </div>
                         <div>
-                          <p className="font-bold text-slate-900">Cobrar Taxa de Embalagem?</p>
-                          <p className="text-xs text-slate-500">Adiciona um valor fixo ao final de cada pedido.</p>
+                          <p className="font-bold text-slate-900 dark:text-white">Cobrar Taxa de Embalagem?</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">Adiciona um valor fixo ao final de cada pedido.</p>
                         </div>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
@@ -537,7 +537,7 @@ export default function SettingsPage() {
                           checked={packagingFeeEnabled}
                           onChange={() => setPackagingFeeEnabled(!packagingFeeEnabled)}
                         />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                        <div className="w-11 h-6 bg-slate-200 dark:bg-slate-500 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                       </label>
                     </div>
 
@@ -551,12 +551,12 @@ export default function SettingsPage() {
                         >
                           <div className="pt-4 flex items-center gap-4">
                             <div className="flex-1 space-y-1.5">
-                              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Valor da Taxa (R$)</label>
+                              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Valor da Taxa (R$)</label>
                               <div className="relative">
                                 <CurrencyInput
                                   defaultValue={valorEmbalagem}
                                   onValueChange={(val) => setValorEmbalagem(val)}
-                                  className="w-full pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                                  className="w-full pr-4 py-2 bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all dark:text-white"
                                 />
                               </div>
                             </div>
@@ -566,15 +566,15 @@ export default function SettingsPage() {
                     </AnimatePresence>
                   </div>
 
-                  <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-6">
+                  <div className="p-6 bg-slate-50 dark:bg-slate-700 rounded-2xl border border-slate-100 dark:border-slate-600 space-y-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="size-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-slate-600">
+                        <div className="size-10 bg-white dark:bg-slate-600 rounded-xl shadow-sm flex items-center justify-center text-slate-600 dark:text-slate-300">
                           <Package className="size-5" />
                         </div>
                         <div>
-                          <p className="font-bold text-slate-900">Controle de Estoque Ativo?</p>
-                          <p className="text-xs text-slate-500">Habilita avisos de falta de insumos e baixa automática no estoque.</p>
+                          <p className="font-bold text-slate-900 dark:text-white">Controle de Estoque Ativo?</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">Habilita avisos de falta de insumos e baixa automática no estoque.</p>
                         </div>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
@@ -584,7 +584,7 @@ export default function SettingsPage() {
                           checked={inventoryControlEnabled}
                           onChange={() => setInventoryControlEnabled(!inventoryControlEnabled)}
                         />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                        <div className="w-11 h-6 bg-slate-200 dark:bg-slate-500 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                       </label>
                     </div>
                   </div>
@@ -609,15 +609,15 @@ export default function SettingsPage() {
 
               {activeSection === 'notifications' && (
                 <div className="space-y-6">
-                  <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <Bell className="size-5 text-primary" />
                     Notificações WhatsApp
                   </h3>
                   
-                  <div className="p-4 border border-slate-200 rounded-xl space-y-4">
+                  <div className="p-4 border border-slate-200 dark:border-slate-600 rounded-xl space-y-4">
                     <div>
-                      <p className="text-sm font-bold text-slate-700">Testar Conexão</p>
-                      <p className="text-xs text-slate-500 mt-1">Envie uma mensagem de teste para verificar se o WhatsApp está funcionando</p>
+                      <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Testar Conexão</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Envie uma mensagem de teste para verificar se o WhatsApp está funcionando</p>
                     </div>
                     
                     <div className="flex gap-3">
@@ -625,7 +625,7 @@ export default function SettingsPage() {
                         type="tel"
                         placeholder="Número com DDD (ex: 79998618874)"
                         id="test-phone"
-                        className="flex-1 px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                        className="flex-1 px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
                       />
                       <button
                         onClick={async () => {
@@ -654,17 +654,17 @@ export default function SettingsPage() {
                       </button>
                     </div>
                     
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                      <p className="text-xs text-amber-700">
+                    <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg p-3">
+                      <p className="text-xs text-amber-700 dark:text-amber-300">
                         <strong>Dica:</strong> Certifique-se de que a Evolution API está configurada corretamente nas variáveis de ambiente:
-                        <code className="block mt-1 bg-amber-100 px-2 py-1 rounded text-[10px]">EVOLUTION_API_URL, EVOLUTION_API_KEY, EVOLUTION_INSTANCE</code>
+                        <code className="block mt-1 bg-amber-100 dark:bg-amber-900/50 px-2 py-1 rounded text-[10px]">EVOLUTION_API_URL, EVOLUTION_API_KEY, EVOLUTION_INSTANCE</code>
                       </p>
                     </div>
                   </div>
                   
-                  <div className="p-4 border border-slate-200 rounded-xl">
-                    <p className="text-sm font-bold text-slate-700 mb-3">Mensagens Automáticas</p>
-                    <div className="space-y-2 text-sm text-slate-600">
+                  <div className="p-4 border border-slate-200 dark:border-slate-600 rounded-xl">
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3">Mensagens Automáticas</p>
+                    <div className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
                       <div className="flex items-center gap-2">
                         <span className="size-2 bg-green-500 rounded-full"></span>
                         <span>Pedido criado → Link de rastreamento</span>
@@ -684,23 +684,23 @@ export default function SettingsPage() {
 
               {activeSection === 'security' && (
                 <div className="space-y-6">
-                  <h3 className="text-lg font-bold text-slate-900">Segurança e Acesso</h3>
-                  <div className="p-4 border border-slate-200 rounded-xl space-y-3">
-                    <p className="text-sm font-bold text-slate-700">Alterar Senha do Painel</p>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">Segurança e Acesso</h3>
+                  <div className="p-4 border border-slate-200 dark:border-slate-600 rounded-xl space-y-3">
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Alterar Senha do Painel</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <input
                         type="password"
                         placeholder="Nova senha"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                        className="px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
                       />
                       <input
                         type="password"
                         placeholder="Confirmar nova senha"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                        className="px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
                       />
                     </div>
                     <button
@@ -721,9 +721,9 @@ export default function SettingsPage() {
                   </div>
 
                   {/* Tutorial Button */}
-                  <div className="p-4 border border-slate-200 rounded-xl">
-                    <p className="text-sm font-bold text-slate-700 mb-2">Tutorial do Sistema</p>
-                    <p className="text-xs text-slate-500 mb-3">Veja o tutorial de boas-vindas novamente para conhecer todas as funcionalidades</p>
+                  <div className="p-4 border border-slate-200 dark:border-slate-600 rounded-xl">
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Tutorial do Sistema</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Veja o tutorial de boas-vindas novamente para conhecer todas as funcionalidades</p>
                     <button
                       onClick={() => {
                         localStorage.removeItem('zapflow_onboarding_seen');
@@ -740,18 +740,18 @@ export default function SettingsPage() {
 
               {activeSection === 'bot' && (
                 <div className="space-y-6">
-                  <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <Bot className="size-6 text-primary" />
                     Bot de Atendimento
                   </h3>
                   
                   <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 p-1">
-                    <div className="bg-white rounded-xl p-8 sm:p-12">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl p-8 sm:p-12">
                       <div className="text-center space-y-6">
                         {/* Ícone animado */}
-                        <div className="mx-auto w-24 h-24 bg-gradient-to-br from-violet-100 to-fuchsia-100 rounded-full flex items-center justify-center">
+                        <div className="mx-auto w-24 h-24 bg-gradient-to-br from-violet-100 to-fuchsia-100 dark:from-violet-900/30 dark:to-fuchsia-900/30 rounded-full flex items-center justify-center">
                           <div className="relative">
-                            <Bot className="w-12 h-12 text-violet-600" />
+                            <Bot className="w-12 h-12 text-violet-600 dark:text-violet-400" />
                             <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center">
                               <span className="text-[10px] font-bold text-yellow-800">!</span>
                             </div>
@@ -760,56 +760,56 @@ export default function SettingsPage() {
                         
                         {/* Título */}
                         <div>
-                          <h4 className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
+                          <h4 className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent dark:from-violet-400 dark:to-fuchsia-400">
                             Em Desenvolvimento
                           </h4>
-                          <p className="text-slate-500 mt-2 text-sm max-w-md mx-auto">
+                          <p className="text-slate-500 dark:text-slate-400 mt-2 text-sm max-w-md mx-auto">
                             Estamos construindo algo incrível para você! Nosso Bot de Atendimento automatizado estará disponível em breve.
                           </p>
                         </div>
                         
                         {/* Features */}
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
-                          <div className="p-4 bg-slate-50 rounded-xl">
-                            <div className="w-10 h-10 bg-violet-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                              <svg className="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-xl">
+                            <div className="w-10 h-10 bg-violet-100 dark:bg-violet-900/30 rounded-lg flex items-center justify-center mx-auto mb-3">
+                              <svg className="w-5 h-5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                               </svg>
                             </div>
-                            <p className="text-xs font-bold text-slate-700">Atendimento Automático</p>
+                            <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Atendimento Automático</p>
                           </div>
-                          <div className="p-4 bg-slate-50 rounded-xl">
-                            <div className="w-10 h-10 bg-fuchsia-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                              <svg className="w-5 h-5 text-fuchsia-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-xl">
+                            <div className="w-10 h-10 bg-fuchsia-100 dark:bg-fuchsia-900/30 rounded-lg flex items-center justify-center mx-auto mb-3">
+                              <svg className="w-5 h-5 text-fuchsia-600 dark:text-fuchsia-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                               </svg>
                             </div>
-                            <p className="text-xs font-bold text-slate-700">Pedidos via WhatsApp</p>
+                            <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Pedidos via WhatsApp</p>
                           </div>
-                          <div className="p-4 bg-slate-50 rounded-xl">
-                            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                              <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-xl">
+                            <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center mx-auto mb-3">
+                              <svg className="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                               </svg>
                             </div>
-                            <p className="text-xs font-bold text-slate-700">Respostas Inteligentes</p>
+                            <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Respostas Inteligentes</p>
                           </div>
                         </div>
                         
                         {/* Barra de progresso fake */}
                         <div className="pt-4">
-                          <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
+                          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-2">
                             <span>Progresso do desenvolvimento</span>
-                            <span className="font-bold text-violet-600">75%</span>
+                            <span className="font-bold text-violet-600 dark:text-violet-400">75%</span>
                           </div>
-                          <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                             <div className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full" style={{ width: '75%' }}></div>
                           </div>
                         </div>
                         
                         {/* CTA */}
                         <div className="pt-4">
-                          <p className="text-xs text-slate-400">
+                          <p className="text-xs text-slate-400 dark:text-slate-500">
                             Fique atento às atualizações! 🚀
                           </p>
                         </div>

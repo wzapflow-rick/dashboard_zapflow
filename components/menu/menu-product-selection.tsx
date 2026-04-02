@@ -187,7 +187,7 @@ export default function MenuProductSelection({
                 onClick={() => hasComplements ? setIsOpen(true) : null}
                 className="w-full text-left"
             >
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex gap-4 hover:shadow-md transition-all cursor-pointer">
+                <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-4 flex gap-4 hover:shadow-md transition-all cursor-pointer">
                     <div className="relative size-20 rounded-xl overflow-hidden bg-slate-100 shrink-0">
                         <Image
                             src={product.imagem || `https://picsum.photos/seed/${product.id}/200/200`}

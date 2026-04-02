@@ -20,24 +20,9 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
     const [assigning, setAssigning] = useState(false);
     const [showDriverDropdown, setShowDriverDropdown] = useState(false);
 
-    // Debug: Log order data structure
-    useEffect(() => {
-        if (order.id) {
-            console.log(`[OrderCard] Order #${order.id} data:`, {
-                endereco_entrega: order.endereco_entrega,
-                bairro_entrega: order.bairro_entrega,
-                tipo_entrega: order.tipo_entrega,
-                entregador_id: order.entregador_id,
-                allKeys: Object.keys(order)
-            });
-        }
-    }, [order]);
-
     const loadDrivers = async () => {
         try {
-            console.log('[OrderCard] Buscando entregadores disponíveis...');
             const data = await getAvailableDrivers();
-            console.log('[OrderCard] Entregadores encontrados:', data.length);
             setDrivers(data);
         } catch (error) {
             console.error('Erro ao carregar entregadores:', error);
@@ -101,7 +86,7 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
     return (
         <div
             className={cn(
-                "bg-white rounded-lg shadow-sm border-l-4 p-4 space-y-3",
+                "bg-white dark:bg-slate-800 rounded-lg shadow-sm border-l-4 p-4 space-y-3 border border-slate-200 dark:border-slate-700",
                 columnId === 'pagamento_pendente' ? "border-orange-500" :
                     columnId === 'pendente' ? "border-red-500" :
                         columnId === 'preparando' ? "border-amber-500" :
@@ -120,7 +105,7 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
                         )}
                     </div>
                     <div className="flex items-center gap-2">
-                        <h4 className="font-bold text-base leading-tight text-slate-900">
+                        <h4 className="font-bold text-base leading-tight text-slate-900 dark:text-slate-200">
                             {order.nome_cliente || order.cliente_nome || order.telefone_cliente || 'Cliente'}
                         </h4>
                         {!order.is_recorrente && (
@@ -148,11 +133,11 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
             </div>
 
             <div className="text-sm space-y-1">
-                <p className="text-slate-500 flex items-center gap-1.5 line-clamp-1">
+                <p className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5 line-clamp-1">
                     <Phone className="size-3.5" /> {order.telefone_cliente || order.telefone || 'N/A'}
                 </p>
                 <div className="flex items-center justify-between">
-                    <p className="text-slate-600 flex items-center gap-1.5 line-clamp-1 flex-1">
+                    <p className="text-slate-600 dark:text-slate-300 flex items-center gap-1.5 line-clamp-1 flex-1">
                         <MapPin className="size-3.5 shrink-0" />
                         <span className="truncate">
                             {!isDelivery
@@ -164,22 +149,22 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
                     </p>
                     <span className={cn(
                         "text-[10px] font-bold px-2 py-0.5 rounded uppercase shrink-0 ml-2",
-                        isDelivery ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"
+                        isDelivery ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300" : "bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300"
                     )}>
                         {isDelivery ? "Delivery" : "Retirada"}
                     </span>
                 </div>
             </div>
 
-            <div className="py-2 border-y border-slate-100">
-                <ul className="text-sm font-medium space-y-1 text-slate-700">
+            <div className="py-2 border-y border-slate-100 dark:border-slate-700">
+                <ul className="text-sm font-medium space-y-1 text-slate-700 dark:text-slate-300">
                     {formattedItems.map((item: string, idx: number) => (
                         <li key={idx} className="line-clamp-1">• {item}</li>
                     ))}
                 </ul>
                 {order.observacoes && (
-                    <div className="mt-2 p-2 bg-red-50 rounded border border-red-100">
-                        <p className="text-xs font-bold text-red-600 uppercase">OBS: {order.observacoes}</p>
+                    <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/30 rounded border border-red-100 dark:border-red-800">
+                        <p className="text-xs font-bold text-red-600 dark:text-red-400 uppercase">OBS: {order.observacoes}</p>
                     </div>
                 )}
             </div>
@@ -187,20 +172,20 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
             <div className="flex items-center justify-between pt-2">
                 <span className={cn(
                     "text-[10px] font-bold uppercase py-1.5 px-2.5 rounded flex items-center gap-1",
-                    order.forma_pagamento === 'pix' ? "bg-purple-100 text-purple-700" :
-                        order.forma_pagamento === 'dinheiro' ? "bg-green-100 text-green-700" :
-                            "bg-slate-100 text-slate-700"
+                    order.forma_pagamento === 'pix' ? "bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300" :
+                        order.forma_pagamento === 'dinheiro' ? "bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300" :
+                            "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300"
                 )}>
                     {order.forma_pagamento || 'Pagar na Entrega'}
                 </span>
-                <span className="text-base font-bold text-slate-900">
+                <span className="text-base font-bold text-slate-900 dark:text-white">
                     R$ {Number(order.valor_total || order.total || 0).toFixed(2).replace('.', ',')}
                 </span>
             </div>
 
             {/* Seleção de Entregador - apenas para delivery */}
             {isDelivery && columnId !== 'finalizado' && columnId !== 'pagamento_pendente' && (
-                <div className="pt-2 border-t border-slate-100">
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-700">
                     <div className="relative">
                         <button
                             onClick={() => setShowDriverDropdown(!showDriverDropdown)}
@@ -208,8 +193,8 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
                             className={cn(
                                 "w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm transition-colors",
                                 selectedDriver
-                                    ? "bg-green-50 border border-green-200 text-green-700"
-                                    : "bg-amber-50 border border-amber-200 text-amber-700"
+                                    ? "bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400"
+                                    : "bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400"
                             )}
                         >
                             <span className="flex items-center gap-2">
@@ -223,18 +208,18 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
                         </button>
 
                         {showDriverDropdown && (
-                            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                            <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
                                 {selectedDriver && (
                                     <button
                                         onClick={() => handleAssignDriver(null)}
-                                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
                                     >
                                         <X className="size-4" />
                                         Remover entregador
                                     </button>
                                 )}
                                 {drivers.length === 0 ? (
-                                    <div className="px-3 py-4 text-center text-sm text-slate-400">
+                                    <div className="px-3 py-4 text-center text-sm text-slate-400 dark:text-slate-500">
                                         Nenhum entregador disponível
                                     </div>
                                 ) : (
@@ -243,13 +228,13 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
                                             key={driver.id}
                                             onClick={() => handleAssignDriver(driver.id!)}
                                             className={cn(
-                                                "w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50 transition-colors",
-                                                selectedDriver === driver.id && "bg-primary/10"
+                                                "w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors",
+                                                selectedDriver === driver.id && "bg-primary/10 dark:bg-primary/20"
                                             )}
                                         >
-                                            <User className="size-4 text-slate-400" />
-                                            <span className="flex-1 text-left">{driver.veiculo} - {driver.nome}</span>
-                                            <span className="text-xs text-slate-400">{driver.telefone}</span>
+                                            <User className="size-4 text-slate-400 dark:text-slate-500" />
+                                            <span className="flex-1 text-left dark:text-white">{driver.veiculo} - {driver.nome}</span>
+                                            <span className="text-xs text-slate-400 dark:text-slate-500">{driver.telefone}</span>
                                         </button>
                                     ))
                                 )}
@@ -261,8 +246,8 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
 
             {/* Mostrar entregador atribuído em pedidos finalizados */}
             {order.entregador_id && columnId === 'finalizado' && (
-                <div className="pt-2 border-t border-slate-100">
-                    <div className="flex items-center gap-2 text-sm text-green-600">
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-700">
+                    <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
                         <Truck className="size-4" />
                         <span>Entregue por: {order.entregador_nome || 'Entregador'}</span>
                     </div>
@@ -271,12 +256,12 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
 
             {/* Link de rastreamento para delivery */}
             {isDelivery && (columnId === 'entrega' || columnId === 'preparando') && (
-                <div className="pt-2 border-t border-slate-100">
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-700">
                     <a
                         href={`/track/${order.id}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-purple-50 border border-purple-200 rounded-lg text-purple-700 text-sm font-medium hover:bg-purple-100 transition-colors"
+                        className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800 rounded-lg text-purple-700 dark:text-purple-300 text-sm font-medium hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors"
                     >
                         <ExternalLink className="size-4" />
                         Link de Rastreamento
@@ -288,14 +273,14 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
                 <div className="grid grid-cols-6 gap-2 pt-1">
                     <button
                         onClick={() => onOpenDetails?.(order)}
-                        className="col-span-1 h-9 flex items-center justify-center rounded bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+                        className="col-span-1 h-9 flex items-center justify-center rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
                         title="Ver Detalhes"
                     >
                         <Eye className="size-4" />
                     </button>
                     <button
                         onClick={() => onOpenPrintModal(order)}
-                        className="col-span-1 h-9 flex items-center justify-center rounded bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+                        className="col-span-1 h-9 flex items-center justify-center rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
                     >
                         <Printer className="size-4" />
                     </button>
@@ -312,14 +297,14 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
                 <div className="grid grid-cols-6 gap-2 pt-1">
                     <button
                         onClick={() => onOpenDetails?.(order)}
-                        className="col-span-1 h-9 flex items-center justify-center rounded bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+                        className="col-span-1 h-9 flex items-center justify-center rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
                         title="Ver Detalhes"
                     >
                         <Eye className="size-4" />
                     </button>
                     <button
                         onClick={() => onOpenPrintModal(order)}
-                        className="col-span-1 h-9 flex items-center justify-center rounded bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+                        className="col-span-1 h-9 flex items-center justify-center rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
                     >
                         <Printer className="size-4" />
                     </button>

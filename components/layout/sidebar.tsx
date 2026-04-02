@@ -76,7 +76,8 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen }: Sideb
                     "fixed left-0 top-0 h-full bg-white border-r border-slate-200 transition-all duration-300 z-[70] flex flex-col",
                     isOpen ? "w-64" : "w-20",
                     "lg:translate-x-0",
-                    isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+                    isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+                    "dark:bg-slate-900 dark:border-slate-700"
                 )}
             >
                 <div className="p-6 flex items-center justify-between gap-3">
@@ -90,14 +91,14 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen }: Sideb
                                 animate={{ opacity: 1 }}
                                 className="flex flex-col"
                             >
-                                <h1 className="font-bold text-slate-900 leading-none truncate w-32">{user?.nome || 'ZapFlow'}</h1>
-                                <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-wider font-bold">Made by ZapFlow</p>
+                                <h1 className="font-bold text-slate-900 leading-none truncate w-32 dark:text-white">{user?.nome || 'ZapFlow'}</h1>
+                                <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-wider font-bold dark:text-slate-400">Made by ZapFlow</p>
                             </motion.div>
                         )}
                     </div>
                     <button
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className="lg:hidden p-2 text-slate-400 hover:text-slate-600"
+                        className="lg:hidden p-2 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
                     >
                         <X className="size-5" />
                     </button>
@@ -122,18 +123,18 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen }: Sideb
                                         "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group",
                                         isActive
                                             ? "bg-primary/10 text-primary font-bold"
-                                            : "text-slate-600 hover:bg-slate-50"
+                                            : "text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800"
                                     )}
                                 >
-                                    <item.icon className={cn("size-5 shrink-0", isActive ? "text-primary" : "text-slate-500")} />
-                                    {(isOpen || isMobileMenuOpen) && <span>{item.name}</span>}
+                                    <item.icon className={cn("size-5 shrink-0", isActive ? "text-primary" : "text-slate-500 dark:text-slate-400")} />
+                                    {(isOpen || isMobileMenuOpen) && <span className="dark:text-slate-300">{item.name}</span>}
                                 </a>
                             );
                         })}
 
-                    <div className="pt-4 mt-4 border-t border-slate-100">
+                    <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-700">
                         {(isOpen || isMobileMenuOpen) && (
-                            <span className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">
+                            <span className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block dark:text-slate-500">
                                 Administração
                             </span>
                         )}
@@ -148,19 +149,19 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen }: Sideb
                                         "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group",
                                         isActive
                                             ? "bg-primary/10 text-primary font-bold"
-                                            : "text-slate-600 hover:bg-slate-50"
+                                            : "text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800"
                                     )}
                                 >
-                                    <item.icon className={cn("size-5 shrink-0", isActive ? "text-primary" : "text-slate-500")} />
-                                    {(isOpen || isMobileMenuOpen) && <span>{item.name}</span>}
+                                    <item.icon className={cn("size-5 shrink-0", isActive ? "text-primary" : "text-slate-500 dark:text-slate-400")} />
+                                    {(isOpen || isMobileMenuOpen) && <span className="dark:text-slate-300">{item.name}</span>}
                                 </a>
                             );
                         })}
                     </div>
                 </nav>
 
-                <div className="p-4 border-t border-slate-100">
-                    <div className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-xl cursor-pointer transition-colors">
+                <div className="p-4 border-t border-slate-100 dark:border-slate-700">
+                    <div className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-xl cursor-pointer transition-colors dark:hover:bg-slate-800">
                         <div className="relative size-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs overflow-hidden shrink-0">
                             <Image
                                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuDm72iK3QVpJIMCWIHbWsRreh_QjkigiEYJ2gtcc6GqtkJAiL6-wR2AENgEq-Hrh8EA_6Yyyp_9TLAAg2R_RuFBNgiB9XbHm2Ny79MIfLQ3rMDm7alfZlyysgKOr16OG9gZZtvomKL1wz4cO-B6LuKMIBJJGkki0Fl3AbtpFUuZSBCKKgAMPAJZdTLel0MzOOPREwzSyK6_LPuFIa0zv1mHtyb3b_dJJrInLPf58HW0YS2CWO27sZamwhRyxsI0vDyhdFjw9DKBsYM"
@@ -176,8 +177,8 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen }: Sideb
                                 animate={{ opacity: 1 }}
                                 className="flex flex-col overflow-hidden"
                             >
-                                <span className="text-sm font-semibold text-slate-900 leading-tight truncate">{user?.nome || 'Minha Loja'}</span>
-                                <span className="text-xs text-slate-500">Plano Pro</span>
+                                <span className="text-sm font-semibold text-slate-900 leading-tight truncate dark:text-white">{user?.nome || 'Minha Loja'}</span>
+                                <span className="text-xs text-slate-500 dark:text-slate-400">Plano Pro</span>
                             </motion.div>
                         )}
                     </div>

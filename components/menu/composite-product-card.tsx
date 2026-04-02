@@ -122,8 +122,8 @@ export default function CompositeProductCard({ product, whatsappNumber, empresaN
     return (
         <>
             <button onClick={() => setIsOpen(true)} className="w-full text-left">
-                <div className="bg-white rounded-2xl border border-amber-100 shadow-sm p-4 flex gap-4 hover:shadow-md hover:border-amber-200 transition-all cursor-pointer">
-                    <div className="relative size-20 rounded-xl overflow-hidden bg-amber-50 shrink-0 flex items-center justify-center">
+                <div className="bg-white dark:bg-slate-800 rounded-2xl border border-amber-100 dark:border-amber-700 shadow-sm p-4 flex gap-4 hover:shadow-md hover:border-amber-200 dark:hover:border-amber-600 transition-all cursor-pointer">
+                    <div className="relative size-20 rounded-xl overflow-hidden bg-amber-50 dark:bg-amber-900/30 shrink-0 flex items-center justify-center">
                         {product.imagem ? (
                             <Image
                                 src={product.imagem}
@@ -137,16 +137,16 @@ export default function CompositeProductCard({ product, whatsappNumber, empresaN
                         )}
                     </div>
                     <div className="flex flex-col flex-1 min-w-0">
-                        <h3 className="font-bold text-slate-900 text-sm">{product.nome}</h3>
+                        <h3 className="font-bold text-slate-900 dark:text-white text-sm">{product.nome}</h3>
                         {product.descricao && (
-                            <p className="text-xs text-slate-500 mt-1 line-clamp-2">{product.descricao}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">{product.descricao}</p>
                         )}
-                        <p className="text-[10px] text-amber-600 mt-1 font-medium">{priceRuleLabel}</p>
+                        <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1 font-medium">{priceRuleLabel}</p>
                         <div className="mt-auto pt-2 flex items-center justify-between">
-                            <span className="text-base font-black text-amber-600">
+                            <span className="text-base font-black text-amber-600 dark:text-amber-400">
                                 {selected.length > 0 ? fmt(finalPrice) : `A partir de ${fmt(finalPrice)}`}
                             </span>
-                            <span className="text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-lg transition-all">
+                            <span className="text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30 hover:bg-amber-100 dark:hover:bg-amber-900/50 px-3 py-1.5 rounded-lg transition-all">
                                 Montar 🍕
                             </span>
                         </div>
@@ -165,33 +165,33 @@ export default function CompositeProductCard({ product, whatsappNumber, empresaN
                         <motion.div
                             initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                            className="relative w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+                            className="relative w-full max-w-lg bg-white dark:bg-slate-800 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-slate-200 dark:border-slate-700"
                         >
                             {/* Header */}
-                            <div className="p-6 border-b border-slate-100 flex items-start justify-between gap-4 bg-gradient-to-r from-amber-50 to-orange-50 shrink-0">
+                            <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-start justify-between gap-4 bg-gradient-to-r from-amber-50 dark:from-amber-900/30 to-orange-50 dark:to-orange-900/30 shrink-0">
                                 <div>
                                     <div className="text-3xl mb-1">🍕</div>
-                                    <h2 className="text-xl font-bold text-slate-900">{product.nome}</h2>
+                                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">{product.nome}</h2>
                                     {product.descricao && (
-                                        <p className="text-sm text-slate-500 mt-1">{product.descricao}</p>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{product.descricao}</p>
                                     )}
-                                    <div className="flex items-center gap-1.5 mt-2 text-xs text-amber-700 font-medium bg-amber-100 w-fit px-2 py-1 rounded-lg">
+                                    <div className="flex items-center gap-1.5 mt-2 text-xs text-amber-700 dark:text-amber-400 font-medium bg-amber-100 dark:bg-amber-900/50 w-fit px-2 py-1 rounded-lg">
                                         <Info className="size-3" />
                                         {priceRuleLabel}
                                     </div>
                                 </div>
                                 <button
                                     onClick={() => { setIsOpen(false); setSelected([]); }}
-                                    className="p-2 hover:bg-slate-100 rounded-full transition-colors shrink-0"
+                                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors shrink-0"
                                 >
-                                    <X className="size-5 text-slate-500" />
+                                    <X className="size-5 text-slate-500 dark:text-slate-400" />
                                 </button>
                             </div>
 
                             {/* Instruction banner */}
-                            <div className="px-6 py-3 bg-violet-50 border-b border-violet-100 shrink-0">
+                            <div className="px-6 py-3 bg-violet-50 dark:bg-violet-900/30 border-b border-violet-100 dark:border-violet-800 shrink-0">
                                 <div className="flex items-center justify-between">
-                                    <p className="text-sm font-bold text-violet-800">
+                                    <p className="text-sm font-bold text-violet-800 dark:text-violet-300">
                                         Escolha {min === max ? max : `${min} a ${max}`} sabore{max > 1 ? 's' : ''}
                                     </p>
                                     <div className="flex gap-1">
@@ -200,7 +200,7 @@ export default function CompositeProductCard({ product, whatsappNumber, empresaN
                                                 key={idx}
                                                 className={`size-3 rounded-full border-2 transition-all ${idx < selected.length
                                                     ? 'bg-violet-500 border-violet-500'
-                                                    : 'border-slate-300 bg-white'
+                                                    : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700'
                                                     }`}
                                             />
                                         ))}
@@ -211,7 +211,7 @@ export default function CompositeProductCard({ product, whatsappNumber, empresaN
                             {/* Flavor list */}
                             <div className="flex-1 overflow-y-auto px-6 py-4 space-y-2 custom-scrollbar">
                                 {product.items.length === 0 ? (
-                                    <p className="text-center text-slate-400 py-8">Nenhuma opção disponível.</p>
+                                    <p className="text-center text-slate-400 dark:text-slate-500 py-8">Nenhuma opção disponível.</p>
                                 ) : (
                                     product.items.map((item) => {
                                         const isSelected = !!selected.find(i => i.id === item.id);
@@ -223,14 +223,14 @@ export default function CompositeProductCard({ product, whatsappNumber, empresaN
                                                 onClick={() => canAdd ? toggleItem(item) : undefined}
                                                 disabled={!canAdd && !isSelected}
                                                 className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${isSelected
-                                                    ? 'border-violet-400 bg-violet-50 ring-1 ring-violet-200'
+                                                    ? 'border-violet-400 dark:border-violet-600 bg-violet-50 dark:bg-violet-900/30 ring-1 ring-violet-200 dark:ring-violet-700'
                                                     : canAdd
-                                                        ? 'border-slate-100 bg-slate-50 hover:border-violet-200 hover:bg-violet-50/40'
-                                                        : 'border-slate-100 bg-slate-50 opacity-40 cursor-not-allowed'
+                                                        ? 'border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-700 hover:border-violet-200 dark:hover:border-violet-600 hover:bg-violet-50/40 dark:hover:bg-violet-900/20'
+                                                        : 'border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-700 opacity-40 cursor-not-allowed'
                                                     }`}
                                             >
                                                 {/* Flavor image or emoji */}
-                                                <div className="size-12 rounded-xl overflow-hidden bg-slate-100 shrink-0 flex items-center justify-center">
+                                                <div className="size-12 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-600 shrink-0 flex items-center justify-center">
                                                     {item.imagem ? (
                                                         <Image src={item.imagem} alt={item.nome} width={48} height={48} className="object-cover w-full h-full" referrerPolicy="no-referrer" />
                                                     ) : (
@@ -238,17 +238,17 @@ export default function CompositeProductCard({ product, whatsappNumber, empresaN
                                                     )}
                                                 </div>
                                                 <div className="text-left flex-1 min-w-0">
-                                                    <p className={`text-sm font-bold ${isSelected ? 'text-violet-700' : 'text-slate-800'}`}>{item.nome}</p>
+                                                    <p className={`text-sm font-bold ${isSelected ? 'text-violet-700 dark:text-violet-300' : 'text-slate-800 dark:text-white'}`}>{item.nome}</p>
                                                     {item.descricao && (
-                                                        <p className="text-xs text-slate-500 line-clamp-1">{item.descricao}</p>
+                                                        <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">{item.descricao}</p>
                                                     )}
                                                     {Number(item.preco) > 0 && (
-                                                        <p className="text-xs font-bold text-amber-600 mt-0.5">{fmt(Number(item.preco))}</p>
+                                                        <p className="text-xs font-bold text-amber-600 dark:text-amber-400 mt-0.5">{fmt(Number(item.preco))}</p>
                                                     )}
                                                 </div>
                                                 <div className={`size-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${isSelected
                                                     ? 'bg-violet-500 border-violet-500'
-                                                    : 'border-slate-300 bg-white'
+                                                    : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700'
                                                     }`}>
                                                     {isSelected && <Check className="size-3.5 text-white stroke-[3]" />}
                                                 </div>
@@ -259,27 +259,27 @@ export default function CompositeProductCard({ product, whatsappNumber, empresaN
                             </div>
 
                             {/* Footer */}
-                            <div className="p-6 bg-slate-50 border-t border-slate-100 shrink-0">
+                            <div className="p-6 bg-slate-50 dark:bg-slate-700 border-t border-slate-100 dark:border-slate-600 shrink-0">
                                 <div className="flex items-center justify-between mb-4">
-                                    <span className="text-sm font-bold text-slate-500 uppercase tracking-wider">Total</span>
-                                    <span className="text-2xl font-black text-slate-900">
+                                    <span className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total</span>
+                                    <span className="text-2xl font-black text-slate-900 dark:text-white">
                                         {selected.length > 0 ? fmt(finalPrice) : '—'}
                                     </span>
                                 </div>
                                 {!isValid && selected.length > 0 && (
-                                    <p className="text-center text-xs text-amber-600 font-medium mb-3">
+                                    <p className="text-center text-xs text-amber-600 dark:text-amber-400 font-medium mb-3">
                                         ⚠️ Selecione ao menos {min} sabore{min > 1 ? 's' : ''} para continuar
                                     </p>
                                 )}
                                 {selected.length === 0 && (
-                                    <p className="text-center text-xs text-slate-400 mb-3">
+                                    <p className="text-center text-xs text-slate-400 dark:text-slate-500 mb-3">
                                         Escolha seus sabores acima para ver o preço final
                                     </p>
                                 )}
                                 <button
                                     disabled={!isValid}
                                     onClick={handleAddToCart}
-                                    className="w-full bg-green-500 hover:bg-green-600 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl shadow-lg shadow-green-500/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+                                    className="w-full bg-green-500 hover:bg-green-600 disabled:bg-slate-200 dark:bg-slate-600 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl shadow-lg shadow-green-500/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
                                 >
                                     <ShoppingCart className="size-5" />
                                     {isValid ? 'Adicionar ao Carrinho' : `Escolha ${min - selected.length} sabore${(min - selected.length) !== 1 ? 's' : ''} ainda`}

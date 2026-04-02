@@ -53,8 +53,8 @@ export default function GrowthPage() {
       <DashboardLayout>
         <div className="space-y-8">
           <header>
-            <h1 className="text-2xl font-bold text-slate-900">Divulgação & Cardápio Online</h1>
-            <p className="text-slate-500 text-sm mt-1">Compartilhe seu cardápio digital e atraia mais clientes.</p>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Divulgação & Cardápio Online</h1>
+            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Compartilhe seu cardápio digital e atraia mais clientes.</p>
           </header>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -62,20 +62,20 @@ export default function GrowthPage() {
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6"
+              className="bg-white dark:bg-slate-800 p-8 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-6"
             >
               <div className="flex items-center gap-3">
-                <div className="size-11 bg-violet-100 rounded-xl flex items-center justify-center text-violet-600">
+                <div className="size-11 bg-violet-100 dark:bg-violet-900/30 rounded-xl flex items-center justify-center text-violet-600 dark:text-violet-400">
                   <LinkIcon className="size-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg">Seu Link do Cardápio</h3>
-                  <p className="text-sm text-slate-500">Compartilhe nas redes sociais e no WhatsApp</p>
+                  <h3 className="font-bold text-lg dark:text-white">Seu Link do Cardápio</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Compartilhe nas redes sociais e no WhatsApp</p>
                 </div>
               </div>
 
               <div className="flex gap-2">
-                <div className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-mono text-slate-600 flex items-center truncate">
+                <div className="flex-1 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm font-mono text-slate-600 dark:text-slate-300 flex items-center truncate">
                   {displayUrl || 'Carregando...'}
                 </div>
                 <button
@@ -93,7 +93,7 @@ export default function GrowthPage() {
                   href={menuUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 flex items-center justify-center gap-2 py-3 border-2 border-violet-200 text-violet-700 font-bold rounded-xl hover:bg-violet-50 transition-all text-sm"
+                  className="flex-1 flex items-center justify-center gap-2 py-3 border-2 border-violet-200 dark:border-violet-700 text-violet-700 dark:text-violet-300 font-bold rounded-xl hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-all text-sm"
                 >
                   <ExternalLink className="size-4" />
                   Visualizar Cardápio
@@ -115,21 +115,21 @@ export default function GrowthPage() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-8 items-center"
+              className="bg-white dark:bg-slate-800 p-8 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col md:flex-row gap-8 items-center"
             >
-              <div className="size-44 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-3 shrink-0">
-                <QrCode className="size-24 text-slate-400" />
-                <p className="text-xs text-slate-400 font-medium text-center px-2">QR Code do cardápio</p>
+              <div className="size-44 bg-slate-50 dark:bg-slate-700 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-600 flex flex-col items-center justify-center gap-3 shrink-0">
+                <QrCode className="size-24 text-slate-400 dark:text-slate-500" />
+                <p className="text-xs text-slate-400 dark:text-slate-500 font-medium text-center px-2">QR Code do cardápio</p>
               </div>
               <div className="space-y-4 text-center md:text-left">
-                <div className="flex items-center gap-2 text-slate-900">
-                  <Smartphone className="size-5 text-violet-500" />
+                <div className="flex items-center gap-2 text-slate-900 dark:text-white">
+                  <Smartphone className="size-5 text-violet-500 dark:text-violet-400" />
                   <h3 className="font-bold text-lg">QR Code para Mesas</h3>
                 </div>
-                <p className="text-slate-500 text-sm leading-relaxed">
+                <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
                   Imprima e coloque em suas mesas ou balcão para que clientes acessem seu cardápio instantaneamente pelo celular.
                 </p>
-                <p className="text-xs text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
+                <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-3 py-2 rounded-lg">
                   💡 Em breve: geração e download do QR Code automático.
                 </p>
               </div>

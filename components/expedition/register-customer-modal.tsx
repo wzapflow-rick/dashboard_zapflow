@@ -9,9 +9,10 @@ interface RegisterCustomerModalProps {
     onClose: () => void;
     order: any;
     onSuccess: () => void;
+    zIndex?: number;
 }
 
-export default function RegisterCustomerModal({ isOpen, onClose, order, onSuccess }: RegisterCustomerModalProps) {
+export default function RegisterCustomerModal({ isOpen, onClose, order, onSuccess, zIndex = 100 }: RegisterCustomerModalProps) {
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         nome: '',
@@ -38,8 +39,8 @@ export default function RegisterCustomerModal({ isOpen, onClose, order, onSucces
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-700">
                 <div className="bg-slate-900 px-6 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="size-10 bg-primary/20 rounded-full flex items-center justify-center">
@@ -57,52 +58,52 @@ export default function RegisterCustomerModal({ isOpen, onClose, order, onSucces
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
                     <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Nome do Cliente (Opcional)</label>
+                        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase ml-1">Nome do Cliente (Opcional)</label>
                         <div className="relative">
-                            <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-300" />
+                            <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-300 dark:text-slate-500" />
                             <input
                                 value={formData.nome}
                                 onChange={e => setFormData({ ...formData, nome: e.target.value })}
-                                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-100 dark:border-slate-600 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                 placeholder="Ex: João Silva"
                             />
                         </div>
                     </div>
 
                     <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">WhatsApp / Telefone</label>
+                        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase ml-1">WhatsApp / Telefone</label>
                         <div className="relative">
-                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-300" />
+                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-300 dark:text-slate-500" />
                             <input
                                 value={formData.telefone}
                                 readOnly
-                                className="w-full pl-10 pr-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-500 cursor-not-allowed outline-none"
+                                className="w-full pl-10 pr-4 py-3 bg-slate-100 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-sm text-slate-500 dark:text-slate-300 cursor-not-allowed outline-none"
                             />
                         </div>
                     </div>
 
                     <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Bairro</label>
+                        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase ml-1">Bairro</label>
                         <div className="relative">
-                            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-300" />
+                            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-300 dark:text-slate-500" />
                             <input
                                 value={formData.bairro_entrega}
                                 onChange={e => setFormData({ ...formData, bairro_entrega: e.target.value })}
-                                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-100 dark:border-slate-600 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                 placeholder="Ex: Centro"
                             />
                         </div>
                     </div>
 
                     <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Endereço Completo (Opcional)</label>
+                        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase ml-1">Endereço Completo (Opcional)</label>
                         <div className="relative">
-                            <Home className="absolute left-3 top-3 size-4 text-slate-300" />
+                            <Home className="absolute left-3 top-3 size-4 text-slate-300 dark:text-slate-500" />
                             <textarea
                                 value={formData.endereco_completo}
                                 onChange={e => setFormData({ ...formData, endereco_completo: e.target.value })}
                                 rows={3}
-                                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
+                                className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-100 dark:border-slate-600 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                 placeholder="Rua, Número, Complemento..."
                             />
                         </div>
@@ -112,7 +113,7 @@ export default function RegisterCustomerModal({ isOpen, onClose, order, onSucces
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 py-3 text-sm font-bold text-slate-500 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors uppercase tracking-wider"
+                            className="flex-1 py-3 text-sm font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors uppercase tracking-wider"
                         >
                             Cancelar
                         </button>
