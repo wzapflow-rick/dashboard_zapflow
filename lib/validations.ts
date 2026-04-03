@@ -15,12 +15,14 @@ export const LoginSchema = z.object({
 export const ProductSchema = z.object({
     id: z.number().optional().or(z.string().optional()),
     nome: z.string().min(2, 'Nome muito curto').transform(sanitizeString),
-    preco: z.coerce.number().positive('Preço deve ser positivo'),
-    categoria_id: z.coerce.number().int().positive('Categoria é obrigatória'),
+    preco: z.coerce.number().min(0, 'Preço não pode ser negativo'),
+    categoria_id: z.coerce.number().int().positive('Categoria é obrigatória').optional(),
+    categorias: z.coerce.number().int().positive('Categoria é obrigatória').optional(),
     descricao: z.string().optional().transform(val => val ? sanitizeString(val) : val),
     disponivel: z.boolean().default(true),
-    imagem_url: z.string().url().optional().or(z.literal('')),
-});
+    imagem_url: z.string().url().optional().or(z.literal('')).optional(),
+    imagem: z.string().optional().or(z.literal('')),
+}).passthrough();
 
 // Categories
 export const CategorySchema = z.object({

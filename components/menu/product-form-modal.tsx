@@ -8,6 +8,7 @@ import { type Category } from '@/app/actions/products';
 import { type Insumo } from '@/app/actions/insumos';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { toast } from 'sonner';
+import { parseCurrency } from '@/lib/utils';
 
 interface ProductFormModalProps {
     isOpen: boolean;
@@ -16,11 +17,7 @@ interface ProductFormModalProps {
     categories: Category[];
     insumosList: Insumo[];
     productInsumos?: { insumo_id: number; quantidade_necessaria: number }[];
-    gruposComplemento?: any[];
-    gruposSlots?: any[];
-    productGrupos?: (number | string)[];
-    productSlots?: string[];
-    onSubmit: (formData: FormData, isCreatingCategory: boolean, selectedInsumos: { insumo_id: string, quantidade_necessaria: number }[], selectedGrupos: number[], selectedSlots: string[]) => Promise<void>;
+    onSubmit: (formData: FormData, isCreatingCategory: boolean, selectedInsumos: { insumo_id: string, quantidade_necessaria: number }[]) => Promise<void>;
 }
 
 export default function ProductFormModal({
@@ -30,9 +27,6 @@ export default function ProductFormModal({
     categories,
     insumosList,
     productInsumos = [],
-    gruposComplemento = [],
-    gruposSlots = [],
-    productGrupos = [],
     onSubmit
 }: ProductFormModalProps) {
     const [isCreatingCategory, setIsCreatingCategory] = useState(false);
@@ -43,10 +37,6 @@ export default function ProductFormModal({
     // Insumos State
     const [usaInsumos, setUsaInsumos] = useState(false);
     const [selectedInsumos, setSelectedInsumos] = useState<{ insumo_id: number, quantidade_necessaria: number }[]>([]);
-
-    // Complementos State
-    const [selectedGrupos, setSelectedGrupos] = useState<number[]>([]);
-    const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
 
     useEffect(() => {
         import('@/app/actions/auth').then(({ getMe }) => {
@@ -66,15 +56,7 @@ export default function ProductFormModal({
             setUsaInsumos(false);
             setSelectedInsumos([]);
         }
-
-        if (productGrupos) {
-            setSelectedGrupos(productGrupos.filter(id => typeof id === 'number') as number[]);
-            setSelectedSlots(productGrupos.filter(id => typeof id === 'string') as string[]);
-        } else {
-            setSelectedGrupos([]);
-            setSelectedSlots([]);
-        }
-    }, [isOpen, editingProduct, productInsumos, productGrupos]);
+    }, [isOpen, editingProduct, productInsumos]);
 
     if (!isOpen) return null;
 
@@ -82,26 +64,25 @@ export default function ProductFormModal({
         e.preventDefault();
         setIsSubmitting(true);
         const formData = new FormData(e.currentTarget);
-        
+
         // Validar preço - garantir que não é NaN
         const precoValue = formData.get('preco');
-        const precoNumerico = Number(String(precoValue).replace(/\./g, '').replace(',', '.'));
-        if (isNaN(precoNumerico) || precoNumerico <= 0) {
+        const precoNumerico = parseCurrency(precoValue as string);
+
+        if (precoNumerico <= 0) {
             toast.error('Por favor, informe um preço válido maior que zero');
             setIsSubmitting(false);
             return;
         }
-        
+
         // Substituir o valor do preço com o valor numérico limpo
         formData.set('preco', String(precoNumerico));
-        
+
         try {
             await onSubmit(
                 formData,
                 isCreatingCategory,
-                usaInsumos ? selectedInsumos.map(i => ({ ...i, insumo_id: String(i.insumo_id) })) : [],
-                selectedGrupos,
-                selectedSlots
+                usaInsumos ? selectedInsumos.map(i => ({ ...i, insumo_id: String(i.insumo_id) })) : []
             );
         } finally {
             setIsSubmitting(false);
@@ -246,85 +227,6 @@ export default function ProductFormModal({
                                         defaultValue={editingProduct?.preco}
                                         className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                                     />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Slot Groups Section (NEW) */}
-                        <div className="pt-4 border-t border-slate-100 dark:border-slate-700">
-                            <div className="mb-4">
-                                <div className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-primary transition-colors flex items-center gap-2">
-                                    Grupos de Slots
-                                    <span className="px-1.5 py-0.5 bg-primary/10 text-primary text-[8px] font-black uppercase rounded">Novo</span>
-                                </div>
-                                <div className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">O novo sistema de slots para produtos fracionados e combos.</div>
-                            </div>
-
-                            <div className="bg-slate-50 dark:bg-slate-700 rounded-xl p-4 border border-slate-100 dark:border-slate-600">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    {gruposSlots?.map(grupo => (
-                                        <label key={grupo.id} className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600 cursor-pointer hover:border-primary/50 dark:hover:border-primary/50 transition-colors">
-                                            <input
-                                                type="checkbox"
-                                                className="size-4 rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary/20"
-                                                checked={selectedSlots.includes(grupo.id)}
-                                                onChange={(e) => {
-                                                    if (e.target.checked) {
-                                                        setSelectedSlots([...selectedSlots, grupo.id]);
-                                                    } else {
-                                                        setSelectedSlots(selectedSlots.filter(id => id !== grupo.id));
-                                                    }
-                                                }}
-                                            />
-                                            <div>
-                                                <div className="text-sm font-semibold text-slate-800 dark:text-white">{grupo.nome}</div>
-                                                <div className="text-[10px] text-slate-500 dark:text-slate-400">{grupo.tipo === 'fracionado' ? 'Fracionado' : 'Adicional'} • {grupo.qtd_slots} slots</div>
-                                            </div>
-                                        </label>
-                                    ))}
-                                    {(!gruposSlots || gruposSlots.length === 0) && (
-                                        <div className="col-span-1 sm:col-span-2 text-center py-4 text-sm text-slate-500 dark:text-slate-400 italic">
-                                            Nenhum grupo de slots cadastrado na aba de complementos.
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Complement Groups Section */}
-                        <div className="pt-4 border-t border-slate-100 dark:border-slate-700">
-                            <div className="mb-4">
-                                <div className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-primary transition-colors">Grupos de Complementos</div>
-                                <div className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">Selecione os grupos de complementos disponíveis para este produto (Ex: Sabores, Adicionais, Tamanho).</div>
-                            </div>
-
-                            <div className="bg-slate-50 dark:bg-slate-700 rounded-xl p-4 border border-slate-100 dark:border-slate-600">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    {gruposComplemento?.map(grupo => (
-                                        <label key={grupo.id} className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600 cursor-pointer hover:border-primary/50 dark:hover:border-primary/50 transition-colors">
-                                            <input
-                                                type="checkbox"
-                                                className="size-4 rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary/20"
-                                                checked={selectedGrupos.includes(grupo.id)}
-                                                onChange={(e) => {
-                                                    if (e.target.checked) {
-                                                        setSelectedGrupos([...selectedGrupos, grupo.id]);
-                                                    } else {
-                                                        setSelectedGrupos(selectedGrupos.filter(id => id !== grupo.id));
-                                                    }
-                                                }}
-                                            />
-                                            <div>
-                                                <div className="text-sm font-semibold text-slate-800 dark:text-white">{grupo.nome}</div>
-                                                {grupo.descricao && <div className="text-[10px] text-slate-500 dark:text-slate-400">{grupo.descricao}</div>}
-                                            </div>
-                                        </label>
-                                    ))}
-                                    {(!gruposComplemento || gruposComplemento.length === 0) && (
-                                        <div className="col-span-1 sm:col-span-2 text-center py-4 text-sm text-slate-500 dark:text-slate-400">
-                                            Nenhum grupo de complemento cadastrado.
-                                        </div>
-                                    )}
                                 </div>
                             </div>
                         </div>

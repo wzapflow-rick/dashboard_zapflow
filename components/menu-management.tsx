@@ -17,8 +17,6 @@ import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { type Category } from '@/app/actions/products';
 import { getReceitaDoProduto, getTodasReceitas, type Insumo } from '@/app/actions/insumos';
-import { getGruposDoProduto } from '@/app/actions/complements';
-import { getGruposDoProduto as getGruposSlotsDoProduto } from '@/app/actions/grupos-slots';
 import { toast } from 'sonner';
 import dynamic from 'next/dynamic';
 import ProductTable from './menu/product-table';
@@ -49,8 +47,6 @@ export default function MenuManagement() {
     loading,
     insumosList,
     productRecipes,
-    gruposComplemento,
-    gruposSlots,
     fetchData,
     toggleDisponibilidade,
     handleDelete,
@@ -82,8 +78,6 @@ export default function MenuManagement() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [editingProductInsumos, setEditingProductInsumos] = useState<{ insumo_id: number; quantidade_necessaria: number }[]>([]);
-  const [editingProductGrupos, setEditingProductGrupos] = useState<number[]>([]);
-  const [editingProductSlots, setEditingProductSlots] = useState<string[]>([]);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -96,24 +90,16 @@ export default function MenuManagement() {
     } catch {
       setEditingProductInsumos([]);
     }
-    try {
-      const prodSlots = await getGruposSlotsDoProduto(Number(product.id));
-      setEditingProductSlots(prodSlots.map(String));
-    } catch {
-      setEditingProductSlots([]);
-    }
     setIsModalOpen(true);
   };
 
-  const handleSaveProduct = async (formData: FormData, isCreatingCategory: boolean, selectedInsumos?: { insumo_id: string | number; quantidade_necessaria: number }[], selectedGrupos?: number[], selectedSlots?: string[]) => {
+  const handleSaveProduct = async (formData: FormData, isCreatingCategory: boolean, selectedInsumos?: { insumo_id: string | number; quantidade_necessaria: number }[]) => {
     try {
       const savedProduct = await saveProduct(
         formData,
         editingProduct,
         isCreatingCategory,
-        selectedInsumos,
-        selectedGrupos,
-        selectedSlots
+        selectedInsumos
       );
 
       if (editingProduct) {
@@ -149,35 +135,35 @@ export default function MenuManagement() {
     <div className="space-y-8">
       <header id="menu-header" className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Produtos</h1>
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight dark:text-zinc-200">Produtos</h1>
           <p className="text-slate-500 text-sm mt-1 font-medium">Gerencie seus produtos industrializados (bebidas, royalties, etc).</p>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={() => { setEditingCategory(null); setIsCategoryModalOpen(true); }}
-            className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2.5 rounded-lg text-sm font-semibold shadow-sm flex items-center gap-2 transition-all active:scale-95"
+            className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2.5 rounded-lg text-sm font-semibold shadow-sm flex items-center gap-2 transition-all active:scale-95 dark:bg-slate-800/75 dark:text-zinc-200 dark:border-slate-700"
           >
             <Folder className="size-4 text-amber-500" />
             Gerenciar Categorias
           </button>
           <button
             onClick={startTour}
-            className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2.5 rounded-lg text-sm font-semibold shadow-sm flex items-center gap-2 transition-all active:scale-95"
+            className="bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2 dark:bg-amber-900 dark:border-amber-800 dark:text-amber-200 dark:hover:bg-amber-800"
           >
-            <Sparkles className="size-4 text-amber-500" />
+            <Sparkles className="size-4 text-amber-500 dark:text-amber-100" />
             Tour
           </button>
-          <button
+          {/* <button
             id="btn-cadastro-massa"
             onClick={() => setIsBulkModalOpen(true)}
             className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm flex items-center gap-2 transition-all active:scale-95"
           >
             <Check className="size-4 text-violet-500" />
             Cadastrar em Massa
-          </button>
+          </button> */}
           <button
             id="btn-novo-produto"
-            onClick={() => { setEditingProduct(null); setEditingProductInsumos([]); setEditingProductGrupos([]); setIsModalOpen(true); }}
+            onClick={() => { setEditingProduct(null); setEditingProductInsumos([]); setIsModalOpen(true); }}
             className="bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-lg shadow-primary/20 flex items-center gap-2 transition-all active:scale-95"
           >
             <Plus className="size-4" />
@@ -187,11 +173,11 @@ export default function MenuManagement() {
       </header>
 
       {/* Filters & Search */}
-      <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4">
+      <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 dark:bg-slate-800/75 dark:border-slate-700">
         <div id="search-bar" className="relative flex-1 group">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400 group-focus-within:text-primary transition-colors" />
           <input
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-primary/20 placeholder:text-slate-400 transition-all outline-none"
+            className="w-full pl-10 pr-4 py-2 bg-slate-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-primary/20 placeholder:text-slate-400 transition-all outline-none dark:bg-slate-800"
             placeholder="Buscar por nome ou código..."
             type="text"
             value={searchQuery}
@@ -203,7 +189,7 @@ export default function MenuManagement() {
             onClick={() => { setSelectedCategoryId(0); setCurrentPage(1); }}
             className={cn(
               "px-4 py-2 text-sm font-semibold rounded-lg transition-colors whitespace-nowrap",
-              selectedCategoryId === 0 ? "bg-primary text-white" : "text-slate-600 hover:bg-slate-50"
+              selectedCategoryId === 0 ? "bg-primary text-white" : "text-slate-600 hover:bg-slate-50 dark:text-zinc-200 dark:border-slate-700"
             )}
           >
             Todos
@@ -214,7 +200,7 @@ export default function MenuManagement() {
               onClick={() => { setSelectedCategoryId(cat.id); setCurrentPage(1); }}
               className={cn(
                 "px-4 py-2 text-sm font-semibold rounded-lg transition-colors whitespace-nowrap",
-                selectedCategoryId === cat.id ? "bg-primary text-white" : "text-slate-600 hover:bg-slate-50"
+                selectedCategoryId === cat.id ? "bg-primary text-white" : "text-slate-600 hover:bg-slate-50 dark:text-zinc-200 dark:border-slate-700 dark:hover:bg-slate-700"
               )}
             >
               {cat.nome}
@@ -299,18 +285,14 @@ export default function MenuManagement() {
         user={user}
       />
 
-      {/* Product Modal */}
       {isModalOpen && (
         <ProductFormModal
           isOpen={isModalOpen}
-          onClose={() => { setIsModalOpen(false); setEditingProduct(null); setEditingProductInsumos([]); setEditingProductGrupos([]); }}
+          onClose={() => { setIsModalOpen(false); setEditingProduct(null); setEditingProductInsumos([]); }}
           editingProduct={editingProduct}
           categories={categories}
           insumosList={insumosList}
           productInsumos={editingProductInsumos}
-          gruposComplemento={gruposComplemento}
-          productGrupos={[...editingProductGrupos, ...editingProductSlots]}
-          gruposSlots={gruposSlots}
           onSubmit={handleSaveProduct}
         />
       )}
@@ -332,7 +314,7 @@ export default function MenuManagement() {
           isOpen={isBulkModalOpen}
           onClose={() => setIsBulkModalOpen(false)}
           products={products}
-          grupos={gruposComplemento}
+          grupos={[]}
           onSuccess={fetchData}
         />
       )}

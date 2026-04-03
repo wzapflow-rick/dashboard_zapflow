@@ -11,9 +11,7 @@ import {
   deleteCategory,
   type Category
 } from '@/app/actions/products';
-import { getGruposComplementos, getGruposDoProduto, updateGruposDoProduto } from '@/app/actions/complements';
 import { getInsumos, getReceitaDoProduto, getTodasReceitas, type Insumo } from '@/app/actions/insumos';
-import { getGruposSlots, getGruposDoProduto as getGruposSlotsDoProduto, updateGruposDoProduto as atualizarGruposSlotsDoProduto } from '@/app/actions/grupos-slots';
 import { toast } from 'sonner';
 
 export function useMenuData() {
@@ -23,26 +21,20 @@ export function useMenuData() {
   const [loading, setLoading] = useState(true);
   const [insumosList, setInsumosList] = useState<Insumo[]>([]);
   const [productRecipes, setProductRecipes] = useState<any[]>([]);
-  const [gruposComplemento, setGruposComplemento] = useState<any[]>([]);
-  const [gruposSlots, setGruposSlots] = useState<any[]>([]);
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [productsData, categoriesData, insumosData, receitasData, gruposData, slotsData] = await Promise.all([
+      const [productsData, categoriesData, insumosData, receitasData] = await Promise.all([
         getProducts(),
         getCategories(),
         getInsumos(),
-        getTodasReceitas(),
-        getGruposComplementos(),
-        getGruposSlots()
+        getTodasReceitas()
       ]);
       setProducts(productsData);
       setCategories(categoriesData);
       setInsumosList(insumosData);
       setProductRecipes(receitasData);
-      setGruposComplemento(gruposData);
-      setGruposSlots(slotsData);
     } catch (error) {
       console.error('Erro ao buscar dados:', error);
       toast.error('Erro ao carregar dados do banco de dados.');
@@ -132,8 +124,6 @@ export function useMenuData() {
     loading,
     insumosList,
     productRecipes,
-    gruposComplemento,
-    gruposSlots,
     fetchData,
     toggleDisponibilidade,
     handleDelete,

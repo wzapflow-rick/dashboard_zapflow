@@ -4,9 +4,8 @@ import {
   uploadImageAction,
   type Category
 } from '@/app/actions/products';
-import { updateGruposDoProduto } from '@/app/actions/complements';
-import { updateGruposDoProduto as updateGruposSlotsDoProduto } from '@/app/actions/grupos-slots';
 import { toast } from 'sonner';
+import { parseCurrency } from '@/lib/utils';
 
 interface ProductData {
   id?: number | string;
@@ -22,9 +21,7 @@ export async function saveProduct(
   formData: FormData,
   editingProduct: any,
   isCreatingCategory: boolean,
-  selectedInsumos?: { insumo_id: string | number; quantidade_necessaria: number }[],
-  selectedGrupos?: number[],
-  selectedSlots?: string[]
+  selectedInsumos?: { insumo_id: string | number; quantidade_necessaria: number }[]
 ) {
   let finalCategoryId = Number(formData.get('categoria_id'));
 
@@ -53,20 +50,13 @@ export async function saveProduct(
 
   // Parse preco - garantir que é um número válido
   const precoRaw = formData.get('preco');
-  let precoNumerico = 0;
-  
-  if (precoRaw !== null && precoRaw !== undefined && precoRaw !== '') {
-    // Remover pontos de milhar e converter vírgula para ponto
-    const precoStr = String(precoRaw);
-    const precoLimpo = precoStr.replace(/\./g, '').replace(',', '.');
-    precoNumerico = parseFloat(precoLimpo);
-  }
-  
+  let precoNumerico = parseCurrency(precoRaw as string);
+
   // Se for NaN ou negativo, usar 0
   if (isNaN(precoNumerico) || precoNumerico < 0) {
     precoNumerico = 0;
   }
-  
+
   // Garantir que é um número finito
   if (!isFinite(precoNumerico)) {
     precoNumerico = 0;
@@ -84,13 +74,7 @@ export async function saveProduct(
 
   const savedProduct = await upsertProduct(productData, selectedInsumos);
 
-  if (selectedGrupos) {
-    await updateGruposDoProduto(savedProduct.id, selectedGrupos);
-  }
-
-  if (selectedSlots) {
-    await updateGruposSlotsDoProduto(Number(savedProduct.id), selectedSlots.map(s => Number(s)));
-  }
+  return savedProduct;
 
   return savedProduct;
 }

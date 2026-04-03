@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'motion/react';
 import { upsertItemBase, type ItemBase, getReceitaDoItemBase, saveReceitaDoItemBase } from '@/app/actions/itens-base';
 import { getInsumos, type Insumo } from '@/app/actions/insumos';
+import { parseCurrency as globalParseCurrency } from '@/lib/utils';
 
 interface BibliotecaItemModalProps {
     isOpen: boolean;
@@ -25,9 +26,7 @@ function formatCurrency(value: string): string {
 }
 
 function parseCurrency(formatted: string): number {
-    // "59,90" -> 59.90
-    const clean = formatted.replace(/\./g, '').replace(',', '.');
-    return parseFloat(clean) || 0;
+    return globalParseCurrency(formatted);
 }
 
 function useCurrencyInput(initial?: number) {

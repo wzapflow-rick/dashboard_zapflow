@@ -1,14 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, PackageOpen, AlertTriangle, Loader2, Edit3, Trash2, Layers, Package, TrendingDown, DollarSign } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Plus, PackageOpen, AlertTriangle, Loader2, Edit3, Trash2, Layers, Package, TrendingDown, DollarSign, Truck } from 'lucide-react';
+import { cn, parseCurrency } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { Insumo, getInsumos, upsertInsumo, deleteInsumo, setNovoEstoqueInsumo } from '@/app/actions/insumos';
 import InsumoFormModal from './insumo-form-modal';
 import QuickRestockModal from './quick-restock-modal';
 import { toast } from 'sonner';
-import { Truck } from 'lucide-react';
 
 export default function InsumosManagement() {
     const [insumos, setInsumos] = useState<Insumo[]>([]);
@@ -61,21 +60,13 @@ export default function InsumosManagement() {
 
     const handleSubmit = async (formData: FormData) => {
         try {
-            const rawValue = formData.get('custo_por_unidade') as string || '0';
-            // O input hidden já envia o valor numérico com ponto decimal (ex: 10.5)
-            // Não remover pontos, apenas substituir vírgula por ponto caso exista
-            const numericCusto = parseFloat(rawValue.replace(',', '.'));
-
-            const numQs = parseFloat(String(formData.get('quantidade_atual')).replace(',', '.'));
-            const numMin = parseFloat(String(formData.get('estoque_minimo')).replace(',', '.'));
-
             const data = {
                 id: editingInsumo?.id,
                 nome: formData.get('nome') as string,
-                quantidade_atual: isNaN(numQs) ? 0 : numQs,
+                quantidade_atual: parseCurrency(formData.get('quantidade_atual') as string),
                 unidade_medida: formData.get('unidade_medida') as string,
-                estoque_minimo: isNaN(numMin) ? 0 : numMin,
-                custo_por_unidade: isNaN(numericCusto) ? 0 : numericCusto,
+                estoque_minimo: parseCurrency(formData.get('estoque_minimo') as string),
+                custo_por_unidade: parseCurrency(formData.get('custo_por_unidade') as string),
             };
 
             const saved = await upsertInsumo(data);
