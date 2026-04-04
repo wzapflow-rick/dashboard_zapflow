@@ -69,6 +69,7 @@ interface CreatePublicOrderData {
     formaPagamento: 'pix' | 'dinheiro' | 'cartao';
     troco?: number;
     observacoes?: string;
+    dataAgendamento?: string | null; // ISO date string para agendamento
 }
 
 // Verificar se cliente existe
@@ -226,10 +227,18 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
             pontos_ganhos: data.pontosGanhos || 0,
             forma_pagamento: data.formaPagamento,
             troco_necessario: data.troco || 0,
-            status: data.formaPagamento === 'dinheiro' ? 'pendente' : 'pagamento_pendente',
+            status: data.dataAgendamento ? 'agendado' : (data.formaPagamento === 'dinheiro' ? 'pendente' : 'pagamento_pendente'),
             origem: 'cardapio_publico',
             criado_em: new Date().toISOString(),
         };
+
+        // Adicionar agendamento se existir
+        if (data.dataAgendamento) {
+            orderPayload.data_agendamento = data.dataAgendamento;
+            orderPayload.observacoes = data.observacoes 
+                ? `${data.observacoes}\n📅 Agendado para: ${new Date(data.dataAgendamento).toLocaleString('pt-BR')}`
+                : `📅 Agendado para: ${new Date(data.dataAgendamento).toLocaleString('pt-BR')}`;
+        }
 
         // Adicionar campos de endereço (NocoDB ignorará se as colunas não existirem)
         orderPayload.endereco_entrega = enderecoCompleto;
@@ -276,7 +285,7 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
         }
         
         // Enviar mensagem de confirmação com link de rastreamento
-        sendOrderCreatedMessage(data.clienteTelefone, order.id, data.total)
+        sendOrderCreatedMessage(data.clienteTelefone, order.id, data.total, data.dataAgendamento)
             .catch(err => console.error('Erro ao enviar mensagem WhatsApp:', err));
         
         revalidatePath('/dashboard/expedition');

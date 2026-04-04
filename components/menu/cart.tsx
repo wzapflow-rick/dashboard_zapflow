@@ -96,6 +96,11 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
   const [usePoints, setUsePoints] = useState(false);
   const [loyaltyConfig, setLoyaltyConfig] = useState<{ pontos_para_desconto: number; desconto_valor: number } | null>(null);
 
+  // Scheduling
+  const [agendarPedido, setAgendarPedido] = useState(false);
+  const [dataAgendamento, setDataAgendamento] = useState('');
+  const [horaAgendamento, setHoraAgendamento] = useState('');
+
   const {
     items,
     cupom,
@@ -202,6 +207,24 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
       return;
     }
     
+    // Validar agendamento
+    if (agendarPedido && (!dataAgendamento || !horaAgendamento)) {
+      toast.error('Selecione data e horário para agendamento');
+      return;
+    }
+    
+    // Validar horário mínimo (pelo menos 30min no futuro)
+    if (agendarPedido && dataAgendamento && horaAgendamento) {
+      const agendamento = new Date(`${dataAgendamento}T${horaAgendamento}`);
+      const agora = new Date();
+      const diferenca = (agendamento.getTime() - agora.getTime()) / (1000 * 60); // em minutos
+      
+      if (diferenca < 30) {
+        toast.error('O agendamento deve ser com pelo menos 30 minutos de antecedência');
+        return;
+      }
+    }
+    
     setStep('payment');
   };
 
@@ -239,6 +262,9 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
         descontoPontos: descontoPontos,
         formaPagamento: paymentData.forma,
         troco: paymentData.forma === 'dinheiro' ? paymentData.troco : undefined,
+        dataAgendamento: agendarPedido && dataAgendamento && horaAgendamento 
+            ? `${dataAgendamento}T${horaAgendamento}:00` 
+            : null,
       });
 
       setOrderId(result.orderId);
@@ -946,6 +972,59 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                               <p className="text-xs text-green-600 mt-1">Seu pedido ficará pronto para retirada</p>
                             </div>
                           )}
+
+                          {/* Agendamento */}
+                          <div className="border-t border-slate-200 pt-4 mt-4">
+                            <label className="flex items-center gap-3 cursor-pointer">
+                              <div className="relative">
+                                <input
+                                  type="checkbox"
+                                  checked={agendarPedido}
+                                  onChange={(e) => setAgendarPedido(e.target.checked)}
+                                  className="sr-only"
+                                />
+                                <div className={cn(
+                                  "w-11 h-6 rounded-full transition-colors",
+                                  agendarPedido ? "bg-violet-500" : "bg-slate-200"
+                                )}>
+                                  <div className={cn(
+                                    "absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform",
+                                    agendarPedido && "translate-x-5"
+                                  )} />
+                                </div>
+                              </div>
+                              <div>
+                                <p className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                  📅 Agendar pedido
+                                </p>
+                                <p className="text-xs text-slate-500">Quero buscar em outro horário</p>
+                              </div>
+                            </label>
+
+                            {agendarPedido && (
+                              <div className="grid grid-cols-2 gap-3 mt-3 ml-14">
+                                <div>
+                                  <label className="text-xs font-medium text-slate-600">Data</label>
+                                  <input
+                                    type="date"
+                                    value={dataAgendamento}
+                                    onChange={(e) => setDataAgendamento(e.target.value)}
+                                    min={new Date().toISOString().split('T')[0]}
+                                    className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-xs font-medium text-slate-600">Horário</label>
+                                  <input
+                                    type="time"
+                                    value={horaAgendamento}
+                                    onChange={(e) => setHoraAgendamento(e.target.value)}
+                                    className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </>
                     )}

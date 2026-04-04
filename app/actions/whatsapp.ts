@@ -60,10 +60,34 @@ export async function sendWhatsAppMessage(phone: string, message: string): Promi
 /**
  * Enviar mensagem de confirmação de pedido criado
  */
-export async function sendOrderCreatedMessage(phone: string, orderId: number, total: number): Promise<boolean> {
+export async function sendOrderCreatedMessage(phone: string, orderId: number, total: number, dataAgendamento?: string | null): Promise<boolean> {
     const trackUrl = `${BASE_URL}/track/${orderId}`;
+    
+    let message: string;
+    
+    if (dataAgendamento) {
+        const dataFormatada = new Date(dataAgendamento).toLocaleString('pt-BR', {
+            weekday: 'short',
+            day: '2-digit',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        message = `📅 *Pedido #${orderId} Agendado!*
 
-    const message = `🎉 *Pedido #${orderId} Recebido!*
+Seu pedido de *R$ ${Number(total).toFixed(2).replace('.', ',')}* foi agendado com sucesso!
+
+🕐 *Retirar em:* ${dataFormatada}
+
+📱 *Acompanhe seu pedido:*
+${trackUrl}
+
+Seu pedido será preparado para o horário agendado!
+
+_Agradecemos a preferência!_`;
+    } else {
+        message = `🎉 *Pedido #${orderId} Recebido!*
 
 Obrigado pelo seu pedido! Seu pedido de *R$ ${Number(total).toFixed(2).replace('.', ',')}* foi recebido com sucesso.
 
@@ -73,6 +97,7 @@ ${trackUrl}
 Em breve enviaremos atualizações sobre seu pedido!
 
 _Agradecemos a preferência!_`;
+    }
 
     return sendWhatsAppMessage(phone, message);
 }
