@@ -157,7 +157,7 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
                   </div>
                   {order.desconto > 0 && (
                     <div className="flex justify-between text-green-600 dark:text-green-400">
-                      <span>Desconto</span>
+                      <span>Desconto {order.cupom_aplicado ? '(Cupom)' : order.pontos_usados > 0 ? '(Pontos)' : ''}</span>
                       <span>-{formatPrice(order.desconto)}</span>
                     </div>
                   )}

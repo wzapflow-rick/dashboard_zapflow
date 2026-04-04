@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const RATINGS_TABLE_ID = 'mratings123456'; // Nova tabela precisa ser criada no NocoDB
+const RATINGS_TABLE_ID = 'maehg8e7on1f80k';
 
 async function nocoFetch(endpoint: string, options: RequestInit = {}) {
     const url = `${NOCODB_URL}/api/v2/tables/${RATINGS_TABLE_ID}${endpoint}`;

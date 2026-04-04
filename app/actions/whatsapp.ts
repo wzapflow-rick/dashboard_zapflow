@@ -79,57 +79,90 @@ _Agradecemos a preferência!_`;
 
 /**
  * Enviar mensagem de atualização de status
+ * tipoEntrega: 'delivery' = entrega, 'retirada' = retirada
  */
 export async function sendOrderStatusMessage(
     phone: string,
     orderId: number,
     status: string,
-    empresaId?: number
+    empresaId?: number,
+    tipoEntrega?: string
 ): Promise<boolean> {
+    const isDelivery = tipoEntrega === 'delivery';
     const trackUrl = `${BASE_URL}/track/${orderId}`;
 
-    const statusMessages: Record<string, { emoji: string; title: string; description: string }> = {
-        'pagamento_pendente': {
-            emoji: '⏳',
-            title: 'Pagamento Pendente',
-            description: 'Aguardando confirmação do pagamento.'
-        },
-        'pendente': {
-            emoji: '✅',
-            title: 'Pedido Confirmado!',
-            description: 'Seu pagamento foi confirmado e seu pedido já está sendo preparado!'
-        },
-        'preparando': {
-            emoji: '👨‍🍳',
-            title: 'Preparando seu Pedido',
-            description: 'Seu pedido está sendo preparado com todo carinho. Em breve sairá para entrega!'
-        },
-        'entrega': {
-            emoji: '🛵',
-            title: 'Saiu para Entrega!',
-            description: 'Seu pedido está a caminho. Fique de olho, o entregador já está no caminho!'
-        },
-        'finalizado': {
-            emoji: '🎉',
-            title: 'Pedido Entregue!',
-            description: 'Espero que goste! Bom apetite! 🍕'
-        },
-        'cancelado': {
-            emoji: '❌',
-            title: 'Pedido Cancelado',
-            description: 'Seu pedido foi cancelado. Se tiver dúvidas, entre em contato conosco.'
-        }
+    // Multiple message variations to avoid banimento
+    const messageVariations = {
+        pagamento_pendente: [
+            'Aguardando confirmação do pagamento.',
+            'Seu pagamento está sendo processado.',
+            'Precisamos confirmar seu pagamento.'
+        ],
+        pendente: isDelivery ? [
+            'Seu pagamento foi confirmado e seu pedido já está sendo preparado!',
+            'Pagamento confirmado! Em breve starts preparing your order!',
+            'We confirmed your payment! Your order is being prepared!'
+        ] : [
+            'Pagamento confirmado! Seu pedido já está sendo preparado!',
+            'Pedido confirmado e em produção!',
+            'Seu pedido está na cozinha agora!'
+        ],
+        preparing: isDelivery ? [
+            'Seu pedido está sendo preparado com todo carinho. Em breve sairá para entrega!',
+            'Our kitchen is preparing your order. It will be delivered soon!',
+            'Preparando seu pedido com todo carinho!'
+        ] : [
+            'Seu pedido está sendo preparado! Quando estiver pronto, avisaremos.',
+            'Estamos preparando seu pedido!',
+            'Na cozinha agora! Logo estará pronto.'
+        ],
+        delivery: [
+            'Seu pedido está a caminho. Fique de olho, o entregador já está no caminho!',
+            'Your order is on the way! Track it in real time.',
+            '🛵 O entregador já saiu com seu pedido!'
+        ],
+        finished: isDelivery ? [
+            'Espero que goste! Bom apetite! 🍕',
+            'Delivery delivered! Enjoy your meal!',
+            'Pedido entregue! Bom apetite!'
+        ] : [
+            'Seu pedido está pronto! Pode retirar no local.',
+            'Your order is ready for pickup!',
+            'Pedido pronto! Venha buscar.'
+        ],
+        canceled: [
+            'Seu pedido foi cancelado. Se tiver dúvidas, entre em contato conosco.',
+            'Order canceled. Contact us if you have questions.',
+            'Pedido cancelado. Estamos à disposição.'
+        ]
     };
 
-    const statusInfo = statusMessages[status] || {
-        emoji: '📢',
-        title: 'Atualização do Pedido',
-        description: `Status: ${status}`
+    const getVariation = (statusKey: string, index: number): string => {
+        const variations = messageVariations[statusKey as keyof typeof messageVariations];
+        if (!variations) return '';
+        return variations[index % variations.length];
     };
+
+    // Rotate message index based on orderId to vary messages
+    const messageIndex = orderId % 3;
+
+    const statusMessages: Record<string, { emoji: string; title: string }> = {
+        'pagamento_pendente': { emoji: '⏳', title: 'Pagamento Pendente' },
+        'pendente': { emoji: '✅', title: 'Pedido Confirmado!' },
+        'preparando': { emoji: '👨‍🍳', title: 'Preparando seu Pedido' },
+        'entrega': { emoji: '🛵', title: 'Saiu para Entrega!' },
+        'finalizado': { emoji: '🎉', title: isDelivery ? 'Pedido Entregue!' : 'Pedido Pronto!' },
+        'cancelado': { emoji: '❌', title: 'Pedido Cancelado' }
+    };
+
+    const statusInfo = statusMessages[status] || { emoji: '📢', title: 'Atualização do Pedido' };
+    const description = getVariation(status, messageIndex);
+
+    const deliveryNote = isDelivery ? '\n📍 *Entrega em andamento*' : '\n🏪 *Retirada no local*';
 
     let message = `${statusInfo.emoji} *Pedido #${orderId} - ${statusInfo.title}*
 
-${statusInfo.description}
+${description}${deliveryNote}
 
 📱 *Acompanhe seu pedido:*
 ${trackUrl}`;

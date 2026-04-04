@@ -13,7 +13,8 @@ import {
     Bolt,
     X,
     PackageOpen,
-    FlaskConical
+    FlaskConical,
+    Star
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -30,6 +31,7 @@ const navItems = [
 ];
 
 const adminItems = [
+    { name: 'Avaliações', href: '/dashboard/ratings', icon: Star },
     { name: 'Configurações', href: '/dashboard/settings', icon: Settings },
     { name: 'Assinatura', href: '/dashboard/subscription', icon: CreditCard },
 ];

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import DashboardLayout, { SidebarProvider } from '@/components/dashboard-layout';
 import {
   Share2,
@@ -9,10 +9,13 @@ import {
   Copy,
   Check,
   ExternalLink,
-  Smartphone
+  Smartphone,
+  Download
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { getMe } from '@/app/actions/auth';
+import QRCodeLib from 'qrcode';
+import { toast } from 'sonner';
 
 function toSlug(text: string) {
   return text
@@ -28,22 +31,86 @@ export default function GrowthPage() {
   const [copied, setCopied] = React.useState(false);
   const [user, setUser] = useState<any>(null);
   const [menuUrl, setMenuUrl] = useState('');
+  const [empresaNome, setEmpresaNome] = useState('');
+  const [slug, setSlug] = useState('');
+  const [qrDataUrl, setQrDataUrl] = useState('');
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     getMe().then((me) => {
       setUser(me);
       if (me?.nome) {
-        const slug = toSlug(me.nome);
+        const slugConverted = toSlug(me.nome);
         const base = typeof window !== 'undefined' ? window.location.origin : '';
-        setMenuUrl(`${base}/menu/${slug}`);
+        setSlug(slugConverted);
+        setMenuUrl(`${base}/menu/${slugConverted}`);
+        setEmpresaNome(me.nome || 'Minha Loja');
       }
     });
   }, []);
+
+  useEffect(() => {
+    if (menuUrl && canvasRef.current) {
+      QRCodeLib.toCanvas(canvasRef.current, menuUrl, {
+        width: 180,
+        margin: 2,
+        color: {
+          dark: '#6366f1',
+          light: '#ffffff'
+        }
+      }).then(() => {
+        const canvas = canvasRef.current;
+        if (canvas) {
+          setQrDataUrl(canvas.toDataURL('image/png'));
+        }
+      }).catch(console.error);
+    }
+  }, [menuUrl]);
 
   const copyLink = () => {
     if (menuUrl) navigator.clipboard.writeText(menuUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const downloadPdf = async () => {
+    try {
+      const { default: jsPDF } = await import('jspdf');
+      const doc = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a5'
+      });
+
+      const pageWidth = 148;
+      const centerX = pageWidth / 2;
+
+      doc.setFontSize(24);
+      doc.setFont('helvetica', 'bold');
+      doc.text(empresaNome, centerX, 30, { align: 'center' });
+
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Escaneie para ver o cardápio', centerX, 40, { align: 'center' });
+
+      if (qrDataUrl) {
+        const qrSize = 80;
+        doc.addImage(qrDataUrl, 'PNG', centerX - qrSize/2, 50, qrSize, qrSize);
+      }
+
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(menuUrl, centerX, 145, { align: 'center' });
+
+      doc.setFontSize(8);
+      doc.text('Powered by ZapFlow', centerX, 155, { align: 'center' });
+
+      doc.save(`${empresaNome.replace(/\s+/g, '-')}-cardapio-qr.pdf`);
+      toast.success('PDF baixado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      toast.error('Erro ao gerar PDF');
+    }
   };
 
   const displayUrl = menuUrl.replace(/^https?:\/\//, '');
@@ -117,11 +184,10 @@ export default function GrowthPage() {
               transition={{ delay: 0.1 }}
               className="bg-white dark:bg-slate-800 p-8 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col md:flex-row gap-8 items-center"
             >
-              <div className="size-44 bg-slate-50 dark:bg-slate-700 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-600 flex flex-col items-center justify-center gap-3 shrink-0">
-                <QrCode className="size-24 text-slate-400 dark:text-slate-500" />
-                <p className="text-xs text-slate-400 dark:text-slate-500 font-medium text-center px-2">QR Code do cardápio</p>
+              <div className="size-44 bg-white rounded-2xl border-2 border-slate-200 dark:border-slate-600 flex items-center justify-center shrink-0 p-2">
+                <canvas ref={canvasRef} className="w-full h-full" />
               </div>
-              <div className="space-y-4 text-center md:text-left">
+              <div className="space-y-4 text-center md:text-left flex-1">
                 <div className="flex items-center gap-2 text-slate-900 dark:text-white">
                   <Smartphone className="size-5 text-violet-500 dark:text-violet-400" />
                   <h3 className="font-bold text-lg">QR Code para Mesas</h3>
@@ -129,9 +195,13 @@ export default function GrowthPage() {
                 <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
                   Imprima e coloque em suas mesas ou balcão para que clientes acessem seu cardápio instantaneamente pelo celular.
                 </p>
-                <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-3 py-2 rounded-lg">
-                  💡 Em breve: geração e download do QR Code automático.
-                </p>
+                <button
+                  onClick={downloadPdf}
+                  className="w-full md:w-auto flex items-center justify-center gap-2 px-4 py-3 bg-violet-500 hover:bg-violet-600 text-white font-bold rounded-xl transition-all"
+                >
+                  <Download className="size-5" />
+                  Baixar PDF para Impressão
+                </button>
               </div>
             </motion.div>
           </div>
