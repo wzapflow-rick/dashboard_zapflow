@@ -177,11 +177,24 @@ export async function calculateDeliveryFee(
     destination: { lat: number; lng: number }
 ): Promise<DeliveryCalculationResult> {
     try {
+        // SECURITY: Validate coordinates are within reasonable bounds (Brazil)
+        if (!destination.lat || !destination.lng || 
+            destination.lat < -90 || destination.lat > 90 ||
+            destination.lng < -180 || destination.lng > 180) {
+            return { success: false, error: 'Coordenadas inválidas' };
+        }
+        
         // Buscar configuração de entrega
         const config = await getDeliveryConfig();
 
         if (!config) {
             return { success: false, error: 'Taxa de entrega não configurada' };
+        }
+
+        // SECURITY: Validate delivery config values
+        if (config.valor_por_km < 0 || config.taxa_entrega_fixa < 0) {
+            console.error('Invalid delivery config: negative values detected');
+            return { success: false, error: 'Configuração de entrega inválida' };
         }
 
         // Se raio automático está desativado, usar taxa fixa
@@ -204,6 +217,11 @@ export async function calculateDeliveryFee(
         // Calcular distância usando Google Maps
         const distance = await getDistanceFromGoogle(origin, destination);
 
+        // SECURITY: Validate distance calculation result
+        if (distance.distance_km <= 0 || distance.distance_km > 500) {
+            return { success: false, error: 'Distância inválida calculada' };
+        }
+
         // Verificar raio máximo (se configurado)
         if (config.raio_maximo_km > 0 && distance.distance_km > config.raio_maximo_km) {
             return {
@@ -218,6 +236,9 @@ export async function calculateDeliveryFee(
         if (config.valor_por_km > 0) {
             taxa = Math.max(taxa, Math.round(distance.distance_km * config.valor_por_km * 100) / 100);
         }
+
+        // SECURITY: Ensure delivery fee is never negative
+        taxa = Math.max(0, taxa);
 
         return {
             success: true,

@@ -12,16 +12,20 @@ export async function GET(
   try {
     const { orderId } = await params;
 
-    if (!orderId) {
+    // SECURITY: Validate orderId format
+    if (!orderId || typeof orderId !== 'string' || !/^\d+$/.test(orderId)) {
       return NextResponse.json(
-        { error: 'ID do pedido é obrigatório' },
+        { error: 'ID do pedido inválido' },
         { status: 400 }
       );
     }
 
+    // SECURITY: Sanitize orderId to prevent injection
+    const sanitizedOrderId = orderId.replace(/[^0-9]/g, '');
+
     // Buscar pedido
     const orderRes = await fetch(
-      `${NOCODB_URL}/api/v2/tables/${ORDERS_TABLE_ID}/records/${orderId}`,
+      `${NOCODB_URL}/api/v2/tables/${ORDERS_TABLE_ID}/records/${sanitizedOrderId}`,
       {
         headers: {
           'xc-token': NOCODB_TOKEN,
@@ -93,9 +97,10 @@ export async function GET(
 
     return NextResponse.json(publicData);
   } catch (error) {
+    // SECURITY: Generic error message to avoid information leakage
     console.error('Erro ao rastrear pedido:', error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: 'Erro ao processar solicitação' },
       { status: 500 }
     );
   }

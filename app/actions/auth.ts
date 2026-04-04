@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import bcrypt from 'bcryptjs';
 import { revalidatePath } from 'next/cache';
 import { encrypt, decrypt } from '@/lib/session';
+import { logger } from '@/lib/logger';
 
 // Rate limiting para login
 const loginAttempts = new Map<string, { count: number; lastAttempt: number }>();
@@ -63,6 +64,10 @@ export async function login(data: any) {
             const timeSinceLast = now - attempt.lastAttempt;
             if (timeSinceLast < WINDOW_MS) {
                 const remainingTime = Math.ceil((WINDOW_MS - timeSinceLast) / 1000 / 60);
+                
+                // SECURITY: Log rate limit exceeded
+                logger.securityLoginFailure(email, 'RATE_LIMIT_EXCEEDED', `Blocked for ${remainingTime} minutes`);
+                
                 return { error: `Muitas tentativas de login. Tente novamente em ${remainingTime} minutos.` };
             } else {
                 // Reset após janela de tempo
@@ -86,10 +91,16 @@ export async function login(data: any) {
             currentAttempt.lastAttempt = now;
             loginAttempts.set(attemptKey, currentAttempt);
             
+            // Log de falha de login
+            logger.securityLoginFailure(email, 'INVALID_CREDENTIALS');
+            
             // Delay anti-brute force
             await new Promise(resolve => setTimeout(resolve, 1000));
             return { error: 'E-mail ou senha inválidos' };
         }
+
+        // SECURITY: Log successful login
+        logger.securityLoginSuccess(email, empresa.id);
 
         const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
         const session = await encrypt({

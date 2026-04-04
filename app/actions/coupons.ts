@@ -227,6 +227,11 @@ export async function validateCoupon(codigo: string, valorPedido: number) {
             desconto = cupom.valor;
         }
 
+        // SECURITY: Cap discount to prevent negative/zero totals
+        // The minimum order value after discount should be at least R$ 1.00
+        const maxDescontoPermitido = valorPedido - 100; // Allow max R$ 1.00 minimum (cents)
+        const descontoFinal = Math.min(desconto, maxDescontoPermitido);
+
         return {
             valid: true,
             cupom: {
@@ -234,7 +239,7 @@ export async function validateCoupon(codigo: string, valorPedido: number) {
                 codigo: cupom.codigo,
                 tipo: cupom.tipo,
                 valor: cupom.valor,
-                desconto: Math.min(desconto, valorPedido),
+                desconto: Math.max(descontoFinal, 0),
             }
         };
     } catch (error: any) {

@@ -11,6 +11,7 @@ import { incrementCouponUsage } from './coupons';
 import { addPointsForOrder } from './loyalty';
 import { finishDelivery } from './drivers';
 import { sendOrderStatusMessage } from './whatsapp';
+import { logger } from '@/lib/logger';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
@@ -170,8 +171,14 @@ export async function updateOrderStatus(id: number, status: string) {
             }
         }
 
+        // SECURE: Fetch and verify order belongs to user's company
         const orderRes = await nocoFetchForTable(TABLE_ID, `/records/${id}`);
         const orderData = await orderRes.json();
+        
+        if (!orderData || Number(orderData.empresa_id) !== Number(user.empresaId)) {
+            logger.securityAccessDenied(user.empresaId, `order:${id}`, 'UPDATE_STATUS');
+            throw new Error('Acesso negado: Pedido não pertence a esta empresa');
+        }
 
         if (status === 'finalizado') {
             try {

@@ -123,6 +123,11 @@ export async function driverLogout() {
 // Buscar pedidos do entregador
 export async function getDriverOrders(driverId: number) {
     try {
+        const session = await getDriverSession();
+        if (!session?.driverId || session.driverId !== driverId) {
+            throw new Error('Acesso negado: Sessão inválida');
+        }
+        
         const ORDERS_TABLE_ID = 'm2ic8zof3feve3l';
         
         // Buscar pedidos atribuídos ao entregador
@@ -153,7 +158,20 @@ export async function getDriverOrders(driverId: number) {
 // Atualizar status do pedido pelo entregador
 export async function updateOrderStatusByDriver(orderId: number, newStatus: string) {
     try {
+        const session = await getDriverSession();
+        if (!session?.driverId) {
+            throw new Error('Não autorizado');
+        }
+        
         const ORDERS_TABLE_ID = 'm2ic8zof3feve3l';
+        
+        // SECURE: Verify order belongs to this driver before updating
+        const checkRes = await nocoFetch(ORDERS_TABLE_ID, `/records/${orderId}`);
+        const order = await checkRes.json();
+        
+        if (!order || Number(order.entregador_id) !== Number(session.driverId)) {
+            throw new Error('Acesso negado: Pedido não pertence a este entregador');
+        }
         
         const res = await nocoFetch(ORDERS_TABLE_ID, '/records', {
             method: 'PATCH',
@@ -162,26 +180,23 @@ export async function updateOrderStatusByDriver(orderId: number, newStatus: stri
 
         // Se finalizou, incrementar entregas do dia
         if (newStatus === 'finalizado') {
-            const session = await getDriverSession();
-            if (session?.driverId) {
-                // Buscar entregador atual
-                const driverRes = await nocoFetch(DRIVERS_TABLE_ID, `/records/${session.driverId}`);
-                const driver = await driverRes.json();
-                
-                await nocoFetch(DRIVERS_TABLE_ID, '/records', {
-                    method: 'PATCH',
-                    body: JSON.stringify({ 
-                        id: session.driverId, 
-                        Id: session.driverId, 
-                        entregas_hoje: (driver.entregas_hoje || 0) + 1 
-                    }),
-                });
-            }
+            // Buscar entregador atual
+            const driverRes = await nocoFetch(DRIVERS_TABLE_ID, `/records/${session.driverId}`);
+            const driver = await driverRes.json();
+            
+            await nocoFetch(DRIVERS_TABLE_ID, '/records', {
+                method: 'PATCH',
+                body: JSON.stringify({ 
+                    id: session.driverId, 
+                    Id: session.driverId, 
+                    entregas_hoje: (driver.entregas_hoje || 0) + 1 
+                }),
+            });
         }
 
         return { success: true };
-    } catch (error) {
+    } catch (error: any) {
         console.error('Erro ao atualizar pedido:', error);
-        return { success: false, error: 'Erro ao atualizar' };
+        return { success: false, error: error.message || 'Erro ao atualizar' };
     }
 }

@@ -1,8 +1,42 @@
 import { z } from 'zod';
 
-// Sanitization helper - remove HTML tags and dangerous characters
+const DANGEROUS_PATTERNS = [
+    /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
+    /javascript:/gi,
+    /on\w+\s*=/gi,
+    /data:\s*text\/html/gi,
+    /<iframe/gi,
+    /<object/gi,
+    /<embed/gi,
+];
+
 export function sanitizeString(str: string): string {
-    return str.replace(/<[^>]*>/g, '').replace(/[<>]/g, '').trim();
+    if (typeof str !== 'string') return '';
+    
+    let sanitized = str
+        .replace(/<[^>]*>/g, '')
+        .replace(/[<>]/g, '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;')
+        .replace(/\//g, '&#x2F;')
+        .trim();
+    
+    for (const pattern of DANGEROUS_PATTERNS) {
+        sanitized = sanitized.replace(pattern, '');
+    }
+    
+    return sanitized;
+}
+
+export function sanitizeHtml(str: string): string {
+    if (typeof str !== 'string') return '';
+    
+    return str
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;');
 }
 
 // Auth
