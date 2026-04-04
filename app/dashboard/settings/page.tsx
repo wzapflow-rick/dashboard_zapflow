@@ -20,7 +20,8 @@ import {
   Ticket,
   Award,
   Truck,
-  Sparkles
+  Sparkles,
+  QrCode
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -38,6 +39,7 @@ import CouponsManagement from '@/components/coupons-management';
 import LoyaltyManagement from '@/components/loyalty-management';
 import DriversManagement from '@/components/drivers-management';
 import DeliveryHistory from '@/components/delivery-history';
+import QrCodeGenerator from '@/components/qr-code-generator';
 
 const sections = [
   { id: 'general', name: 'Geral', icon: Store },
@@ -50,6 +52,7 @@ const sections = [
   { id: 'loyalty', name: 'Fidelidade', icon: Award },
   { id: 'notifications', name: 'Notificações', icon: Bell },
   { id: 'security', name: 'Segurança', icon: Shield },
+  { id: 'qrcode', name: 'QR Code', icon: QrCode },
   { id: 'bot', name: 'Bot', icon: Bot },
 ];
 
@@ -817,6 +820,14 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 </div>
+              )}
+
+              {activeSection === 'qrcode' && company && (
+                <QrCodeGenerator 
+                  empresaId={company.id} 
+                  empresaNome={company.nome_fantasia || 'Minha Loja'}
+                  slug={company.slug}
+                />
               )}
             </div>
           </div>

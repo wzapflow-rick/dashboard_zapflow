@@ -83,7 +83,8 @@ _Agradecemos a preferência!_`;
 export async function sendOrderStatusMessage(
     phone: string,
     orderId: number,
-    status: string
+    status: string,
+    empresaId?: number
 ): Promise<boolean> {
     const trackUrl = `${BASE_URL}/track/${orderId}`;
 
@@ -111,7 +112,7 @@ export async function sendOrderStatusMessage(
         'finalizado': {
             emoji: '🎉',
             title: 'Pedido Entregue!',
-            description: 'Esperamos que goste. Bom apetite! 🍕'
+            description: 'Espero que goste! Bom apetite! 🍕'
         },
         'cancelado': {
             emoji: '❌',
@@ -126,12 +127,21 @@ export async function sendOrderStatusMessage(
         description: `Status: ${status}`
     };
 
-    const message = `${statusInfo.emoji} *Pedido #${orderId} - ${statusInfo.title}*
+    let message = `${statusInfo.emoji} *Pedido #${orderId} - ${statusInfo.title}*
 
 ${statusInfo.description}
 
 📱 *Acompanhe seu pedido:*
 ${trackUrl}`;
+
+    // Add rating link when order is finalized
+    if (status === 'finalizado' && empresaId) {
+        const ratingUrl = `${BASE_URL}/rating/${empresaId}/${orderId}`;
+        message += `
+
+⭐ *Nos avalie!* Sua opinião é muito importante:
+${ratingUrl}`;
+    }
 
     return sendWhatsAppMessage(phone, message);
 }

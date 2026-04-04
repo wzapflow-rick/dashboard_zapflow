@@ -30,10 +30,18 @@ interface SelectedItem extends ComplementItem {
     fator_proporcao: number;
 }
 
+interface UpsellProduct {
+    id: number;
+    nome: string;
+    preco: number;
+    imagem?: string | null;
+}
+
 interface MenuProductSelectionProps {
     product: any;
     whatsappNumber: string;
     empresaNome: string;
+    upsellProducts?: UpsellProduct[];
 }
 
 const defaultFormatPrice = (price: any) => {
@@ -51,11 +59,17 @@ export default function MenuProductSelection({
     product,
     whatsappNumber,
     empresaNome,
+    upsellProducts = [],
 }: MenuProductSelectionProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [selections, setSelections] = useState<Record<number, SelectedItem[]>>({});
     const { addItem } = useCart();
 
+    // Filter upsell products - exclude current product and get related items
+    const relatedUpsells = upsellProducts
+        .filter(p => p.id !== product.id)
+        .slice(0, 3);
+    
     const hasComplements = product.complementGroups && product.complementGroups.length > 0;
 
     // Toggle item selection in a group, respecting fractional logic
@@ -362,6 +376,43 @@ export default function MenuProductSelection({
                                     );
                                 })}
                             </div>
+
+                            {/* Upsell Suggestions */}
+                            {relatedUpsells.length > 0 && (
+                                <div className="px-6 py-4 bg-amber-50 border-t border-amber-100">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Combina bem com</span>
+                                    </div>
+                                    <div className="flex gap-2 overflow-x-auto pb-1 -mx-2 px-2 custom-scrollbar">
+                                        {relatedUpsells.map((upsell) => (
+                                            <button
+                                                key={upsell.id}
+                                                onClick={() => {
+                                                    addItem({
+                                                        productId: upsell.id,
+                                                        nome: upsell.nome,
+                                                        preco: Number(upsell.preco || 0),
+                                                        quantidade: 1,
+                                                        imagem: upsell.imagem || undefined
+                                                    });
+                                                    toast.success(`${upsell.nome} adicionado!`);
+                                                }}
+                                                className="flex-shrink-0 bg-white border border-amber-200 rounded-xl p-2 hover:bg-amber-100 transition-colors"
+                                            >
+                                                <div className="size-10 rounded-lg bg-slate-100 overflow-hidden mb-1 relative">
+                                                    {upsell.imagem ? (
+                                                        <Image src={upsell.imagem} alt={upsell.nome} fill className="object-cover" referrerPolicy="no-referrer" />
+                                                    ) : (
+                                                        <div className="size-full flex items-center justify-center text-amber-400 text-xs">🍔</div>
+                                                    )}
+                                                </div>
+                                                <p className="text-[10px] font-bold text-slate-800 line-clamp-1 w-16 text-center">{upsell.nome}</p>
+                                                <p className="text-[9px] text-amber-600 font-medium text-center">{defaultFormatPrice(upsell.preco)}</p>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Footer */}
                             <div className="p-6 bg-slate-50 border-t border-slate-100 shrink-0">
