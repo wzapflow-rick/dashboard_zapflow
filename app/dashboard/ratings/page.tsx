@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import DashboardLayout, { SidebarProvider } from '@/components/dashboard-layout';
-import { Star, TrendingUp, TrendingDown, ThumbsUp, ThumbsDown, MessageCircle, Calendar, Search } from 'lucide-react';
-import { getRatingsByEmpresa, getAverageRatings } from '@/app/actions/ratings';
+import { Star, TrendingUp, TrendingDown, ThumbsUp, ThumbsDown, MessageCircle, Calendar, Search, User } from 'lucide-react';
+import { getRatingsByEmpresa, getAverageRatings, getClientByPhone } from '@/app/actions/ratings';
 import { getMe } from '@/app/actions/auth';
 
 interface Rating {
@@ -30,6 +30,7 @@ export default function RatingsPage() {
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('');
     const [empresaId, setEmpresaId] = useState<number | null>(null);
+    const [clienteNomes, setClienteNomes] = useState<Record<string, string>>({});
 
     useEffect(() => {
         getMe().then((user) => {
@@ -46,6 +47,18 @@ export default function RatingsPage() {
                 getRatingsByEmpresa(),
                 getAverageRatings(empId)
             ]);
+            
+            // Buscar nome dos clientes para cada avaliação
+            const nomes: Record<string, string> = {};
+            for (const rating of ratingsData) {
+                if (rating.telefone_cliente) {
+                    const client = await getClientByPhone(rating.telefone_cliente);
+                    if (client?.nome) {
+                        nomes[rating.telefone_cliente] = client.nome;
+                    }
+                }
+            }
+            setClienteNomes(nomes);
             setRatings(ratingsData);
             setAverage(avgData);
         } catch (error) {
@@ -169,6 +182,13 @@ export default function RatingsPage() {
                                     <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                                         <div className="flex-1">
                                             <div className="flex items-center gap-3 mb-3">
+                                                <div className="flex items-center gap-2">
+                                                    <User className="size-4 text-violet-500" />
+                                                    <span className="text-sm font-bold text-violet-600 dark:text-violet-400">
+                                                        {clienteNomes[rating.telefone_cliente] || 'Cliente'}
+                                                    </span>
+                                                </div>
+                                                <span className="text-slate-300">|</span>
                                                 <span className="text-sm font-bold text-slate-500 dark:text-slate-400">
                                                     Pedido #{rating.pedido_id}
                                                 </span>
@@ -196,7 +216,12 @@ export default function RatingsPage() {
                                         </div>
 
                                         <div className="text-right">
-                                            <span className="text-xs text-slate-400">{rating.telefone_cliente}</span>
+                                            <div className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                                                {clienteNomes[rating.telefone_cliente] ? rating.telefone_cliente : ''}
+                                            </div>
+                                            {!clienteNomes[rating.telefone_cliente] && (
+                                                <span className="text-xs text-slate-400">{rating.telefone_cliente}</span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

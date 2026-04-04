@@ -12,7 +12,7 @@ interface RatingPageProps {
 }
 
 export default function RatingPage({ params }: RatingPageProps) {
-    const [resolvedParams, setResolvedParams] = useState<{empresaId: number; pedidoId: number} | null>(null);
+    const [resolvedParams, setResolvedParams] = useState<{empresaId: number; pedidoId: number; phone?: string} | null>(null);
     const [empresaNome, setEmpresaNome] = useState('');
     const [telefoneCliente, setTelefoneCliente] = useState('');
     const [notaComida, setNotaComida] = useState(0);
@@ -20,13 +20,22 @@ export default function RatingPage({ params }: RatingPageProps) {
     const [comentario, setComentario] = useState('');
     const [enviado, setEnviado] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [identificado, setIdentificado] = useState(true);
 
     useEffect(() => {
         params.then(p => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const phone = urlParams.get('phone') || '';
+            
             setResolvedParams({
                 empresaId: parseInt(p.empresaId),
-                pedidoId: parseInt(p.pedidoId)
+                pedidoId: parseInt(p.pedidoId),
+                phone: phone
             });
+            
+            if (phone) {
+                setTelefoneCliente(phone);
+            }
         });
     }, [params]);
 
@@ -44,6 +53,8 @@ export default function RatingPage({ params }: RatingPageProps) {
     const enviarAvaliacao = async () => {
         if (!resolvedParams || notaComida === 0 || notaEntrega === 0) return;
 
+        const telefoneFinal = identificado ? (telefoneCliente || resolvedParams.phone || '') : '';
+        
         setLoading(true);
         try {
             const res = await fetch('/api/ratings', {
@@ -52,7 +63,7 @@ export default function RatingPage({ params }: RatingPageProps) {
                 body: JSON.stringify({
                     pedido_id: resolvedParams.pedidoId,
                     empresa_id: resolvedParams.empresaId,
-                    telefone_cliente: telefoneCliente || 'anonimo',
+                    telefone_cliente: telefoneFinal || 'anonimo',
                     nota_comida: notaComida,
                     nota_entrega: notaEntrega,
                     comentario: comentario || null
@@ -134,6 +145,34 @@ export default function RatingPage({ params }: RatingPageProps) {
                     <StarRating nota={notaComida} setNota={setNotaComida} label="Comida" emoji="🍕" />
                     <StarRating nota={notaEntrega} setNota={setNotaEntrega} label="Entrega" emoji="🛵" />
                 </div>
+
+                {/* Toggle Anônimo / Identificado */}
+                {(telefoneCliente || resolvedParams?.phone) && (
+                    <div className="bg-white rounded-2xl p-4 shadow-sm">
+                        <label className="flex items-center justify-between cursor-pointer">
+                            <div className="flex items-center gap-3">
+                                <div className={`size-10 rounded-full flex items-center justify-center ${identificado ? 'bg-green-100' : 'bg-slate-100'}`}>
+                                    <span className="text-lg">{identificado ? '👤' : '🎭'}</span>
+                                </div>
+                                <div>
+                                    <p className="font-bold text-slate-900 text-sm">
+                                        {identificado ? 'Identificado' : 'Anônimo'}
+                                    </p>
+                                    <p className="text-xs text-slate-500">
+                                        {identificado ? 'Seu nome será vinculado à avaliação' : 'Sua avaliação será totalmente anônima'}
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIdentificado(!identificado)}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${identificado ? 'bg-green-500' : 'bg-slate-300'}`}
+                            >
+                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${identificado ? 'translate-x-6' : 'translate-x-1'}`} />
+                            </button>
+                        </label>
+                    </div>
+                )}
 
                 <div className="bg-white rounded-2xl p-6 shadow-sm">
                     <h3 className="font-bold text-slate-900 mb-3">Algo a dizer? (opcional)</h3>

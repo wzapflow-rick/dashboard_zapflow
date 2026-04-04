@@ -86,7 +86,8 @@ export async function sendOrderStatusMessage(
     orderId: number,
     status: string,
     empresaId?: number,
-    tipoEntrega?: string
+    tipoEntrega?: string,
+    customerPhone?: string
 ): Promise<boolean> {
     const isDelivery = tipoEntrega === 'delivery';
     const trackUrl = `${BASE_URL}/track/${orderId}`;
@@ -169,7 +170,8 @@ ${trackUrl}`;
 
     // Add rating link when order is finalized
     if (status === 'finalizado' && empresaId) {
-        const ratingUrl = `${BASE_URL}/rating/${empresaId}/${orderId}`;
+        const phoneParam = phone ? `&phone=${phone.replace(/\D/g, '')}` : '';
+        const ratingUrl = `${BASE_URL}/rating/${empresaId}/${orderId}${phoneParam}`;
         message += `
 
 ⭐ *Nos avalie!* Sua opinião é muito importante:

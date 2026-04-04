@@ -235,7 +235,7 @@ export async function updateOrderStatus(id: number, status: string) {
         }
 
         if (orderData.telefone_cliente) {
-            sendOrderStatusMessage(orderData.telefone_cliente, id, status, user.empresaId, orderData.tipo_entrega)
+            sendOrderStatusMessage(orderData.telefone_cliente, id, status, user.empresaId, orderData.tipo_entrega, orderData.telefone_cliente)
                 .catch(err => console.error('Falha ao enviar WhatsApp:', err));
         }
 

@@ -6,9 +6,10 @@ import { revalidatePath } from 'next/cache';
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
 const RATINGS_TABLE_ID = 'maehg8e7on1f80k';
+const CLIENTS_TABLE_ID = 'mfpwzmya0e4ej1k';
 
-async function nocoFetch(endpoint: string, options: RequestInit = {}) {
-    const url = `${NOCODB_URL}/api/v2/tables/${RATINGS_TABLE_ID}${endpoint}`;
+async function nocoFetch(endpoint: string, options: RequestInit = {}, tableId: string = RATINGS_TABLE_ID) {
+    const url = `${NOCODB_URL}/api/v2/tables/${tableId}${endpoint}`;
     const res = await fetch(url, {
         ...options,
         headers: {
@@ -26,6 +27,32 @@ async function nocoFetch(endpoint: string, options: RequestInit = {}) {
     }
 
     return res;
+}
+
+// Buscar cliente por telefone
+export async function getClientByPhone(telefone: string): Promise<{ nome?: string; id?: number } | null> {
+    try {
+        const user = await getMe();
+        if (!user?.empresaId) return null;
+
+        const cleanPhone = telefone.replace(/\D/g, '');
+        
+        const res = await nocoFetch(
+            `/records?where=(empresa_id,eq,${user.empresaId})~and(telefone,eq,${cleanPhone})&limit=1`,
+            {},
+            CLIENTS_TABLE_ID
+        );
+        
+        if (!res) return null;
+        
+        const data = await res.json();
+        const client = data.list?.[0];
+        
+        return client ? { nome: client.nome, id: client.id } : null;
+    } catch (error) {
+        console.error('getClientByPhone error:', error);
+        return null;
+    }
 }
 
 export interface Rating {
