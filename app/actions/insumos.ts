@@ -122,9 +122,10 @@ export async function deleteInsumo(id: number | string) {
             throw new Error('ID inválido');
         }
         
+        // NocoDB requires both 'id' and 'Id' for delete operations
         await nocoFetch('/records', {
             method: 'DELETE',
-            body: JSON.stringify([{ Id: numericId }])
+            body: JSON.stringify([{ id: numericId, Id: numericId }])
         }, INSUMOS_TABLE_ID);
         revalidatePath('/dashboard/insumos');
         revalidatePath('/dashboard/menu');
@@ -239,9 +240,11 @@ export async function setNovoEstoqueInsumo(id: number, nova_quantidade: number) 
             throw new Error('Quantidade inválida');
         }
         
+        // NocoDB requires both 'id' and 'Id' for PATCH operations
         await nocoFetch('/records', {
             method: 'PATCH',
             body: JSON.stringify({
+                id: numericId,
                 Id: numericId,
                 quantidade_atual: numericQty
             })
