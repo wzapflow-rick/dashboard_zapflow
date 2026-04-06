@@ -35,6 +35,7 @@ const adminItems = [
     { name: 'Avaliações', href: '/dashboard/ratings', icon: Star, roles: ['admin', 'gerente'] },
     { name: 'Usuários', href: '/dashboard/users', icon: Users, roles: ['admin'] },
     { name: 'Acertos', href: '/dashboard/acertos', icon: DollarSign, roles: ['admin', 'gerente'] },
+    { name: 'Relatórios', href: '/dashboard/reports', icon: DollarSign, roles: ['admin', 'gerente'] },
     { name: 'Configurações', href: '/dashboard/settings', icon: Settings, roles: ['admin'] },
     { name: 'Assinatura', href: '/dashboard/subscription', icon: CreditCard, roles: ['admin'] },
 ];

@@ -1,9 +1,16 @@
 'use server';
 
 const EVO_API_URL = process.env.EVOLUTION_API_URL || 'https://evo.wzapflow.com.br';
-const EVO_API_KEY = process.env.EVOLUTION_API_KEY || 'RiquelmoBarbosaSantos147258369RiquelmoBarbosaSantos147258369RiquelmoBarbosaSantos147258369';
+const EVO_API_KEY = process.env.EVOLUTION_API_KEY || '';
 const EVO_INSTANCE = process.env.EVOLUTION_INSTANCE || 'zapflow_testes';
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+
+// Verificar se a API key está configurada
+function checkApiKey() {
+    if (!EVO_API_KEY) {
+        throw new Error('EVOLUTION_API_KEY não configurada no ambiente');
+    }
+}
 
 /**
  * Formatar número de telefone para Evolution API
