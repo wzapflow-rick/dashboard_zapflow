@@ -14,12 +14,18 @@ const PrintModal = dynamic(() => import('./expedition/print-modal'), {
   ssr: false,
 });
 
+const CancelOrderModal = dynamic(() => import('./expedition/cancel-order-modal'), {
+  ssr: false,
+});
+
 const columns = [
+  { id: 'agendado', title: 'Agendados', color: 'violet' },
   { id: 'pagamento_pendente', title: 'Aguardando Pagamento', color: 'orange' },
   { id: 'pendente', title: 'Novos Pedidos', color: 'red' },
   { id: 'preparando', title: 'Preparando', color: 'amber' },
   { id: 'entrega', title: 'Saiu para Entrega', color: 'blue' },
   { id: 'finalizado', title: 'Concluídos', color: 'green' },
+  { id: 'cancelado', title: 'Cancelados', color: 'gray' },
 ];
 
 export default function ExpeditionMonitor() {
@@ -36,6 +42,8 @@ export default function ExpeditionMonitor() {
   const [isOrderCreatorOpen, setIsOrderCreatorOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedOrderForDetails, setSelectedOrderForDetails] = useState<any>(null);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [orderToCancel, setOrderToCancel] = useState<number | null>(null);
 
   const loadOrders = async () => {
     try {
@@ -83,7 +91,8 @@ export default function ExpeditionMonitor() {
 
   const handleMoveOrder = async (orderId: number, currentStatus: string) => {
     const statusFlow: { [key: string]: string } = {
-      'pagamento_pendente': 'pendente',  // Pagamento confirmado → Novo pedido
+      'agendado': 'pagamento_pendente',
+      'pagamento_pendente': 'pendente',
       'pendente': 'preparando',
       'preparando': 'entrega',
       'entrega': 'finalizado'
@@ -91,6 +100,9 @@ export default function ExpeditionMonitor() {
 
     const nextStatus = statusFlow[currentStatus];
     if (!nextStatus) return;
+
+    // Não permitir mover pedidos cancelados
+    if (currentStatus === 'cancelado') return;
 
     // Tocar som ao confirmar pagamento
     if (currentStatus === 'pagamento_pendente') {
@@ -146,6 +158,27 @@ export default function ExpeditionMonitor() {
   const openDetailsModal = (order: any) => {
     setSelectedOrderForDetails(JSON.parse(JSON.stringify(order)));
     setIsDetailsOpen(true);
+  };
+
+  const handleCancelOrder = (orderId: number) => {
+    setOrderToCancel(orderId);
+    setIsCancelModalOpen(true);
+  };
+
+  const handleConfirmCancel = async (motivo: string) => {
+    if (!orderToCancel) return;
+    
+    try {
+      await updateOrderStatus(orderToCancel, 'cancelado', motivo);
+      toast.success('Pedido cancelado!');
+      
+      loadOrders();
+      setIsCancelModalOpen(false);
+      setOrderToCancel(null);
+    } catch (err) {
+      console.error('Erro ao cancelar pedido:', err);
+      toast.error('Erro ao cancelar pedido');
+    }
   };
 
   const handleConfirmPrint = () => {
@@ -204,6 +237,7 @@ export default function ExpeditionMonitor() {
               onMoveOrder={handleMoveOrder}
               onRegisterCustomer={openRegisterModal}
               onOpenDetails={openDetailsModal}
+              onCancelOrder={handleCancelOrder}
             />
           );
         })}
@@ -214,7 +248,6 @@ export default function ExpeditionMonitor() {
           isOpen={isPrintModalOpen}
           onClose={() => setIsPrintModalOpen(false)}
           order={selectedOrderForPrint}
-          onConfirm={handleConfirmPrint}
         />
       )}
 
@@ -266,6 +299,18 @@ export default function ExpeditionMonitor() {
             setSelectedOrderForDetails(null);
           }}
           order={selectedOrderForDetails}
+        />
+      )}
+
+      {isCancelModalOpen && (
+        <CancelOrderModal
+          isOpen={isCancelModalOpen}
+          onClose={() => {
+            setIsCancelModalOpen(false);
+            setOrderToCancel(null);
+          }}
+          onConfirm={handleConfirmCancel}
+          orderId={orderToCancel || 0}
         />
       )}
     </div>

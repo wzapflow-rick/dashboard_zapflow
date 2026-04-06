@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
 
 export interface CartItem {
   id: string;
@@ -41,6 +41,9 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | null>(null);
 
+const CART_STORAGE_KEY = 'zapflow_cart';
+const CUPOM_STORAGE_KEY = 'zapflow_cupom';
+
 export function useCart() {
   const context = useContext(CartContext);
   if (!context) {
@@ -49,9 +52,68 @@ export function useCart() {
   return context;
 }
 
-export function CartProvider({ children, pontosPorReal = 1 }: { children: React.ReactNode; pontosPorReal?: number }) {
+export function CartProvider({ children, pontosPorReal = 1, empresaId }: { children: React.ReactNode; pontosPorReal?: number; empresaId?: number }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [cupom, setCupomState] = useState<{ id?: number; codigo: string; desconto: number; tipo: string } | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Load cart from localStorage on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      const savedItems = localStorage.getItem(`${CART_STORAGE_KEY}_${empresaId}`);
+      const savedCupom = localStorage.getItem(`${CUPOM_STORAGE_KEY}_${empresaId}`);
+      
+      if (savedItems) {
+        const parsed = JSON.parse(savedItems);
+        if (Array.isArray(parsed)) {
+          setItems(parsed);
+        }
+      }
+      
+      if (savedCupom) {
+        const parsed = JSON.parse(savedCupom);
+        if (parsed && parsed.codigo) {
+          setCupomState(parsed);
+        }
+      }
+    } catch (e) {
+      console.error('Erro ao carregar carrinho:', e);
+    }
+    
+    setIsLoaded(true);
+  }, [empresaId]);
+
+  // Save cart to localStorage when items change
+  useEffect(() => {
+    if (!isLoaded || typeof window === 'undefined') return;
+    
+    try {
+      if (items.length > 0) {
+        localStorage.setItem(`${CART_STORAGE_KEY}_${empresaId}`, JSON.stringify(items));
+      } else {
+        localStorage.removeItem(`${CART_STORAGE_KEY}_${empresaId}`);
+      }
+    } catch (e) {
+      console.error('Erro ao salvar carrinho:', e);
+    }
+  }, [items, empresaId, isLoaded]);
+
+  // Save cupom to localStorage when it changes
+  useEffect(() => {
+    if (!isLoaded || typeof window === 'undefined') return;
+    
+    try {
+      if (cupom) {
+        localStorage.setItem(`${CUPOM_STORAGE_KEY}_${empresaId}`, JSON.stringify(cupom));
+      } else {
+        localStorage.removeItem(`${CUPOM_STORAGE_KEY}_${empresaId}`);
+      }
+    } catch (e) {
+      console.error('Erro ao salvar cupom:', e);
+    }
+  }, [cupom, empresaId, isLoaded]);
 
   const addItem = useCallback((item: Omit<CartItem, 'id'>) => {
     const id = `${item.productId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -77,7 +139,11 @@ export function CartProvider({ children, pontosPorReal = 1 }: { children: React.
   const clearCart = useCallback(() => {
     setItems([]);
     setCupomState(null);
-  }, []);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(`${CART_STORAGE_KEY}_${empresaId}`);
+      localStorage.removeItem(`${CUPOM_STORAGE_KEY}_${empresaId}`);
+    }
+  }, [empresaId]);
 
   const subtotal = useMemo(() => {
     return items.reduce((sum, item) => sum + (item.preco * item.quantidade), 0);

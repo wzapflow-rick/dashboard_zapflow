@@ -973,7 +973,8 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                             </div>
                           )}
 
-                          {/* Agendamento */}
+                          {/* Agendamento - apenas para retirada */}
+                          {!isDelivery && (
                           <div className="border-t border-slate-200 pt-4 mt-4">
                             <label className="flex items-center gap-3 cursor-pointer">
                               <div className="relative">
@@ -1025,6 +1026,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                               </div>
                             )}
                           </div>
+                          )}
                         </div>
                       </>
                     )}

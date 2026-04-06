@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import { X, ShoppingCart, Check, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -35,14 +35,28 @@ interface Props {
     product: CompositeProduct;
     whatsappNumber: string;
     empresaNome: string;
+    onClose?: () => void;
 }
 
 const fmt = (price: number) => `R$ ${price.toFixed(2).replace('.', ',')}`;
 
-export default function CompositeProductCard({ product, whatsappNumber, empresaNome }: Props) {
+export default function CompositeProductCard({ product, whatsappNumber, empresaNome, onClose }: Props) {
     const [isOpen, setIsOpen] = useState(false);
     const [selected, setSelected] = useState<CompositeItem[]>([]);
     const { addItem } = useCart();
+
+    // Open modal when product is selected from the filter
+    useEffect(() => {
+        if (onClose) {
+            setIsOpen(true);
+        }
+    }, [onClose]);
+
+    const handleClose = () => {
+        setIsOpen(false);
+        setSelected([]);
+        if (onClose) onClose();
+    };
 
     const max = Number(product.maximo || 1);
     const min = Number(product.minimo || 1);

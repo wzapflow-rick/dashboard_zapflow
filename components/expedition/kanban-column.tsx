@@ -9,9 +9,10 @@ interface KanbanColumnProps {
     onMoveOrder: (orderId: number, currentStatus: string) => void;
     onRegisterCustomer: (order: any) => void;
     onOpenDetails: (order: any) => void;
+    onCancelOrder?: (orderId: number) => void;
 }
 
-export function KanbanColumn({ col, columnOrders, onOpenPrintModal, onMoveOrder, onRegisterCustomer, onOpenDetails }: KanbanColumnProps) {
+export function KanbanColumn({ col, columnOrders, onOpenPrintModal, onMoveOrder, onRegisterCustomer, onOpenDetails, onCancelOrder }: KanbanColumnProps) {
     return (
         <div className="min-w-[320px] flex flex-col h-full bg-slate-100/50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-700">
             <div className={cn(
@@ -59,6 +60,7 @@ export function KanbanColumn({ col, columnOrders, onOpenPrintModal, onMoveOrder,
                         onMoveOrder={onMoveOrder as any}
                         onRegisterCustomer={onRegisterCustomer}
                         onOpenDetails={onOpenDetails}
+                        onCancelOrder={onCancelOrder}
                     />
                 ))}
             </div>

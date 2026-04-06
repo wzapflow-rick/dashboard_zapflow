@@ -29,7 +29,7 @@ export default function MenuClientWrapper({
   upsellProducts = []
 }: MenuClientWrapperProps) {
   return (
-    <CartProvider pontosPorReal={pontosPorReal}>
+    <CartProvider pontosPorReal={pontosPorReal} empresaId={empresaId}>
       {children}
       <Cart 
         whatsappNumber={whatsappNumber} 

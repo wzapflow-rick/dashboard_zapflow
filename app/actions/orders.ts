@@ -147,7 +147,7 @@ export async function createManualOrder(data: {
     }
 }
 
-export async function updateOrderStatus(id: number, status: string) {
+export async function updateOrderStatus(id: number, status: string, motivo?: string) {
     try {
         const user = await requireRole(['admin', 'gerente', 'atendente']);
 
@@ -177,6 +177,17 @@ export async function updateOrderStatus(id: number, status: string) {
         if (!orderData || Number(orderData.empresa_id) !== Number(user.empresaId)) {
             logger.securityAccessDenied(user.empresaId, `order:${id}`, 'UPDATE_STATUS');
             throw new Error('Acesso negado: Pedido não pertence a esta empresa');
+        }
+
+        // Build update payload
+        const updatePayload: any = { id, status };
+        
+        // If canceling, add the reason to observacoes
+        if (status === 'cancelado' && motivo) {
+            const nowStr = new Date().toLocaleString('pt-BR');
+            updatePayload.observacoes = orderData.observacoes 
+                ? `${orderData.observacoes}\n❌ CANCELADO (${nowStr}): ${motivo}`
+                : `❌ CANCELADO (${nowStr}): ${motivo}`;
         }
 
         if (status === 'finalizado') {
@@ -209,7 +220,7 @@ export async function updateOrderStatus(id: number, status: string) {
 
         const res = await nocoFetchForTable(TABLE_ID, '/records', {
             method: 'PATCH',
-            body: JSON.stringify({ id, status })
+            body: JSON.stringify(updatePayload)
         });
 
         if (status === 'finalizado') {
