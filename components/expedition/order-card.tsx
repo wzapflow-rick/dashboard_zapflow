@@ -355,7 +355,7 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
                     >
                         <Printer className="size-4" />
                     </button>
-                    {onCancelOrder && columnId !== 'finalizado' && columnId !== 'agendado' && (
+                    {onCancelOrder && String(columnId) !== 'finalizado' && String(columnId) !== 'agendado' && String(columnId) !== 'cancelado' && String(columnId) !== 'pagamento_pendente' && (
                         <button
                             onClick={() => onCancelOrder(order.id)}
                             className="col-span-1 h-9 flex items-center justify-center rounded bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
