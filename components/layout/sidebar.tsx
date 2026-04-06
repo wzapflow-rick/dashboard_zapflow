@@ -25,16 +25,16 @@ const navItems = [
     { name: 'Visão Geral', href: '/dashboard', icon: LayoutDashboard, roles: ['admin'] },
     { name: 'Cardápio', href: '/dashboard/menu', icon: UtensilsCrossed, roles: ['admin'] },
     { name: 'Insumos', href: '/dashboard/insumos', icon: PackageOpen, roles: ['admin'] },
-    { name: 'Expedição', href: '/dashboard/expedition', icon: Truck, roles: ['admin', 'atendente', 'cozinheiro'] },
-    { name: 'Clientes', href: '/dashboard/customers', icon: Users, roles: ['admin', 'atendente'] },
+    { name: 'Expedição', href: '/dashboard/expedition', icon: Truck, roles: ['admin', 'gerente', 'atendente', 'cozinheiro'] },
+    { name: 'Clientes', href: '/dashboard/customers', icon: Users, roles: ['admin', 'gerente', 'atendente'] },
     { name: 'Divulgação', href: '/dashboard/growth', icon: Megaphone, roles: ['admin'] },
     { name: 'Módulo de Testes', href: '/dashboard/testes', icon: FlaskConical, roles: ['admin'] },
 ];
 
 const adminItems = [
-    { name: 'Avaliações', href: '/dashboard/ratings', icon: Star, roles: ['admin'] },
+    { name: 'Avaliações', href: '/dashboard/ratings', icon: Star, roles: ['admin', 'gerente'] },
     { name: 'Usuários', href: '/dashboard/users', icon: Users, roles: ['admin'] },
-    { name: 'Acertos', href: '/dashboard/acertos', icon: DollarSign, roles: ['admin'] },
+    { name: 'Acertos', href: '/dashboard/acertos', icon: DollarSign, roles: ['admin', 'gerente'] },
     { name: 'Configurações', href: '/dashboard/settings', icon: Settings, roles: ['admin'] },
     { name: 'Assinatura', href: '/dashboard/subscription', icon: CreditCard, roles: ['admin'] },
 ];

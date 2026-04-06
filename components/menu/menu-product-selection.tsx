@@ -216,15 +216,25 @@ export default function MenuProductSelection({
                         {product.descricao && (
                             <p className="text-xs text-slate-500 mt-1 line-clamp-2">{product.descricao}</p>
                         )}
-                        <div className="mt-auto pt-2 flex items-center justify-between">
+                        <div className="mt-auto pt-2 flex items-center justify-between gap-2">
                             <span className="text-base font-black text-violet-600">
                                 {defaultFormatPrice(product.preco)}
                             </span>
-                            {whatsappNumber && (
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (!hasComplements) {
+                            <div className="flex gap-1">
+                                {hasComplements ? (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setIsOpen(true);
+                                        }}
+                                        className="text-xs font-bold text-green-600 bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg transition-all"
+                                    >
+                                        Escolher
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
                                             addItem({
                                                 productId: product.id,
                                                 nome: product.nome,
@@ -233,15 +243,13 @@ export default function MenuProductSelection({
                                                 imagem: product.imagem
                                             });
                                             toast.success(`${product.nome} adicionado ao carrinho!`);
-                                        } else {
-                                            setIsOpen(true);
-                                        }
-                                    }}
-                                    className="text-xs font-bold text-green-600 bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg transition-all"
-                                >
-                                    {hasComplements ? 'Escolher' : 'Adicionar'}
-                                </button>
-                            )}
+                                        }}
+                                        className="text-xs font-bold text-green-600 bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg transition-all"
+                                    >
+                                        Adicionar
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

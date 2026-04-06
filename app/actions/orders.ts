@@ -121,7 +121,7 @@ export async function createManualOrder(data: {
     valor_total: number;
 }) {
     try {
-        const user = await requireRole(['admin', 'atendente']);
+        const user = await requireRole(['admin', 'gerente', 'atendente']);
 
         const payload = {
             cliente_nome: data.cliente_nome || 'Cliente Manual',
@@ -149,7 +149,7 @@ export async function createManualOrder(data: {
 
 export async function updateOrderStatus(id: number, status: string) {
     try {
-        const user = await requireRole(['admin', 'atendente']);
+        const user = await requireRole(['admin', 'gerente', 'atendente']);
 
         const validated = OrderStatusSchema.safeParse({ orderId: id, status });
         if (!validated.success) {

@@ -21,6 +21,7 @@ export interface CartItem {
   }[];
   isComposite?: boolean;
   grupoId?: number;
+  isAvulso?: boolean;
 }
 
 interface CartContextType {

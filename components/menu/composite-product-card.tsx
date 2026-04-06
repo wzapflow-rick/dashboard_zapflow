@@ -142,7 +142,7 @@ export default function CompositeProductCard({ product, whatsappNumber, empresaN
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">{product.descricao}</p>
                         )}
                         <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1 font-medium">{priceRuleLabel}</p>
-                        <div className="mt-auto pt-2 flex items-center justify-between">
+                        <div className="mt-auto pt-2 flex items-center justify-between gap-2">
                             <span className="text-base font-black text-amber-600 dark:text-amber-400">
                                 {selected.length > 0 ? fmt(finalPrice) : `A partir de ${fmt(finalPrice)}`}
                             </span>

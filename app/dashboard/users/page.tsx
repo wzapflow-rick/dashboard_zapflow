@@ -8,24 +8,28 @@ import { toast } from 'sonner';
 
 const ROLE_LABELS: Record<string, string> = {
     admin: 'Administrador',
+    gerente: 'Gerente',
     atendente: 'Atendente',
     cozinheiro: 'Cozinheiro',
 };
 
 const ROLE_PERMS: Record<string, string[]> = {
     admin: ['Acesso completo ao sistema'],
+    gerente: ['Expedição (Kanban)', 'Clientes', 'Avaliações', 'Acertos'],
     atendente: ['Expedição (Kanban)', 'Clientes'],
     cozinheiro: ['Expedição (Kanban)'],
 };
 
 const ROLE_ICONS: Record<string, React.ReactNode> = {
     admin: <Shield className="size-4 text-violet-600 dark:text-violet-400" />,
+    gerente: <Shield className="size-4 text-emerald-600 dark:text-emerald-400" />,
     atendente: <UserCheck className="size-4 text-blue-500" />,
     cozinheiro: <ChefHat className="size-4 text-orange-500" />,
 };
 
 const ROLE_BADGE_CLASS: Record<string, string> = {
     admin: 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300',
+    gerente: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300',
     atendente: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
     cozinheiro: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300',
 };
@@ -258,6 +262,7 @@ export default function UsersPage() {
                                         onChange={e => setForm({ ...form, role: e.target.value })}
                                         className="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
                                     >
+                                        <option value="gerente">Gerente (Kanban + Clientes + Avaliações + Acertos)</option>
                                         <option value="atendente">Atendente (Kanban + Clientes)</option>
                                         <option value="cozinheiro">Cozinheiro (Kanban)</option>
                                     </select>

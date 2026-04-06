@@ -4,18 +4,24 @@ import { decrypt } from '@/lib/session'
 const protectedRoutes = ['/dashboard', '/onboarding']
 const authRoutes = ['/login', '/register']
 
-// Rotas restritas por role (apenas admin pode acessar)
+// Rotas restritas por role (apenas admin e gerente podem acessar)
 const adminOnlyRoutes = [
     '/dashboard/settings',
     '/dashboard/subscription',
     '/dashboard/users',
     '/dashboard/growth',
-    '/dashboard/ratings',
-    '/dashboard/acertos',
     '/dashboard/testes',
     '/dashboard/insumos',
     '/dashboard/categories',
     '/dashboard/complements',
+]
+
+// Rotas acessíveis por gerentes (além do dashboard base)
+const gerenteRoutes = [
+    '/dashboard/expedition',
+    '/dashboard/customers',
+    '/dashboard/ratings',
+    '/dashboard/acertos',
 ]
 
 // Rotas acessíveis por atendentes (além do dashboard base)
@@ -31,6 +37,7 @@ const cozinheiroRoutes = [
 
 const allowedRoutesByRole: Record<string, string[]> = {
     admin: [], // admin acessa tudo
+    gerente: gerenteRoutes,
     atendente: atendenteRoutes,
     cozinheiro: cozinheiroRoutes,
 }
@@ -82,7 +89,7 @@ export default async function middleware(req: NextRequest) {
     }
 
     // 5. Proteção por role (apenas para usuários da tabela 'usuarios', não admins da empresa)
-    if (session && session.source === 'usuario' && session.role !== 'admin') {
+    if (session && session.source === 'usuario' && !['admin', 'gerente'].includes(session.role)) {
         const role = session.role as string;
         const allowed = allowedRoutesByRole[role] || [];
         

@@ -267,9 +267,14 @@ export function Header({ isOpen, setIsOpen, setIsMobileMenuOpen }: HeaderProps) 
                     <div className="p-4 border-b border-slate-100 dark:border-slate-700">
                         <p className="font-bold text-slate-800 truncate dark:text-white">{user?.nome || 'Minha Loja'}</p>
                         <p className="text-xs text-slate-500 truncate dark:text-slate-400">{user?.email}</p>
-                        {user?.role && user.role !== 'admin' && (
+                        {user?.role && !['admin', 'gerente'].includes(user.role) && (
                             <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
                                 {user.role === 'atendente' ? 'Atendente' : user.role === 'cozinheiro' ? 'Cozinheiro' : user.role}
+                            </span>
+                        )}
+                        {user?.role === 'gerente' && (
+                            <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                Gerente
                             </span>
                         )}
                     </div>
