@@ -4,6 +4,37 @@ import { decrypt } from '@/lib/session'
 const protectedRoutes = ['/dashboard', '/onboarding']
 const authRoutes = ['/login', '/register']
 
+// Rotas restritas por role (apenas admin pode acessar)
+const adminOnlyRoutes = [
+    '/dashboard/settings',
+    '/dashboard/subscription',
+    '/dashboard/users',
+    '/dashboard/growth',
+    '/dashboard/ratings',
+    '/dashboard/acertos',
+    '/dashboard/testes',
+    '/dashboard/insumos',
+    '/dashboard/categories',
+    '/dashboard/complements',
+]
+
+// Rotas acessíveis por atendentes (além do dashboard base)
+const atendenteRoutes = [
+    '/dashboard/expedition',
+    '/dashboard/customers',
+]
+
+// Rotas acessíveis por cozinheiros
+const cozinheiroRoutes = [
+    '/dashboard/expedition',
+]
+
+const allowedRoutesByRole: Record<string, string[]> = {
+    admin: [], // admin acessa tudo
+    atendente: atendenteRoutes,
+    cozinheiro: cozinheiroRoutes,
+}
+
 export default async function middleware(req: NextRequest) {
     const path = req.nextUrl.pathname
     
@@ -25,7 +56,7 @@ export default async function middleware(req: NextRequest) {
 
     // Remove console.log in production for security
     if (process.env.NODE_ENV !== 'production') {
-        console.log(`Middleware Path: ${path} | Session: ${!!session} | Onboarded: ${session?.onboarded}`);
+        console.log(`Middleware Path: ${path} | Session: ${!!session} | Role: ${session?.role} | Onboarded: ${session?.onboarded}`);
     }
 
     // 1. Se tentar acessar rota protegida sem sessão -> login
@@ -48,6 +79,28 @@ export default async function middleware(req: NextRequest) {
     // 4. Se logado E já onboarded mas tenta voltar no onboarding -> dashboard
     if (session && session.onboarded && path.startsWith('/onboarding')) {
         return NextResponse.redirect(new URL('/dashboard', req.nextUrl))
+    }
+
+    // 5. Proteção por role (apenas para usuários da tabela 'usuarios', não admins da empresa)
+    if (session && session.source === 'usuario' && session.role !== 'admin') {
+        const role = session.role as string;
+        const allowed = allowedRoutesByRole[role] || [];
+        
+        // Verifica se a rota atual é restrita a admin
+        const isAdminRoute = adminOnlyRoutes.some(route => path.startsWith(route));
+        if (isAdminRoute) {
+            return NextResponse.redirect(new URL('/dashboard/expedition', req.nextUrl))
+        }
+
+        // Verifica se a rota está na lista de permissões do role
+        const isAllowedRoute = allowed.some(route => path.startsWith(route));
+        const isDashboardHome = path === '/dashboard' || path === '/dashboard/';
+        
+        if (!isAllowedRoute && !isDashboardHome) {
+            // Redireciona para a primeira rota permitida do role
+            const fallback = allowed.length > 0 ? allowed[0] : '/dashboard/expedition';
+            return NextResponse.redirect(new URL(fallback, req.nextUrl))
+        }
     }
 
     return NextResponse.next()

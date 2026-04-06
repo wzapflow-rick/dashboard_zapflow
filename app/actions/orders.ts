@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { getMe } from './auth';
+import { requireRole } from '@/lib/session';
 import { getReceitaDoProduto, atualizarEstoqueInsumo, getInsumos } from './insumos';
 import { getReceitaDoComplemento, getInsumosDoGrupo } from './complements';
 import { getReceitaDoItemBase } from './itens-base';
@@ -120,8 +121,7 @@ export async function createManualOrder(data: {
     valor_total: number;
 }) {
     try {
-        const user = await getMe();
-        if (!user?.empresaId) throw new Error('Não autorizado');
+        const user = await requireRole(['admin', 'atendente']);
 
         const payload = {
             cliente_nome: data.cliente_nome || 'Cliente Manual',
@@ -149,8 +149,7 @@ export async function createManualOrder(data: {
 
 export async function updateOrderStatus(id: number, status: string) {
     try {
-        const user = await getMe();
-        if (!user?.empresaId) throw new Error('Não autorizado');
+        const user = await requireRole(['admin', 'atendente']);
 
         const validated = OrderStatusSchema.safeParse({ orderId: id, status });
         if (!validated.success) {

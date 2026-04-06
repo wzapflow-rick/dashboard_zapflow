@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { getMe } from './auth';
+import { requireAdmin } from '@/lib/session';
 import { saveReceitaDoProduto } from './insumos';
 import { ProductSchema, CategorySchema } from '@/lib/validations';
 import { logAction } from '@/lib/audit';
@@ -123,8 +124,7 @@ export async function getCategories(): Promise<Category[]> {
 
 export async function upsertCategory(categoryData: any) {
   try {
-    const user = await getMe();
-    if (!user?.empresaId) throw new Error('Não autorizado');
+    const user = await requireAdmin();
 
     // Validação Premium com Zod
     const validated = CategorySchema.safeParse(categoryData);
@@ -175,8 +175,7 @@ export async function upsertCategory(categoryData: any) {
 
 export async function deleteCategory(id: number | string) {
   try {
-    const user = await getMe();
-    if (!user?.empresaId) throw new Error('Não autorizado');
+    const user = await requireAdmin();
 
     // Segurança Premium: Verificar se a categoria pertence à empresa
     const checkRes = await nocoFetch(`/records/${id}`, {}, CATEGORIES_TABLE_ID);
@@ -200,6 +199,14 @@ export async function deleteCategory(id: number | string) {
 
 export async function updateProductAvailability(id: number | string, disponivel: boolean) {
   try {
+    const user = await requireAdmin();
+
+    const checkRes = await nocoFetch(`/records/${id}`);
+    const product = await checkRes.json();
+    if (!product || Number(product.empresa_id) !== Number(user.empresaId)) {
+      throw new Error('Acesso negado: Produto não pertence a esta empresa');
+    }
+
     await nocoFetch('/records', {
       method: 'PATCH',
       body: JSON.stringify({ Id: id, id: id, disponivel })
@@ -214,10 +221,8 @@ export async function updateProductAvailability(id: number | string, disponivel:
 
 export async function deleteProduct(id: number | string) {
   try {
-    const user = await getMe();
-    if (!user?.empresaId) throw new Error('Não autorizado');
+    const user = await requireAdmin();
 
-    // Segurança Premium: Verificar se o produto pertence à empresa
     const checkRes = await nocoFetch(`/records/${id}`);
     const product = await checkRes.json();
     if (!product || Number(product.empresa_id) !== Number(user.empresaId)) {
@@ -239,8 +244,7 @@ export async function deleteProduct(id: number | string) {
 
 export async function upsertProduct(productData: any, selectedInsumos?: { insumo_id: number | string, quantidade_necessaria: number }[]) {
   try {
-    const user = await getMe();
-    if (!user?.empresaId) throw new Error('Não autorizado');
+    const user = await requireAdmin();
 
     // Validação Premium com Zod
     const validated = ProductSchema.safeParse(productData);

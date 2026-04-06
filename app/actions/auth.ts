@@ -14,6 +14,7 @@ const WINDOW_MS = 15 * 60 * 1000; // 15 minutos
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
 const EMPRESAS_TABLE_ID = process.env.EMPRESAS_TABLE_ID || 'mrlxbm1guwn9iv8';
+const USUARIOS_TABLE_ID = process.env.USUARIOS_TABLE_ID || 'm3hu4490tp0yra3';
 
 async function nocoFetch(endpoint: string, options: RequestInit = {}, tableId: string) {
     try {
@@ -75,55 +76,100 @@ export async function login(data: any) {
             }
         }
 
-        // Buscamos por Email OU Login na tabela EMPRESAS
+        // 1. Tenta login na tabela EMPRESAS (Admin da loja)
         const filter = `(email,eq,${email})~or(login,eq,${email})`;
         const res = await nocoFetch(`/records?where=${filter}`, {}, EMPRESAS_TABLE_ID);
 
-        if (!res) return { error: 'Empresa não encontrada' };
+        if (res) {
+            const resData = await res.json();
+            const empresa = resData.list?.[0];
 
-        const resData = await res.json();
-        const empresa = resData.list?.[0];
+            if (empresa && (bcrypt.compareSync(password, empresa.senha) || password === empresa.password)) {
+                // SECURITY: Log successful login
+                logger.securityLoginSuccess(email, empresa.id);
 
-        if (!empresa || (!bcrypt.compareSync(password, empresa.senha) && password !== empresa.password)) {
-            // Incrementar tentativas
-            const currentAttempt = loginAttempts.get(attemptKey) || { count: 0, lastAttempt: now };
-            currentAttempt.count += 1;
-            currentAttempt.lastAttempt = now;
-            loginAttempts.set(attemptKey, currentAttempt);
-            
-            // Log de falha de login
-            logger.securityLoginFailure(email, 'INVALID_CREDENTIALS');
-            
-            // Delay anti-brute force
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            return { error: 'E-mail ou senha inválidos' };
+                const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+                const session = await encrypt({
+                    userId: empresa.id,
+                    email: empresa.email,
+                    empresaId: empresa.id,
+                    nome: empresa.nome_fantasia || empresa.nome_admin || 'Minha Loja',
+                    onboarded: !!empresa.nome_fantasia,
+                    controle_estoque: !!empresa.controle_estoque,
+                    role: 'admin',
+                    source: 'empresa'
+                });
+
+                const isProduction = process.env.NODE_ENV === 'production';
+                (await cookies()).set('session', session, {
+                    expires,
+                    httpOnly: true,
+                    secure: isProduction,
+                    sameSite: 'strict',
+                    path: '/',
+                });
+                loginAttempts.delete(attemptKey);
+                return { success: true };
+            }
         }
 
-        // SECURITY: Log successful login
-        logger.securityLoginSuccess(email, empresa.id);
+        // 2. Tenta login na tabela USUARIOS (Atendentes, Cozinheiros)
+        const usuariosRes = await nocoFetch(`/records?where=(email,eq,${email})`, {}, USUARIOS_TABLE_ID);
 
-        const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
-        const session = await encrypt({
-            userId: empresa.id,
-            email: empresa.email,
-            empresaId: empresa.id,
-            nome: empresa.nome_fantasia || empresa.nome_admin || 'Minha Loja',
-            onboarded: !!empresa.nome_fantasia,
-            controle_estoque: !!empresa.controle_estoque,
-            role: 'admin'
-        });
+        if (usuariosRes) {
+            const usuariosData = await usuariosRes.json();
+            const usuario = usuariosData.list?.[0];
 
-        const isProduction = process.env.NODE_ENV === 'production';
-        (await cookies()).set('session', session, {
-            expires,
-            httpOnly: true,
-            secure: isProduction,
-            sameSite: 'strict',
-            path: '/',
-        });
-        // Reset tentativas de login
-        loginAttempts.delete(attemptKey);
-        return { success: true };
+            console.log('[LOGIN DEBUG] usuario:', usuario ? Object.keys(usuario) : null);
+            console.log('[LOGIN DEBUG] senha_hash exists:', !!usuario?.senha_hash);
+
+            const hashField = usuario?.senha_hash || usuario?.senha || usuario?.Senha_hash || usuario?.senhaHash || usuario?.password_hash || usuario?.hash_senha;
+
+            if (usuario && hashField && bcrypt.compareSync(password, hashField)) {
+                // Verifica se está ativo
+                if (usuario.ativo === false || usuario.ativo === 0 || String(usuario.ativo).toLowerCase() === 'false') {
+                    logger.securityLoginFailure(email, 'ACCOUNT_DISABLED', 'Usuário desativado');
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    return { error: 'Sua conta foi desativada. Contate o administrador.' };
+                }
+
+                logger.securityLoginSuccess(email, usuario.id);
+
+                const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+                const session = await encrypt({
+                    userId: usuario.id,
+                    email: usuario.email,
+                    empresaId: usuario.empresa_id,
+                    nome: usuario.nome,
+                    onboarded: true,
+                    controle_estoque: false,
+                    role: usuario.role || 'atendente',
+                    source: 'usuario'
+                });
+
+                const isProduction = process.env.NODE_ENV === 'production';
+                (await cookies()).set('session', session, {
+                    expires,
+                    httpOnly: true,
+                    secure: isProduction,
+                    sameSite: 'strict',
+                    path: '/',
+                });
+                loginAttempts.delete(attemptKey);
+                return { success: true };
+            }
+        }
+
+        // Login falhou em ambas as tabelas
+        const currentAttempt = loginAttempts.get(attemptKey) || { count: 0, lastAttempt: now };
+        currentAttempt.count += 1;
+        currentAttempt.lastAttempt = now;
+        loginAttempts.set(attemptKey, currentAttempt);
+        
+        logger.securityLoginFailure(email, 'INVALID_CREDENTIALS');
+        
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return { error: 'E-mail ou senha inválidos' };
     } catch (error) {
         console.error('Login Error:', error);
         return { error: 'Erro interno no servidor' };

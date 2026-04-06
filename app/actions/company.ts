@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { getMe } from './auth';
-import { encrypt } from '@/lib/session';
+import { requireAdmin, encrypt } from '@/lib/session';
 import { CompanyUpdateSchema } from '@/lib/validations';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
@@ -46,8 +46,7 @@ export async function getCompanyDetails() {
 
 export async function updateCompany(data: any) {
     try {
-        const user = await getMe();
-        if (!user?.empresaId) throw new Error('Não autorizado');
+        const user = await requireAdmin();
 
         // Validate input
         const validated = CompanyUpdateSchema.safeParse(data);

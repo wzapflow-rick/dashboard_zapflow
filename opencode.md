@@ -18,7 +18,7 @@
 4. Gestão Administrativa e Financeira
 
     ⏳ Relatório de DRE Simplificado: Faturamento - Custos - Taxas
-    ⏳ Multi-usuário com Níveis de Acesso: Admin, Operador, Cozinheiro
+    ✅ Multi-usuário com Níveis de Acesso: Admin, Atendente, Cozinheiro
 
 5. Resiliência Técnica e Escalabilidade
 

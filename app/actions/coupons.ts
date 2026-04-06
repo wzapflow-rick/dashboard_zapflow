@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { getMe } from './auth';
+import { requireAdmin } from '@/lib/session';
 import { CouponSchema } from '@/lib/validations';
 import { logAction } from '@/lib/audit';
 
@@ -62,8 +63,7 @@ export async function getCoupons(): Promise<Coupon[]> {
 // Criar ou atualizar cupom
 export async function upsertCoupon(couponData: any) {
     try {
-        const user = await getMe();
-        if (!user?.empresaId) throw new Error('Não autorizado');
+        const user = await requireAdmin();
 
         // Validação com Zod
         const validated = CouponSchema.safeParse(couponData);
@@ -116,8 +116,7 @@ export async function upsertCoupon(couponData: any) {
 // Deletar cupom
 export async function deleteCoupon(id: number | string) {
     try {
-        const user = await getMe();
-        if (!user?.empresaId) throw new Error('Não autorizado');
+        await requireAdmin();
 
         await nocoFetch('/records', {
             method: 'DELETE',

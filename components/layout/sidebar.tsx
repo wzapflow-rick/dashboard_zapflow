@@ -22,20 +22,21 @@ import { motion, AnimatePresence } from 'motion/react';
 import Image from 'next/image';
 
 const navItems = [
-    { name: 'Visão Geral', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Cardápio', href: '/dashboard/menu', icon: UtensilsCrossed },
-    { name: 'Insumos', href: '/dashboard/insumos', icon: PackageOpen },
-    { name: 'Expedição', href: '/dashboard/expedition', icon: Truck },
-    { name: 'Clientes', href: '/dashboard/customers', icon: Users },
-    { name: 'Divulgação', href: '/dashboard/growth', icon: Megaphone },
-    { name: 'Módulo de Testes', href: '/dashboard/testes', icon: FlaskConical },
+    { name: 'Visão Geral', href: '/dashboard', icon: LayoutDashboard, roles: ['admin'] },
+    { name: 'Cardápio', href: '/dashboard/menu', icon: UtensilsCrossed, roles: ['admin'] },
+    { name: 'Insumos', href: '/dashboard/insumos', icon: PackageOpen, roles: ['admin'] },
+    { name: 'Expedição', href: '/dashboard/expedition', icon: Truck, roles: ['admin', 'atendente', 'cozinheiro'] },
+    { name: 'Clientes', href: '/dashboard/customers', icon: Users, roles: ['admin', 'atendente'] },
+    { name: 'Divulgação', href: '/dashboard/growth', icon: Megaphone, roles: ['admin'] },
+    { name: 'Módulo de Testes', href: '/dashboard/testes', icon: FlaskConical, roles: ['admin'] },
 ];
 
 const adminItems = [
-    { name: 'Avaliações', href: '/dashboard/ratings', icon: Star },
-    { name: 'Acertos', href: '/dashboard/acertos', icon: DollarSign },
-    { name: 'Configurações', href: '/dashboard/settings', icon: Settings },
-    { name: 'Assinatura', href: '/dashboard/subscription', icon: CreditCard },
+    { name: 'Avaliações', href: '/dashboard/ratings', icon: Star, roles: ['admin'] },
+    { name: 'Usuários', href: '/dashboard/users', icon: Users, roles: ['admin'] },
+    { name: 'Acertos', href: '/dashboard/acertos', icon: DollarSign, roles: ['admin'] },
+    { name: 'Configurações', href: '/dashboard/settings', icon: Settings, roles: ['admin'] },
+    { name: 'Assinatura', href: '/dashboard/subscription', icon: CreditCard, roles: ['admin'] },
 ];
 
 interface SidebarProps {
@@ -116,6 +117,12 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen }: Sideb
                             }
                             return true;
                         })
+                        .filter(item => {
+                            if (user?.role && user.role !== 'admin') {
+                                return item.roles?.includes(user.role);
+                            }
+                            return true;
+                        })
                         .map((item) => {
                             const isActive = pathname === item.href;
                             return (
@@ -142,25 +149,32 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen }: Sideb
                                 Administração
                             </span>
                         )}
-                        {adminItems.map((item) => {
-                            const isActive = pathname === item.href;
-                            return (
-                                <a
-                                    key={item.name}
-                                    href={item.href}
-                                    onClick={closeMobileMenu}
-                                    className={cn(
-                                        "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group",
-                                        isActive
-                                            ? "bg-primary/10 text-primary font-bold"
-                                            : "text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800"
-                                    )}
-                                >
-                                    <item.icon className={cn("size-5 shrink-0", isActive ? "text-primary" : "text-slate-500 dark:text-slate-400")} />
-                                    {(isOpen || isMobileMenuOpen) && <span className="dark:text-slate-300">{item.name}</span>}
-                                </a>
-                            );
-                        })}
+                        {adminItems
+                            .filter(item => {
+                                if (user?.role && user.role !== 'admin') {
+                                    return item.roles?.includes(user.role);
+                                }
+                                return true;
+                            })
+                            .map((item) => {
+                                const isActive = pathname === item.href;
+                                return (
+                                    <a
+                                        key={item.name}
+                                        href={item.href}
+                                        onClick={closeMobileMenu}
+                                        className={cn(
+                                            "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group",
+                                            isActive
+                                                ? "bg-primary/10 text-primary font-bold"
+                                                : "text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800"
+                                        )}
+                                    >
+                                        <item.icon className={cn("size-5 shrink-0", isActive ? "text-primary" : "text-slate-500 dark:text-slate-400")} />
+                                        {(isOpen || isMobileMenuOpen) && <span className="dark:text-slate-300">{item.name}</span>}
+                                    </a>
+                                );
+                            })}
                     </div>
                 </nav>
 
