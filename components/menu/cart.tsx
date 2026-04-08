@@ -21,14 +21,21 @@ import {
   User,
   ChevronRight,
   ArrowLeft,
-  AlertCircle
+  AlertCircle,
+  Copy,
+  CheckCircle
 } from 'lucide-react';
 import { useCart } from './cart-context';
 import { validateCoupon } from '@/app/actions/coupons';
 import { createPublicOrder } from '@/app/actions/public-orders';
 import { getClientPoints, getLoyaltyConfig } from '@/app/actions/loyalty';
 import { calculateDeliveryFee, geocodeAddress, getDeliveryConfig } from '@/app/actions/delivery';
+import { createPayment, getMPPublicKey } from '@/app/actions/mercadopago';
 import { toast } from 'sonner';
+import dynamic from 'next/dynamic';
+import Image from 'next/image';
+
+const PaymentForm = dynamic(() => import('./payment-form'), { ssr: false });
 
 interface CartProps {
   whatsappNumber: string;
@@ -91,6 +98,13 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
     forma: 'pix' as 'pix' | 'dinheiro' | 'cartao',
     troco: 0,
   });
+  
+  // Mercado Pago payment state
+  const [mpLoading, setMpLoading] = useState(false);
+  const [mpQrCode, setMpQrCode] = useState<string | null>(null);
+  const [mpQrCodeBase64, setMpQrCodeBase64] = useState<string | null>(null);
+  const [mpCopied, setMpCopied] = useState(false);
+  const [showCardForm, setShowCardForm] = useState(false);
   
   // Points usage
   const [usePoints, setUsePoints] = useState(false);
@@ -234,6 +248,76 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
       return;
     }
 
+    // Se for PIX ou Cartão com pagamento online, processar primeiro
+    if (paymentData.forma === 'pix' || (paymentData.forma === 'cartao' && !showCardForm)) {
+      setMpLoading(true);
+      try {
+        // Criar primeiro o pedido no NocoDB (sem status de pagamento ainda)
+        const orderResult = await createPublicOrder({
+          empresaId,
+          clienteTelefone: customerData.telefone.replace(/\D/g, ''),
+          clienteNome: customerData.nome || 'Cliente Cardápio',
+          clienteEndereco: customerData.endereco,
+          clienteBairro: customerData.bairro,
+          tipoEntrega: isDelivery ? 'delivery' : 'retirada',
+          taxaEntrega: deliveryFee,
+          itens: items.map(item => ({
+            id: item.productId,
+            nome: item.nome,
+            preco: item.preco,
+            quantidade: item.quantidade,
+            complementos: item.complementos,
+          })),
+          subtotal,
+          desconto: desconto + descontoPontos,
+          total: totalFinal,
+          cupomCodigo: cupom?.codigo,
+          cupomId: cupom?.id,
+          pontosGanhos,
+          pontosUsados: pontosASeremUsados,
+          descontoPontos: descontoPontos,
+          formaPagamento: paymentData.forma === 'pix' ? 'pix' : 'cartao',
+          troco: undefined,
+          dataAgendamento: agendarPedido && dataAgendamento && horaAgendamento 
+              ? `${dataAgendamento}T${horaAgendamento}:00` 
+              : null,
+        });
+
+        const newOrderId = orderResult.orderId;
+
+        // Agora processar o pagamento via Mercado Pago
+        if (paymentData.forma === 'pix') {
+          const paymentResult = await createPayment({
+            pedidoId: newOrderId,
+            paymentMethodId: 'pix',
+          });
+
+          if (paymentResult.success) {
+            if (paymentResult.qrCode || paymentResult.qrCodeBase64) {
+              setMpQrCode(paymentResult.qrCode || null);
+              setMpQrCodeBase64(paymentResult.qrCodeBase64 || null);
+            }
+            setOrderId(newOrderId);
+            // NÃO ir para success ainda - mostrar QR Code para pagar
+            setStep('payment');
+            
+            toast.info('Escaneie o QR Code ou copie o código PIX para pagar.');
+          } else {
+            toast.error(paymentResult.error || 'Erro ao gerar pagamento PIX');
+          }
+        } else if (paymentData.forma === 'cartao') {
+          setOrderId(newOrderId);
+          setShowCardForm(true);
+        }
+      } catch (error: any) {
+        toast.error(error.message || 'Erro ao processar pedido');
+      } finally {
+        setMpLoading(false);
+      }
+      return;
+    }
+
+    // Para dinheiro ou cartão na entrega, processo normal
     setLoading(true);
     
     try {
@@ -270,11 +354,83 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
       setOrderId(result.orderId);
       setStep('success');
       
-      // Tocar notificação de sucesso
       playSuccessSound();
       
     } catch (error: any) {
       toast.error(error.message || 'Erro ao finalizar pedido');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copyPixCode = () => {
+    if (mpQrCode) {
+      navigator.clipboard.writeText(mpQrCode);
+      setMpCopied(true);
+      toast.success('Código copiado!');
+      setTimeout(() => setMpCopied(false), 2000);
+    }
+  };
+
+  const handleCardPaymentSuccess = () => {
+    setStep('success');
+    playSuccessSound();
+  };
+
+  const handleCardPaymentError = (error: string) => {
+    toast.error(error);
+  };
+
+  // Verificar se o pagamento PIX foi confirmado
+  const checkPixPayment = async () => {
+    if (!orderId || !paymentData.forma === 'pix') return;
+    
+    setLoading(true);
+    try {
+      // Import dinâmico para evitar erro de servidor
+      const { getPaymentStatus } = await import('@/app/actions/mercadopago');
+      
+      // Buscar o payment_id do pedido
+      const { nocoFetch } = await import('@/app/actions/mercadopago');
+      const NOCODB_URL = process.env.NOCODB_URL || 'https://db.wzapflow.com.br';
+      const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
+      const ORDERS_TABLE_ID = 'm2ic8zof3feve3l';
+      
+      const orderRes = await fetch(`${NOCODB_URL}/api/v2/tables/${ORDERS_TABLE_ID}/records/${orderId}`, {
+        headers: { 'xc-token': NOCODB_TOKEN },
+        cache: 'no-store',
+      });
+      const orderData = await orderRes.json();
+      
+      if (!orderData.payment_id) {
+        toast.error('Pagamento não encontrado');
+        return;
+      }
+      
+      const statusResult = await getPaymentStatus(Number(orderData.payment_id));
+      
+      if (statusResult.success && statusResult.status === 'approved') {
+        // Atualizar status no NocoDB
+        await fetch(`${NOCODB_URL}/api/v2/tables/${ORDERS_TABLE_ID}/records`, {
+          method: 'PATCH',
+          headers: {
+            'xc-token': NOCODB_TOKEN,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: orderId,
+            status_pagamento: 'aprovado',
+          }),
+        });
+        
+        setStep('success');
+        playSuccessSound();
+        toast.success('Pagamento confirmado!');
+      } else {
+        toast.info('Pagamento ainda não confirmado. Aguarde alguns segundos e tente novamente.');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao verificar pagamento');
     } finally {
       setLoading(false);
     }
@@ -302,6 +458,10 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
     setDeliveryCoords(null);
     setDeliveryInfo(null);
     setUsePoints(false);
+    setMpQrCode(null);
+    setMpQrCodeBase64(null);
+    setMpCopied(false);
+    setShowCardForm(false);
   };
 
   // Auto-show upsell
@@ -1036,151 +1196,227 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                 {/* STEP 3: Payment */}
                 {step === 'payment' && (
                   <div className="p-4 space-y-4">
-                    <div className="bg-green-50 border border-green-100 rounded-xl p-4">
-                      <p className="text-sm font-bold text-slate-900">Escolha a forma de pagamento</p>
-                      <p className="text-xs text-slate-600 mt-1">Após confirmar, seu pedido será enviado para produção</p>
-                    </div>
-
-                    <div className="space-y-3">
-                      <button
-                        onClick={() => setPaymentData({ ...paymentData, forma: 'pix' })}
-                        className={cn(
-                          "w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all",
-                          paymentData.forma === 'pix' 
-                            ? "border-green-500 bg-green-50" 
-                            : "border-slate-200 hover:border-slate-300"
-                        )}
-                      >
-                        <div className={cn(
-                          "size-12 rounded-xl flex items-center justify-center",
-                          paymentData.forma === 'pix' ? "bg-green-500 text-white" : "bg-slate-100 text-slate-500"
-                        )}>
-                          <QrCode className="size-6" />
-                        </div>
-                        <div className="text-left flex-1">
-                          <p className="font-bold text-slate-900">PIX</p>
-                          <p className="text-xs text-slate-500">Pagamento instantâneo</p>
-                        </div>
-                        {paymentData.forma === 'pix' && (
-                          <Check className="size-5 text-green-500" />
-                        )}
-                      </button>
-
-                      <button
-                        onClick={() => setPaymentData({ ...paymentData, forma: 'dinheiro' })}
-                        className={cn(
-                          "w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all",
-                          paymentData.forma === 'dinheiro' 
-                            ? "border-green-500 bg-green-50" 
-                            : "border-slate-200 hover:border-slate-300"
-                        )}
-                      >
-                        <div className={cn(
-                          "size-12 rounded-xl flex items-center justify-center",
-                          paymentData.forma === 'dinheiro' ? "bg-green-500 text-white" : "bg-slate-100 text-slate-500"
-                        )}>
-                          <Banknote className="size-6" />
-                        </div>
-                        <div className="text-left flex-1">
-                          <p className="font-bold text-slate-900">Dinheiro</p>
-                          <p className="text-xs text-slate-500">Pagamento na entrega</p>
-                        </div>
-                        {paymentData.forma === 'dinheiro' && (
-                          <Check className="size-5 text-green-500" />
-                        )}
-                      </button>
-
-                      <button
-                        onClick={() => setPaymentData({ ...paymentData, forma: 'cartao' })}
-                        className={cn(
-                          "w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all",
-                          paymentData.forma === 'cartao' 
-                            ? "border-green-500 bg-green-50" 
-                            : "border-slate-200 hover:border-slate-300"
-                        )}
-                      >
-                        <div className={cn(
-                          "size-12 rounded-xl flex items-center justify-center",
-                          paymentData.forma === 'cartao' ? "bg-green-500 text-white" : "bg-slate-100 text-slate-500"
-                        )}>
-                          <CreditCard className="size-6" />
-                        </div>
-                        <div className="text-left flex-1">
-                          <p className="font-bold text-slate-900">Cartão</p>
-                          <p className="text-xs text-slate-500">Débito ou crédito na entrega</p>
-                        </div>
-                        {paymentData.forma === 'cartao' && (
-                          <Check className="size-5 text-green-500" />
-                        )}
-                      </button>
-                    </div>
-
-                    {/* Troco para dinheiro */}
-                    {paymentData.forma === 'dinheiro' && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        className="bg-slate-50 rounded-xl p-4"
-                      >
-                        <label className="text-sm font-bold text-slate-700">
-                          Precisa de troco?
-                        </label>
-                        <input
-                          type="number"
-                          value={paymentData.troco || ''}
-                          onChange={(e) => setPaymentData({ ...paymentData, troco: parseFloat(e.target.value) || 0 })}
-                          placeholder="Valor para troco (opcional)"
-                          className="w-full mt-2 px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none"
+                    {showCardForm && orderId ? (
+                      <>
+                        <button
+                          onClick={() => setShowCardForm(false)}
+                          className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 mb-2"
+                        >
+                          <ArrowLeft className="size-4" />
+                          Voltar
+                        </button>
+                        <PaymentForm
+                          pedidoId={orderId}
+                          total={totalFinal}
+                          onSuccess={handleCardPaymentSuccess}
+                          onError={handleCardPaymentError}
                         />
-                        {paymentData.troco > 0 && (
-                          <p className="text-xs text-slate-500 mt-2">
-                            Troco: {formatPrice(paymentData.troco - totalFinal)}
-                          </p>
-                        )}
-                      </motion.div>
-                    )}
-
-                    {/* Usar pontos */}
-                    {pontosDisponiveis >= (loyaltyConfig?.pontos_para_desconto || 100) && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="border border-amber-200 bg-amber-50 rounded-xl p-4"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <Star className="size-6 text-amber-500" />
-                            <div>
-                              <p className="text-sm font-bold text-slate-900">
-                                Usar {pontosDisponiveis} pontos?
-                              </p>
-                              <p className="text-xs text-amber-700">
-                                Desconto de {formatPrice(maxDescontoPorPontos)}
-                              </p>
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => setUsePoints(!usePoints)}
-                            className={cn(
-                              "relative w-14 h-8 rounded-full transition-colors",
-                              usePoints ? "bg-green-500" : "bg-slate-300"
-                            )}
-                          >
-                            <div className={cn(
-                              "absolute top-1 w-6 h-6 rounded-full bg-white transition-transform shadow-md",
-                              usePoints ? "left-7" : "left-1"
-                            )} />
-                          </button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="bg-green-50 border border-green-100 rounded-xl p-4">
+                          <p className="text-sm font-bold text-slate-900">Escolha a forma de pagamento</p>
+                          <p className="text-xs text-slate-600 mt-1">Após confirmar, seu pedido será enviado para produção</p>
                         </div>
-                        {usePoints && descontoPontos > 0 && (
-                          <div className="mt-3 pt-3 border-t border-amber-200">
-                            <div className="flex justify-between text-sm">
-                              <span className="text-amber-700">Desconto ({pontosASeremUsados} pontos)</span>
-                              <span className="font-bold text-green-600">-{formatPrice(descontoPontos)}</span>
+
+                        {mpQrCode && paymentData.forma === 'pix' ? (
+                          <div className="space-y-4">
+                            <div className="bg-violet-50 border border-violet-100 rounded-xl p-4 text-center">
+                              <p className="font-bold text-violet-900">Pagamento PIX</p>
+                              <p className="text-xs text-violet-600">Escaneie o QR Code ou copie o código</p>
                             </div>
+                            
+                            {mpQrCodeBase64 && (
+                              <div className="flex justify-center">
+                                <Image 
+                                  src={`data:image/png;base64,${mpQrCodeBase64}`} 
+                                  alt="PIX QR Code" 
+                                  width={192}
+                                  height={192}
+                                  className="border rounded-xl"
+                                />
+                              </div>
+                            )}
+                            
+                            {mpQrCode && (
+                              <div className="bg-slate-50 rounded-xl p-4">
+                                <label className="text-xs font-bold text-slate-500 uppercase">Código PIX</label>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <input
+                                    type="text"
+                                    value={mpQrCode}
+                                    readOnly
+                                    className="flex-1 text-xs text-slate-600 bg-white border rounded-lg px-3 py-2"
+                                  />
+                                  <button
+                                    onClick={copyPixCode}
+                                    className="p-2 bg-violet-500 text-white rounded-lg hover:bg-violet-600 transition-colors"
+                                  >
+                                    {mpCopied ? <CheckCircle className="size-5" /> : <Copy className="size-5" />}
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                            
+                            <button
+                              onClick={checkPixPayment}
+                              disabled={loading}
+                              className="w-full py-4 bg-green-500 hover:bg-green-600 disabled:bg-green-400 text-white font-bold rounded-xl flex items-center justify-center gap-2"
+                            >
+                              {loading ? (
+                                <>
+                                  <Loader2 className="size-5 animate-spin" />
+                                  Verificando...
+                                </>
+                              ) : (
+                                'Já efetuei o pagamento'
+                              )}
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            <button
+                              onClick={() => setPaymentData({ ...paymentData, forma: 'pix' })}
+                              className={cn(
+                                "w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all",
+                                paymentData.forma === 'pix' 
+                                  ? "border-green-500 bg-green-50" 
+                                  : "border-slate-200 hover:border-slate-300"
+                              )}
+                            >
+                              <div className={cn(
+                                "size-12 rounded-xl flex items-center justify-center",
+                                paymentData.forma === 'pix' ? "bg-green-500 text-white" : "bg-slate-100 text-slate-500"
+                              )}>
+                                <QrCode className="size-6" />
+                              </div>
+                              <div className="text-left flex-1">
+                                <p className="font-bold text-slate-900">PIX</p>
+                                <p className="text-xs text-slate-500">Pagamento instantâneo online</p>
+                              </div>
+                              {paymentData.forma === 'pix' && (
+                                <Check className="size-5 text-green-500" />
+                              )}
+                            </button>
+
+                            <button
+                              onClick={() => setPaymentData({ ...paymentData, forma: 'dinheiro' })}
+                              className={cn(
+                                "w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all",
+                                paymentData.forma === 'dinheiro' 
+                                  ? "border-green-500 bg-green-50" 
+                                  : "border-slate-200 hover:border-slate-300"
+                              )}
+                            >
+                              <div className={cn(
+                                "size-12 rounded-xl flex items-center justify-center",
+                                paymentData.forma === 'dinheiro' ? "bg-green-500 text-white" : "bg-slate-100 text-slate-500"
+                              )}>
+                                <Banknote className="size-6" />
+                              </div>
+                              <div className="text-left flex-1">
+                                <p className="font-bold text-slate-900">Dinheiro</p>
+                                <p className="text-xs text-slate-500">Pagamento na entrega</p>
+                              </div>
+                              {paymentData.forma === 'dinheiro' && (
+                                <Check className="size-5 text-green-500" />
+                              )}
+                            </button>
+
+                            <button
+                              onClick={() => setPaymentData({ ...paymentData, forma: 'cartao' })}
+                              className={cn(
+                                "w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all",
+                                paymentData.forma === 'cartao' 
+                                  ? "border-green-500 bg-green-50" 
+                                  : "border-slate-200 hover:border-slate-300"
+                              )}
+                            >
+                              <div className={cn(
+                                "size-12 rounded-xl flex items-center justify-center",
+                                paymentData.forma === 'cartao' ? "bg-green-500 text-white" : "bg-slate-100 text-slate-500"
+                              )}>
+                                <CreditCard className="size-6" />
+                              </div>
+                              <div className="text-left flex-1">
+                                <p className="font-bold text-slate-900">Cartão</p>
+                                <p className="text-xs text-slate-500">Débito ou crédito online</p>
+                              </div>
+                              {paymentData.forma === 'cartao' && (
+                                <Check className="size-5 text-green-500" />
+                              )}
+                            </button>
                           </div>
                         )}
-                      </motion.div>
+
+                        {/* Troco para dinheiro */}
+                        {paymentData.forma === 'dinheiro' && !mpQrCode && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            className="bg-slate-50 rounded-xl p-4"
+                          >
+                            <label className="text-sm font-bold text-slate-700">
+                              Precisa de troco?
+                            </label>
+                            <input
+                              type="number"
+                              value={paymentData.troco || ''}
+                              onChange={(e) => setPaymentData({ ...paymentData, troco: parseFloat(e.target.value) || 0 })}
+                              placeholder="Valor para troco (opcional)"
+                              className="w-full mt-2 px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none"
+                            />
+                            {paymentData.troco > 0 && (
+                              <p className="text-xs text-slate-500 mt-2">
+                                Troco: {formatPrice(paymentData.troco - totalFinal)}
+                              </p>
+                            )}
+                          </motion.div>
+                        )}
+
+                        {/* Usar pontos */}
+                        {pontosDisponiveis >= (loyaltyConfig?.pontos_para_desconto || 100) && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="border border-amber-200 bg-amber-50 rounded-xl p-4"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <Star className="size-6 text-amber-500" />
+                                <div>
+                                  <p className="text-sm font-bold text-slate-900">
+                                    Usar {pontosDisponiveis} pontos?
+                                  </p>
+                                  <p className="text-xs text-amber-700">
+                                    Desconto de {formatPrice(maxDescontoPorPontos)}
+                                  </p>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => setUsePoints(!usePoints)}
+                                className={cn(
+                                  "relative w-14 h-8 rounded-full transition-colors",
+                                  usePoints ? "bg-green-500" : "bg-slate-300"
+                                )}
+                              >
+                                <div className={cn(
+                                  "absolute top-1 w-6 h-6 rounded-full bg-white transition-transform shadow-md",
+                                  usePoints ? "left-7" : "left-1"
+                                )} />
+                              </button>
+                            </div>
+                            {usePoints && descontoPontos > 0 && (
+                              <div className="mt-3 pt-3 border-t border-amber-200">
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-amber-700">Desconto ({pontosASeremUsados} pontos)</span>
+                                  <span className="font-bold text-green-600">-{formatPrice(descontoPontos)}</span>
+                                </div>
+                              </div>
+                            )}
+                          </motion.div>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
@@ -1373,7 +1609,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
               )}
 
               {/* Footer - Payment Step */}
-              {step === 'payment' && (
+              {step === 'payment' && !showCardForm && (
                 <div className="p-4 bg-slate-50 border-t border-slate-100 shrink-0 space-y-4">
                   {/* Order Summary */}
                   <div className="bg-white rounded-xl p-4 border border-slate-100">
@@ -1394,24 +1630,30 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
 
                   <button
                     onClick={finishOrder}
-                    disabled={loading}
+                    disabled={loading || mpLoading}
                     className="w-full bg-green-500 hover:bg-green-600 disabled:bg-slate-300 text-white font-bold py-4 rounded-2xl shadow-lg shadow-green-500/20 transition-all flex items-center justify-center gap-2"
                   >
-                    {loading ? (
+                    {loading || mpLoading ? (
                       <>
                         <Loader2 className="size-5 animate-spin" />
-                        Enviando pedido...
+                        {mpLoading ? 'Gerando pagamento...' : 'Enviando pedido...'}
                       </>
                     ) : (
                       <>
                         <Check className="size-5" />
-                        Confirmar Pedido
+                        {paymentData.forma === 'pix' ? 'Gerar Pagamento PIX' : 
+                         paymentData.forma === 'cartao' ? 'Iniciar Pagamento com Cartão' :
+                         'Confirmar Pedido'}
                       </>
                     )}
                   </button>
 
                   <p className="text-center text-xs text-slate-400">
-                    Ao confirmar, seu pedido será enviado para produção
+                    {paymentData.forma === 'pix' 
+                      ? 'Você será redirecionado para pagamento'
+                      : paymentData.forma === 'cartao'
+                      ? 'Pagamento seguro via Mercado Pago'
+                      : 'Ao confirmar, seu pedido será enviado para produção'}
                   </p>
                 </div>
               )}

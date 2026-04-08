@@ -29,17 +29,14 @@ ALTER TABLE empresas ADD COLUMN IF NOT EXISTS taxa_entrega_gratis numeric DEFAUL
 ALTER TABLE empresas ADD COLUMN IF NOT EXISTS raio_entrega_gratis numeric DEFAULT 0;
 ALTER TABLE empresas ADD COLUMN IF NOT EXISTS auto_radius boolean DEFAULT false;
 
--- Campos para agendamento
-ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS data_agendamento timestamp;
-ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS hora_agendamento text;
-
--- Campos para controle
-ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS origem text DEFAULT 'painel';
-ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS ip_cliente text;
-ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS plataforma text;
+-- Campos para integração Mercado Pago
+ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS payment_id text;
+ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS payment_link text;
+ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS status_pagamento text DEFAULT 'pendente';
 
 -- Index para performance
 CREATE INDEX IF NOT EXISTS idx_pedidos_status ON pedidos(status);
 CREATE INDEX IF NOT EXISTS idx_pedidos_empresa ON pedidos(empresa_id);
 CREATE INDEX IF NOT EXISTS idx_pedidos_data_agendamento ON pedidos(data_agendamento);
 CREATE INDEX IF NOT EXISTS idx_pedidos_criado ON pedidos(criado_em);
+CREATE INDEX IF NOT EXISTS idx_pedidos_payment ON pedidos(payment_id);
