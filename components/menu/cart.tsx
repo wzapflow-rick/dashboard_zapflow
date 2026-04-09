@@ -2,14 +2,14 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  ShoppingCart, 
-  X, 
-  Plus, 
-  Minus, 
-  Trash2, 
-  Tag, 
-  Star, 
+import {
+  ShoppingCart,
+  X,
+  Plus,
+  Minus,
+  Trash2,
+  Tag,
+  Star,
   Check,
   Loader2,
   Sparkles,
@@ -77,7 +77,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
     bairro: '',
     cidade: '',
   });
-  
+
   // Delivery/Pickup
   const [isDelivery, setIsDelivery] = useState(true);
   const [deliveryFee, setDeliveryFee] = useState(0);
@@ -85,7 +85,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
   const [deliveryLoading, setDeliveryLoading] = useState(false);
   const [deliveryInfo, setDeliveryInfo] = useState<{ distance?: number; duration?: number } | null>(null);
   const [deliveryConfig, setDeliveryConfig] = useState<{ auto_radius: boolean; taxa_entrega_fixa: number } | null>(null);
-  
+
   // Client points
   const [clientPoints, setClientPoints] = useState<number | null>(null);
   const [loadingPoints, setLoadingPoints] = useState(false);
@@ -98,14 +98,14 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
     forma: 'pix' as 'pix' | 'dinheiro' | 'cartao',
     troco: 0,
   });
-  
+
   // Mercado Pago payment state
   const [mpLoading, setMpLoading] = useState(false);
   const [mpQrCode, setMpQrCode] = useState<string | null>(null);
   const [mpQrCodeBase64, setMpQrCodeBase64] = useState<string | null>(null);
   const [mpCopied, setMpCopied] = useState(false);
   const [showCardForm, setShowCardForm] = useState(false);
-  
+
   // Points usage
   const [usePoints, setUsePoints] = useState(false);
   const [loyaltyConfig, setLoyaltyConfig] = useState<{ pontos_para_desconto: number; desconto_valor: number } | null>(null);
@@ -138,10 +138,10 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
     return blocosCompletos * loyaltyConfig.desconto_valor;
   }, [pontosDisponiveis, loyaltyConfig]);
 
-  const descontoPontos = usePoints && pontosDisponiveis >= (loyaltyConfig?.pontos_para_desconto || 100) 
-    ? Math.min(maxDescontoPorPontos, subtotal - desconto) 
+  const descontoPontos = usePoints && pontosDisponiveis >= (loyaltyConfig?.pontos_para_desconto || 100)
+    ? Math.min(maxDescontoPorPontos, subtotal - desconto)
     : 0;
-  
+
   const pontosASeremUsados = usePoints && descontoPontos > 0 && loyaltyConfig
     ? Math.floor(descontoPontos / loyaltyConfig.desconto_valor) * loyaltyConfig.pontos_para_desconto
     : 0;
@@ -154,17 +154,17 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
     nome: product.nome,
     preco: product.preco,
     imagem: product.imagem,
-    sugestao: index === 0 ? 'Para acompanhar!' : 
-              index === 1 ? 'Combina muito bem!' : 
-              'Que tal mais algo?',
+    sugestao: index === 0 ? 'Para acompanhar!' :
+      index === 1 ? 'Combina muito bem!' :
+        'Que tal mais algo?',
   }));
 
   const applyCupom = async () => {
     if (!cupomInput.trim()) return;
-    
+
     setLoadingCupom(true);
     setCupomError('');
-    
+
     try {
       const result = await validateCoupon(cupomInput.trim(), subtotal);
       if (result.valid && result.cupom) {
@@ -208,37 +208,37 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
       checkCustomerExists();
       return;
     }
-    
+
     // Se é novo cadastro, validar nome
     if (!isExistingCustomer && !customerData.nome) {
       toast.error('Digite seu nome');
       return;
     }
-    
+
     // Validar endereço apenas se for delivery
     if (isDelivery && !customerData.endereco) {
       toast.error('Digite o endereço de entrega');
       return;
     }
-    
+
     // Validar agendamento
     if (agendarPedido && (!dataAgendamento || !horaAgendamento)) {
       toast.error('Selecione data e horário para agendamento');
       return;
     }
-    
+
     // Validar horário mínimo (pelo menos 30min no futuro)
     if (agendarPedido && dataAgendamento && horaAgendamento) {
       const agendamento = new Date(`${dataAgendamento}T${horaAgendamento}`);
       const agora = new Date();
       const diferenca = (agendamento.getTime() - agora.getTime()) / (1000 * 60); // em minutos
-      
+
       if (diferenca < 30) {
         toast.error('O agendamento deve ser com pelo menos 30 minutos de antecedência');
         return;
       }
     }
-    
+
     setStep('payment');
   };
 
@@ -278,9 +278,9 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
           descontoPontos: descontoPontos,
           formaPagamento: paymentData.forma === 'pix' ? 'pix' : 'cartao',
           troco: undefined,
-          dataAgendamento: agendarPedido && dataAgendamento && horaAgendamento 
-              ? `${dataAgendamento}T${horaAgendamento}:00` 
-              : null,
+          dataAgendamento: agendarPedido && dataAgendamento && horaAgendamento
+            ? `${dataAgendamento}T${horaAgendamento}:00`
+            : null,
         });
 
         const newOrderId = orderResult.orderId;
@@ -300,7 +300,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
             setOrderId(newOrderId);
             // NÃO ir para success ainda - mostrar QR Code para pagar
             setStep('payment');
-            
+
             toast.info('Escaneie o QR Code ou copie o código PIX para pagar.');
           } else {
             toast.error(paymentResult.error || 'Erro ao gerar pagamento PIX');
@@ -319,7 +319,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
 
     // Para dinheiro ou cartão na entrega, processo normal
     setLoading(true);
-    
+
     try {
       const result = await createPublicOrder({
         empresaId,
@@ -346,16 +346,16 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
         descontoPontos: descontoPontos,
         formaPagamento: paymentData.forma,
         troco: paymentData.forma === 'dinheiro' ? paymentData.troco : undefined,
-        dataAgendamento: agendarPedido && dataAgendamento && horaAgendamento 
-            ? `${dataAgendamento}T${horaAgendamento}:00` 
-            : null,
+        dataAgendamento: agendarPedido && dataAgendamento && horaAgendamento
+          ? `${dataAgendamento}T${horaAgendamento}:00`
+          : null,
       });
 
       setOrderId(result.orderId);
       setStep('success');
-      
+
       playSuccessSound();
-      
+
     } catch (error: any) {
       toast.error(error.message || 'Erro ao finalizar pedido');
     } finally {
@@ -381,48 +381,23 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
     toast.error(error);
   };
 
-  // Verificar se o pagamento PIX foi confirmado
   const checkPixPayment = async () => {
-    if (!orderId || !paymentData.forma === 'pix') return;
-    
+    if (!orderId) return;
+
     setLoading(true);
     try {
-      // Import dinâmico para evitar erro de servidor
-      const { getPaymentStatus } = await import('@/app/actions/mercadopago');
-      
-      // Buscar o payment_id do pedido
-      const { nocoFetch } = await import('@/app/actions/mercadopago');
-      const NOCODB_URL = process.env.NOCODB_URL || 'https://db.wzapflow.com.br';
-      const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-      const ORDERS_TABLE_ID = 'm2ic8zof3feve3l';
-      
-      const orderRes = await fetch(`${NOCODB_URL}/api/v2/tables/${ORDERS_TABLE_ID}/records/${orderId}`, {
-        headers: { 'xc-token': NOCODB_TOKEN },
-        cache: 'no-store',
-      });
-      const orderData = await orderRes.json();
-      
-      if (!orderData.payment_id) {
-        toast.error('Pagamento não encontrado');
+      const { getPaymentStatus, getOrderPaymentId } = await import('@/app/actions/mercadopago');
+
+      const paymentId = await getOrderPaymentId(orderId);
+
+      if (!paymentId) {
+        toast.error('Pagamento ainda não registrado. Aguarde alguns segundos.');
         return;
       }
-      
-      const statusResult = await getPaymentStatus(Number(orderData.payment_id));
-      
+
+      const statusResult = await getPaymentStatus(Number(paymentId));
+
       if (statusResult.success && statusResult.status === 'approved') {
-        // Atualizar status no NocoDB
-        await fetch(`${NOCODB_URL}/api/v2/tables/${ORDERS_TABLE_ID}/records`, {
-          method: 'PATCH',
-          headers: {
-            'xc-token': NOCODB_TOKEN,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            id: orderId,
-            status_pagamento: 'aprovado',
-          }),
-        });
-        
         setStep('success');
         playSuccessSound();
         toast.success('Pagamento confirmado!');
@@ -440,8 +415,8 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
     try {
       const audio = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU');
       audio.volume = 0.5;
-      audio.play().catch(() => {});
-    } catch {}
+      audio.play().catch(() => { });
+    } catch { }
   };
 
   const resetCart = () => {
@@ -515,7 +490,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
       setClientPoints(null);
       return;
     }
-    
+
     setLoadingPoints(true);
     try {
       const points = await getClientPoints(cleanPhone);
@@ -546,7 +521,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
     }
 
     const fullAddress = `${customerData.endereco}, ${customerData.bairro}, ${customerData.cidade || ''}`;
-    
+
     setDeliveryLoading(true);
     try {
       // Geocodificar endereço com cidade
@@ -554,7 +529,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
         `${customerData.endereco}, ${customerData.bairro}`,
         customerData.cidade || undefined
       );
-      
+
       if (!coords) {
         toast.error('Não foi possível localizar o endereço. Verifique se está correto.');
         setDeliveryFee(0);
@@ -568,9 +543,9 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
 
       // Calcular taxa usando a API
       const result = await calculateDeliveryFee(coords);
-      
+
       console.log('[Delivery] Resultado:', result);
-      
+
       if (result.success && result.taxa_entrega !== undefined) {
         setDeliveryFee(result.taxa_entrega);
         setDeliveryInfo({
@@ -595,13 +570,13 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
   const checkCustomerExists = async () => {
     const cleanPhone = customerData.telefone.replace(/\D/g, '');
     if (cleanPhone.length < 10) return;
-    
+
     setCheckingCustomer(true);
     try {
       // Chamar server action para verificar cliente
       const { checkCustomerByPhone } = await import('@/app/actions/public-orders');
       const customer = await checkCustomerByPhone(empresaId || 0, cleanPhone);
-      
+
       if (customer) {
         setIsExistingCustomer(true);
         setCustomerData(prev => ({
@@ -625,9 +600,9 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
   };
 
   // Validação baseada no step atual
-  const isCustomerValid = !phoneChecked 
+  const isCustomerValid = !phoneChecked
     ? customerData.telefone.replace(/\D/g, '').length >= 10
-    : isExistingCustomer 
+    : isExistingCustomer
       ? (isDelivery ? customerData.endereco.length >= 5 : true)
       : customerData.nome.length >= 2 && (isDelivery ? customerData.endereco.length >= 5 : true);
 
@@ -662,7 +637,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
               onClick={() => step !== 'success' && setIsOpen(false)}
               className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
             />
-            
+
             <motion.div
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
@@ -707,8 +682,8 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                         <div className={cn(
                           "size-7 rounded-full flex items-center justify-center text-xs font-bold",
                           (step === 'cart' && idx === 0) ||
-                          (step === 'customer' && idx === 1) ||
-                          (step === 'payment' && idx === 2)
+                            (step === 'customer' && idx === 1) ||
+                            (step === 'payment' && idx === 2)
                             ? "bg-green-500 text-white"
                             : idx < (step === 'customer' ? 1 : step === 'payment' ? 2 : 0)
                               ? "bg-green-100 text-green-600"
@@ -730,7 +705,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
 
               {/* Content */}
               <div className="flex-1 overflow-y-auto custom-scrollbar">
-                
+
                 {/* STEP 1: Cart */}
                 {step === 'cart' && (
                   <div className="p-4 space-y-4">
@@ -758,7 +733,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                                 )}
                                 <p className="text-xs text-violet-600 font-bold mt-1">{formatPrice(item.preco)}</p>
                               </div>
-                              
+
                               <div className="flex flex-col items-end gap-2">
                                 <button
                                   onClick={() => removeItem(item.id)}
@@ -766,7 +741,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                                 >
                                   <Trash2 className="size-4 text-red-400" />
                                 </button>
-                                
+
                                 <div className="flex items-center gap-2 bg-white rounded-lg border border-slate-200">
                                   <button
                                     onClick={() => updateQuantity(item.id, item.quantidade - 1)}
@@ -913,15 +888,15 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                             <span className="text-sm text-slate-500">Verificando seus pontos...</span>
                           </div>
                         )}
-                        
+
                         {clientPoints !== null && clientPoints > 0 && (
-                          <motion.div 
+                          <motion.div
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
                             className={cn(
                               "border rounded-xl p-4 flex items-center gap-3",
-                              clientPoints >= 100 
-                                ? "bg-green-50 border-green-200" 
+                              clientPoints >= 100
+                                ? "bg-green-50 border-green-200"
                                 : "bg-amber-50 border-amber-200"
                             )}
                           >
@@ -999,8 +974,8 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                                 }}
                                 className={cn(
                                   "p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2",
-                                  isDelivery 
-                                    ? "border-green-500 bg-green-50" 
+                                  isDelivery
+                                    ? "border-green-500 bg-green-50"
                                     : "border-slate-200 hover:border-slate-300"
                                 )}
                               >
@@ -1022,8 +997,8 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                                 }}
                                 className={cn(
                                   "p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2",
-                                  !isDelivery 
-                                    ? "border-green-500 bg-green-50" 
+                                  !isDelivery
+                                    ? "border-green-500 bg-green-50"
                                     : "border-slate-200 hover:border-slate-300"
                                 )}
                               >
@@ -1135,57 +1110,57 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
 
                           {/* Agendamento - apenas para retirada */}
                           {!isDelivery && (
-                          <div className="border-t border-slate-200 pt-4 mt-4">
-                            <label className="flex items-center gap-3 cursor-pointer">
-                              <div className="relative">
-                                <input
-                                  type="checkbox"
-                                  checked={agendarPedido}
-                                  onChange={(e) => setAgendarPedido(e.target.checked)}
-                                  className="sr-only"
-                                />
-                                <div className={cn(
-                                  "w-11 h-6 rounded-full transition-colors",
-                                  agendarPedido ? "bg-violet-500" : "bg-slate-200"
-                                )}>
+                            <div className="border-t border-slate-200 pt-4 mt-4">
+                              <label className="flex items-center gap-3 cursor-pointer">
+                                <div className="relative">
+                                  <input
+                                    type="checkbox"
+                                    checked={agendarPedido}
+                                    onChange={(e) => setAgendarPedido(e.target.checked)}
+                                    className="sr-only"
+                                  />
                                   <div className={cn(
-                                    "absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform",
-                                    agendarPedido && "translate-x-5"
-                                  )} />
+                                    "w-11 h-6 rounded-full transition-colors",
+                                    agendarPedido ? "bg-violet-500" : "bg-slate-200"
+                                  )}>
+                                    <div className={cn(
+                                      "absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform",
+                                      agendarPedido && "translate-x-5"
+                                    )} />
+                                  </div>
                                 </div>
-                              </div>
-                              <div>
-                                <p className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                                  📅 Agendar pedido
-                                </p>
-                                <p className="text-xs text-slate-500">Quero buscar em outro horário</p>
-                              </div>
-                            </label>
+                                <div>
+                                  <p className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                    📅 Agendar pedido
+                                  </p>
+                                  <p className="text-xs text-slate-500">Quero buscar em outro horário</p>
+                                </div>
+                              </label>
 
-                            {agendarPedido && (
-                              <div className="grid grid-cols-2 gap-3 mt-3 ml-14">
-                                <div>
-                                  <label className="text-xs font-medium text-slate-600">Data</label>
-                                  <input
-                                    type="date"
-                                    value={dataAgendamento}
-                                    onChange={(e) => setDataAgendamento(e.target.value)}
-                                    min={new Date().toISOString().split('T')[0]}
-                                    className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm"
-                                  />
+                              {agendarPedido && (
+                                <div className="grid grid-cols-2 gap-3 mt-3 ml-14">
+                                  <div>
+                                    <label className="text-xs font-medium text-slate-600">Data</label>
+                                    <input
+                                      type="date"
+                                      value={dataAgendamento}
+                                      onChange={(e) => setDataAgendamento(e.target.value)}
+                                      min={new Date().toISOString().split('T')[0]}
+                                      className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-xs font-medium text-slate-600">Horário</label>
+                                    <input
+                                      type="time"
+                                      value={horaAgendamento}
+                                      onChange={(e) => setHoraAgendamento(e.target.value)}
+                                      className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                                    />
+                                  </div>
                                 </div>
-                                <div>
-                                  <label className="text-xs font-medium text-slate-600">Horário</label>
-                                  <input
-                                    type="time"
-                                    value={horaAgendamento}
-                                    onChange={(e) => setHoraAgendamento(e.target.value)}
-                                    className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm"
-                                  />
-                                </div>
-                              </div>
-                            )}
-                          </div>
+                              )}
+                            </div>
                           )}
                         </div>
                       </>
@@ -1225,19 +1200,19 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                               <p className="font-bold text-violet-900">Pagamento PIX</p>
                               <p className="text-xs text-violet-600">Escaneie o QR Code ou copie o código</p>
                             </div>
-                            
+
                             {mpQrCodeBase64 && (
                               <div className="flex justify-center">
-                                <Image 
-                                  src={`data:image/png;base64,${mpQrCodeBase64}`} 
-                                  alt="PIX QR Code" 
+                                <Image
+                                  src={`data:image/png;base64,${mpQrCodeBase64}`}
+                                  alt="PIX QR Code"
                                   width={192}
                                   height={192}
                                   className="border rounded-xl"
                                 />
                               </div>
                             )}
-                            
+
                             {mpQrCode && (
                               <div className="bg-slate-50 rounded-xl p-4">
                                 <label className="text-xs font-bold text-slate-500 uppercase">Código PIX</label>
@@ -1257,7 +1232,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                                 </div>
                               </div>
                             )}
-                            
+
                             <button
                               onClick={checkPixPayment}
                               disabled={loading}
@@ -1279,8 +1254,8 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                               onClick={() => setPaymentData({ ...paymentData, forma: 'pix' })}
                               className={cn(
                                 "w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all",
-                                paymentData.forma === 'pix' 
-                                  ? "border-green-500 bg-green-50" 
+                                paymentData.forma === 'pix'
+                                  ? "border-green-500 bg-green-50"
                                   : "border-slate-200 hover:border-slate-300"
                               )}
                             >
@@ -1303,8 +1278,8 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                               onClick={() => setPaymentData({ ...paymentData, forma: 'dinheiro' })}
                               className={cn(
                                 "w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all",
-                                paymentData.forma === 'dinheiro' 
-                                  ? "border-green-500 bg-green-50" 
+                                paymentData.forma === 'dinheiro'
+                                  ? "border-green-500 bg-green-50"
                                   : "border-slate-200 hover:border-slate-300"
                               )}
                             >
@@ -1327,8 +1302,8 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                               onClick={() => setPaymentData({ ...paymentData, forma: 'cartao' })}
                               className={cn(
                                 "w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all",
-                                paymentData.forma === 'cartao' 
-                                  ? "border-green-500 bg-green-50" 
+                                paymentData.forma === 'cartao'
+                                  ? "border-green-500 bg-green-50"
                                   : "border-slate-200 hover:border-slate-300"
                               )}
                             >
@@ -1431,7 +1406,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                     >
                       <Check className="size-10 text-green-500" />
                     </motion.div>
-                    
+
                     <h3 className="text-xl font-bold text-slate-900 mb-2">
                       Pedido #{orderId} Recebido!
                     </h3>
@@ -1641,19 +1616,19 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                     ) : (
                       <>
                         <Check className="size-5" />
-                        {paymentData.forma === 'pix' ? 'Gerar Pagamento PIX' : 
-                         paymentData.forma === 'cartao' ? 'Iniciar Pagamento com Cartão' :
-                         'Confirmar Pedido'}
+                        {paymentData.forma === 'pix' ? 'Gerar Pagamento PIX' :
+                          paymentData.forma === 'cartao' ? 'Iniciar Pagamento com Cartão' :
+                            'Confirmar Pedido'}
                       </>
                     )}
                   </button>
 
                   <p className="text-center text-xs text-slate-400">
-                    {paymentData.forma === 'pix' 
+                    {paymentData.forma === 'pix'
                       ? 'Você será redirecionado para pagamento'
                       : paymentData.forma === 'cartao'
-                      ? 'Pagamento seguro via Mercado Pago'
-                      : 'Ao confirmar, seu pedido será enviado para produção'}
+                        ? 'Pagamento seguro via Mercado Pago'
+                        : 'Ao confirmar, seu pedido será enviado para produção'}
                   </p>
                 </div>
               )}

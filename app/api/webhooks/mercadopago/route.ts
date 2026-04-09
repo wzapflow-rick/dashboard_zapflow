@@ -122,12 +122,12 @@ export async function POST(req: NextRequest) {
       // Import dinâmico para evitar erro de servidor
       try {
         const { sendOrderStatusMessage } = await import('@/app/actions/whatsapp');
-        
+
         if (order.telefone_cliente) {
           await sendOrderStatusMessage(
             order.telefone_cliente,
             orderId,
-            'pendente',
+            'aprovado',
             Number(order.empresa_id)
           );
           console.log(`[MercadoPago Webhook] WhatsApp enviado para cliente ${order.telefone_cliente}`);

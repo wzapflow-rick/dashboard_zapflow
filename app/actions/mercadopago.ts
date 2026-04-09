@@ -58,6 +58,17 @@ export async function getMPPublicKey(): Promise<string> {
   return MP_PUBLIC_KEY;
 }
 
+// Busca o payment_id de um pedido no NocoDB (usado para verificar status do PIX)
+export async function getOrderPaymentId(orderId: number): Promise<string | null> {
+  try {
+    const order = await nocoFetch(ORDERS_TABLE_ID, `/records/${orderId}`);
+    return order?.payment_id ? String(order.payment_id) : null;
+  } catch (error) {
+    console.error('[MercadoPago] Erro ao buscar payment_id do pedido:', error);
+    return null;
+  }
+}
+
 export interface CreatePaymentInput {
   pedidoId: number;
   paymentMethodId: string;
@@ -91,26 +102,51 @@ export async function createPayment(
 
     const amount = Number(pedido.valor_total);
 
+    // Debug: verificar valor
+    console.log('[MercadoPago] valor_total do pedido:', pedido.valor_total);
+    console.log('[MercadoPago] amount convertido:', amount, 'tipo:', typeof amount);
+
+    // Validar valor
+    if (!amount || amount <= 0 || isNaN(amount)) {
+      return { success: false, error: 'Valor do pedido inválido' };
+    }
+
+    // Garante que é um número válido com até 2 casas decimais
+    const validAmount = Math.round(amount * 100) / 100;
+
+    // Extrair nome do cliente para compor payer
+    const nomePartes = (pedido.cliente_nome || 'Cliente Desconhecido').trim().split(' ');
+    const firstName = nomePartes[0] || 'Cliente';
+    const lastName = nomePartes.slice(1).join(' ') || 'Cardapio';
+
     const paymentPayload: Record<string, unknown> = {
-      transaction_amount: amount,
-      description: `Pedido #${pedidoId}`,
-      payment_method_id: paymentMethodId,
+      transaction_amount: validAmount,
+      description: `Pedido #${pedidoId} - ${pedido.cliente_nome || 'Cliente'}`,
       external_reference: String(pedidoId),
       payer: {
-        email: pedido.telefone_cliente 
-          ? `${pedido.telefone_cliente}@cliente.com` 
-          : 'cliente@email.com',
+        email: pedido.telefone_cliente
+          ? `${pedido.telefone_cliente.replace(/\D/g, '')}@cliente.zapflow.com`
+          : 'cliente@zapflow.com',
+        first_name: firstName,
+        last_name: lastName,
       },
     };
 
-    if (paymentMethodId === 'credit_card' && token) {
+    if (paymentMethodId === 'pix') {
+      // PIX: configuração específica para produção
+      paymentPayload.payment_method_id = 'pix';
+      paymentPayload.installments = 1;
+    } else if (token) {
+      // Cartão de crédito (reconhecido pelo token, usa a bandeira detectada ou master por segurança)
+      paymentPayload.payment_method_id = paymentMethodId === 'credit_card' ? 'master' : paymentMethodId;
       paymentPayload.token = token;
+      paymentPayload.installments = installationTerms || 1;
       if (issuerId) {
         paymentPayload.issuer_id = issuerId;
       }
-      if (installationTerms) {
-        paymentPayload.installments = installationTerms;
-      }
+    } else {
+      paymentPayload.payment_method_id = paymentMethodId;
+      paymentPayload.installments = 1;
     }
 
     const idempotencyKey = `${pedidoId}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -127,10 +163,15 @@ export async function createPayment(
 
     if (!mpResponse.ok) {
       const errorData = await mpResponse.json();
-      console.error('[MercadoPago] Erro ao criar payment:', errorData);
-      return { 
-        success: false, 
-        error: errorData.message || errorData.error || 'Erro ao processar pagamento' 
+      console.error('[MercadoPago] Erro ao criar payment:', JSON.stringify({
+        status: mpResponse.status,
+        error: errorData,
+        amount: amount,
+        paymentPayload: paymentPayload
+      }, null, 2));
+      return {
+        success: false,
+        error: errorData.message || errorData.error || 'Erro ao processar pagamento'
       };
     }
 
