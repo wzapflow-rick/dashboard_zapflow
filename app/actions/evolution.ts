@@ -1,7 +1,5 @@
 'use server';
 
-import { requireAdmin } from '@/lib/session';
-
 const EVO_URL = process.env.EVOLUTION_URL || 'https://evo.wzapflow.com.br';
 const EVO_KEY = process.env.EVOLUTION_API_KEY || '';
 
@@ -29,7 +27,6 @@ async function evoFetch(path: string, method: string = 'GET', body?: any) {
 }
 
 export async function createEvolutionInstance(empresaId: string | number) {
-    await requireAdmin();
     const instanceName = `zapflow_${empresaId}`;
 
     // Verifica se já existe
@@ -60,7 +57,6 @@ export async function createEvolutionInstance(empresaId: string | number) {
  * Busca o QR Code de uma instância.
  */
 export async function getEvolutionQRCode(instanceName: string) {
-    await requireAdmin();
     const result = await evoFetch(`/instance/connect/${instanceName}`);
     if (result.error) return { error: result.error };
 
@@ -74,7 +70,6 @@ export async function getEvolutionQRCode(instanceName: string) {
  * Verifica o status de conexão de uma instância.
  */
 export async function getInstanceStatus(instanceName: string) {
-    await requireAdmin();
     const result = await evoFetch(`/instance/connectionState/${instanceName}`);
     if (result.error) return { error: result.error, state: null };
 

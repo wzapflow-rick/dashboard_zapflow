@@ -285,7 +285,7 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
         }
         
         // Enviar mensagem de confirmação com link de rastreamento
-        sendOrderCreatedMessage(data.clienteTelefone, order.id, data.total, data.dataAgendamento)
+        sendOrderCreatedMessage(data.clienteTelefone, order.id, data.total, data.dataAgendamento, itensFormatados)
             .catch(err => console.error('Erro ao enviar mensagem WhatsApp:', err));
         
         revalidatePath('/dashboard/expedition');

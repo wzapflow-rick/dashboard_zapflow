@@ -49,7 +49,7 @@ export const LoginSchema = z.object({
 export const ProductSchema = z.object({
     id: z.number().optional().or(z.string().optional()),
     nome: z.string().min(2, 'Nome muito curto').transform(sanitizeString),
-    preco: z.coerce.number().min(0, 'Preço não pode ser negativo'),
+    preco: z.coerce.number().min(0, 'Preço não pode ser negativo').default(0),
     categoria_id: z.coerce.number().int().positive().optional().nullable(),
     categorias: z.coerce.number().int().positive().optional().nullable(),
     descricao: z.string().optional().transform(val => val ? sanitizeString(val) : val),

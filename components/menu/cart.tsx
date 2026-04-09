@@ -773,7 +773,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                           >
                             <div className="flex items-center gap-2 mb-3">
                               <Sparkles className="size-4 text-amber-500" />
-                              <span className="text-sm font-bold text-slate-700">Que tal adicionar?</span>
+                              <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Que tal adicionar?</span>
                             </div>
                             <div className="space-y-2">
                               {upsellSuggestions.map((sugestao) => (
@@ -821,7 +821,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                         </div>
 
                         <div>
-                          <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                          <label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                             <Phone className="size-4" />
                             WhatsApp *
                           </label>
@@ -842,7 +842,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                               setCustomerData({ ...customerData, telefone: value });
                             }}
                             placeholder="(11) 99999-9999"
-                            className="w-full mt-1 px-4 py-4 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none text-lg text-center font-bold"
+                            className="w-full mt-1 px-4 py-4 border-2 border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none text-lg text-center font-bold text-slate-900 dark:text-white bg-white dark:bg-slate-800"
                           />
                         </div>
 
@@ -921,7 +921,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                         <div className="space-y-4">
                           {/* Telefone (somente leitura) */}
                           <div>
-                            <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                            <label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                               <Phone className="size-4" />
                               WhatsApp
                             </label>
@@ -929,14 +929,14 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                               type="tel"
                               value={customerData.telefone}
                               disabled
-                              className="w-full mt-1 px-4 py-3 border border-slate-200 rounded-xl bg-slate-100 text-slate-600"
+                              className="w-full mt-1 px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
                             />
                           </div>
 
                           {/* Nome - obrigatório apenas para novo cadastro */}
                           {!isExistingCustomer && (
                             <div>
-                              <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                              <label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                                 <User className="size-4" />
                                 Nome completo *
                               </label>
@@ -946,14 +946,14 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                                 onChange={(e) => setCustomerData({ ...customerData, nome: e.target.value })}
                                 placeholder="Seu nome"
                                 autoFocus
-                                className="w-full mt-1 px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none"
+                                className="w-full mt-1 px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none text-slate-900 dark:text-white bg-white dark:bg-slate-800 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                               />
                             </div>
                           )}
 
                           {/* Delivery ou Retirada */}
                           <div>
-                            <label className="text-sm font-bold text-slate-700 mb-2 block">
+                            <label className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block">
                               Como deseja receber?
                             </label>
                             <div className="grid grid-cols-2 gap-3">
@@ -1013,7 +1013,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                           {isDelivery && (
                             <>
                               <div>
-                                <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                <label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                                   <MapPin className="size-4" />
                                   Endereço de entrega *
                                 </label>
@@ -1022,13 +1022,13 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                                   value={customerData.endereco}
                                   onChange={(e) => setCustomerData({ ...customerData, endereco: e.target.value })}
                                   placeholder="Rua, número, complemento"
-                                  className="w-full mt-1 px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none"
+                                  className="w-full mt-1 px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none text-slate-900 dark:text-white bg-white dark:bg-slate-800 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                 />
                               </div>
 
                               <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                  <label className="text-sm font-bold text-slate-700">
+                                  <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
                                     Bairro *
                                   </label>
                                   <input
@@ -1036,11 +1036,11 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                                     value={customerData.bairro}
                                     onChange={(e) => setCustomerData({ ...customerData, bairro: e.target.value })}
                                     placeholder="Seu bairro"
-                                    className="w-full mt-1 px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none"
+                                    className="w-full mt-1 px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none text-slate-900 dark:text-white bg-white dark:bg-slate-800 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                   />
                                 </div>
                                 <div>
-                                  <label className="text-sm font-bold text-slate-700">
+                                  <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
                                     Cidade
                                   </label>
                                   <input
@@ -1048,7 +1048,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                                     value={customerData.cidade}
                                     onChange={(e) => setCustomerData({ ...customerData, cidade: e.target.value })}
                                     placeholder="Sua cidade"
-                                    className="w-full mt-1 px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none"
+                                    className="w-full mt-1 px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none text-slate-900 dark:text-white bg-white dark:bg-slate-800 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                   />
                                 </div>
                               </div>
@@ -1175,7 +1175,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                       <>
                         <button
                           onClick={() => setShowCardForm(false)}
-                          className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 mb-2"
+                          className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-300 mb-2"
                         >
                           <ArrowLeft className="size-4" />
                           Voltar
@@ -1331,7 +1331,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                             animate={{ opacity: 1, height: 'auto' }}
                             className="bg-slate-50 rounded-xl p-4"
                           >
-                            <label className="text-sm font-bold text-slate-700">
+                            <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
                               Precisa de troco?
                             </label>
                             <input
@@ -1339,7 +1339,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                               value={paymentData.troco || ''}
                               onChange={(e) => setPaymentData({ ...paymentData, troco: parseFloat(e.target.value) || 0 })}
                               placeholder="Valor para troco (opcional)"
-                              className="w-full mt-2 px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none"
+                              className="w-full mt-2 px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none text-slate-900 dark:text-white bg-white dark:bg-slate-800 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                             />
                             {paymentData.troco > 0 && (
                               <p className="text-xs text-slate-500 mt-2">
@@ -1471,7 +1471,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                           value={cupomInput}
                           onChange={(e) => setCupomInput(e.target.value.toUpperCase())}
                           placeholder="Cupom de desconto"
-                          className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none"
+                          className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-medium text-slate-900 dark:text-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
                           disabled={!!cupom}
                         />
                       </div>
@@ -1518,7 +1518,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-500">Subtotal</span>
-                      <span className="font-medium text-slate-700">{formatPrice(subtotal)}</span>
+                      <span className="font-medium text-slate-700 dark:text-slate-300">{formatPrice(subtotal)}</span>
                     </div>
                     {cupom && desconto > 0 && (
                       <div className="flex justify-between text-sm">
@@ -1535,7 +1535,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                     {deliveryFee > 0 && (
                       <div className="flex justify-between text-sm">
                         <span className="text-slate-600">Taxa de Entrega</span>
-                        <span className="font-medium text-slate-700">{formatPrice(deliveryFee)}</span>
+                        <span className="font-medium text-slate-700 dark:text-slate-300">{formatPrice(deliveryFee)}</span>
                       </div>
                     )}
                     <div className="flex justify-between items-center pt-2 border-t border-slate-200">

@@ -246,6 +246,15 @@ export async function upsertProduct(productData: any, selectedInsumos?: { insumo
   try {
     const user = await requireAdmin();
 
+    // Garantir que preco seja um número válido
+    if (productData.preco === '' || productData.preco === undefined || productData.preco === null) {
+      productData.preco = 0;
+    }
+    productData.preco = Number(productData.preco);
+    if (isNaN(productData.preco)) {
+      productData.preco = 0;
+    }
+
     // Validação Premium com Zod
     const validated = ProductSchema.safeParse(productData);
     if (!validated.success) {

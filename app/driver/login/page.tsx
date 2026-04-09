@@ -70,12 +70,12 @@ export default function DriverLoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="seu@email.com"
                 required
-                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all"
+                className="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all text-slate-900 dark:text-white bg-white dark:bg-slate-800 placeholder:text-slate-400 dark:placeholder:text-slate-500"
               />
             </div>
 
             <div>
-              <label className="text-sm font-bold text-slate-700 flex items-center gap-2 mb-2">
+              <label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-2">
                 <Lock className="size-4" />
                 Senha
               </label>
@@ -85,7 +85,7 @@ export default function DriverLoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Use seu telefone como senha"
                 required
-                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all"
+                className="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all text-slate-900 dark:text-white bg-white dark:bg-slate-800 placeholder:text-slate-400 dark:placeholder:text-slate-500"
               />
               <p className="text-xs text-slate-400 mt-1">Sua senha é o número do seu WhatsApp (apenas números)</p>
             </div>

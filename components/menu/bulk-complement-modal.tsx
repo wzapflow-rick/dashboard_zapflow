@@ -118,7 +118,7 @@ export default function BulkComplementModal({
                                     <select
                                         value={selectedGrupoId}
                                         onChange={(e) => setSelectedGrupoId(e.target.value)}
-                                        className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-violet-500/20 outline-none transition-all appearance-none cursor-pointer"
+                                        className="w-full h-12 px-4 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-violet-500/20 outline-none transition-all appearance-none cursor-pointer"
                                     >
                                         <option value="">Selecione um grupo...</option>
                                         {grupos.map((g) => (
@@ -149,7 +149,7 @@ export default function BulkComplementModal({
                                         placeholder="Buscar no cardápio..."
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full h-11 pl-11 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-violet-500/20 outline-none transition-all"
+                                        className="w-full h-11 pl-11 pr-4 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-medium text-slate-900 dark:text-white focus:ring-2 focus:ring-violet-500/20 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                     />
                                 </div>
 

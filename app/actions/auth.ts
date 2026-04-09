@@ -191,7 +191,7 @@ export async function register(formData: FormData) {
     // 2. Hash password
     const hashedPassword = bcrypt.hashSync(password, 10);
 
-    // 3. Create entry in empresas
+    // 3. Create entry in empresas (não define instancia_evolution aqui - será definido no onboarding)
     const createRes = await nocoFetch('/records', {
         method: 'POST',
         body: JSON.stringify({
@@ -200,9 +200,10 @@ export async function register(formData: FormData) {
             login: email,
             password: password,
             nome_admin: nome,
-            nome_fantasia: `Loja de ${nome}`,        // Atualizado no onboarding
-            instancia_evolution: '', // Removido temporariamente -ativar quando o bot estiver pronto
-            status: 'ativo'
+            nome_fantasia: nome, // Usa o nome fornecido como nome fantasia inicial
+            status: 'ativo',
+            nincho: 'Outros', // Valor padrão para nicho
+            instancia_evolution: '' // Campo obrigatório - será atualizado no onboarding
         })
     }, EMPRESAS_TABLE_ID);
 
@@ -217,7 +218,8 @@ export async function register(formData: FormData) {
         empresaId: empresa.id,
         nome: empresa.nome_admin,
         onboarded: false, // Novo registro sempre precisa de onboarding
-        controle_estoque: false
+        controle_estoque: false,
+        role: 'admin' // Novo usuário é sempre admin
     });
     const isProduction = process.env.NODE_ENV === 'production';
     (await cookies()).set('session', session, {

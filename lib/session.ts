@@ -44,6 +44,13 @@ export async function requireAdmin() {
     return user;
 }
 
+export async function requireOnboardingDone() {
+    const user = await getMe();
+    if (!user?.empresaId) throw new Error('Não autorizado');
+    if (!user.onboarded) throw new Error('Complete o onboarding primeiro');
+    return user;
+}
+
 export async function requireRole(allowedRoles: string[]) {
     const user = await getMe();
     if (!user?.empresaId) throw new Error('Não autorizado');

@@ -15,9 +15,9 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: 'Empresa não informada' }, { status: 400 });
         }
 
-        // Fetch entregadores
+        // Fetch entregadores - filtrar por empresa
         const driversRes = await fetch(
-            `${NOCODB_URL}/api/v2/tables/${DRIVERS_TABLE_ID}/records?limit=100`,
+            `${NOCODB_URL}/api/v2/tables/${DRIVERS_TABLE_ID}/records?limit=100&where=(empresa_id,eq,${empresaId})`,
             {
                 headers: { 'xc-token': NOCODB_TOKEN }
             }

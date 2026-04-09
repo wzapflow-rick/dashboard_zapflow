@@ -65,36 +65,36 @@ export default function RegistrationPage() {
                 name="nome"
                 type="text"
                 placeholder="Ex: Ricardo Oliveira"
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
                 required
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-bold text-slate-700">E-mail</label>
+              <label className="text-sm font-bold text-slate-700 dark:text-slate-300">E-mail</label>
               <input
                 name="email"
                 type="email"
                 placeholder="nome@empresa.com"
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
                 required
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-bold text-slate-700">WhatsApp (Celular)</label>
+              <label className="text-sm font-bold text-slate-700 dark:text-slate-300">WhatsApp (Celular)</label>
               <input
                 name="whatsapp"
                 type="tel"
                 placeholder="(00) 00000-0000"
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-bold text-slate-700">Senha</label>
+              <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Senha</label>
               <input
                 name="password"
                 type="password"
                 placeholder="Mínimo 6 caracteres"
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
                 required
                 minLength={6}
               />

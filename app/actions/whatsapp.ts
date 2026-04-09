@@ -1,5 +1,7 @@
 'use server';
 
+import { getOrderCreatedMessage, getStatusMessage, WhatsAppMessages } from '@/llm/messages';
+
 const EVO_API_URL = process.env.EVOLUTION_API_URL || 'https://evo.wzapflow.com.br';
 const EVO_API_KEY = process.env.EVOLUTION_API_KEY || '';
 const EVO_INSTANCE = process.env.EVOLUTION_INSTANCE || 'zapflow_testes';
@@ -17,16 +19,10 @@ function checkApiKey() {
  * Formato: 5511999999999@s.whatsapp.net
  */
 function formatPhoneForEvolution(phone: string): string {
-    // Remover tudo que não é número
     let cleaned = phone.replace(/\D/g, '');
-
-    // Se não tem código do país (11 dígitos), adicionar 55
     if (cleaned.length === 11) {
         cleaned = '55' + cleaned;
     }
-
-    // Se já tem 12+ dígitos, manter como está
-    // Formato final: 5511999999999@s.whatsapp.net
     return `${cleaned}@s.whatsapp.net`;
 }
 
@@ -65,46 +61,31 @@ export async function sendWhatsAppMessage(phone: string, message: string): Promi
 }
 
 /**
+ * Formatar itens do pedido para mensagem WhatsApp
+ */
+function formatItensForWhatsApp(itens: any[]): string {
+    return itens.map(item => {
+        const nome = item.nome || item.produto || 'Produto';
+        const qtd = item.quantidade || 1;
+        const preco = Number(item.preco || 0);
+        const obs = item.observacoes ? ` (${item.observacoes})` : '';
+        return `• ${nome} x${qtd}${obs} - R$ ${preco.toFixed(2).replace('.', ',')}`;
+    }).join('\n');
+}
+
+/**
  * Enviar mensagem de confirmação de pedido criado
  */
-export async function sendOrderCreatedMessage(phone: string, orderId: number, total: number, dataAgendamento?: string | null): Promise<boolean> {
+export async function sendOrderCreatedMessage(
+    phone: string, 
+    orderId: number, 
+    total: number, 
+    dataAgendamento?: string | null,
+    itens?: any[]
+): Promise<boolean> {
     const trackUrl = `${BASE_URL}/track/${orderId}`;
-    
-    let message: string;
-    
-    if (dataAgendamento) {
-        const dataFormatada = new Date(dataAgendamento).toLocaleString('pt-BR', {
-            weekday: 'short',
-            day: '2-digit',
-            month: 'short',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-        
-        message = `📅 *Pedido #${orderId} Agendado!*
-
-Seu pedido de *R$ ${Number(total).toFixed(2).replace('.', ',')}* foi agendado com sucesso!
-
-🕐 *Retirar em:* ${dataFormatada}
-
-📱 *Acompanhe seu pedido:*
-${trackUrl}
-
-Seu pedido será preparado para o horário agendado!
-
-_Agradecemos a preferência!_`;
-    } else {
-        message = `🎉 *Pedido #${orderId} Recebido!*
-
-Obrigado pelo seu pedido! Seu pedido de *R$ ${Number(total).toFixed(2).replace('.', ',')}* foi recebido com sucesso.
-
-📱 *Acompanhe seu pedido em tempo real:*
-${trackUrl}
-
-Em breve enviaremos atualizações sobre seu pedido!
-
-_Agradecemos a preferência!_`;
-    }
+    const itensFormatados = itens ? formatItensForWhatsApp(itens) : '';
+    const message = getOrderCreatedMessage(orderId, total, trackUrl, !!dataAgendamento, dataAgendamento || undefined, itensFormatados);
 
     return sendWhatsAppMessage(phone, message);
 }
@@ -123,92 +104,8 @@ export async function sendOrderStatusMessage(
 ): Promise<boolean> {
     const isDelivery = tipoEntrega === 'delivery';
     const trackUrl = `${BASE_URL}/track/${orderId}`;
-
-    // Multiple message variations to avoid banimento
-    const messageVariations = {
-        pagamento_pendente: [
-            'Aguardando confirmação do pagamento.',
-            'Seu pagamento está sendo processado.',
-            'Precisamos confirmar seu pagamento.'
-        ],
-        pendente: isDelivery ? [
-            'Seu pagamento foi confirmado e seu pedido já está sendo preparado!',
-            'Pagamento confirmado! Em breve starts preparing your order!',
-            'We confirmed your payment! Your order is being prepared!'
-        ] : [
-            'Pagamento confirmado! Seu pedido já está sendo preparado!',
-            'Pedido confirmado e em produção!',
-            'Seu pedido está na cozinha agora!'
-        ],
-        preparing: isDelivery ? [
-            'Seu pedido está sendo preparado com todo carinho. Em breve sairá para entrega!',
-            'Our kitchen is preparing your order. It will be delivered soon!',
-            'Preparando seu pedido com todo carinho!'
-        ] : [
-            'Seu pedido está sendo preparado! Quando estiver pronto, avisaremos.',
-            'Estamos preparando seu pedido!',
-            'Na cozinha agora! Logo estará pronto.'
-        ],
-        delivery: [
-            'Seu pedido está a caminho. Fique de olho, o entregador já está no caminho!',
-            'Your order is on the way! Track it in real time.',
-            '🛵 O entregador já saiu com seu pedido!'
-        ],
-        finished: isDelivery ? [
-            'Espero que goste! Bom apetite! 🍕',
-            'Delivery delivered! Enjoy your meal!',
-            'Pedido entregue! Bom apetite!'
-        ] : [
-            'Seu pedido está pronto! Pode retirar no local.',
-            'Your order is ready for pickup!',
-            'Pedido pronto! Venha buscar.'
-        ],
-        canceled: [
-            'Seu pedido foi cancelado. Se tiver dúvidas, entre em contato conosco.',
-            'Order canceled. Contact us if you have questions.',
-            'Pedido cancelado. Estamos à disposição.'
-        ]
-    };
-
-    const getVariation = (statusKey: string, index: number): string => {
-        const variations = messageVariations[statusKey as keyof typeof messageVariations];
-        if (!variations) return '';
-        return variations[index % variations.length];
-    };
-
-    // Rotate message index based on orderId to vary messages
-    const messageIndex = orderId % 3;
-
-    const statusMessages: Record<string, { emoji: string; title: string }> = {
-        'pagamento_pendente': { emoji: '⏳', title: 'Pagamento Pendente' },
-        'pendente': { emoji: '✅', title: 'Pedido Confirmado!' },
-        'preparando': { emoji: '👨‍🍳', title: 'Preparando seu Pedido' },
-        'entrega': { emoji: '🛵', title: 'Saiu para Entrega!' },
-        'finalizado': { emoji: '🎉', title: isDelivery ? 'Pedido Entregue!' : 'Pedido Pronto!' },
-        'cancelado': { emoji: '❌', title: 'Pedido Cancelado' }
-    };
-
-    const statusInfo = statusMessages[status] || { emoji: '📢', title: 'Atualização do Pedido' };
-    const description = getVariation(status, messageIndex);
-
-    const deliveryNote = isDelivery ? '\n📍 *Entrega em andamento*' : '\n🏪 *Retirada no local*';
-
-    let message = `${statusInfo.emoji} *Pedido #${orderId} - ${statusInfo.title}*
-
-${description}${deliveryNote}
-
-📱 *Acompanhe seu pedido:*
-${trackUrl}`;
-
-    // Add rating link when order is finalized
-    if (status === 'finalizado' && empresaId) {
-        const phoneParam = phone ? `&phone=${phone.replace(/\D/g, '')}` : '';
-        const ratingUrl = `${BASE_URL}/rating/${empresaId}/${orderId}${phoneParam}`;
-        message += `
-
-⭐ *Nos avalie!* Sua opinião é muito importante:
-${ratingUrl}`;
-    }
+    
+    const message = getStatusMessage(status, orderId, isDelivery, trackUrl, empresaId);
 
     return sendWhatsAppMessage(phone, message);
 }
@@ -220,14 +117,9 @@ export async function testWhatsApp(phone: string): Promise<{ success: boolean; f
     try {
         const formattedPhone = formatPhoneForEvolution(phone);
         
-        const testMessage = `🧪 *Mensagem de Teste - ZapFlow*
-
-Se você recebeu esta mensagem, o sistema está funcionando corretamente!
-
-📱 Número: ${formattedPhone}
-⏰ ${new Date().toLocaleString('pt-BR')}
-
-✅ Tudo certo!`;
+        const testMessage = WhatsAppMessages.testMessage
+            .replace('{phone}', formattedPhone)
+            .replace('{datetime}', new Date().toLocaleString('pt-BR'));
 
         console.log(`[WhatsApp Test] Enviando para: ${formattedPhone}`);
         console.log(`[WhatsApp Test] API: ${EVO_API_URL}`);

@@ -48,37 +48,37 @@ export default function LoginPage() {
                         <div className="size-10 bg-primary rounded-lg flex items-center justify-center text-white">
                             <Zap className="size-6 fill-current" />
                         </div>
-                        <span className="text-2xl font-black tracking-tighter text-slate-900">ZapFlow</span>
+                        <span className="text-2xl font-black tracking-tighter text-slate-900 dark:text-white">ZapFlow</span>
                     </div>
 
                     <div className="mb-8">
-                        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Bem-vindo de volta!</h1>
-                        <p className="text-slate-500 mt-2">Entre com seu e-mail e senha para acessar o painel.</p>
+                        <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Bem-vindo de volta!</h1>
+                        <p className="text-slate-500 dark:text-slate-400 mt-2">Entre com seu e-mail e senha para acessar o painel.</p>
                     </div>
 
                     <form className="space-y-5" onSubmit={handleSubmit}>
                         <div className="space-y-1.5">
-                            <label className="text-sm font-bold text-slate-700">E-mail</label>
+                            <label className="text-sm font-bold text-slate-700 dark:text-slate-300">E-mail</label>
                             <div className="relative">
                                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
                                 <input
                                     name="email"
                                     type="email"
                                     placeholder="seu@email.com"
-                                    className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                    className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                     required
                                 />
                             </div>
                         </div>
                         <div className="space-y-1.5">
-                            <label className="text-sm font-bold text-slate-700">Senha</label>
+                            <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Senha</label>
                             <div className="relative">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
                                 <input
                                     name="password"
                                     type="password"
                                     placeholder="••••••••"
-                                    className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                    className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                     required
                                 />
                             </div>

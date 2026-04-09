@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { updateOnboarding } from '@/app/actions/auth';
 import { saveHorariosFuncionamento } from '@/app/actions/horarios';
+import { getCompanyDetails } from '@/app/actions/company';
 import { createEvolutionInstance, getEvolutionQRCode, getInstanceStatus } from '@/app/actions/evolution';
 import { toast } from 'sonner';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -53,6 +54,7 @@ function OnboardingContent() {
   const [selectedNiche, setSelectedNiche] = useState('');
   const [loading, setLoading] = useState(false);
   const [companyName, setCompanyName] = useState('');
+  const [empresaId, setEmpresaId] = useState<number | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -71,6 +73,24 @@ function OnboardingContent() {
       fechado: d.id === 0, // domingo fechado por padrão
     }))
   );
+
+  // Buscar dados da empresa ao carregar
+  useEffect(() => {
+    async function loadCompany() {
+      try {
+        const company = await getCompanyDetails();
+        if (company?.id) {
+          setEmpresaId(company.id);
+          if (company.nome_fantasia) {
+            setCompanyName(company.nome_fantasia);
+          }
+        }
+      } catch (e) {
+        console.error('Erro ao buscar empresa:', e);
+      }
+    }
+    loadCompany();
+  }, []);
 
   useEffect(() => {
     const nomeParam = searchParams.get('nome');
@@ -96,12 +116,16 @@ function OnboardingContent() {
   const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
 
   async function handleConnectWhatsApp() {
+    if (!empresaId) {
+      toast.error('ID da empresa não encontrado');
+      return;
+    }
     setLoadingQr(true);
     setQrCode(null);
     setConnectionState('connecting');
     try {
-      // 1. Cria a instância
-      const createRes = await createEvolutionInstance(Date.now());
+      // 1. Cria a instância com o ID correto da empresa
+      const createRes = await createEvolutionInstance(empresaId);
       if ('error' in createRes && createRes.error) {
         toast.error('Erro ao criar instância: ' + createRes.error);
         setConnectionState('disconnected');
@@ -110,7 +134,15 @@ function OnboardingContent() {
       const name = (createRes as any).instanceName;
       setInstanceName(name);
 
-      // 2. Busca o QR Code
+      // 2. Atualiza o campo instancia_evolution no banco
+      try {
+        const { updateCompany } = await import('@/app/actions/company');
+        await updateCompany({ instancia_evolution: name });
+      } catch (e) {
+        console.error('Erro ao salvar instancia_evolution:', e);
+      }
+
+      // 3. Busca o QR Code
       await new Promise(r => setTimeout(r, 2000)); // aguarda instância inicializar
       const qrRes = await getEvolutionQRCode(name);
       if ('error' in qrRes && qrRes.error) {

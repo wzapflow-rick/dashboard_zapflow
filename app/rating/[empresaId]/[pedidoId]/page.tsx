@@ -175,12 +175,12 @@ export default function RatingPage({ params }: RatingPageProps) {
                 )}
 
                 <div className="bg-white rounded-2xl p-6 shadow-sm">
-                    <h3 className="font-bold text-slate-900 mb-3">Algo a dizer? (opcional)</h3>
+                    <h3 className="font-bold text-slate-900 dark:text-white mb-3">Algo a dizer? (opcional)</h3>
                     <textarea
                         value={comentario}
                         onChange={(e) => setComentario(e.target.value)}
                         placeholder="Conte-nos mais sobre sua experiência..."
-                        className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm resize-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none"
+                        className="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl text-sm resize-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none text-slate-900 dark:text-white bg-white dark:bg-slate-800 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                         rows={3}
                     />
                 </div>

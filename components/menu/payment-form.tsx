@@ -302,7 +302,7 @@ export default function PaymentForm({ pedidoId, total, onSuccess, onError }: Pay
       )}
 
       <div>
-        <label className="text-sm font-bold text-slate-700">Número do cartão</label>
+        <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Número do cartão</label>
         <div className="relative mt-1">
           <input
             type="text"
@@ -310,7 +310,7 @@ export default function PaymentForm({ pedidoId, total, onSuccess, onError }: Pay
             value={formData.cardNumber}
             onChange={(e) => handleInputChange('cardNumber', e.target.value)}
             placeholder="0000 0000 0000 0000"
-            className="w-full px-4 py-3 pl-12 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none"
+            className="w-full px-4 py-3 pl-12 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none text-slate-900 dark:text-white bg-white dark:bg-slate-800 placeholder:text-slate-400 dark:placeholder:text-slate-500"
           />
           <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-slate-400" />
         </div>
@@ -318,31 +318,31 @@ export default function PaymentForm({ pedidoId, total, onSuccess, onError }: Pay
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="text-sm font-bold text-slate-700">Validade</label>
+          <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Validade</label>
           <input
             type="text"
             inputMode="numeric"
             value={formData.cardExpiration}
             onChange={(e) => handleInputChange('cardExpiration', e.target.value)}
             placeholder="MM/AA"
-            className="w-full mt-1 px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none"
+            className="w-full mt-1 px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none text-slate-900 dark:text-white bg-white dark:bg-slate-800 placeholder:text-slate-400 dark:placeholder:text-slate-500"
           />
         </div>
         <div>
-          <label className="text-sm font-bold text-slate-700">CVV</label>
+          <label className="text-sm font-bold text-slate-700 dark:text-slate-300">CVV</label>
           <input
             type="text"
             inputMode="numeric"
             value={formData.cardCvv}
             onChange={(e) => handleInputChange('cardCvv', e.target.value)}
             placeholder="123"
-            className="w-full mt-1 px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none"
+            className="w-full mt-1 px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none text-slate-900 dark:text-white bg-white dark:bg-slate-800 placeholder:text-slate-400 dark:placeholder:text-slate-500"
           />
         </div>
       </div>
 
       <div>
-        <label className="text-sm font-bold text-slate-700">Nome do titular</label>
+        <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Nome do titular</label>
         <input
           type="text"
           value={formData.cardHolderName}
@@ -354,25 +354,25 @@ export default function PaymentForm({ pedidoId, total, onSuccess, onError }: Pay
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="text-sm font-bold text-slate-700">Documento</label>
+          <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Documento</label>
           <select
             value={formData.docType}
             onChange={(e) => handleInputChange('docType', e.target.value)}
-            className="w-full mt-1 px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none"
+            className="w-full mt-1 px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none text-slate-900 dark:text-white bg-white dark:bg-slate-800 placeholder:text-slate-400 dark:placeholder:text-slate-500"
           >
             <option value="CPF">CPF</option>
             <option value="CNPJ">CNPJ</option>
           </select>
         </div>
         <div>
-          <label className="text-sm font-bold text-slate-700">Número</label>
+          <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Número</label>
           <input
             type="text"
             inputMode="numeric"
             value={formData.docNumber}
             onChange={(e) => handleInputChange('docNumber', e.target.value)}
             placeholder={formData.docType === 'CPF' ? '000.000.000-00' : '00.000.000/0000-00'}
-            className="w-full mt-1 px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none"
+            className="w-full mt-1 px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none text-slate-900 dark:text-white bg-white dark:bg-slate-800 placeholder:text-slate-400 dark:placeholder:text-slate-500"
           />
         </div>
       </div>
