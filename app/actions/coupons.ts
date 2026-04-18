@@ -8,7 +8,7 @@ import { logAction } from '@/lib/audit';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const COUPONS_TABLE_ID = 'myfkyl2km6bvp4p'; // Tabela de cupons
+const COUPONS_TABLE_ID = 'm5echqy6luac5g6'; // Tabela de cupons
 
 async function nocoFetch(endpoint: string, options: RequestInit = {}) {
     const url = `${NOCODB_URL}/api/v2/tables/${COUPONS_TABLE_ID}${endpoint}`;

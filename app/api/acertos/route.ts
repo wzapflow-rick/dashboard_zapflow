@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const DRIVERS_TABLE_ID = 'mhevb5nu9nczggv';
-const ORDERS_TABLE_ID = 'm2ic8zof3feve3l';
+const DRIVERS_TABLE_ID = 'm4hbqkhwu2qvrry';
+const ORDERS_TABLE_ID = 'mui7bozvx9zb2n9';
 
 export async function GET(request: Request) {
     try {

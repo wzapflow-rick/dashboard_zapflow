@@ -7,8 +7,8 @@ import { getInsumos } from './insumos';
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
 
-const ITENS_BASE_TABLE_ID = 'micgsgj6jtr8i8m';
-const ITEM_BASE_INSUMO_TABLE_ID = 'mlfza849t9slguc';
+const ITENS_BASE_TABLE_ID = 'mfcp67skbxq4nt5';
+const ITEM_BASE_INSUMO_TABLE_ID = 'mev9fkmt1jaapiv';
 
 export interface ItemBase {
     id: number;
@@ -55,13 +55,12 @@ export async function getItensBase(): Promise<ItemBase[]> {
 
         const res = await nocoFetch(
             ITENS_BASE_TABLE_ID,
-            `/records?limit=1000&where=(empresa,eq,${user.empresaId})&sort=nome`
+            `/records?limit=1000&where=(empresa_id,eq,${user.empresaId})&sort=nome`
         );
         const data = await res.json();
-        // Em tabelas com UUID PK, o 'id' retornado pelo NocoDB v2 já é o UUID.
         return (data.list || []).map((i: any) => ({
             ...i,
-            id: i.id // O campo 'id' (minúsculo) é o UUID.
+            id: Number(i.id) //Converter para número para evitar problemas de comparação
         }));
     } catch (e) {
         console.error('getItensBase error:', e);
@@ -77,7 +76,7 @@ export async function upsertItemBase(itemData: Partial<ItemBase>) {
         const isUpdate = !!itemData.id;
         const payload: any = {
             ...itemData,
-            empresa: user.empresaId,
+            empresa_id: user.empresaId,
         };
 
         // Remove campos de sistema e IDs internos para evitar conflitos de tipo UUID
@@ -99,6 +98,7 @@ export async function upsertItemBase(itemData: Partial<ItemBase>) {
                 body: JSON.stringify(payload),
             });
             const data = await res.json();
+            console.log(' upsertItemBase response:', data);
             revalidatePath('/dashboard/menu');
             return { ...payload, ...data };
         }
@@ -131,14 +131,14 @@ export async function getReceitaDoItemBase(itemBaseId: number): Promise<ItemBase
         
         const res = await nocoFetch(
             ITEM_BASE_INSUMO_TABLE_ID,
-            `/records?limit=1000&where=(item,eq,${itemBaseId})~and(empresa,eq,${user.empresaId})`
+            `/records?limit=1000&where=(produto_id,eq,${itemBaseId})~and(empresa_id,eq,${user.empresaId})`
         );
         const data = await res.json();
         return (data.list || []).map((i: any) => ({ 
             id: i.id, 
-            item: i.item,
-            insumo: i.insumo,
-            quantidade: i.quantidade 
+            produto_id: i.produto_id,
+            insumo_id: i.insumo_id,
+            quantidade: i.quantidade_usada 
         }));
     } catch (e) {
         console.error('getReceitaDoItemBase error:', e);
@@ -153,7 +153,7 @@ export async function saveReceitaDoItemBase(
     try {
         const existingRes = await nocoFetch(
             ITEM_BASE_INSUMO_TABLE_ID,
-            `/records?limit=1000&where=(item,eq,${itemBaseId})`
+            `/records?limit=1000&where=(produto_id,eq,${itemBaseId})`
         );
         const existingData = await existingRes.json();
 
@@ -171,10 +171,10 @@ export async function saveReceitaDoItemBase(
             if (!user?.empresaId) throw new Error('Usuário não autorizado');
             
             const records = insumosList.map(item => ({
-                item: Number(itemBaseId),
-                insumo: Number(item.insumo),
-                quantidade: parseFloat(Number(item.quantidade || 1).toFixed(3)),
-                empresa: user.empresaId,
+                produto_id: Number(itemBaseId),
+                insumo_id: Number(item.insumo),
+                quantidade_usada: parseFloat(Number(item.quantidade || 1).toFixed(3)),
+                empresa_id: user.empresaId,
             }));
             console.log('Inserindo registros na tabela item_base_insumo:', JSON.stringify(records, null, 2));
             

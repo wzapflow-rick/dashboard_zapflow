@@ -6,11 +6,11 @@ import { sendWhatsAppMessage } from './whatsapp';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const DRIVERS_TABLE_ID = 'mhevb5nu9nczggv'; // entregadores
-const ORDERS_TABLE_ID = 'm2ic8zof3feve3l'; // pedidos
-const COMISSOES_TABLE_ID = 'mq9no1mvg98994s'; // comissoes_entregadores
-const CONFIG_ENTREGA_TABLE_ID = 'me3vc6ngpp32dkk'; // configuracoes_entregas
-const HISTORICO_TABLE_ID = 'mfs71qiyhv8vlo8'; // historico_entregas
+const DRIVERS_TABLE_ID = 'm4hbqkhwu2qvrry'; // entregadores
+const ORDERS_TABLE_ID = 'mui7bozvx9zb2n9'; // pedidos
+const COMISSOES_TABLE_ID = 'me4x6mmfsbndf42'; // comissoes_entregadores
+const CONFIG_ENTREGA_TABLE_ID = 'mmzk2podf4zqps6'; // configuracoes_entregas
+const HISTORICO_TABLE_ID = 'm9lt0hyfnh3c47q'; // historico_entregas
 
 async function nocoFetch(tableId: string, endpoint: string, options: RequestInit = {}) {
     const url = `${NOCODB_URL}/api/v2/tables/${tableId}${endpoint}`;

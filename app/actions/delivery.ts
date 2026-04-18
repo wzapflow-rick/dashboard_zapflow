@@ -5,7 +5,7 @@ import { getMe } from './auth';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const TABLE_ID = 'm0f4c9g15bbd257'; // taxas_entrega-taxas_entrega
+const TABLE_ID = 'mmzk2podf4zqps6'; // taxas_entrega-taxas_entrega
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || '';
 
 async function nocoFetch(endpoint: string, options: RequestInit = {}) {
@@ -59,11 +59,11 @@ export async function upsertDeliveryRate(data: any) {
             revalidatePath('/dashboard/settings');
             return await res.json();
         } else {
-            // Na criação, usamos apenas o campo de relação 'empresas' que o NocoDB aceita para linkar registros
+            // Na criação, usamos empresa_id
             const { empresa_id, id, ...insertData } = data;
             const payload = {
                 ...insertData,
-                empresas: user.empresaId
+                empresa_id: user.empresaId
             };
             const res = await nocoFetch('/records', {
                 method: 'POST',
@@ -118,7 +118,7 @@ export async function getDeliveryConfig(): Promise<DeliveryConfig | null> {
         if (!user?.empresaId) throw new Error('Não autorizado');
 
         // Buscar da tabela de empresas
-        const configRes = await fetch(`${NOCODB_URL}/api/v2/tables/mrlxbm1guwn9iv8/records/${user.empresaId}`, {
+        const configRes = await fetch(`${NOCODB_URL}/api/v2/tables/mp08yd7oaxn5xo2/records/${user.empresaId}`, {
             headers: {
                 'xc-token': NOCODB_TOKEN,
                 'Content-Type': 'application/json',

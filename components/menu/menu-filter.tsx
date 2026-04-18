@@ -33,6 +33,8 @@ interface CompositeProduct {
     imagem?: string;
     tipo_calculo?: string;
     cobrar_mais_caro?: boolean;
+    preco_fixo?: number;
+    completamentos_ids?: number[];
     minimo: number;
     maximo: number;
     items: any[];
@@ -44,6 +46,7 @@ interface MenuFilterProps {
     upsellProducts: any[];
     whatsappNumber: string;
     empresaNome: string;
+    allComposites: CompositeProduct[];
 }
 
 const fmt = (price: number) => `R$ ${price.toFixed(2).replace('.', ',')}`;
@@ -114,7 +117,8 @@ export default function MenuFilter({
     compositeProducts,
     upsellProducts,
     whatsappNumber,
-    empresaNome
+    empresaNome,
+    allComposites = []
 }: MenuFilterProps) {
     const [search, setSearch] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<number | 'all' | 'composites'>('all');
@@ -217,6 +221,7 @@ export default function MenuFilter({
                     product={selectedComposite}
                     whatsappNumber={whatsappNumber}
                     empresaNome={empresaNome}
+                    allComposites={allComposites}
                     onClose={closeCompositeModal}
                 />
             )}

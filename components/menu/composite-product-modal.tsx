@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import { X, ShoppingCart, Check, Plus, Minus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -22,6 +22,8 @@ interface CompositeProduct {
     imagem?: string;
     tipo_calculo?: string;
     cobrar_mais_caro?: boolean;
+    preco_fixo?: number;
+    completamentos_ids?: number[];
     minimo: number;
     maximo: number;
     items: CompositeItem[];
@@ -31,23 +33,66 @@ interface CompositeProductModalProps {
     product: CompositeProduct;
     whatsappNumber: string;
     empresaNome: string;
+    allComposites?: CompositeProduct[];
+    allGroups?: any[];
     onClose: () => void;
 }
 
 const fmt = (price: number) => `R$ ${price.toFixed(2).replace('.', ',')}`;
 
+interface CompletamentoEtapa {
+    grupoId: number;
+    nome: string;
+    itens: CompositeItem[];
+    minimo: number;
+    maximo: number;
+    preco_addicional: number;
+}
+
 export default function CompositeProductModal({
     product,
     whatsappNumber,
     empresaNome,
+    allComposites = [],
+    allGroups = [],
     onClose,
 }: CompositeProductModalProps) {
     const [selected, setSelected] = useState<CompositeItem[]>([]);
+    const [completamentoEtapas, setCompletamentoEtapas] = useState<CompletamentoEtapa[]>([]);
+    const [etapaAtual, setEtapaAtual] = useState<number>(-1);
+    const [selectedCompletos, setSelectedCompletos] = useState<CompositeItem[]>([]);
     const { addItem } = useCart();
 
     const max = Number(product.maximo || 1);
     const min = Number(product.minimo || 1);
     const isFull = selected.length >= max;
+
+    // Debug: verificar completamentos
+    if (typeof window !== 'undefined') {
+        console.log('>>> COMPLEMENTOS product:', product.completamentos_ids, 'allComposites:', allComposites.length);
+    }
+
+    // Detectar completamentos quando o produto for selecionado
+    useEffect(() => {
+        const compIds = product.completamentos_ids || [];
+        if (compIds.length > 0 && allComposites.length > 0) {
+            const etapas: CompletamentoEtapa[] = [];
+            compIds.forEach(compId => {
+                const compGrupo = allComposites.find(c => c._grupoId === compId);
+                if (compGrupo && compGrupo.items && compGrupo.items.length > 0) {
+                    etapas.push({
+                        grupoId: compGrupo._grupoId,
+                        nome: compGrupo.nome,
+                        itens: compGrupo.items,
+                        minimo: compGrupo.minimo || 1,
+                        maximo: compGrupo.maximo || 1,
+                        preco_addicional: compGrupo.preco_fixo || 0,
+                    });
+                }
+            });
+            setCompletamentoEtapas(etapas);
+        }
+    }, [product, allComposites]);
 
     const toggleItem = (item: CompositeItem) => {
         const already = selected.find(i => i.id === item.id);
@@ -66,7 +111,9 @@ export default function CompositeProductModal({
 
         const prices = selected.map(i => i.preco);
 
-        if (product.cobrar_mais_caro) {
+        if (product.tipo_calculo === 'fixo') {
+            return product.preco_fixo || 0;
+        } else if (product.cobrar_mais_caro) {
             return Math.max(...prices);
         } else if (product.tipo_calculo === 'media') {
             return prices.reduce((a, b) => a + b, 0) / prices.length;
@@ -105,13 +152,15 @@ export default function CompositeProductModal({
         handleClose();
     };
 
-    const priceRuleLabel = product.cobrar_mais_caro 
-        ? 'Cobra o sabor mais caro'
-        : product.tipo_calculo === 'media'
-            ? 'Média dos sabores'
-            : product.tipo_calculo === 'maior_valor'
-                ? 'Maior valor'
-                : 'Soma dos sabores';
+    const priceRuleLabel = product.tipo_calculo === 'fixo' 
+        ? `Preço fixo: R$ ${(product.preco_fixo || 0).toFixed(2)}`
+        : product.cobrar_mais_caro 
+            ? 'Cobra o sabor mais caro'
+            : product.tipo_calculo === 'media'
+                ? 'Média dos sabores'
+                : product.tipo_calculo === 'maior_valor'
+                    ? 'Maior valor'
+                    : 'Soma dos sabores';
 
     return (
         <AnimatePresence>

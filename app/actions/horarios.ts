@@ -7,7 +7,7 @@ import { z } from 'zod';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const HORARIOS_TABLE_ID = 'm6jqxzkwfw6o4ga';
+const HORARIOS_TABLE_ID = 'mpaclmaji3b6dla';
 
 // Schema para array de horários
 const HorariosArraySchema = z.array(HorarioSchema).min(1, 'Adicione pelo menos um horário');

@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const USUARIOS_TABLE_ID = process.env.USUARIOS_TABLE_ID || 'm3hu4490tp0yra3';
+const USUARIOS_TABLE_ID = process.env.USUARIOS_TABLE_ID || 'msrjfeb28e07cwx';
 
 async function nocoFetch(endpoint: string, options: RequestInit = {}) {
     const url = `${NOCODB_URL}/api/v2/tables/${USUARIOS_TABLE_ID}${endpoint}`;

@@ -5,7 +5,7 @@ import { encrypt, decrypt } from '@/lib/session';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const DRIVERS_TABLE_ID = 'mhevb5nu9nczggv';
+const DRIVERS_TABLE_ID = 'm4hbqkhwu2qvrry';
 
 async function nocoFetch(tableId: string, endpoint: string, options: RequestInit = {}) {
     const url = `${NOCODB_URL}/api/v2/tables/${tableId}${endpoint}`;
@@ -128,7 +128,7 @@ export async function getDriverOrders(driverId: number) {
             throw new Error('Acesso negado: Sessão inválida');
         }
         
-        const ORDERS_TABLE_ID = 'm2ic8zof3feve3l';
+        const ORDERS_TABLE_ID = 'mui7bozvx9zb2n9';
         
         // Buscar pedidos atribuídos ao entregador
         const res = await nocoFetch(ORDERS_TABLE_ID, 
@@ -163,7 +163,7 @@ export async function updateOrderStatusByDriver(orderId: number, newStatus: stri
             throw new Error('Não autorizado');
         }
         
-        const ORDERS_TABLE_ID = 'm2ic8zof3feve3l';
+        const ORDERS_TABLE_ID = 'mui7bozvx9zb2n9';
         
         // SECURE: Verify order belongs to this driver before updating
         const checkRes = await nocoFetch(ORDERS_TABLE_ID, `/records/${orderId}`);

@@ -36,8 +36,16 @@ export function GrupoSlotItens({ grupo, onClose }: GrupoSlotItensProps) {
                 getItensBase(),
                 getItensDoGrupoSlot(Number(grupo.id)),
             ]);
-            setBiblioteca(bib);
-            setVinculados(vin);
+            // Garantir que todos os IDs sejam números
+            const bibNumerico = bib.map(item => ({
+                ...item,
+                id: Number(item.id)
+            }));
+            const vinNumerico = vin.map(id => Number(id));
+            console.log('[DEBUG] Biblioteca:', bibNumerico.map(i => i.id));
+            console.log('[DEBUG] Vinculados:', vinNumerico);
+            setBiblioteca(bibNumerico);
+            setVinculados(vinNumerico);
         } catch {
             toast.error('Erro ao carregar itens');
         } finally {
@@ -61,7 +69,7 @@ export function GrupoSlotItens({ grupo, onClose }: GrupoSlotItensProps) {
     const handleAdd = async (itemBaseId: number) => {
         setActionMap(m => ({ ...m, [itemBaseId]: true }));
         try {
-            await addItemBaseAoGrupo(Number(grupo.id), itemBaseId);
+            await addItemBaseAoGrupo(Number(grupo.id), Number(itemBaseId));
             const updatedVin = await getItensDoGrupoSlot(Number(grupo.id));
             setVinculados(updatedVin);
             toast.success('Item adicionado ao grupo!');
@@ -216,7 +224,7 @@ export function GrupoSlotItens({ grupo, onClose }: GrupoSlotItensProps) {
                                     </div>
                                 ) : (
                                     vinculados.map(itemId => {
-                                        const item = biblioteca.find(b => b.id === itemId);
+                                        const item = biblioteca.find(b => Number(b.id) === Number(itemId));
                                         const isLoading = actionMap[itemId];
                                         return (
                                             <div

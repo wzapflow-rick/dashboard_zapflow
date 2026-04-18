@@ -8,7 +8,7 @@ import { CompanyUpdateSchema } from '@/lib/validations';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const EMPRESAS_TABLE_ID = process.env.EMPRESAS_TABLE_ID || 'mrlxbm1guwn9iv8';
+const EMPRESAS_TABLE_ID = process.env.EMPRESAS_TABLE_ID || 'mp08yd7oaxn5xo2';
 
 async function nocoFetch(endpoint: string, options: RequestInit = {}) {
     const url = `${NOCODB_URL}/api/v2/tables/${EMPRESAS_TABLE_ID}${endpoint}`;

@@ -3,7 +3,7 @@ import { getMe } from '@/app/actions/auth';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const EMPRESAS_TABLE_ID = 'mrlxbm1guwn9iv8';
+const EMPRESAS_TABLE_ID = 'mp08yd7oaxn5xo2';
 
 export async function GET(
     request: Request,

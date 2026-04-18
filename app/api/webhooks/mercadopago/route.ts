@@ -4,8 +4,8 @@ const NOCODB_URL = process.env.NOCODB_URL || 'https://db.wzapflow.com.br';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN || '';
 
-const ORDERS_TABLE_ID = 'm2ic8zof3feve3l';
-const EMPRESAS_TABLE_ID = 'mrlxbm1guwn9iv8';
+const ORDERS_TABLE_ID = 'mui7bozvx9zb2n9';
+const EMPRESAS_TABLE_ID = 'mp08yd7oaxn5xo2';
 
 interface MPPaymentData {
   id: number;

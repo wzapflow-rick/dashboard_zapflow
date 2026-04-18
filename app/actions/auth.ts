@@ -6,15 +6,14 @@ import { revalidatePath } from 'next/cache';
 import { encrypt, decrypt } from '@/lib/session';
 import { logger } from '@/lib/logger';
 
-// Rate limiting para login
 const loginAttempts = new Map<string, { count: number; lastAttempt: number }>();
 const MAX_ATTEMPTS = 5;
-const WINDOW_MS = 15 * 60 * 1000; // 15 minutos
+const WINDOW_MS = 15 * 60 * 1000;
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const EMPRESAS_TABLE_ID = process.env.EMPRESAS_TABLE_ID || 'mrlxbm1guwn9iv8';
-const USUARIOS_TABLE_ID = process.env.USUARIOS_TABLE_ID || 'm3hu4490tp0yra3';
+const EMPRESAS_TABLE_ID = process.env.EMPRESAS_TABLE_ID || 'mp08yd7oaxn5xo2';
+const USUARIOS_TABLE_ID = process.env.USUARIOS_TABLE_ID || 'msrjfeb28e07cwx';
 
 async function nocoFetch(endpoint: string, options: RequestInit = {}, tableId: string) {
     try {
@@ -46,7 +45,6 @@ import { LoginSchema } from '@/lib/validations';
 
 export async function login(data: any) {
     try {
-        // Converter FormData para objeto se necessário
         const rawData = data instanceof FormData ? Object.fromEntries(data) : data;
 
         const validated = LoginSchema.safeParse(rawData);
@@ -56,7 +54,6 @@ export async function login(data: any) {
 
         const { email, password } = validated.data;
 
-        // Rate limiting por email
         const now = Date.now();
         const attemptKey = email.toLowerCase();
         const attempt = loginAttempts.get(attemptKey);
@@ -65,18 +62,13 @@ export async function login(data: any) {
             const timeSinceLast = now - attempt.lastAttempt;
             if (timeSinceLast < WINDOW_MS) {
                 const remainingTime = Math.ceil((WINDOW_MS - timeSinceLast) / 1000 / 60);
-                
-                // SECURITY: Log rate limit exceeded
                 logger.securityLoginFailure(email, 'RATE_LIMIT_EXCEEDED', `Blocked for ${remainingTime} minutes`);
-                
                 return { error: `Muitas tentativas de login. Tente novamente em ${remainingTime} minutos.` };
             } else {
-                // Reset após janela de tempo
                 loginAttempts.delete(attemptKey);
             }
         }
 
-        // 1. Tenta login na tabela EMPRESAS (Admin da loja)
         const filter = `(email,eq,${email})~or(login,eq,${email})`;
         const res = await nocoFetch(`/records?where=${filter}`, {}, EMPRESAS_TABLE_ID);
 
@@ -84,8 +76,12 @@ export async function login(data: any) {
             const resData = await res.json();
             const empresa = resData.list?.[0];
 
-            if (empresa && (bcrypt.compareSync(password, empresa.senha) || password === empresa.password)) {
-                // SECURITY: Log successful login
+            console.log('[LOGIN DEBUG] empresa:', empresa ? Object.keys(empresa) : null);
+
+            const empresaSenha = empresa?.senha || empresa?.senha_hash || empresa?.password || empresa?.Senha || empresa?.senhaHash;
+            console.log('[LOGIN DEBUG] empresa senha field:', empresaSenha ? 'exists' : 'MISSING');
+
+            if (empresa && empresaSenha && (bcrypt.compareSync(password, empresaSenha) || password === empresa.password || password === empresa.senha)) {
                 logger.securityLoginSuccess(email, empresa.id);
 
                 const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -113,7 +109,6 @@ export async function login(data: any) {
             }
         }
 
-        // 2. Tenta login na tabela USUARIOS (Atendentes, Cozinheiros)
         const usuariosRes = await nocoFetch(`/records?where=(email,eq,${email})`, {}, USUARIOS_TABLE_ID);
 
         if (usuariosRes) {
@@ -121,12 +116,11 @@ export async function login(data: any) {
             const usuario = usuariosData.list?.[0];
 
             console.log('[LOGIN DEBUG] usuario:', usuario ? Object.keys(usuario) : null);
-            console.log('[LOGIN DEBUG] senha_hash exists:', !!usuario?.senha_hash);
 
-            const hashField = usuario?.senha_hash || usuario?.senha || usuario?.Senha_hash || usuario?.senhaHash || usuario?.password_hash || usuario?.hash_senha;
+            const usuarioSenha = usuario?.senha_hash || usuario?.senha || usuario?.Senha_hash || usuario?.senhaHash || usuario?.password_hash;
+            console.log('[LOGIN DEBUG] usuario senha_hash:', usuarioSenha ? 'exists' : 'MISSING');
 
-            if (usuario && hashField && bcrypt.compareSync(password, hashField)) {
-                // Verifica se está ativo
+            if (usuario && usuarioSenha && bcrypt.compareSync(password, usuarioSenha)) {
                 if (usuario.ativo === false || usuario.ativo === 0 || String(usuario.ativo).toLowerCase() === 'false') {
                     logger.securityLoginFailure(email, 'ACCOUNT_DISABLED', 'Usuário desativado');
                     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -160,7 +154,6 @@ export async function login(data: any) {
             }
         }
 
-        // Login falhou em ambas as tabelas
         const currentAttempt = loginAttempts.get(attemptKey) || { count: 0, lastAttempt: now };
         currentAttempt.count += 1;
         currentAttempt.lastAttempt = now;
@@ -182,44 +175,41 @@ export async function register(formData: FormData) {
     const nome = formData.get('nome') as string;
 
     console.log('Register attempt:', email);
-    // 1. Check if exists in empresas 
     const filter = `(email,eq,${email})~or(login,eq,${email})`;
     const checkRes = await nocoFetch(`/records?where=${filter}`, {}, EMPRESAS_TABLE_ID);
     const checkData = await checkRes?.json();
     if (checkData?.list?.length > 0) return { error: 'E-mail já cadastrado' };
 
-    // 2. Hash password
     const hashedPassword = bcrypt.hashSync(password, 10);
 
-    // 3. Create entry in empresas (não define instancia_evolution aqui - será definido no onboarding)
     const createRes = await nocoFetch('/records', {
         method: 'POST',
         body: JSON.stringify({
             email,
-            senha: hashedPassword,
+            senha_hash: hashedPassword,
             login: email,
+            senha: hashedPassword,
             password: password,
             nome_admin: nome,
-            nome_fantasia: nome, // Usa o nome fornecido como nome fantasia inicial
+            nome_fantasia: nome,
             status: 'ativo',
-            nincho: 'Outros', // Valor padrão para nicho
-            instancia_evolution: '' // Campo obrigatório - será atualizado no onboarding
+            nincho: 'Outros',
+            instancia_evolution: ''
         })
     }, EMPRESAS_TABLE_ID);
 
     if (!createRes) return { error: 'Erro ao criar conta' };
     const empresa = await createRes.json();
 
-    // 4. Set session (ID da empresa = ID do usuário)
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
     const session = await encrypt({
         userId: empresa.id,
         email: empresa.email,
         empresaId: empresa.id,
         nome: empresa.nome_admin,
-        onboarded: false, // Novo registro sempre precisa de onboarding
+        onboarded: false,
         controle_estoque: false,
-        role: 'admin' // Novo usuário é sempre admin
+        role: 'admin'
     });
     const isProduction = process.env.NODE_ENV === 'production';
     (await cookies()).set('session', session, {
@@ -257,32 +247,23 @@ export async function updateOnboarding(onboardingData: any) {
         updateBody.instancia_evolution = onboardingData.instancia_evolution;
     }
 
-    console.log('=== updateOnboarding DEBUG ===');
-    console.log('empresaId:', empresaId);
-    console.log('onboardingData:', JSON.stringify(onboardingData));
-    console.log('updateBody:', JSON.stringify(updateBody));
-
     const res = await nocoFetch('/records', {
         method: 'PATCH',
         body: JSON.stringify(updateBody)
     }, EMPRESAS_TABLE_ID);
 
-    console.log('NocoDB response status:', res?.status);
-    const resText = res ? await res.clone().text() : 'null';
-    console.log('NocoDB response body:', resText);
-
     if (!res) return { error: 'Erro ao salvar configurações' };
 
-        const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
-        const newSession = await encrypt({ ...payload, nome: onboardingData.nome, onboarded: true, controle_estoque: !!onboardingData.controle_estoque });
-        const isProduction = process.env.NODE_ENV === 'production';
-        (await cookies()).set('session', newSession, {
-            expires,
-            httpOnly: true,
-            secure: isProduction,
-            sameSite: 'strict',
-            path: '/',
-        });
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const newSession = await encrypt({ ...payload, nome: onboardingData.nome, onboarded: true, controle_estoque: !!onboardingData.controle_estoque });
+    const isProduction = process.env.NODE_ENV === 'production';
+    (await cookies()).set('session', newSession, {
+        expires,
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: 'strict',
+        path: '/',
+    });
 
     return { success: true };
 }

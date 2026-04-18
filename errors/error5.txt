@@ -1,0 +1,18 @@
+NocoDB Error (Table m1h9jeye8hcd4k6): 404 {"msg":"Cannot PATCH /api/v2/tables/m1h9jeye8hcd4k6/records/6"}
+ ⨯ Error: NocoDB API Error: 404
+    at addItemBaseAoGrupo (app\actions\grupos-slots.ts:205:15)
+  203 |         return { success: true };
+  204 |     } catch (e: any) {
+> 205 |         throw new Error(e.message || 'Erro ao adicionar item ao grupo');
+      |               ^
+  206 |     }
+  207 | }
+  208 | {
+  digest: '1350361634'
+}
+ POST /dashboard/menu 500 in 624ms
+
+
+Eu acho que em nenhuma tabela dessa parte do sistema, tem algo que vincula
+os produtos a categoria, fui verificar e não eoncontrei. depois verifique
+o .sql

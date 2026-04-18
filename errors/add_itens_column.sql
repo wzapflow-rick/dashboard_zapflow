@@ -1,0 +1,1 @@
+ALTER TABLE grupos_slots ADD COLUMN IF NOT EXISTS itens JSONB DEFAULT '[]'::jsonb;

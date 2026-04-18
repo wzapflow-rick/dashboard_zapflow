@@ -7,8 +7,8 @@ import { logAction } from '@/lib/audit';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const LOYALTY_CONFIG_TABLE_ID = 'mdgax4hwh9lrnfo'; // Configuração do programa
-const LOYALTY_POINTS_TABLE_ID = 'm7fg9pyp2odct7m'; // Pontos dos clientes
+const LOYALTY_CONFIG_TABLE_ID = 'mjzzdfgdohupgjh'; // Configuração do programa
+const LOYALTY_POINTS_TABLE_ID = 'm8slxvm3dp4sup4'; // Pontos dos clientes
 
 async function nocoFetch(tableId: string, endpoint: string, options: RequestInit = {}) {
     const url = `${NOCODB_URL}/api/v2/tables/${tableId}${endpoint}`;

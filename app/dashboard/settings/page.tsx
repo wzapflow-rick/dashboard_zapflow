@@ -737,82 +737,132 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              {activeSection === 'bot' && (
+{activeSection === 'bot' && (
                 <div className="space-y-6">
                   <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <Bot className="size-6 text-primary" />
-                    Bot de Atendimento
+                    🤖 Assistente Virtual
                   </h3>
 
-                  <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 p-1">
-                    <div className="bg-white dark:bg-slate-800 rounded-xl p-8 sm:p-12">
-                      <div className="text-center space-y-6">
-                        {/* Ícone animado */}
-                        <div className="mx-auto w-24 h-24 bg-gradient-to-br from-violet-100 to-fuchsia-100 dark:from-violet-900/30 dark:to-fuchsia-900/30 rounded-full flex items-center justify-center">
-                          <div className="relative">
-                            <Bot className="w-12 h-12 text-violet-600 dark:text-violet-400" />
-                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center">
-                              <span className="text-[10px] font-bold text-yellow-800">!</span>
+                  {/* Robot Hero Card com design único */}
+                  <div className="relative overflow-hidden rounded-3xl">
+                    {/* Background mesh dramático */}
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-amber-200 via-orange-100 to-rose-100 dark:from-amber-900/30 dark:via-orange-900/20 dark:to-rose-900/20"></div>
+                    
+                    {/* Grid pattern decoration */}
+                    <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05]" style={{ backgroundImage: 'linear-gradient(to right, #000 1px, transparent 1px), linear-gradient(to bottom, #000 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
+                    
+                    {/* Floating shapes */}
+                    <div className="absolute top-8 right-8 w-20 h-20 bg-gradient-to-br from-amber-300/20 to-orange-400/20 rounded-2xl rotate-12 animate-pulse"></div>
+                    <div className="absolute bottom-16 left-12 w-16 h-16 bg-gradient-to-br from-rose-300/20 to-amber-300/20 rounded-full animate-ping delay-300"></div>
+                    <div className="absolute top-1/2 right-1/4 w-4 h-4 bg-orange-400/60 rounded-full animate-pulse"></div>
+
+                    <div className="relative p-8 sm:p-12 flex flex-col lg:flex-row items-center gap-10">
+                      {/* Robot Character */}
+                      <div className="relative flex-shrink-0">
+                        {/* Outer glow ring */}
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-400 to-rose-500 blur-xl opacity-40 animate-pulse"></div>
+                        
+                        {/* Robot body container */}
+                        <div className="relative w-44 h-44 sm:w-52 sm:h-52">
+                          {/* Animated rings */}
+                          <div className="absolute inset-2 rounded-full border-2 border-amber-300/50 animate-[spin_8s_linear_infinite]"></div>
+                          <div className="absolute inset-4 rounded-full border border-orange-300/30 animate-[spin_6s_linear_infinite_reverse]"></div>
+                          
+                          {/* Main robot face */}
+                          <div className="absolute inset-0 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/70 dark:to-orange-900/70 rounded-[2.5rem] flex items-center justify-center shadow-2xl">
+                            <div className="text-7xl sm:text-8xl filter drop-shadow-lg">
+                              🤖
                             </div>
                           </div>
+                          
+                          {/* Eyes */}
+                          <div className="absolute top-1/3 left-1/4 w-3 h-3 sm:w-4 sm:h-4 bg-slate-800 dark:bg-slate-200 rounded-full animate-pulse shadow-lg"></div>
+                          <div className="absolute top-1/3 right-1/4 w-3 h-3 sm:w-4 sm:h-4 bg-slate-800 dark:bg-slate-200 rounded-full animate-pulse delay-200 shadow-lg"></div>
+                          
+                          {/* Smile */}
+                          <div className="absolute bottom-1/4 left-1/2 -translate-x-1/2 w-8 h-4 border-b-4 border-slate-800 dark:border-slate-200 rounded-full"></div>
                         </div>
-
-                        {/* Título */}
-                        <div>
-                          <h4 className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent dark:from-violet-400 dark:to-fuchsia-400">
-                            Em Desenvolvimento
-                          </h4>
-                          <p className="text-slate-500 dark:text-slate-400 mt-2 text-sm max-w-md mx-auto">
-                            Estamos construindo algo incrível para você! Nosso Bot de Atendimento automatizado estará disponível em breve.
-                          </p>
-                        </div>
-
-                        {/* Features */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
-                          <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-xl">
-                            <div className="w-10 h-10 bg-violet-100 dark:bg-violet-900/30 rounded-lg flex items-center justify-center mx-auto mb-3">
-                              <svg className="w-5 h-5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                              </svg>
-                            </div>
-                            <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Atendimento Automático</p>
-                          </div>
-                          <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-xl">
-                            <div className="w-10 h-10 bg-fuchsia-100 dark:bg-fuchsia-900/30 rounded-lg flex items-center justify-center mx-auto mb-3">
-                              <svg className="w-5 h-5 text-fuchsia-600 dark:text-fuchsia-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                              </svg>
-                            </div>
-                            <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Pedidos via WhatsApp</p>
-                          </div>
-                          <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-xl">
-                            <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center mx-auto mb-3">
-                              <svg className="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                              </svg>
-                            </div>
-                            <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Respostas Inteligentes</p>
-                          </div>
-                        </div>
-
-                        {/* Barra de progresso fake */}
-                        <div className="pt-4">
-                          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-2">
-                            <span>Progresso do desenvolvimento</span>
-                            <span className="font-bold text-violet-600 dark:text-violet-400">75%</span>
-                          </div>
-                          <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full" style={{ width: '75%' }}></div>
-                          </div>
-                        </div>
-
-                        {/* CTA */}
-                        <div className="pt-4">
-                          <p className="text-xs text-slate-400 dark:text-slate-500">
-                            Fique atento às atualizações! 🚀
-                          </p>
+                        
+                        {/* Antenna */}
+                        <div className="absolute -top-6 left-1/2 -translate-x-1/2">
+                          <div className="w-2 h-8 bg-gradient-to-t from-amber-500 to-amber-400 rounded-full"></div>
+                          <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-amber-400 rounded-full animate-ping"></div>
                         </div>
                       </div>
+
+                      {/* Content */}
+                      <div className="flex-1 text-center lg:text-left space-y-6">
+                        {/* Badge */}
+                        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-amber-100 dark:bg-amber-900/40 rounded-full">
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                          </span>
+                          <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider">Em Desenvolvimento</span>
+                        </div>
+
+                        {/* Title */}
+                        <div>
+                          <h4 className="text-4xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight">
+                            Seu Novo<span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-rose-500"> Assistente</span> 🤖
+                          </h4>
+                          <p className="text-lg text-slate-600 dark:text-slate-300 mt-3 max-w-lg">
+                            Um companion inteligente que vai revolucionar como você atiende seus clientes!
+                          </p>
+                        </div>
+
+                        {/* Feature Pills */}
+                        <div className="flex flex-wrap justify-center lg:justify-start gap-3">
+                          <div className="group px-5 py-3 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
+                            <div className="flex items-center gap-2">
+                              <span className="text-2xl">💬</span>
+                              <span className="font-semibold text-slate-700 dark:text-slate-200">Atende 24/7</span>
+                            </div>
+                          </div>
+                          <div className="group px-5 py-3 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
+                            <div className="flex items-center gap-2">
+                              <span className="text-2xl">🛒</span>
+                              <span className="font-semibold text-slate-700 dark:text-slate-200">Pedidos Auto</span>
+                            </div>
+                          </div>
+                          <div className="group px-5 py-3 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
+                            <div className="flex items-center gap-2">
+                              <span className="text-2xl">🧠</span>
+                              <span className="font-semibold text-slate-700 dark:text-slate-200">IA Avançada</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Progress info */}
+                        <div className="pt-4">
+                          <div className="flex items-center justify-center lg:justify-start gap-4">
+                            <div className="flex -space-x-3">
+                              {[1,2,3,4].map((i) => (
+                                <div key={i} className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600 border-4 border-white dark:border-slate-900 flex items-center justify-center text-xs font-bold text-slate-500">
+                                  {String.fromCharCode(64 + i)}
+                                </div>
+                              ))}
+                            </div>
+                            <div className="text-left">
+                              <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Equipe trabalhando</p>
+                              <p className="text-xs text-slate-500">Lançamento em breve!</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Coming Soon Banner */}
+                  <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 p-px">
+                    <div className="absolute inset-0 bg-gradient-to-r from-amber-500/0 via-amber-500/10 to-amber-500/0 animate-[shimmer_2s_linear_infinite]"></div>
+                    <div className="relative p-6 sm:p-8 flex items-center justify-between">
+                      <div>
+                        <h5 className="text-white font-bold text-xl">Fique por dentro! 🔔</h5>
+                        <p className="text-slate-400 mt-1">Quando lançada, você será notificado.</p>
+                      </div>
+                      <div className="hidden sm:block text-6xl">🚀</div>
                     </div>
                   </div>
                 </div>

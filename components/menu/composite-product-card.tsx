@@ -26,6 +26,8 @@ interface CompositeProduct {
     imagem?: string;
     tipo_calculo?: string;
     cobrar_mais_caro?: boolean;
+    preco_fixo?: number;
+    completamentos_ids?: number[];
     minimo: number;
     maximo: number;
     items: CompositeItem[];
@@ -81,8 +83,16 @@ export default function CompositeProductCard({ product, whatsappNumber, empresaN
             // Mostra o preço base a partir do item mais barato disponível
             const prices = product.items.map(i => i.preco).filter(p => p > 0);
             if (prices.length === 0) return 0;
+            if (product.tipo_calculo === 'fixo') {
+                return product.preco_fixo || 0;
+            }
             return Math.min(...prices);
         }
+        
+        if (product.tipo_calculo === 'fixo') {
+            return product.preco_fixo || 0;
+        }
+        
         const prices = selected.map(i => i.preco);
         if (product.cobrar_mais_caro || product.tipo_calculo === 'maior_valor') {
             return Math.max(...prices);
@@ -125,13 +135,15 @@ export default function CompositeProductCard({ product, whatsappNumber, empresaN
     };
 
     // Label da regra de preço
-    const priceRuleLabel = product.cobrar_mais_caro
-        ? 'Cobrado pelo sabor mais caro'
-        : product.tipo_calculo === 'maior_valor'
-            ? 'Cobrado pelo maior valor'
-            : product.tipo_calculo === 'media'
-                ? 'Preço: média dos sabores'
-                : 'Preço: soma dos sabores';
+    const priceRuleLabel = product.tipo_calculo === 'fixo'
+        ? `Preço fixo: R$ ${(product.preco_fixo || 0).toFixed(2)}`
+        : product.cobrar_mais_caro
+            ? 'Cobrado pelo sabor mais caro'
+            : product.tipo_calculo === 'maior_valor'
+                ? 'Cobrado pelo maior valor'
+                : product.tipo_calculo === 'media'
+                    ? 'Preço: média dos sabores'
+                    : 'Preço: soma dos sabores';
 
     return (
         <>

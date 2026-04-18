@@ -67,16 +67,16 @@ export const CategorySchema = z.object({
 
 // Company Update
 export const CompanyUpdateSchema = z.object({
-    nome_fantasia: z.string().min(2).optional().transform(val => val ? sanitizeString(val) : val),
-    email: z.string().email().optional(),
+    nome_fantasia: z.string().min(0).optional().transform(val => val ? sanitizeString(val) : val),
+    email: z.string().email().optional().or(z.literal('')),
     chave_pix: z.string().optional().transform(val => val ? sanitizeString(val) : val),
     nome_recebedor_pix: z.string().optional().transform(val => val ? sanitizeString(val) : val),
-    nome_admin: z.string().min(2).optional().transform(val => val ? sanitizeString(val) : val),
+    nome_admin: z.string().min(0).optional().transform(val => val ? sanitizeString(val) : val),
     telefone_loja: z.string().optional().transform(val => val ? sanitizeString(val) : val),
     cnpj: z.string().optional().transform(val => val ? sanitizeString(val) : val),
     endereco: z.string().optional().transform(val => val ? sanitizeString(val) : val),
     cidade: z.string().optional().transform(val => val ? sanitizeString(val) : val),
-    estado: z.string().length(2).optional().transform(val => val ? sanitizeString(val) : val),
+    estado: z.string().max(2).optional().transform(val => val ? sanitizeString(val) : val),
     instancia_evolution: z.string().optional().transform(val => val ? sanitizeString(val) : val),
     nincho: z.string().optional(),
     raio_entrega_automatico: z.boolean().optional(),
@@ -144,6 +144,9 @@ export const GrupoSlotSchema = z.object({
     regra_preco: z.enum(['mais_caro', 'media', 'soma']),
     min_slots: z.coerce.number().int().min(0),
     max_slots: z.coerce.number().int().min(1),
+    modo_preco: z.enum(['por_item', 'fixo']).default('por_item'),
+    preco_fixo: z.coerce.number().min(0).default(0),
+    completamentos_ids: z.array(z.number()).default([]),
 });
 
 // Itens Base (sabores para slots)

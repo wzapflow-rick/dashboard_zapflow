@@ -6,8 +6,8 @@ import { InsumoSchema } from '@/lib/validations';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const INSUMOS_TABLE_ID = 'ms8pm0uduxg98n8';
-const PRODUTO_INSUMO_TABLE_ID = 'msu8wo28lo8esrc';
+const INSUMOS_TABLE_ID = 'mvis2y8mlpwqr9q';
+const PRODUTO_INSUMO_TABLE_ID = 'mev9fkmt1jaapiv';
 
 // SSL check should be enabled in production
 if (process.env.NODE_ENV === 'development') {
@@ -59,7 +59,7 @@ export async function getInsumos() {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        const res = await nocoFetch(`/records?limit=1000&where=(empresa_id,eq,${user.empresaId})&sort=-Id`, {}, INSUMOS_TABLE_ID);
+        const res = await nocoFetch(`/records?limit=1000&where=(empresa_id,eq,${user.empresaId})&sort=-id`, {}, INSUMOS_TABLE_ID);
         const data = await res.json();
         return (data.list || []).map((item: any) => ({ ...item, id: item.id || item.Id }));
     } catch (error) {
@@ -82,8 +82,7 @@ export async function upsertInsumo(insumoData: any) {
 
         const payload = {
             ...validated.data,
-            empresa_id: user.empresaId,
-            empresas: user.empresaId
+            empresa_id: user.empresaId
         };
         delete (payload as any).created_at;
         delete (payload as any).updated_at;

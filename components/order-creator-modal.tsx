@@ -265,14 +265,19 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
 
         // Calcular preço baseado na regra
         let price = 0;
-        const prices = selectedItems.map(i => i.preco);
-        if (selectedComposite.cobrar_mais_caro || selectedComposite.tipo_calculo === 'maior_valor') {
-            price = Math.max(...prices);
-        } else if (selectedComposite.tipo_calculo === 'media') {
-            price = prices.reduce((a, b) => a + b, 0) / prices.length;
+        
+        if (selectedComposite.tipo_calculo === 'fixo') {
+            price = selectedComposite.preco_fixo || 0;
         } else {
-            // soma
-            price = selectedItems.reduce((total, i) => total + (i.preco * i.fator_proporcao), 0);
+            const prices = selectedItems.map(i => i.preco);
+            if (selectedComposite.cobrar_mais_caro || selectedComposite.tipo_calculo === 'maior_valor') {
+                price = Math.max(...prices);
+            } else if (selectedComposite.tipo_calculo === 'media') {
+                price = prices.reduce((a, b) => a + b, 0) / prices.length;
+            } else {
+                // soma
+                price = selectedItems.reduce((total, i) => total + (i.preco * i.fator_proporcao), 0);
+            }
         }
 
         const cartItem: CartItem = {

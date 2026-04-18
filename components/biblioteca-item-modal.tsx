@@ -7,12 +7,14 @@ import { motion, AnimatePresence } from 'motion/react';
 import { upsertItemBase, type ItemBase, getReceitaDoItemBase, saveReceitaDoItemBase } from '@/app/actions/itens-base';
 import { getInsumos, type Insumo } from '@/app/actions/insumos';
 import { parseCurrency as globalParseCurrency } from '@/lib/utils';
+import { getMe } from '@/app/actions/auth';
 
 interface BibliotecaItemModalProps {
     isOpen: boolean;
     editingItem: Partial<ItemBase> | null;
     onClose: () => void;
     onSaved: (item: ItemBase) => void;
+    controleEstoque?: boolean;
 }
 
 // --- Utilitários de formatação de moeda (R$ xx,xx) ---
@@ -49,13 +51,16 @@ function useCurrencyInput(initial?: number) {
 }
 // -----------------------------------------------------
 
-export function BibliotecaItemModal({ isOpen, editingItem, onClose, onSaved }: BibliotecaItemModalProps) {
+export function BibliotecaItemModal({ isOpen, editingItem, onClose, onSaved, controleEstoque }: BibliotecaItemModalProps) {
     const [nome, setNome] = useState(editingItem?.nome || '');
     // const [descricao, setDescricao] = useState(editingItem?.descricao || '');
     const [saving, setSaving] = useState(false);
     const [insumosDisponiveis, setInsumosDisponiveis] = useState<Insumo[]>([]);
     const [receita, setReceita] = useState<{ insumo: number; quantidade: number }[]>([]);
     const [loadingInsumos, setLoadingInsumos] = useState(false);
+
+    const preload = controleEstoque;
+    const usaInsumos = preload !== false;
 
     const precoSugerido = useCurrencyInput(editingItem?.preco_sugerido);
     const precoCusto = useCurrencyInput(editingItem?.preco_custo);
@@ -65,8 +70,8 @@ export function BibliotecaItemModal({ isOpen, editingItem, onClose, onSaved }: B
         // setDescricao(editingItem?.descricao || '');
         precoSugerido.reset(editingItem?.preco_sugerido);
         precoCusto.reset(editingItem?.preco_custo);
-        // Carregar insumos quando abrir o modal
-        if (isOpen) {
+        // Carregar insumos quando abrir o modal APENAS se controle de estoque estiver habilitado
+        if (isOpen && usaInsumos) {
             fetchInsumos();
             if (editingItem?.id) {
                 fetchReceita(editingItem.id);
@@ -235,7 +240,8 @@ export function BibliotecaItemModal({ isOpen, editingItem, onClose, onSaved }: B
                                 </div>
                             </div>
 
-                            {/* Insumos do sabor */}
+                            {/* Insumos do sabor - apenas se controle de estoque estiver habilitado */}
+                            {usaInsumos && (
                             <div className="space-y-3">
                                 <label className="block text-sm font-medium text-slate-700 mb-1.5 dark:text-slate-200">Insumos (Ficha Técnica)</label>
                                 {loadingInsumos ? (
@@ -305,6 +311,7 @@ export function BibliotecaItemModal({ isOpen, editingItem, onClose, onSaved }: B
                                     </>
                                 )}
                             </div>
+                            )}
 
                             <p className="text-xs text-slate-500">
                                 💡 Este sabor fica na Biblioteca e pode ser adicionado a qualquer grupo sem recadastrar.

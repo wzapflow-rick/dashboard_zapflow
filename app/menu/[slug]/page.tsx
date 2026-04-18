@@ -63,6 +63,7 @@ export default async function PublicMenuPage({ params }: { params: Promise<{ slu
                             upsellProducts={upsellProducts || []}
                             whatsappNumber={whatsappNumber || ''}
                             empresaNome={empresa.nome}
+                            allComposites={compositeProducts || []}
                         />
                     )}
 

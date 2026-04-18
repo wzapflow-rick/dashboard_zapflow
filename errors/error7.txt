@@ -1,0 +1,71 @@
+connect ECONNREFUSED 127.0.0.1:5433
+
+app\actions\auth.ts (16:20) @ pgQuery
+
+  14 |
+  15 | async function pgQuery(text: string, params?: any[]) {
+> 16 |     const client = await pool.connect();
+     |                    ^
+  17 |     try {
+  18 |         const result = await client.query(text, params);
+  19 |         return result;
+
+  Middleware Path: / | Session: false | Role: undefined | Onboarded: undefined
+ ⚠ ./node_modules/pg/lib/native/client.js
+Module not found: Can't resolve 'pg-native' in 'C:\Users\Administrator\Downloads\dashboard-main\node_modules\pg\lib\native'
+
+Import trace for requested module:
+./node_modules/pg/lib/native/client.js
+./node_modules/pg/lib/native/index.js
+./node_modules/pg/lib/index.js
+./node_modules/pg/esm/index.mjs
+./lib/db.ts
+./app/actions/auth.ts
+./lib/session.ts
+ ○ Compiling / ...
+ ⚠ ./node_modules/pg/lib/native/client.js
+Module not found: Can't resolve 'pg-native' in 'C:\Users\Administrator\Downloads\dashboard-main\node_modules\pg\lib\native'
+
+Import trace for requested module:
+./node_modules/pg/lib/native/client.js
+./node_modules/pg/lib/native/index.js
+./node_modules/pg/lib/index.js
+./node_modules/pg/esm/index.mjs
+./lib/db.ts
+./app/actions/auth.ts
+./lib/session.ts
+ GET / 200 in 2162ms
+Middleware Path: / | Session: false | Role: undefined | Onboarded: undefined
+Register attempt: danielddsvcsa@gmail.com
+ ⨯ Error: connect ECONNREFUSED 127.0.0.1:5433
+    at <unknown> (Error: connect ECONNREFUSED 127.0.0.1:5433)
+    at async pgQuery (app\actions\auth.ts:16:20)
+    at async register (app\actions\auth.ts:166:25)
+  14 |
+  15 | async function pgQuery(text: string, params?: any[]) {
+> 16 |     const client = await pool.connect();
+     |                    ^
+  17 |     try {
+  18 |         const result = await client.query(text, params);
+  19 |         return result; {
+  errno: -4078,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 5433,
+  digest: '960607826'
+}
+ POST / 500 in 902ms
+ ⚠ ./node_modules/pg/lib/native/client.js
+Module not found: Can't resolve 'pg-native' in 'C:\Users\Administrator\Downloads\dashboard-main\node_modules\pg\lib\native'
+
+Import trace for requested module:
+./node_modules/pg/lib/native/client.js
+./node_modules/pg/lib/native/index.js
+./node_modules/pg/lib/index.js
+./node_modules/pg/esm/index.mjs
+./lib/db.ts
+./app/actions/auth.ts
+./lib/session.ts
+Middleware Path: / | Session: false | Role: undefined | Onboarded: undefined
+ GET / 200 in 46ms

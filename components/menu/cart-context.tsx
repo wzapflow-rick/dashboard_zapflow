@@ -9,6 +9,7 @@ export interface CartItem {
   preco: number;
   quantidade: number;
   imagem?: string;
+  observacao?: string;
   complementos?: {
     grupoId: number;
     grupoNome: string;

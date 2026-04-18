@@ -334,6 +334,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
           nome: item.nome,
           preco: item.preco,
           quantidade: item.quantidade,
+          observacao: item.observacao,
           complementos: item.complementos,
         })),
         subtotal,

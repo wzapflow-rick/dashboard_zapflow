@@ -1,0 +1,21 @@
+Middleware Path: / | Session: false | Role: undefined | Onboarded: undefined
+Register attempt: danielddsvcsa@gmail.com
+ ⨯ Error: connect ECONNREFUSED 151.243.24.50:5433
+    at <unknown> (Error: connect ECONNREFUSED 151.243.24.50:5433)
+    at async pgQuery (app\actions\auth.ts:16:20)
+    at async register (app\actions\auth.ts:166:25)
+  14 |
+  15 | async function pgQuery(text: string, params?: any[]) {
+> 16 |     const client = await pool.connect();
+     |                    ^
+  17 |     try {
+  18 |         const result = await client.query(text, params);
+  19 |         return result; {
+  errno: -4078,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '151.243.24.50',
+  port: 5433,
+  digest: '109682130'
+}
+ POST / 500 in 2749ms

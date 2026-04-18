@@ -16,15 +16,15 @@ import { logger } from '@/lib/logger';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const TABLE_ID = 'm2ic8zof3feve3l'; // pedidos-pedidos
+const TABLE_ID = 'mui7bozvx9zb2n9'; // pedidos-pedidos
 
 // Rate limiting para atualização de status
 const orderUpdateAttempts = new Map<string, { count: number; lastAttempt: number }>();
 const MAX_ORDER_UPDATES = 30;
 const ORDER_WINDOW_MS = 60 * 1000; // 1 minuto
 
-const CLIENTS_TABLE_ID = 'mfpwzmya0e4ej1k'; // clientes
-const DRIVERS_TABLE_ID = 'mhevb5nu9nczggv'; // entregadores
+const CLIENTS_TABLE_ID = 'mkodxks6hpm2bg9'; // clientes
+const DRIVERS_TABLE_ID = 'm4hbqkhwu2qvrry'; // entregadores
 
 async function nocoFetchForTable(tableId: string, endpoint: string, options: RequestInit = {}) {
     const url = `${NOCODB_URL}/api/v2/tables/${tableId}${endpoint}`;
@@ -271,7 +271,7 @@ export async function deduzirInsumosDoPedido(orderId: number) {
         const user = await getMe();
         if (!user?.empresaId) return;
 
-        const companyRes = await nocoFetchForTable('mrlxbm1guwn9iv8', `/records/${user.empresaId}`);
+        const companyRes = await nocoFetchForTable('mp08yd7oaxn5xo2', `/records/${user.empresaId}`);
         const company = await companyRes.json() as any;
 
         // Se o valor vier como "0", "false", 0 ou false, consideramos desativado
@@ -442,7 +442,7 @@ export async function verificarEstoqueDoPedido(orderId: number) {
         if (!user?.empresaId) throw new Error('Não autorizado');
 
         // 0. Verificar se o controle de estoque está ativo para a empresa
-        const companyRes = await nocoFetchForTable('mrlxbm1guwn9iv8', `/records/${user.empresaId}`);
+        const companyRes = await nocoFetchForTable('mp08yd7oaxn5xo2', `/records/${user.empresaId}`);
         const company = await companyRes.json() as any;
 
         // Se o valor vier como "0", "false", 0 ou false, consideramos desativado

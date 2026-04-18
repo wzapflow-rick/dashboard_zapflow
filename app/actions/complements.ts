@@ -7,12 +7,12 @@ const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
 
 // Replace with actual Table IDs provided by the user
-const GRUPOS_TABLE_ID = 'mqo0m1qpbxueoox';
-const COMPLEMENTOS_TABLE_ID = 'mde9hhb5oho8dsv';
-const P_GRUPOS_TABLE_ID = 'mm1zymth858by6q';
-const C_INSUMO_TABLE_ID = 'mqmy3bdny8otkkt';
+const GRUPOS_TABLE_ID = 'm3o1prjcnvi678q';
+const COMPLEMENTOS_TABLE_ID = 'mj3ut032mx8zi72';
+const P_GRUPOS_TABLE_ID = 'mmzk2podf4zqps6';
+const C_INSUMO_TABLE_ID = 'mev9fkmt1jaapiv';
 // New table for fixed group ingredients (e.g., pizza dough, box) — user must provide table ID
-const GRUPO_INSUMOS_TABLE_ID = 'mqmy3bdny8otkkt'; // mesma tabela de complemento_insumo, filtrada por grupo_id
+const GRUPO_INSUMOS_TABLE_ID = 'mev9fkmt1jaapiv'; // mesma tabela de complemento_insumo, filtrada por grupo_id
 
 async function nocoFetch(tableId: string, endpoint: string, options: RequestInit = {}) {
     if (!tableId || tableId.startsWith('PLACEHOLDER')) {

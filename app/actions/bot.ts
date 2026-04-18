@@ -5,7 +5,7 @@ import { getMe } from './auth';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const CLIENTS_TABLE_ID = 'mfpwzmya0e4ej1k'; // clientes
+const CLIENTS_TABLE_ID = 'mkodxks6hpm2bg9'; // clientes
 
 async function nocoFetch(endpoint: string, options: RequestInit = {}) {
     const url = `${NOCODB_URL}/api/v2/tables/${CLIENTS_TABLE_ID}${endpoint}`;
@@ -39,7 +39,7 @@ export async function toggleBotStatus(phone: string, botActive: boolean) {
         if (!user?.empresaId) throw new Error('Não autorizado');
 
         // 1. Localizar o cliente
-        const checkRes = await nocoFetch(`/records?where=(empresas,eq,${user.empresaId})~and(telefone,eq,${phone})`);
+        const checkRes = await nocoFetch(`/records?where=(empresa_id,eq,${user.empresaId})~and(telefone,eq,${phone})`);
         const checkData = await checkRes.json();
         const client = checkData.list?.[0];
 
@@ -74,7 +74,7 @@ export async function getBotStatus(phone: string) {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        const checkRes = await nocoFetch(`/records?where=(empresas,eq,${user.empresaId})~and(telefone,eq,${phone})`);
+        const checkRes = await nocoFetch(`/records?where=(empresa_id,eq,${user.empresaId})~and(telefone,eq,${phone})`);
         const checkData = await checkRes.json();
         const client = checkData.list?.[0];
 

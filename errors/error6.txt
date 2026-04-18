@@ -1,0 +1,17 @@
+The edge runtime does not support Node.js 'crypto' module.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+Call Stack 11
+Show 5 ignore-listed frame(s)
+(middleware)/./node_modules/pg/lib/crypto/utils-webcrypto.js
+.next\server\middleware.js (2075:1)
+__webpack_require__
+.next\server\edge-runtime-webpack.js (37:33)
+fn
+.next\server\edge-runtime-webpack.js (273:21)
+(middleware)/./node_modules/pg/lib/crypto/utils.js
+.next\server\middleware.js (2086:1)
+__webpack_require__
+.next\server\edge-runtime-webpack.js (37:33)
+fn
+.next\server\edge-runtime-webpack.js (273:21)

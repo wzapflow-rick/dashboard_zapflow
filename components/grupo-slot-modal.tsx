@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { upsertGrupoSlot, type GrupoSlot, type TipoGrupo, type RegraPreco } from '@/app/actions/grupos-slots';
+import { upsertGrupoSlot, type GrupoSlot, type TipoGrupo, type RegraPreco, type ModoPreco } from '@/app/actions/grupos-slots';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface GrupoSlotModalProps {
@@ -12,6 +12,7 @@ interface GrupoSlotModalProps {
     editingGrupo: Partial<GrupoSlot> | null;
     onClose: () => void;
     onSaved: (grupo: GrupoSlot) => void;
+    availableGrupos?: GrupoSlot[];
 }
 
 const SLOT_OPTIONS = [1, 2, 3, 4];
@@ -23,7 +24,7 @@ const SLOT_LABELS: Record<number, string> = {
     4: '¼ + ¼ + ¼ + ¼',
 };
 
-export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved }: GrupoSlotModalProps) {
+export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved, availableGrupos = [] }: GrupoSlotModalProps) {
     const [nome, setNome] = useState(editingGrupo?.nome || '');
     const [descricao, setDescricao] = useState(editingGrupo?.descricao || '');
     const [tipo, setTipo] = useState<TipoGrupo>(editingGrupo?.tipo || 'fracionado');
@@ -31,6 +32,9 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved }: Grupo
     const [regraPreco, setRegraPreco] = useState<RegraPreco>(editingGrupo?.regra_preco || 'mais_caro');
     const [minSlots, setMinSlots] = useState<number>(editingGrupo?.min_slots ?? 1);
     const [maxSlots, setMaxSlots] = useState<number>(editingGrupo?.max_slots ?? 2);
+    const [modoPreco, setModoPreco] = useState<ModoPreco>(editingGrupo?.modo_preco || 'por_item');
+    const [precoFixo, setPrecoFixo] = useState<number>(editingGrupo?.preco_fixo ?? 0);
+    const [completamentos, setCompletamentos] = useState<number[]>(editingGrupo?.completamentos_ids || []);
     const [saving, setSaving] = useState(false);
 
     // Sync form when editingGrupo changes
@@ -42,6 +46,9 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved }: Grupo
         setRegraPreco(editingGrupo?.regra_preco || 'mais_caro');
         setMinSlots(editingGrupo?.min_slots ?? 1);
         setMaxSlots(editingGrupo?.max_slots ?? (editingGrupo?.qtd_slots ?? 2));
+        setModoPreco(editingGrupo?.modo_preco || 'por_item');
+        setPrecoFixo(Number(editingGrupo?.preco_fixo) || 0);
+        setCompletamentos(Array.isArray(editingGrupo?.completamentos_ids) ? editingGrupo.completamentos_ids : []);
     }, [editingGrupo]);
 
     // Quando qtdSlots mudar, ajusta max_slots para não ultrapassar
@@ -67,6 +74,9 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved }: Grupo
                 regra_preco: regraPreco,
                 min_slots: minSlots,
                 max_slots: maxSlots,
+                modo_preco: modoPreco,
+                preco_fixo: modoPreco === 'fixo' ? precoFixo : 0,
+                completamentos_ids: completamentos,
             });
             toast.success(editingGrupo?.id ? 'Grupo atualizado!' : 'Grupo criado!');
             onSaved(saved as GrupoSlot);
@@ -192,11 +202,13 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved }: Grupo
                                         <button
                                             key={r.value}
                                             onClick={() => setRegraPreco(r.value)}
+                                            disabled={modoPreco === 'fixo'}
                                             className={cn(
                                                 'w-full flex items-start gap-3 p-3 rounded-xl border text-left transition-all',
                                                 regraPreco === r.value
                                                     ? 'border-primary bg-primary/10 text-primary dark:bg-primary/10 dark:text-blue-400'
-                                                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 dark:hover:border-slate-800 dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700'
+                                                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 dark:hover:border-slate-800 dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700',
+                                                modoPreco === 'fixo' && 'opacity-50 cursor-not-allowed'
                                             )}
                                         >
                                             <div className={cn(
@@ -211,6 +223,50 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved }: Grupo
                                     ))}
                                 </div>
                             </div>
+
+                            {/* Modo de Preço */}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-zinc-200">Tipo de Preço</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {([
+                                        { value: 'por_item', label: 'Por Item', desc: 'Usa o preço de cada item selecionado' },
+                                        { value: 'fixo', label: 'Preço Fixo', desc: 'Define um preço único para o grupo' },
+                                    ] as { value: ModoPreco; label: string; desc: string }[]).map(m => (
+                                        <button
+                                            key={m.value}
+                                            onClick={() => setModoPreco(m.value)}
+                                            className={cn(
+                                                'py-3 px-4 rounded-xl border text-sm font-medium transition-all text-left',
+                                                modoPreco === m.value
+                                                    ? 'border-primary bg-primary/10 text-primary dark:bg-primary/10 dark:text-blue-400'
+                                                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 dark:hover:border-slate-800 dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700'
+                                            )}
+                                        >
+                                            <div className="font-medium">{m.label}</div>
+                                            <div className="text-xs text-slate-500 mt-0.5">{m.desc}</div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Preço Fixo (só quando modo = fixo) */}
+                            {modoPreco === 'fixo' && (
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1.5 dark:text-zinc-200">Preço Fixo</label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">R$</span>
+                                        <input
+                                            type="number"
+                                            min={0}
+                                            step={0.01}
+                                            value={precoFixo}
+                                            onChange={e => setPrecoFixo(Number(e.target.value) || 0)}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-2.5 text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700"
+                                            placeholder="0,00"
+                                        />
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Min / Max de seleção */}
                             <div className="grid grid-cols-2 gap-4">
@@ -235,6 +291,47 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved }: Grupo
                                         onChange={e => setMaxSlots(Math.max(1, Number(e.target.value)))}
                                         className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700"
                                     />
+                                </div>
+                            </div>
+
+                            {/* Completamentos */}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-2 dark:text-zinc-200">Completamentos</label>
+                                <p className="text-xs text-slate-500 mb-3 dark:text-zinc-200">Grupos que serão sugeridos após a seleção deste grupo</p>
+                                <div className="space-y-2 max-h-48 overflow-y-auto">
+                                    {availableGrupos.filter(g => g.id !== editingGrupo?.id).length === 0 ? (
+                                        <p className="text-sm text-slate-400 italic">Nenhum outro grupo disponível</p>
+                                    ) : (
+                                        availableGrupos.filter(g => g.id !== editingGrupo?.id).map(grupo => (
+                                            <label
+                                                key={grupo.id}
+                                                className={cn(
+                                                    'flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all',
+                                                    completamentos.includes(Number(grupo.id))
+                                                        ? 'border-primary bg-primary/10 dark:bg-primary/10'
+                                                        : 'border-slate-200 bg-slate-50 hover:border-slate-300 dark:bg-slate-900/75 dark:border-slate-700'
+                                                )}
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={completamentos.includes(Number(grupo.id))}
+                                                    onChange={e => {
+                                                        const id = Number(grupo.id);
+                                                        if (e.target.checked) {
+                                                            setCompletamentos([...completamentos, id]);
+                                                        } else {
+                                                            setCompletamentos(completamentos.filter(c => c !== id));
+                                                        }
+                                                    }}
+                                                    className="w-4 h-4 text-primary rounded border-slate-300 focus:ring-primary"
+                                                />
+                                                <div>
+                                                    <div className="text-sm font-medium text-slate-900 dark:text-zinc-200">{grupo.nome}</div>
+                                                    <div className="text-xs text-slate-500">{grupo.tipo === 'fracionado' ? 'Fracionado' : 'Adicional'}</div>
+                                                </div>
+                                            </label>
+                                        ))
+                                    )}
                                 </div>
                             </div>
                         </div>

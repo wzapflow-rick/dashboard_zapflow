@@ -8,7 +8,7 @@ import { upsertInsumo } from './insumos';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const ORDERS_TABLE_ID = 'm2ic8zof3feve3l';
+const ORDERS_TABLE_ID = 'mui7bozvx9zb2n9';
 
 async function nocoFetch(tableId: string, endpoint: string, options: RequestInit = {}) {
     const url = `${NOCODB_URL}/api/v2/tables/${tableId}${endpoint}`;
@@ -85,7 +85,6 @@ export async function generateMockOrder() {
         // 4. Criar o pedido
         const orderPayload = {
             empresa_id: user.empresaId,
-            empresas: user.empresaId,
             telefone_cliente: telefone,
             itens: JSON.stringify(selectedProducts),
             valor_total: Number(total.toFixed(2)),

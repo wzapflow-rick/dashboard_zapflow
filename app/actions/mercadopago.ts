@@ -7,7 +7,7 @@ const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN || '';
 const MP_PUBLIC_KEY = process.env.MP_PUBLIC_KEY || '';
 
-const ORDERS_TABLE_ID = 'm2ic8zof3feve3l'; // pedidos
+const ORDERS_TABLE_ID = 'mui7bozvx9zb2n9'; // pedidos
 
 interface PedidoData {
   id: number;

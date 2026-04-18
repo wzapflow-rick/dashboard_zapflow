@@ -5,8 +5,8 @@ import { revalidatePath } from 'next/cache';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const RATINGS_TABLE_ID = 'maehg8e7on1f80k';
-const CLIENTS_TABLE_ID = 'mfpwzmya0e4ej1k';
+const RATINGS_TABLE_ID = 'm3ebs9cm1yjgmo1';
+const CLIENTS_TABLE_ID = 'mkodxks6hpm2bg9';
 
 async function nocoFetch(endpoint: string, options: RequestInit = {}, tableId: string = RATINGS_TABLE_ID) {
     const url = `${NOCODB_URL}/api/v2/tables/${tableId}${endpoint}`;

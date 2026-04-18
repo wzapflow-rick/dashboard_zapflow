@@ -9,8 +9,8 @@ import { logAction } from '@/lib/audit';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const TABLE_ID = 'mu3kfx4zilr5401';
-const CATEGORIES_TABLE_ID = 'mv81fy54qtamim2';
+const TABLE_ID = 'mh81t2xp1uml6pc';
+const CATEGORIES_TABLE_ID = 'mo5so5g7gvlbwyo';
 
 // SSL check should be enabled in production
 if (process.env.NODE_ENV === 'development') {
@@ -38,8 +38,13 @@ async function nocoFetch(endpoint: string, options: RequestInit = {}, tableId: s
 
   if (!res.ok) {
     const text = await res.text();
-    console.error(`NocoDB Error: ${res.status} ${text}`);
-    throw new Error(`NocoDB API Error: ${res.status}`);
+    let errorMessage = text;
+    try {
+      const json = JSON.parse(text);
+      errorMessage = json.message || json.error || text;
+    } catch {}
+    console.error(`NocoDB Error: ${res.status} ${errorMessage}`);
+    throw new Error(`NocoDB API Error: ${res.status} - ${errorMessage}`);
   }
 
   return res;
@@ -105,7 +110,7 @@ export async function getCategories(): Promise<Category[]> {
     const user = await getMe();
     if (!user?.empresaId) throw new Error('Não autorizado');
 
-    const res = await nocoFetch(`/records?limit=1000&where=(empresa_id,eq,${user.empresaId})&sort=ordem`, {}, CATEGORIES_TABLE_ID);
+    const res = await nocoFetch(`/records?limit=1000&where=(empresa_id,eq,${user.empresaId})`, {}, CATEGORIES_TABLE_ID);
     const data = await res.json();
     const categories = data.list || [];
     
@@ -137,7 +142,7 @@ export async function upsertCategory(categoryData: any) {
     const payload = {
       ...category,
       empresa_id: user.empresaId,
-      empresas: user.empresaId
+      disponivel: true
     };
 
     // Remove IDs de sistema se presentes no payload (exceto o ID principal)
@@ -145,12 +150,18 @@ export async function upsertCategory(categoryData: any) {
     delete (payload as any).updated_at;
 
     if (payload.id) {
-      const updatePayload = { ...payload };
-      delete (updatePayload as any).empresa_id;
+      const updatePayload: any = { 
+        Id: payload.id, 
+        id: payload.id 
+      };
+      
+      if (payload.nome) updatePayload.nome = payload.nome;
+      if (payload.ordem !== undefined) updatePayload.ordem = payload.ordem;
+      if (payload.disponivel !== undefined) updatePayload.disponivel = payload.disponivel;
 
       const res = await nocoFetch('/records', {
         method: 'PATCH',
-        body: JSON.stringify({ ...updatePayload, Id: payload.id, id: payload.id })
+        body: JSON.stringify(updatePayload)
       }, CATEGORIES_TABLE_ID);
       revalidatePath('/dashboard/categories');
       revalidatePath('/dashboard/menu');
@@ -265,8 +276,7 @@ export async function upsertProduct(productData: any, selectedInsumos?: { insumo
     const product = validated.data;
     const payload = {
       ...product,
-      empresa_id: user.empresaId,
-      empresas: user.empresaId
+      empresa_id: user.empresaId
     };
 
     delete (payload as any).created_at;

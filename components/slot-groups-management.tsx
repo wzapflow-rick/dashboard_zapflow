@@ -12,6 +12,7 @@ import 'driver.js/dist/driver.css';
 
 import { getGruposSlots, deleteGrupoSlot, type GrupoSlot, getCompositeProductsStock } from '@/app/actions/grupos-slots';
 import { getItensBase, deleteItemBase, type ItemBase } from '@/app/actions/itens-base';
+import { getMe } from '@/app/actions/auth';
 
 import { GrupoSlotModal } from './grupo-slot-modal';
 import { GrupoSlotItens } from './grupo-slot-itens';
@@ -25,7 +26,12 @@ const REGRA_LABELS: Record<string, string> = {
 
 export default function SlotGroupsManagement() {
     const [activeTab, setActiveTab] = useState<'grupos' | 'biblioteca'>('grupos');
+    const [user, setUser] = useState<any>(null);
     const driverRef = useRef<any>(null);
+
+    useEffect(() => {
+        getMe().then(setUser);
+    }, []);
 
     // --- Grupos ---
     const [grupos, setGrupos] = useState<GrupoSlot[]>([]);
@@ -511,6 +517,7 @@ export default function SlotGroupsManagement() {
                 editingGrupo={editingGrupo}
                 onClose={() => { setIsGrupoModalOpen(false); setEditingGrupo(null); }}
                 onSaved={handleGrupoSaved}
+                availableGrupos={grupos}
             />
 
             <BibliotecaItemModal
@@ -518,6 +525,7 @@ export default function SlotGroupsManagement() {
                 editingItem={editingItemBase}
                 onClose={() => { setIsBibModalOpen(false); setEditingItemBase(null); }}
                 onSaved={handleItemBaseSaved}
+                controleEstoque={user?.controle_estoque}
             />
 
             {activeGrupoItens && (

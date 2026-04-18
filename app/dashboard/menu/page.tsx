@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout, { SidebarProvider } from '@/components/dashboard-layout';
 import MenuManagement from '@/components/menu-management';
 import SlotGroupsManagement from '@/components/slot-groups-management';
+import { getMe } from '@/app/actions/auth';
 import { cn } from '@/lib/utils';
 import { Package, PlusCircle } from 'lucide-react';
 

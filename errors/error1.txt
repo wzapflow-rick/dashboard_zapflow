@@ -1,0 +1,22 @@
+NocoDB Error: 400 {"error":"ERR_DATABASE_OP_FAILED","message":"A value is required for this field.","code":"23502"}
+API Error: Error: NocoDB API Error: 400
+    at nocoFetch (app\actions\products.ts:42:11)
+    at async upsertCategory (app\actions\products.ts:160:19)
+  40 |     const text = await res.text();
+  41 |     console.error(`NocoDB Error: ${res.status} ${text}`);
+> 42 |     throw new Error(`NocoDB API Error: ${res.status}`);
+     |           ^
+  43 |   }
+  44 |
+  45 |   return res;
+ ⨯ Error: NocoDB API Error: 400
+    at upsertCategory (app\actions\products.ts:171:11)
+  169 |   } catch (error: any) {
+  170 |     console.error('API Error:', error);
+> 171 |     throw new Error(error.message || 'Failed to save category');
+      |           ^
+  172 |   }
+  173 | }
+  174 | {
+  digest: '2018969010'
+}

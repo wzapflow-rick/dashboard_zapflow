@@ -7,8 +7,8 @@ import { logAction } from '@/lib/audit';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const TABLE_ID = 'mfpwzmya0e4ej1k'; // clientes-clientes
-const LOYALTY_TABLE_ID = 'm7fg9pyp2odct7m'; // loyalty_points
+const TABLE_ID = 'mkodxks6hpm2bg9'; // clientes-clientes
+const LOYALTY_TABLE_ID = 'm8slxvm3dp4sup4'; // loyalty_points
 
 // Rate limiting para upsert de clientes
 const customerUpsertAttempts = new Map<string, { count: number; lastAttempt: number }>();
@@ -36,7 +36,7 @@ async function nocoFetch(endpoint: string, options: RequestInit = {}) {
     return res;
 }
 
-const ORDERS_TABLE_ID = 'm2ic8zof3feve3l'; // pedidos
+const ORDERS_TABLE_ID = 'mui7bozvx9zb2n9'; // pedidos
 
 export async function getCustomers() {
     try {
@@ -148,7 +148,7 @@ export async function upsertCustomer(customerData: any) {
         }
 
         // 1. Verificar se o cliente já existe para esta empresa
-        const checkRes = await nocoFetch(`/records?where=(empresas,eq,${user.empresaId})~and(telefone,eq,${telefone})`);
+        const checkRes = await nocoFetch(`/records?where=(empresa_id,eq,${user.empresaId})~and(telefone,eq,${telefone})`);
         const checkData = await checkRes.json();
         const existingCustomer = checkData.list?.[0];
 
@@ -169,7 +169,7 @@ export async function upsertCustomer(customerData: any) {
             await nocoFetch('/records', {
                 method: 'POST',
                 body: JSON.stringify({
-                    empresas: user.empresaId,
+                    empresa_id: user.empresaId,
                     nome: nome || 'Cliente sem nome',
                     telefone,
                     bairro_entrega,

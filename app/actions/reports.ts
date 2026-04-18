@@ -4,8 +4,8 @@ import { getMe } from './auth';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const TABLE_ID = 'm2ic8zof3feve3l'; // pedidos
-const CLIENTS_TABLE_ID = 'mfpwzmya0e4ej1k'; // clientes
+const TABLE_ID = 'mui7bozvx9zb2n9'; // pedidos
+const CLIENTS_TABLE_ID = 'mkodxks6hpm2bg9'; // clientes
 
 async function nocoFetch(tableId: string, endpoint: string, options: RequestInit = {}) {
     const url = `${NOCODB_URL}/api/v2/tables/${tableId}${endpoint}`;

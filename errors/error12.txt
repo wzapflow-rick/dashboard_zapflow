@@ -1,0 +1,21 @@
+Middleware Path: /dashboard/settings | Session: true | Role: admin | Onboarded: true
+API Error: Error: Dados inválidos: Too small: expected string to have >=2 characters
+    at updateCompany (app\actions\company.ts:55:19)
+  53 |         if (!validated.success) {
+  54 |             const errors = validated.error.issues.map((issue: any) => issue.message).join(', ');
+> 55 |             throw new Error('Dados inválidos: ' + errors);
+     |                   ^
+  56 |         }
+  57 |
+  58 |         // Mapeamento de campos da UI para o NocoDB (conforme identificamos ou supomos)
+ ⨯ Error: Failed to update company
+    at updateCompany (app\actions\company.ts:103:15)
+  101 |     } catch (error) {
+  102 |         console.error('API Error:', error);
+> 103 |         throw new Error('Failed to update company');
+      |               ^
+  104 |     }
+  105 | }
+  106 | {
+  digest: '4212055315'
+}

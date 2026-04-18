@@ -1,0 +1,8 @@
+Product 2 - grupos: undefined -> parsed: []
+>>> gruposSlots.length after filter: 2
+>>> Grupo Bordas: tipo=adicional, completamentos_ids=, itens=1
+>>> Grupo Pizza 2 Sabores: tipo=fracionado, completamentos_ids=10, itens=2
+ GET /menu/pizza 200 in 1058ms
+ POST /dashboard/menu 200 in 298ms
+Middleware Path: /dashboard/menu | Session: true | Role: admin | Onboarded: true
+ POST /dashboard/menu 200 in 196ms

@@ -7,9 +7,9 @@ import { sendOrderCreatedMessage } from './whatsapp';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const ORDERS_TABLE_ID = 'm2ic8zof3feve3l'; // pedidos
-const CLIENTS_TABLE_ID = 'mfpwzmya0e4ej1k'; // clientes
-const COUPONS_TABLE_ID = 'myfkyl2km6bvp4p'; // cupons
+const ORDERS_TABLE_ID = 'mui7bozvx9zb2n9'; // pedidos
+const CLIENTS_TABLE_ID = 'mkodxks6hpm2bg9'; // clientes
+const COUPONS_TABLE_ID = 'm5echqy6luac5g6'; // cupons
 
 async function nocoFetch(tableId: string, endpoint: string, options: RequestInit = {}) {
     const url = `${NOCODB_URL}/api/v2/tables/${tableId}${endpoint}`;
@@ -86,9 +86,9 @@ export async function checkCustomerByPhone(empresaId: number, telefone: string) 
         ];
         
         for (const phone of phoneVariations) {
-            // Tentar com campo 'empresas'
+            // Tentar com campo 'empresa_id'
             let checkRes = await nocoFetch(CLIENTS_TABLE_ID, 
-                `/records?where=(empresas,eq,${empresaId})~and(telefone,like,${phone})`);
+                `/records?where=(empresa_id,eq,${empresaId})~and(telefone,like,${phone})`);
             let checkData = await checkRes.json();
             
             if (checkData.list && checkData.list.length > 0) {
@@ -107,7 +107,7 @@ export async function checkCustomerByPhone(empresaId: number, telefone: string) 
         
         // Última tentativa: buscar todos os clientes da empresa e filtrar manualmente
         const allClientsRes = await nocoFetch(CLIENTS_TABLE_ID, 
-            `/records?where=(empresas,eq,${empresaId})&limit=1000`);
+            `/records?where=(empresa_id,eq,${empresaId})&limit=1000`);
         const allClientsData = await allClientsRes.json();
         const allClients = allClientsData.list || [];
         
@@ -130,7 +130,7 @@ async function ensureCliente(empresaId: number, telefone: string, nome: string, 
     try {
         // Buscar cliente existente
         const checkRes = await nocoFetch(CLIENTS_TABLE_ID, 
-            `/records?where=(empresas,eq,${empresaId})~and(telefone,eq,${telefone})`);
+            `/records?where=(empresa_id,eq,${empresaId})~and(telefone,eq,${telefone})`);
         const checkData = await checkRes.json();
         
         if (checkData.list && checkData.list.length > 0) {
@@ -151,7 +151,7 @@ async function ensureCliente(empresaId: number, telefone: string, nome: string, 
             const createRes = await nocoFetch(CLIENTS_TABLE_ID, '/records', {
                 method: 'POST',
                 body: JSON.stringify({
-                    empresas: empresaId,
+                    empresa_id: empresaId,
                     nome: nome || 'Cliente Cardápio',
                     telefone,
                     endereco: endereco || '',
@@ -204,6 +204,7 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
                 quantidade: item.quantidade,
                 preco: item.preco,
                 subtotal: item.preco * item.quantidade,
+                observacao: item.observacao || '',
             };
         });
 

@@ -22,6 +22,8 @@ interface ComplementGroup {
     total_slots?: number;
     tipo_calculo?: string;
     cobrar_mais_caro?: boolean;
+    preco_fixo?: number;
+    completamentos_ids?: number[];
     items: ComplementItem[];
 }
 
@@ -113,6 +115,12 @@ export default function MenuProductSelection({
         product.complementGroups.forEach((grupo: ComplementGroup) => {
             const selectedItems = selections[grupo.id] || [];
             if (selectedItems.length === 0) return;
+            
+            if (grupo.tipo_calculo === 'fixo') {
+                price += grupo.preco_fixo || 0;
+                return;
+            }
+            
             const prices = selectedItems.map(i => Number(i.preco || 0));
 
             if (grupo.cobrar_mais_caro) {
