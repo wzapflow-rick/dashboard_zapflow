@@ -1,6 +1,6 @@
 # Test Suite for ZapFlow SaaS Dashboard
 
-This document outlines the testing strategy and test cases for the ZapFlow SaaS Dashboard project.
+This document outlines the testing strategy, test cases, and coverage for the ZapFlow SaaS Dashboard project.
 
 ## Testing Strategy
 
@@ -15,81 +15,8 @@ We use Jest and React Testing Library for unit and integration tests. The testin
 Install testing dependencies:
 
 ```bash
-npm install --save-dev jest @testing-library/react @testing-library/jest-dom @testing-library/user-event ts-jest @types/jest
+npm install --save-dev jest @testing-library/react @testing-library/jest-dom @testing-library/user-event ts-jest @types/jest jest-environment-jsdom
 ```
-
-Configure Jest by creating `jest.config.js`:
-
-```javascript
-module.exports = {
-  preset: 'ts-jest',
-  testEnvironment: 'jsdom',
-  setupFilesAfterEnv: ['@testing-library/jest-dom/extend-expect'],
-  moduleNameMapping: {
-    '^@/(.*)$': '<rootDir>/src/$1',
-    '^@/lib/(.*)$': '<rootDir>/lib/$1',
-    '^@/app/(.*)$': '<rootDir>/app/$1',
-    '^@/components/(.*)$': '<rootDir>/components/$1'
-  },
-  testMatch: [
-    '**/__tests__/**/*.[jt]s?(x)',
-    '**/?(*.)+(spec|test).[tj]s?(x)'
-  ],
-  collectCoverageFrom: [
-    'app/**/*.{ts,tsx}',
-    'components/**/*.{ts,tsx}',
-    'lib/**/*.{ts,tsx}',
-    '!**/*.d.ts',
-    '!**/node_modules/**',
-    '!**/.next/**',
-    '!**/out/**'
-  ],
-  coverageThreshold: {
-    global: {
-      branches: 80,
-      functions: 80,
-      lines: 80,
-      statements: 80
-    }
-  }
-};
-```
-
-## Test Categories
-
-### 1. Action Functions (Server Actions)
-Test all server actions in `/app/actions/`:
-- Authentication flows
-- Loyalty program operations
-- Coupon validation
-- Order creation
-- Payment processing
-- Delivery calculations
-- Menu item retrieval
-
-### 2. Client Components
-Test components in `/components/`:
-- Cart functionality
-- Menu filtering and product selection
-- Loyalty management interface
-- Customer forms
-- Payment forms
-- UI interactions
-
-### 3. Library Functions
-Test utility functions in `/lib/`:
-- Validation schemas
-- Utility helpers
-- Session management
-- Audit logging
-
-### 4. Integration Tests
-Test complete user flows:
-- Product selection → Cart → Checkout → Payment
-- Loyalty points earning and redemption
-- Coupon application
-- Delivery fee calculation
-- Order completion and confirmation
 
 ## Running Tests
 
@@ -102,72 +29,137 @@ npm run test:watch
 
 # Run tests with coverage
 npm run test:coverage
-
-# Run specific test file
-npm test -- src/components/cart/cart.spec.tsx
 ```
 
-## Test File Conventions
+## Test Files and Coverage
 
-- Test files are placed alongside the source files they test
-- Naming convention: `[filename].spec.tsx` or `[filename].test.tsx`
-- Test suites describe the unit being tested
-- Test cases describe specific behaviors or scenarios
-- Use descriptive test names that explain the expected behavior
+### 1. Utility Functions (`lib/utils.spec.ts`)
 
-## Mocking
+Tests for utility functions in `/lib/utils.ts`:
 
-We mock:
-- External APIs (NocoDB, MercadoPago, etc.)
-- Browser APIs (localStorage, sessionStorage, etc.)
-- Next.js navigation and routing
-- Environment variables
+- **parseCurrency**: Converting currency strings to numbers
+  - Brazilian format (1.250,50)
+  - Standard format (1250.50)
+  - Invalid inputs handling
+  - Negative numbers
 
-Example mock setup in `jest.setup.ts`:
+- **cn**: Class name merging utility
+  - Basic merging
+  - Filtering falsy values
 
-```typescript
-import '@testing-library/jest-dom';
+### 2. Validation Schemas (`lib/validations.spec.ts`)
 
-// Mock next/navigation
-jest.mock('next/navigation', () => ({
-  useRouter() {
-    return {
-      push: jest.fn(),
-      replace: jest.fn(),
-      back: jest.fn(),
-      prefetch: jest.fn(),
-      query: {}
-    };
-  },
-  usePathname() {
-    return '';
-  },
-  useSearchParams() {
-    return new URLSearchParams();
-  }
-}));
+Tests for Zod validation schemas in `/lib/validations.ts`:
 
-// Mock NextImage
-jest.mock('next/image', () => ({
-  __esModule: true,
-  default: (props: any) => (
-    <img {...props} data-testid="NextImage" />
-  )
-}));
+- **LoginSchema**: Email and password validation
+- **ProductSchema**: Product data validation with sanitization
+- **CategorySchema**: Category name validation
+- **CustomerSchema**: Customer phone and name validation
+- **CouponSchema**: Coupon code normalization and validation
+- **LoyaltyConfigSchema**: Loyalty program configuration
+- **LoyaltyRedeemSchema**: Points redemption validation
+- **sanitizeString**: XSS prevention and HTML sanitization
+- **sanitizeHtml**: HTML entity escaping
+
+### 3. Loyalty Actions (`app/actions/loyalty.spec.ts`)
+
+Tests for loyalty server actions in `/app/actions/loyalty.ts`:
+
+- **getLoyaltyConfig**: Fetching loyalty program configuration
+- **getLoyaltyStats**: Fetching loyalty statistics
+- **saveLoyaltyConfig**: Saving loyalty configuration
+
+### 4. Cart Logic (`components/menu/cart-context.spec.ts`)
+
+Tests for cart calculations and state management:
+
+- Subtotal calculation
+- Coupon discount application (percentual and fixed)
+- Total calculation with delivery fee
+- Loyalty points calculation
+- Item quantity updates
+- Item removal
+- Cart clearing
+
+### 5. Coupon Actions (`app/actions/coupons.spec.ts`)
+
+Tests for coupon server actions in `/app/actions/coupons.ts`:
+
+- **getCoupons**: Fetching all coupons
+- **validateCoupon**: Validating coupon for order
+- **upsertCoupon**: Creating/updating coupon
+- **deleteCoupon**: Deleting coupon
+
+### 6. Products and Insumos (`app/actions/products-insumos.spec.ts`)
+
+Tests for products and insumos actions:
+
+- **getProducts**: Fetching products
+- **upsertProduct**: Creating/updating products
+- **getInsumos**: Fetching inventory items
+- **upsertInsumo**: Creating/updating inventory items
+
+## Test Results
+
+Current test coverage:
+
+```
+Test Suites: 6 passed, 6 total
+Tests:       61 passed, 61 total
 ```
 
-## Continuous Integration
+All tests are passing successfully.
+
+## Mock Setup (`jest.setup.tsx`)
+
+The test environment includes mocks for:
+
+- Next.js navigation (useRouter, usePathname, useSearchParams)
+- Next.js Image component
+- Next.js dynamic imports
+- Lucide React icons
+- Sonner toast notifications
+- Next.js cache (revalidatePath, revalidateTag)
+- Session server (getMe, requireAdmin)
+- Validations (LoyaltyConfigSchema, CouponSchema, etc.)
+- Audit logging (logAction)
+- Global fetch, Request, Response, Headers, TextEncoder, TextDecoder
+
+## Jest Configuration (`jest.config.js`)
+
+Key configuration options:
+- Preset: ts-jest
+- Test environment: jsdom
+- Module name mapping for @/ aliases
+- Coverage collection from app, components, lib directories
+
+## CI/CD Integration
 
 Tests are run automatically on every pull request to ensure code quality and prevent regressions.
 
-## Contributing
+## Adding New Tests
 
 When adding new features:
-1. Write tests for new functionality before implementing (TDD approach)
-2. Ensure all existing tests still pass
-3. Update documentation if needed
-4. Maintain or improve test coverage
 
-## License
+1. Create a test file alongside the source file
+2. Use descriptive test names
+3. Test both success and failure cases
+4. Ensure all existing tests still pass
+5. Maintain or improve test coverage
 
-This project is licensed under the MIT License.
+Example:
+
+```typescript
+describe('ModuleName', () => {
+  it('should do something specific', () => {
+    // Arrange
+    const input = ...;
+    
+    // Act
+    const result = functionUnderTest(input);
+    
+    // Assert
+    expect(result).toBe(expectedValue);
+  });
+});
+```

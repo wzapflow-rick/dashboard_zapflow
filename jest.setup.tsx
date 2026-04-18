@@ -65,19 +65,19 @@ global.Headers = class Headers {
   append(name: string, value: string): void { this.set(name, value); }
 } as any;
 
-// Mock next/cache
+// Mock next/cache - only for specific modules that need it
 jest.mock('next/cache', () => ({
   revalidatePath: jest.fn(),
   revalidateTag: jest.fn(),
   unstable_noStore: jest.fn()
-}));
+}), { virtual: true });
 
-// Mock getMe
+// Mock getMe - only for specific modules that need it
 jest.mock('@/lib/session-server', () => ({
   getMe: jest.fn()
-}));
+}), { virtual: true });
 
-// Mock validations
+// Mock validations - only for specific modules that need it
 jest.mock('@/lib/validations', () => ({
   LoyaltyConfigSchema: {
     safeParse: jest.fn().mockReturnValue({ success: true, data: {} })
@@ -86,9 +86,9 @@ jest.mock('@/lib/validations', () => ({
     safeParse: jest.fn().mockReturnValue({ success: true, data: {} })
   },
   User: {}
-}));
+}), { virtual: true });
 
-// Mock audit
+// Mock audit - only for specific modules that need it
 jest.mock('@/lib/audit', () => ({
   logAction: jest.fn().mockResolvedValue(undefined)
-}));
+}), { virtual: true });

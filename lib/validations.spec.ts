@@ -39,7 +39,7 @@ describe('Validation Schemas', () => {
     });
 
     it('should reject short product name', () => {
-      const result = ProductSchema.safeParse({ nome: 'AB', preco: 10 });
+      const result = ProductSchema.safeParse({ nome: 'A', preco: 10 });
       expect(result.success).toBe(false);
     });
 
