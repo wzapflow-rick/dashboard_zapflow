@@ -46,7 +46,8 @@ interface MenuFilterProps {
     upsellProducts: any[];
     whatsappNumber: string;
     empresaNome: string;
-    allComposites: CompositeProduct[];
+    allComposites?: any[];
+    allGroups?: any[];
 }
 
 const fmt = (price: number) => `R$ ${price.toFixed(2).replace('.', ',')}`;
@@ -118,13 +119,48 @@ export default function MenuFilter({
     upsellProducts,
     whatsappNumber,
     empresaNome,
-    allComposites = []
+    allComposites = [],
+    allGroups = []
 }: MenuFilterProps) {
     const [search, setSearch] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<number | 'all' | 'composites'>('all');
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [selectedComposite, setSelectedComposite] = useState<CompositeProduct | null>(null);
-    const { addItem } = useCart();
+    const [editingItemId, setEditingItemId] = useState<string | null>(null);
+    const { addItem, items } = useCart();
+
+    // Escutar evento de edição do carrinho
+    useEffect(() => {
+        const handleEdit = (e: any) => {
+            const { itemId } = e.detail;
+            const item = items.find(i => i.id === itemId);
+            if (!item) return;
+
+            setEditingItemId(itemId);
+
+            if (item.isComposite) {
+                const composite = allComposites.find(c => c._grupoId === item.grupoId);
+                if (composite) {
+                    setSelectedComposite({
+                        ...composite,
+                        _editingData: item
+                    });
+                }
+            } else {
+                // Encontrar o produto original para ter os grupos
+                const product = grouped.flatMap(g => g.products).find(p => p.id === item.productId);
+                if (product) {
+                    setSelectedProduct({
+                        ...product,
+                        _editingData: item
+                    });
+                }
+            }
+        };
+
+        window.addEventListener('edit-cart-item', handleEdit);
+        return () => window.removeEventListener('edit-cart-item', handleEdit);
+    }, [items, allComposites, grouped]);
 
     const categories = useMemo(() => {
         const cats: { id: number | 'composites'; name: string }[] = [];
@@ -173,10 +209,11 @@ export default function MenuFilter({
 
     const hasProducts = filteredData.groups.length > 0 || filteredData.composites.length > 0;
 
-    const handleProductClick = (product: Product) => {
-        const hasComplements = product.complementGroups && product.complementGroups.length > 0;
+    const handleProductClick = (product: any) => {
+        const hasSaborGroups = product.saborGroups && product.saborGroups.length > 0;
+        const hasAdditionalGroups = product.additionalGroups && product.additionalGroups.length > 0;
         
-        if (hasComplements) {
+        if (hasSaborGroups || hasAdditionalGroups) {
             setSelectedProduct(product);
         } else {
             addItem({
@@ -196,10 +233,12 @@ export default function MenuFilter({
 
     const closeProductModal = () => {
         setSelectedProduct(null);
+        setEditingItemId(null);
     };
 
     const closeCompositeModal = () => {
         setSelectedComposite(null);
+        setEditingItemId(null);
     };
 
     return (
@@ -212,6 +251,7 @@ export default function MenuFilter({
                     empresaNome={empresaNome}
                     upsellProducts={upsellProducts}
                     onClose={closeProductModal}
+                    editingItemId={editingItemId || undefined}
                 />
             )}
 
@@ -222,7 +262,9 @@ export default function MenuFilter({
                     whatsappNumber={whatsappNumber}
                     empresaNome={empresaNome}
                     allComposites={allComposites}
+                    allGroups={allGroups.length > 0 ? allGroups : grouped.flatMap(g => g.products.flatMap(p => [...(p.saborGroups || []), ...(p.additionalGroups || [])]))}
                     onClose={closeCompositeModal}
+                    editingItemId={editingItemId || undefined}
                 />
             )}
 

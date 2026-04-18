@@ -45,60 +45,60 @@ _Qualquer dúvida, é só chamar! 😊_
 
   status: {
     pagamento_pendente: [
-      'Seu pedido está reservado, mas ainda aguardamos a confirmação do pagamento. Assim que confirmado, já mandamos pra produção na hora! 💳',
-      'Quase lá! Seu pagamento está sendo processado. Em breve tudo estará confirmado e seu pedido entrará em produção.',
-      'Aguardamos apenas a confirmação do pagamento para começar a preparar o seu pedido. Já já estamos em ação! ⏳'
+      'Estamos aguardando a confirmação do seu pagamento para liberar o pedido para a cozinha. Assim que for aprovado, começamos o preparo imediatamente! 💳⏳',
+      'Quase lá! Seu pagamento está em processamento. Assim que recebermos o sinal verde, seu pedido entra direto na produção. ✅',
+      'Falta pouco! Só precisamos da confirmação do pagamento para dar início ao seu pedido. Já estamos com tudo pronto para começar! 🚀'
     ],
 
     pendente: {
       delivery: [
-        'Pagamento confirmado, show! ✅ Seu pedido já entrou em produção. A cozinha está de olho e em breve ele estará a caminho da sua casa! 🏠',
-        'Tudo certo com o pagamento! Seu pedido foi confirmado e já estamos preparando tudo com muito cuidado. 🙌',
-        'Recebemos a confirmação! Seu pedido está em produção agora mesmo. Logo mais a gente avisa quando sair para entrega. 🛵'
+        'Tudo certo! Seu pedido foi confirmado e já está na nossa fila de produção. Em breve ele estará a caminho da sua casa! 🏠🔥',
+        'Pedido confirmado com sucesso! Nossa equipe já recebeu seu pedido e está se organizando para começar o preparo. 🙌✨',
+        'Recebemos sua confirmação! Seu pedido já está agendado para preparo. Logo mais avisaremos quando ele sair para entrega! 🛵💨'
       ],
       retirada: [
-        'Pagamento confirmado! ✅ Seu pedido entrou em produção. Avisamos quando estiver prontinho para retirada! 🏪',
-        'Tudo certo! Pedido confirmado e na fila de produção. Fique perto — logo você será chamado para retirar! 🔔',
-        'Confirmado! Mãos à obra. Seu pedido já está sendo preparado e em breve poderá ser retirado. 👨‍🍳'
+        'Tudo certo! Seu pedido foi confirmado e já está na nossa fila de produção. Avisaremos assim que estiver pronto para você vir buscar! 🏪✨',
+        'Pedido confirmado! Já estamos nos preparando para começar a produção. Fique atento, em breve você poderá vir retirar! 🔔🙌',
+        'Confirmado! Seu pedido já está com nossa equipe. Assim que estiver tudo fresquinho no balcão, te avisamos! 👨‍🍳✅'
       ]
     },
 
     preparando: {
       delivery: [
-        'Seu pedido está na cozinha agora mesmo! 👨‍🍳 Estamos caprichando em cada detalhe. Assim que ficar pronto, passa para o entregador e você será o primeiro a saber!',
-        'Em preparo! A equipe está trabalhando com todo carinho no seu pedido. Em breve sai para entrega. 📦➡🛵',
-        'Cozinha em ação! Seu pedido está sendo preparado fresquinho. Já já o entregador estará a caminho. 🔥'
+        'O cheirinho está ótimo! 👨‍🍳 Seu pedido está sendo preparado com todo capricho agora mesmo. Assim que finalizarmos, chamamos o entregador!',
+        'Mãos à obra! Nossa equipe está finalizando seu pedido com muito carinho. Em instantes ele estará pronto para a entrega! 📦✨',
+        'Cozinha a todo vapor! 🔥 Seu pedido está sendo preparado com ingredientes fresquinhos. Já já ele sai para o seu endereço!'
       ],
       retirada: [
-        'Seu pedido está sendo preparado com todo carinho! 👨‍🍳 Assim que ficar pronto, avisamos para você vir buscar.',
-        'Mãos na massa! Seu pedido está em produção agora. Em breve estará fresquinho e esperando por você no balcão. 🏪',
-        'Em preparo! Caprichando em tudo para você. Não vai demorar — avisamos quando estiver pronto! 🔔'
+        'Seu pedido está na cozinha! 👨‍🍳 Estamos preparando tudo com muito cuidado para que você receba o melhor sabor. Avisamos quando puder vir buscar!',
+        'Mãos na massa! Seu pedido está em produção e logo estará prontinho no balcão esperando por você. 🏪✨',
+        'Quase pronto! Estamos finalizando o preparo do seu pedido. Não vai demorar — avisaremos no momento exato da retirada! 🔔🙌'
       ]
     },
 
     entrega: [
-      'Tá vindo aí! 🛵💨 Seu pedido saiu do estabelecimento e está a caminho. Fique de olho na porta — o entregador está chegando!',
-      'Saiu para entrega! O motoboy já está com o seu pedido e está a caminho. Acompanhe em tempo real pelo link abaixo. 📍',
-      'Em rota! 🗺️ Seu pedido foi entregue ao entregador e está chegando até você. Já pode deixar a fominha apertar! 😄'
+      'Prepare a mesa! 🛵💨 Seu pedido acabou de sair e o entregador já está a caminho do seu endereço. Fique de olho!',
+      'Saiu para entrega! 📍 Nosso entregador já está com seu pedido em mãos e seguindo a rota. Acompanhe pelo link abaixo!',
+      'A caminho! 🗺️ Seu pedido já está na rua e chegando até você. Já pode começar a contagem regressiva para saborear! 😄✨'
     ],
 
     finalizado: {
       delivery: [
-        'Chegou! Bom apetite! 🍽️🎉 Esperamos que você curta cada mordida. Se quiser deixar um comentário, adoraríamos ouvir você!',
-        'Entregue com sucesso! 🎉 Que a refeição seja incrível. Fico à disposição para o próximo pedido. 😊',
-        'Missão cumprida! 🏆 Seu pedido foi entregue. Aproveite muito e volte sempre — adoramos te atender!'
+        'Bom apetite! 🍽️🎉 Seu pedido foi entregue. Esperamos que você aproveite cada detalhe. Se puder, conte para nós o que achou!',
+        'Entregue com sucesso! ✅ Esperamos que sua experiência tenha sido incrível. Muito obrigado pela preferência e até a próxima! 😊✨',
+        'Missão cumprida! 🏆 Seu pedido chegou. Aproveite sua refeição e saiba que adoramos te atender. Volte sempre! ❤️'
       ],
       retirada: [
-        'Pedido pronto! Pode vir buscar quando quiser. 🏃‍♂️ Está fresquinho te esperando no balcão. 🏪',
-        'Prontinho! ✅ Seu pedido está no balcão esperando por você. Venha buscar quando puder!',
-        'Tudo certo! Seu pedido está pronto e aguardando retirada. Qualquer dúvida, é só falar com a gente. 😊'
+        'Pedido entregue! ✅ Foi um prazer te atender hoje. Esperamos que aproveite muito seu pedido e volte em breve! 🏪✨',
+        'Prontinho e entregue! 🙌 Obrigado por vir retirar seu pedido conosco. Que sua refeição seja excelente!',
+        'Tudo certo! Pedido retirado com sucesso. Aproveite cada mordida e conte com a gente para o próximo! 😊❤️'
       ]
     },
 
     cancelado: [
-      'Infelizmente o pedido foi cancelado. 😕 Se isso foi um engano ou você quiser entender o motivo, entre em contato — estamos aqui para ajudar. Lamentamos o transtorno! 🙏',
-      'Pedido cancelado. Se tiver qualquer dúvida ou precisar de suporte, fale com a gente. Esperamos te atender melhor em breve! 💙',
-      'Cancelamento realizado. Se precisar de ajuda ou quiser refazer o pedido, é só chamar. Estamos sempre à disposição! 🙏'
+      'Poxa, seu pedido foi cancelado. 😕 Se houve algum engano ou se precisar de ajuda para entender o motivo, por favor, fale conosco. Esperamos te atender em uma próxima oportunidade! 🙏',
+      'Pedido cancelado. Sentimos muito pelo ocorrido. Se precisar de qualquer suporte ou quiser refazer o pedido, estamos à disposição no chat. 💙',
+      'Informamos que seu pedido foi cancelado. ❌ Caso queira tirar alguma dúvida ou precise de auxílio, não hesite em nos chamar. Lamentamos o transtorno! 🙏'
     ]
   },
 

@@ -76,11 +76,15 @@ export async function getPublicMenu(slug: string) {
         const products = controleEstoque 
             ? (productsData?.list || []).filter((p: any) => p.disponivel !== false)
             : productsData?.list || [];
+        
+        if (products.length > 0) {
+            console.log('[DEBUG] Estrutura bruta do primeiro produto:', JSON.stringify(products[0], null, 2));
+        }
+
         const categories = categoriesData?.list || [];
         
         // Processar grupos_slots
         const gruposSlots = (gruposSlotsData?.list || [])
-            .filter((g: any) => Number(g.empresa_id) === Number(empresa.id))
             .map((g: any) => ({
                 id: g.id,
                 nome: g.nome,
@@ -98,14 +102,12 @@ export async function getPublicMenu(slug: string) {
 
         const itensBaseMap = new Map<number, any>();
         (itensBaseData?.list || []).forEach((item: any) => {
-            if (Number(item.empresa_id) === Number(empresa.id)) {
-                itensBaseMap.set(item.id, {
-                    id: item.id,
-                    nome: item.nome,
-                    preco_sugerido: Number(item.preco_sugerido || 0),
-                    preco_custo: Number(item.preco_custo || 0),
-                });
-            }
+            itensBaseMap.set(item.id, {
+                id: item.id,
+                nome: item.nome,
+                preco_sugerido: Number(item.preco_sugerido || 0),
+                preco_custo: Number(item.preco_custo || 0),
+            });
         });
 
         // Mapear todos os grupos por ID para facilitar busca de adicionais vinculados
@@ -140,6 +142,7 @@ export async function getPublicMenu(slug: string) {
         // Montar produtos simples
         const productsWithGroups = products.map((p: any) => {
             const gruposVinculados = parseJsonArray(p.grupos);
+            console.log(`[DEBUG] Produto: ${p.nome}, Grupos Vinculados:`, gruposVinculados);
             
             // Separar grupos de sabor (fracionado) e adicionais vinculados
             const saborGroups: any[] = [];
@@ -150,22 +153,28 @@ export async function getPublicMenu(slug: string) {
                 if (g) {
                     if (g.tipo === 'fracionado') {
                         saborGroups.push(g);
-                        // Se o sabor tem adicionais vinculados, adicioná-los à lista de adicionais
-                        if (g.completamentos_ids && g.completamentos_ids.length > 0) {
-                            g.completamentos_ids.forEach((compId: number) => {
-                                const compGroup = gruposMap.get(compId);
-                                if (compGroup && !additionalGroups.find(ag => ag.id === compGroup.id)) {
-                                    additionalGroups.push(compGroup);
-                                }
-                            });
-                        }
-                    } else if (g.tipo === 'adicional') {
+                    } else {
+                        // Qualquer grupo que não seja fracionado entra como adicional no Passo 2
                         if (!additionalGroups.find(ag => ag.id === g.id)) {
                             additionalGroups.push(g);
                         }
                     }
+
+                    // Se o grupo tem adicionais vinculados (completamentos), adicioná-los também
+                    if (g.completamentos_ids && g.completamentos_ids.length > 0) {
+                        g.completamentos_ids.forEach((compId: number) => {
+                            const compGroup = gruposMap.get(compId);
+                            if (compGroup && !additionalGroups.find(ag => ag.id === compGroup.id)) {
+                                additionalGroups.push(compGroup);
+                            }
+                        });
+                    }
+                } else {
+                    console.log(`[DEBUG] Grupo ID ${grupoId} não encontrado no gruposMap`);
                 }
             });
+
+            console.log(`[DEBUG] Produto: ${p.nome}, saborGroups: ${saborGroups.length}, additionalGroups: ${additionalGroups.length}`);
 
             return { 
                 ...p, 
@@ -217,7 +226,15 @@ export async function getPublicMenu(slug: string) {
             });
 
         const loyaltyData = await nocoFetch(LOYALTY_CONFIG_TABLE_ID, `/records?where=(empresa_id,eq,${empresa.id})`);
-        const loyaltyConfig = loyaltyData?.list?.[0] || null;
+        const loyaltyConfig = loyaltyData?.list?.[0] || {
+            empresa_id: empresa.id,
+            pontos_por_real: 1,
+            valor_ponto: 0.10,
+            pontos_para_desconto: 100,
+            desconto_tipo: 'valor_fixo',
+            desconto_valor: 10,
+            ativo: false,
+        };
 
         // Upsell (lógica simplificada)
         const upsellProducts = productsWithGroups.filter((p: any) => {

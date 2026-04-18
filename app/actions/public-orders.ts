@@ -184,29 +184,29 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
             data.clienteBairro
         );
 
-        // Montar itens formatados para exibição no kanban e dashboard
-        const itensFormatados = data.itens.map((item: any) => {
-            let produtoNome = item.nome;
-            
-            // Adicionar complementos ao nome se existirem
-            if (item.complementos && item.complementos.length > 0) {
-                const complementosStr = item.complementos
-                    .map((c: any) => c.items.map((i: any) => i.nome).join(', '))
-                    .join(' + ');
-                if (complementosStr) {
-                    produtoNome += ` (${complementosStr})`;
-                }
-            }
-            
-            return {
-                produto: produtoNome,
-                nome: produtoNome,
-                quantidade: item.quantidade,
-                preco: item.preco,
-                subtotal: item.preco * item.quantidade,
-                observacao: item.observacao || '',
-            };
-        });
+	        // Montar itens formatados para exibição no kanban e dashboard
+	        const itensFormatados = data.itens.map((item: any) => {
+	            let produtoNome = item.nome;
+	            
+	            // Adicionar complementos ao nome se existirem
+	            if (item.complementos && item.complementos.length > 0) {
+	                const complementosStr = item.complementos
+	                    .map((c: any) => c.items.map((i: any) => i.nome).join(', '))
+	                    .join(' + ');
+	                if (complementosStr) {
+	                    produtoNome += ` (${complementosStr})`;
+	                }
+	            }
+	            
+	            return {
+	                produto: produtoNome,
+	                nome: produtoNome,
+	                quantidade: item.quantidade,
+	                preco: item.preco,
+	                subtotal: Number(item.preco) * Number(item.quantidade),
+	                observacao: item.observacao || '',
+	            };
+	        });
 
         // Montar payload do pedido
         // Nota: endereco_entrega e bairro_entrega precisam existir como colunas na tabela NocoDB
@@ -214,24 +214,25 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
             ? 'Retirada no balcão' 
             : [data.clienteEndereco, data.clienteBairro].filter(Boolean).join(', ') || '';
         
-        const orderPayload: any = {
-            empresa_id: data.empresaId,
-            telefone_cliente: data.clienteTelefone,
-            cliente_nome: data.clienteNome,
-            tipo_entrega: data.tipoEntrega,
-            taxa_entrega: data.taxaEntrega || 0,
-            itens: JSON.stringify(itensFormatados),
-            subtotal: data.subtotal,
-            desconto: data.desconto || 0,
-            valor_total: data.total,
-            cupom_codigo: data.cupomCodigo || '',
-            pontos_ganhos: data.pontosGanhos || 0,
-            forma_pagamento: data.formaPagamento,
-            troco_necessario: data.troco || 0,
-            status: data.dataAgendamento ? 'agendado' : (data.formaPagamento === 'dinheiro' ? 'pendente' : 'pagamento_pendente'),
-            origem: 'cardapio_publico',
-            criado_em: new Date().toISOString(),
-        };
+	        const orderPayload: any = {
+	            empresa_id: data.empresaId,
+	            telefone_cliente: data.clienteTelefone,
+	            cliente_nome: data.clienteNome,
+	            tipo_entrega: data.tipoEntrega,
+	            taxa_entrega: data.taxaEntrega || 0,
+	            itens: JSON.stringify(itensFormatados),
+	            subtotal: data.subtotal,
+	            desconto: data.desconto || 0,
+	            valor_total: data.total,
+	            cupom_codigo: data.cupomCodigo || '',
+	            pontos_ganhos: data.pontosGanhos || 0,
+	            forma_pagamento: data.formaPagamento,
+	            tipo_pagamento: data.formaPagamento, // Adicionado para garantir compatibilidade com o Kanban
+	            troco_necessario: data.troco || 0,
+	            status: data.dataAgendamento ? 'agendado' : (data.formaPagamento === 'dinheiro' ? 'pendente' : 'pagamento_pendente'),
+	            origem: 'cardapio_publico',
+	            criado_em: new Date().toISOString(),
+	        };
 
         // Adicionar agendamento se existir
         if (data.dataAgendamento) {

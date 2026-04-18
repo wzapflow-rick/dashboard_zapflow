@@ -112,13 +112,22 @@ interface DeliveryConfig {
 }
 
 // Buscar configuração de entrega da empresa
-export async function getDeliveryConfig(): Promise<DeliveryConfig | null> {
+export async function getDeliveryConfig(empresaId?: number): Promise<DeliveryConfig | null> {
     try {
-        const user = await getMe();
-        if (!user?.empresaId) throw new Error('Não autorizado');
+        let targetEmpresaId = empresaId;
+
+        if (!targetEmpresaId) {
+            const user = await getMe();
+            targetEmpresaId = user?.empresaId;
+        }
+
+        if (!targetEmpresaId) {
+            console.error('getDeliveryConfig: No empresaId provided or found in session');
+            return null;
+        }
 
         // Buscar da tabela de empresas
-        const configRes = await fetch(`${NOCODB_URL}/api/v2/tables/mp08yd7oaxn5xo2/records/${user.empresaId}`, {
+        const configRes = await fetch(`${NOCODB_URL}/api/v2/tables/mp08yd7oaxn5xo2/records/${targetEmpresaId}`, {
             headers: {
                 'xc-token': NOCODB_TOKEN,
                 'Content-Type': 'application/json',
@@ -174,7 +183,8 @@ async function getDistanceFromGoogle(
 
 // Calcular taxa de entrega usando configuração da empresa
 export async function calculateDeliveryFee(
-    destination: { lat: number; lng: number }
+    destination: { lat: number; lng: number },
+    empresaId?: number
 ): Promise<DeliveryCalculationResult> {
     try {
         // SECURITY: Validate coordinates are within reasonable bounds (Brazil)
@@ -185,7 +195,7 @@ export async function calculateDeliveryFee(
         }
         
         // Buscar configuração de entrega
-        const config = await getDeliveryConfig();
+        const config = await getDeliveryConfig(empresaId);
 
         if (!config) {
             return { success: false, error: 'Taxa de entrega não configurada' };

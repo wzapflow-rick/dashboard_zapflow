@@ -21,7 +21,7 @@ export default async function PublicMenuPage({ params }: { params: Promise<{ slu
         );
     }
 
-    const { empresa, grouped, compositeProducts, upsellProducts, loyaltyConfig } = data;
+    const { empresa, grouped, compositeProducts, upsellProducts, loyaltyConfig, allGroups } = data;
     const whatsappNumber = empresa.telefone?.replace(/\D/g, '');
     const pontosPorReal = loyaltyConfig?.ativo ? Number(loyaltyConfig.pontos_por_real || 1) : 0;
 
@@ -64,6 +64,7 @@ export default async function PublicMenuPage({ params }: { params: Promise<{ slu
                             whatsappNumber={whatsappNumber || ''}
                             empresaNome={empresa.nome}
                             allComposites={compositeProducts || []}
+                            allGroups={allGroups || []}
                         />
                     )}
 

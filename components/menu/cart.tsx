@@ -23,9 +23,12 @@ import {
   ArrowLeft,
   AlertCircle,
   Copy,
-  CheckCircle
+  CheckCircle,
+  Edit2,
+  MessageSquare
 } from 'lucide-react';
 import { useCart } from './cart-context';
+import { cn } from '@/lib/utils';
 import { validateCoupon } from '@/app/actions/coupons';
 import { createPublicOrder } from '@/app/actions/public-orders';
 import { getClientPoints, getLoyaltyConfig } from '@/app/actions/loyalty';
@@ -452,7 +455,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
   useEffect(() => {
     const fetchLoyaltyConfig = async () => {
       try {
-        const config = await getLoyaltyConfig();
+        const config = await getLoyaltyConfig(empresaId);
         if (config) {
           setLoyaltyConfig({
             pontos_para_desconto: config.pontos_para_desconto || 100,
@@ -464,13 +467,13 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
       }
     };
     fetchLoyaltyConfig();
-  }, []);
+  }, [empresaId]);
 
   // Buscar configuração de entrega ao montar
   useEffect(() => {
     const fetchDeliveryConfig = async () => {
       try {
-        const config = await getDeliveryConfig();
+        const config = await getDeliveryConfig(empresaId);
         if (config) {
           setDeliveryConfig({
             auto_radius: config.auto_radius,
@@ -482,7 +485,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
       }
     };
     fetchDeliveryConfig();
-  }, []);
+  }, [empresaId]);
 
   // Buscar pontos do cliente quando o telefone for preenchido
   const fetchClientPoints = async (telefone: string) => {
@@ -494,7 +497,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
 
     setLoadingPoints(true);
     try {
-      const points = await getClientPoints(cleanPhone);
+      const points = await getClientPoints(cleanPhone, empresaId);
       // Calcular pontos disponíveis (acumulados - gastos)
       const pontosDisponiveis = (points?.pontos_acumulados || 0) - (points?.pontos_gastos || 0);
       setClientPoints(pontosDisponiveis);
@@ -543,7 +546,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
       console.log('[Delivery] Coordenadas encontradas:', coords);
 
       // Calcular taxa usando a API
-      const result = await calculateDeliveryFee(coords);
+      const result = await calculateDeliveryFee(coords, empresaId);
 
       console.log('[Delivery] Resultado:', result);
 
@@ -718,32 +721,53 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                       </div>
                     ) : (
                       <>
-                        {items.map((item) => (
-                          <div key={item.id} className="bg-slate-50 rounded-xl p-3 border border-slate-100">
-                            <div className="flex gap-3">
-                              <div className="flex-1">
-                                <h4 className="font-bold text-slate-900 text-sm">{item.nome}</h4>
-                                {item.complementos && item.complementos.length > 0 && (
-                                  <div className="mt-1 space-y-0.5">
-                                    {item.complementos.map((grupo, idx) => (
-                                      <p key={idx} className="text-[10px] text-slate-500">
-                                        {grupo.grupoNome}: {grupo.items.map(i => i.nome).join(', ')}
-                                      </p>
-                                    ))}
+	                        {items.map((item) => (
+	                          <div key={item.id} className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+	                            <div className="flex gap-3">
+	                              <div className="flex-1">
+	                                <h4 className="font-bold text-slate-900 text-sm">{item.nome}</h4>
+	                                {item.complementos && item.complementos.length > 0 && (
+	                                  <div className="mt-1 space-y-0.5">
+	                                    {item.complementos.map((grupo, idx) => (
+	                                      <p key={idx} className="text-[10px] text-slate-500">
+	                                        {grupo.grupoNome}: {grupo.items.map(i => i.nome).join(', ')}
+	                                      </p>
+	                                    ))}
+	                                  </div>
+	                                )}
+	                                  {item.observacao && typeof item.observacao === 'string' && item.observacao.trim() !== '' && (
+	                                    <div className="mt-1.5 flex items-start gap-1.5 bg-white/50 p-1.5 rounded-lg border border-slate-100">
+	                                      <MessageSquare className="size-3 text-slate-400 mt-0.5 shrink-0" />
+	                                      <p className="text-[10px] text-slate-600 italic leading-tight">
+	                                        {item.observacao}
+	                                      </p>
+	                                    </div>
+	                                  )}
+	                                <p className="text-xs text-violet-600 font-bold mt-1">{formatPrice(item.preco)}</p>
+	                              </div>
+
+	                              <div className="flex flex-col items-end gap-2">
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      onClick={() => {
+                                        setIsOpen(false);
+                                        window.dispatchEvent(new CustomEvent('edit-cart-item', { detail: { itemId: item.id } }));
+                                      }}
+                                      className="p-1.5 hover:bg-violet-100 rounded-lg transition-colors group"
+                                      title="Editar item"
+                                    >
+                                      <Edit2 className="size-4 text-violet-400 group-hover:text-violet-600" />
+                                    </button>
+                                    <button
+                                      onClick={() => removeItem(item.id)}
+                                      className="p-1.5 hover:bg-red-100 rounded-lg transition-colors group"
+                                      title="Remover item"
+                                    >
+                                      <Trash2 className="size-4 text-red-400 group-hover:text-red-600" />
+                                    </button>
                                   </div>
-                                )}
-                                <p className="text-xs text-violet-600 font-bold mt-1">{formatPrice(item.preco)}</p>
-                              </div>
 
-                              <div className="flex flex-col items-end gap-2">
-                                <button
-                                  onClick={() => removeItem(item.id)}
-                                  className="p-1 hover:bg-red-100 rounded-lg transition-colors"
-                                >
-                                  <Trash2 className="size-4 text-red-400" />
-                                </button>
-
-                                <div className="flex items-center gap-2 bg-white rounded-lg border border-slate-200">
+	                                <div className="flex items-center gap-2 bg-white rounded-lg border border-slate-200">
                                   <button
                                     onClick={() => updateQuantity(item.id, item.quantidade - 1)}
                                     className="p-1.5 hover:bg-slate-100 rounded-l-lg transition-colors"

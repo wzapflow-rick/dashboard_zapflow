@@ -1,263 +1,345 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
-import Image from 'next/image';
-import { X, ShoppingCart, Check, Plus, Minus } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { X, ShoppingCart, ChevronRight, ChevronLeft, Plus, Minus, Check } from 'lucide-react';
 import { useCart } from './cart-context';
 import { toast } from 'sonner';
 
-interface CompositeItem {
-    id: number;
-    nome: string;
-    preco: number;
-    imagem?: string;
-}
-
-interface CompositeProduct {
-    id: string;
-    _grupoId: number;
-    nome: string;
-    descricao?: string;
-    imagem?: string;
-    tipo_calculo?: string;
-    cobrar_mais_caro?: boolean;
-    preco_fixo?: number;
-    completamentos_ids?: number[];
-    minimo: number;
-    maximo: number;
-    items: CompositeItem[];
-}
-
 interface CompositeProductModalProps {
-    product: CompositeProduct;
+    product: any;
     whatsappNumber: string;
     empresaNome: string;
-    allComposites?: CompositeProduct[];
-    allGroups?: any[];
+    allComposites: any[];
+    allGroups: any[];
     onClose: () => void;
+    editingItemId?: string;
 }
 
-const fmt = (price: number) => `R$ ${price.toFixed(2).replace('.', ',')}`;
-
-interface CompletamentoEtapa {
-    grupoId: number;
-    nome: string;
-    itens: CompositeItem[];
-    minimo: number;
-    maximo: number;
-    preco_addicional: number;
-}
+type Step = 'flavors' | 'additions' | 'observation';
 
 export default function CompositeProductModal({
     product,
     whatsappNumber,
     empresaNome,
-    allComposites = [],
-    allGroups = [],
+    allComposites,
+    allGroups,
     onClose,
+    editingItemId,
 }: CompositeProductModalProps) {
-    const [selected, setSelected] = useState<CompositeItem[]>([]);
-    const [completamentoEtapas, setCompletamentoEtapas] = useState<CompletamentoEtapa[]>([]);
-    const [etapaAtual, setEtapaAtual] = useState<number>(-1);
-    const [selectedCompletos, setSelectedCompletos] = useState<CompositeItem[]>([]);
-    const { addItem } = useCart();
-
-    const max = Number(product.maximo || 1);
-    const min = Number(product.minimo || 1);
-    const isFull = selected.length >= max;
-
-    // Debug: verificar completamentos
-    if (typeof window !== 'undefined') {
-        console.log('>>> COMPLEMENTOS product:', product.completamentos_ids, 'allComposites:', allComposites.length);
-    }
-
-    // Detectar completamentos quando o produto for selecionado
-    useEffect(() => {
-        const compIds = product.completamentos_ids || [];
-        if (compIds.length > 0 && allComposites.length > 0) {
-            const etapas: CompletamentoEtapa[] = [];
-            compIds.forEach(compId => {
-                const compGrupo = allComposites.find(c => c._grupoId === compId);
-                if (compGrupo && compGrupo.items && compGrupo.items.length > 0) {
-                    etapas.push({
-                        grupoId: compGrupo._grupoId,
-                        nome: compGrupo.nome,
-                        itens: compGrupo.items,
-                        minimo: compGrupo.minimo || 1,
-                        maximo: compGrupo.maximo || 1,
-                        preco_addicional: compGrupo.preco_fixo || 0,
-                    });
-                }
-            });
-            setCompletamentoEtapas(etapas);
+    const { addItem, updateItem } = useCart();
+    const [selectedFlavors, setSelectedFlavors] = useState<any[]>(() => {
+        if (product._editingData?.nome) {
+            // Tentar extrair sabores do nome: "Pizza 2 Sabores (Calabresa / Frango)"
+            const match = product._editingData.nome.match(/\((.*)\)/);
+            if (match && match[1]) {
+                const nomes = match[1].split(' / ');
+                return product.items.filter((i: any) => nomes.includes(i.nome));
+            }
         }
-    }, [product, allComposites]);
+        return [];
+    });
+    const [selections, setSelections] = useState<Record<number, any[]>>(() => {
+        if (product._editingData?.complementos) {
+            const initial: Record<number, any[]> = {};
+            product._editingData.complementos.forEach((c: any) => {
+                initial[c.grupoId] = c.items;
+            });
+            return initial;
+        }
+        return {};
+    });
+    const [observacao, setObservacao] = useState(product._editingData?.observacao || '');
+    const [step, setStep] = useState<Step>('flavors');
 
-    const toggleItem = (item: CompositeItem) => {
-        const already = selected.find(i => i.id === item.id);
-        if (already) {
-            setSelected(prev => prev.filter(i => i.id !== item.id));
-        } else if (!isFull) {
-            setSelected(prev => [...prev, item]);
+    const maxFlavors = Number(product.maximo || 1);
+    const minFlavors = Number(product.minimo || 1);
+
+    // Encontrar grupos de adicionais vinculados aos sabores
+    const additionalGroups = useMemo(() => {
+        const groupIds = new Set<number>();
+        if (product.completamentos_ids) {
+            product.completamentos_ids.forEach((id: number) => groupIds.add(id));
+        }
+        return allGroups.filter(g => groupIds.has(g.id));
+    }, [product.completamentos_ids, allGroups]);
+
+    const hasAdditions = additionalGroups.length > 0;
+
+    const toggleFlavor = (flavor: any) => {
+        const isSelected = selectedFlavors.find(f => f.id === flavor.id);
+        if (isSelected) {
+            setSelectedFlavors(prev => prev.filter(f => f.id !== flavor.id));
+        } else {
+            if (selectedFlavors.length < maxFlavors) {
+                setSelectedFlavors(prev => [...prev, flavor]);
+            } else {
+                toast.error(`Máximo de ${maxFlavors} sabores`);
+            }
+        }
+    };
+
+    const toggleAddition = (group: any, item: any) => {
+        const current = selections[group.id] || [];
+        const isSelected = current.find(i => i.id === item.id);
+
+        if (isSelected) {
+            setSelections(prev => ({
+                ...prev,
+                [group.id]: current.filter(i => i.id !== item.id)
+            }));
+        } else {
+            const max = Number(group.maximo || 99);
+            if (current.length < max) {
+                setSelections(prev => ({
+                    ...prev,
+                    [group.id]: [...current, item]
+                }));
+            } else {
+                toast.error(`Máximo de ${max} itens para ${group.nome}`);
+            }
         }
     };
 
     const finalPrice = useMemo(() => {
-        if (selected.length === 0) {
-            const prices = product.items.map(i => i.preco).filter(p => p > 0);
-            return prices.length > 0 ? Math.min(...prices) : 0;
-        }
-
-        const prices = selected.map(i => i.preco);
-
-        if (product.tipo_calculo === 'fixo') {
-            return product.preco_fixo || 0;
-        } else if (product.cobrar_mais_caro) {
-            return Math.max(...prices);
-        } else if (product.tipo_calculo === 'media') {
-            return prices.reduce((a, b) => a + b, 0) / prices.length;
-        } else if (product.tipo_calculo === 'maior_valor') {
-            return Math.max(...prices);
-        }
+        let price = Number(product.preco || 0);
         
-        return prices.reduce((a, b) => a + b, 0);
-    }, [product, selected]);
+        // Lógica de preço por sabores (maior valor)
+        if (selectedFlavors.length > 0) {
+            const flavorPrices = selectedFlavors.map(f => Number(f.preco || 0));
+            price = Math.max(...flavorPrices);
+        }
 
-    const isValid = selected.length >= min;
+        // Adicionais
+        Object.values(selections).flat().forEach(item => {
+            price += Number(item.preco || 0);
+        });
 
-    const handleClose = () => {
-        setSelected([]);
-        onClose();
+        return price;
+    }, [product.preco, selectedFlavors, selections]);
+
+    const nextStep = () => {
+        if (selectedFlavors.length < minFlavors) {
+            toast.error(`Selecione pelo menos ${minFlavors} sabor(es)`);
+            return;
+        }
+        if (step === 'flavors') {
+            if (hasAdditions) {
+                setStep('additions');
+            } else {
+                setStep('observation');
+            }
+        } else if (step === 'additions') {
+            setStep('observation');
+        } else {
+            addToCart();
+        }
     };
 
     const addToCart = () => {
-        if (!isValid) {
-            toast.error(`Selecione pelo menos ${min} sabor(es)`);
-            return;
-        }
-
-        addItem({
-            productId: product._grupoId,
-            nome: product.nome,
-            preco: finalPrice,
-            quantidade: 1,
-            imagem: product.imagem,
-            isComposite: true,
-            grupoId: product._grupoId,
-            isAvulso: false
+        const complementos = Object.entries(selections).map(([grupoId, items]) => {
+            const grupo = additionalGroups.find(g => g.id === Number(grupoId));
+            return {
+                grupoId: Number(grupoId),
+                grupoNome: grupo?.nome || '',
+                items: items.map(i => ({
+                    id: i.id,
+                    nome: i.nome,
+                    preco: i.preco,
+                    fator_proporcao: 1
+                }))
+            };
         });
 
-        toast.success(`${product.nome} adicionado ao carrinho!`);
-        handleClose();
+        const saborNomes = selectedFlavors.map(f => f.nome).join(' / ');
+        
+        if (editingItemId) {
+            updateItem(editingItemId, {
+                nome: `${product.nome} (${saborNomes})`,
+                preco: finalPrice,
+                complementos,
+                observacao,
+            });
+            toast.success(`${product.nome} atualizado!`);
+        } else {
+            addItem({
+                productId: product._grupoId,
+                nome: `${product.nome} (${saborNomes})`,
+                preco: finalPrice,
+                quantidade: 1,
+                complementos,
+                observacao,
+                isComposite: true,
+                grupoId: product._grupoId
+            });
+            toast.success(`${product.nome} adicionado ao carrinho!`);
+        }
+
+        setObservacao('');
+        setStep('flavors');
+        onClose();
     };
 
-    const priceRuleLabel = product.tipo_calculo === 'fixo' 
-        ? `Preço fixo: R$ ${(product.preco_fixo || 0).toFixed(2)}`
-        : product.cobrar_mais_caro 
-            ? 'Cobra o sabor mais caro'
-            : product.tipo_calculo === 'media'
-                ? 'Média dos sabores'
-                : product.tipo_calculo === 'maior_valor'
-                    ? 'Maior valor'
-                    : 'Soma dos sabores';
+    const fmt = (price: number) => `R$ ${price.toFixed(2).replace('.', ',')}`;
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
+            <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    onClick={handleClose}
+                    onClick={onClose}
                     className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
                 />
                 <motion.div
-                    initial={{ y: "100%" }}
-                    animate={{ y: 0 }}
-                    exit={{ y: "100%" }}
-                    transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                    className="relative w-full max-w-lg bg-white dark:bg-slate-800 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+                    initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                    className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
                 >
-                    <div className="relative h-48 shrink-0">
-                        {product.imagem ? (
-                            <Image
-                                src={product.imagem}
-                                alt={product.nome}
-                                fill
-                                className="object-cover"
-                            />
-                        ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
-                                <span className="text-6xl">🍕</span>
+                    <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+                        <div>
+                            <h2 className="text-xl font-black text-slate-900">{product.nome}</h2>
+                            <p className="text-sm text-slate-500">
+                                {step === 'flavors' && `Escolha de ${minFlavors} a ${maxFlavors} sabores`}
+                                {step === 'additions' && 'Turbine seu pedido com adicionais'}
+                                {step === 'observation' && 'Alguma observação?'}
+                            </p>
+                        </div>
+                        <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                            <X className="size-6 text-slate-400" />
+                        </button>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-6 space-y-8">
+                        {step === 'flavors' && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {product.items?.map((flavor: any) => {
+                                    const isSelected = selectedFlavors.find(f => f.id === flavor.id);
+                                    return (
+                                        <button
+                                            key={flavor.id}
+                                            onClick={() => toggleFlavor(flavor)}
+                                            className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${
+                                                isSelected 
+                                                    ? 'border-amber-500 bg-amber-50 shadow-md shadow-amber-100' 
+                                                    : 'border-slate-100 hover:border-slate-200 bg-white'
+                                            }`}
+                                        >
+                                            <div className="text-left">
+                                                <p className="font-bold text-slate-800">{flavor.nome}</p>
+                                                <p className="text-xs text-amber-600 font-medium">{fmt(flavor.preco)}</p>
+                                            </div>
+                                            <div className={`size-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                                                isSelected ? 'bg-amber-500 border-amber-500' : 'border-slate-200'
+                                            }`}>
+                                                {isSelected && <Check className="size-4 text-white" />}
+                                            </div>
+                                        </button>
+                                    );
+                                })}
                             </div>
                         )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                        <button
-                            onClick={handleClose}
-                            className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/40 backdrop-blur-md rounded-full text-white transition-colors"
-                        >
-                            <X className="size-5" />
-                        </button>
-                        <div className="absolute bottom-4 left-6 right-6">
-                            <h2 className="text-xl font-bold text-white">{product.nome}</h2>
-                            <p className="text-white/80 text-xs">{priceRuleLabel}</p>
-                        </div>
+
+                        {step === 'additions' && (
+                            <div className="space-y-8">
+                                {additionalGroups.map(group => (
+                                    <div key={group.id} className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="font-black text-slate-900 uppercase tracking-tight">{group.nome}</h3>
+                                            <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded-md uppercase">
+                                                Até {group.maximo || 99} itens
+                                            </span>
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            {group.items?.map((item: any) => {
+                                                const isSelected = (selections[group.id] || []).find(i => i.id === item.id);
+                                                return (
+                                                    <button
+                                                        key={item.id}
+                                                        onClick={() => toggleAddition(group, item)}
+                                                        className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${
+                                                            isSelected 
+                                                                ? 'border-violet-500 bg-violet-50 shadow-md shadow-violet-100' 
+                                                                : 'border-slate-100 hover:border-slate-200 bg-white'
+                                                        }`}
+                                                    >
+                                                        <div className="text-left">
+                                                            <p className="font-bold text-slate-800">{item.nome}</p>
+                                                            <p className="text-xs text-violet-600 font-medium">+ {fmt(item.preco)}</p>
+                                                        </div>
+                                                        <div className={`size-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                                                            isSelected ? 'bg-violet-500 border-violet-500' : 'border-slate-200'
+                                                        }`}>
+                                                            {isSelected && <Check className="size-4 text-white" />}
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {step === 'observation' && (
+                            <div className="space-y-4">
+                                <label className="block text-sm font-bold text-slate-700">Alguma observação para este item?</label>
+                                <textarea
+                                    value={observacao}
+                                    onChange={(e) => setObservacao(e.target.value)}
+                                    placeholder="Ex: Sem cebola, bem passado, etc..."
+                                    className="w-full h-32 p-4 rounded-2xl border-2 border-slate-100 focus:border-violet-500 focus:ring-0 transition-all resize-none"
+                                />
+                            </div>
+                        )}
                     </div>
 
-                    <div className="flex items-center justify-between px-4 py-2 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-100 dark:border-amber-800">
-                        <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
-                            Selecionados: <strong>{selected.length}/{max}</strong>
-                        </span>
-                        <span className="text-xs text-amber-600 dark:text-amber-400">
-                            Mín: {min} | Máx: {max}
-                        </span>
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
-                        {product.items?.map((item: CompositeItem) => {
-                            const isSelected = selected.some(s => s.id === item.id);
-                            return (
+                    <div className="shrink-0 p-6 border-t border-slate-100 bg-slate-50/50">
+                        <div className="flex items-center justify-between mb-4">
+                            <div>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total do item</p>
+                                <p className="text-2xl font-black text-slate-900">{fmt(finalPrice)}</p>
+                            </div>
+                            <div className="flex gap-2">
+                                {step !== 'flavors' && (
+                                    <button 
+                                        onClick={() => {
+                                            if (step === 'observation') {
+                                                if (hasAdditions) setStep('additions');
+                                                else setStep('flavors');
+                                            } else if (step === 'additions') {
+                                                setStep('flavors');
+                                            }
+                                        }} 
+                                        className="p-3 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50"
+                                    >
+                                        <ChevronLeft className="size-6" />
+                                    </button>
+                                )}
                                 <button
-                                    key={item.id}
-                                    onClick={() => toggleItem(item)}
-                                    className={`w-full p-3 rounded-xl border flex items-center justify-between transition-all ${
-                                        isSelected
-                                            ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                                            : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'
+                                    onClick={nextStep}
+                                    className={`px-8 py-3 text-white font-bold rounded-xl transition-colors flex items-center gap-2 shadow-lg ${
+                                        step === 'observation'
+                                            ? 'bg-green-500 hover:bg-green-600 shadow-green-200'
+                                            : 'bg-amber-500 hover:bg-amber-600 shadow-amber-200'
                                     }`}
                                 >
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                                            isSelected ? 'border-green-500 bg-green-500' : 'border-slate-300 dark:border-slate-500'
-                                        }`}>
-                                            {isSelected && <Check className="size-3 text-white" />}
-                                        </div>
-                                        <span className="text-sm font-medium text-slate-900 dark:text-white">{item.nome}</span>
-                                    </div>
-                                    {Number(item.preco || 0) > 0 && (
-                                        <span className="text-sm font-bold text-green-600 dark:text-green-400">
-                                            {fmt(item.preco)}
-                                        </span>
+                                    {step === 'observation' ? (
+                                        <>
+                                            <ShoppingCart className="size-5" />
+                                            Finalizar
+                                        </>
+                                    ) : (
+                                        <>
+                                            Continuar
+                                            <ChevronRight className="size-5" />
+                                        </>
                                     )}
                                 </button>
-                            );
-                        })}
-                    </div>
-
-                    <div className="shrink-0 p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
-                        <div className="flex items-center justify-between mb-3">
-                            <span className="text-sm font-medium text-slate-600 dark:text-slate-300">Total:</span>
-                            <span className="text-xl font-black text-green-600 dark:text-green-400">{fmt(finalPrice)}</span>
+                            </div>
                         </div>
-                        <button
-                            onClick={addToCart}
-                            disabled={!isValid}
-                            className="w-full py-3 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-                        >
-                            <ShoppingCart className="size-5" />
-                            Adicionar ao Carrinho
-                        </button>
                     </div>
                 </motion.div>
             </div>

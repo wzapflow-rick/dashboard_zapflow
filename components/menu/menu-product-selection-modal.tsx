@@ -41,6 +41,7 @@ interface MenuProductSelectionModalProps {
     empresaNome: string;
     upsellProducts?: UpsellProduct[];
     onClose: () => void;
+    editingItemId?: string;
 }
 
 const fmt = (price: any) => {
@@ -65,11 +66,21 @@ export default function MenuProductSelectionModal({
     empresaNome,
     upsellProducts = [],
     onClose,
+    editingItemId,
 }: MenuProductSelectionModalProps) {
-    const [selections, setSelections] = useState<Record<number, SelectedItem[]>>({});
-    const [observacao, setObservacao] = useState('');
+    const { addItem, updateItem } = useCart();
+    const [selections, setSelections] = useState<Record<number, SelectedItem[]>>(() => {
+        if (product._editingData?.complementos) {
+            const initial: Record<number, SelectedItem[]> = {};
+            product._editingData.complementos.forEach((c: any) => {
+                initial[c.grupoId] = c.items.map((i: any) => ({ ...i, grupo_id: c.grupoId }));
+            });
+            return initial;
+        }
+        return {};
+    });
+    const [observacao, setObservacao] = useState(product._editingData?.observacao || '');
     const [step, setStep] = useState<Step>('flavors');
-    const { addItem } = useCart();
 
     const saborGroups = product.saborGroups || [];
     const additionalGroups = product.additionalGroups || [];
@@ -180,10 +191,15 @@ export default function MenuProductSelectionModal({
         }
 
         if (step === 'flavors') {
-            if (hasAdditions) setStep('additions');
-            else setStep('observation');
+            if (hasAdditions) {
+                setStep('additions');
+            } else {
+                setStep('observation');
+            }
         } else if (step === 'additions') {
             setStep('observation');
+        } else {
+            addToCart();
         }
     };
 
@@ -212,17 +228,26 @@ export default function MenuProductSelectionModal({
             };
         });
 
-        addItem({
-            productId: product.id,
-            nome: product.nome,
-            preco: finalPrice,
-            quantidade: 1,
-            imagem: product.imagem,
-            observacao: observacao.trim() || undefined,
-            complementos: complementos.length > 0 ? complementos : undefined
-        });
+        if (editingItemId) {
+            updateItem(editingItemId, {
+                preco: finalPrice,
+                observacao: observacao.trim() || undefined,
+                complementos: complementos.length > 0 ? complementos : undefined
+            });
+            toast.success(`${product.nome} atualizado!`);
+        } else {
+            addItem({
+                productId: product.id,
+                nome: product.nome,
+                preco: finalPrice,
+                quantidade: 1,
+                imagem: product.imagem,
+                observacao: observacao.trim() || undefined,
+                complementos: complementos.length > 0 ? complementos : undefined
+            });
+            toast.success(`${product.nome} adicionado ao carrinho!`);
+        }
 
-        toast.success(`${product.nome} adicionado ao carrinho!`);
         handleClose();
     };
 
@@ -358,23 +383,26 @@ export default function MenuProductSelectionModal({
                                     </button>
                                 )}
                                 
-                                {step === 'observation' ? (
-                                    <button
-                                        onClick={addToCart}
-                                        className="px-8 py-3 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-colors flex items-center gap-2 shadow-lg shadow-green-200"
-                                    >
-                                        <ShoppingCart className="size-5" />
-                                        Finalizar
-                                    </button>
-                                ) : (
-                                    <button
-                                        onClick={nextStep}
-                                        className="px-8 py-3 bg-violet-500 text-white font-bold rounded-xl hover:bg-violet-600 transition-colors flex items-center gap-2 shadow-lg shadow-violet-200"
-                                    >
-                                        Continuar
-                                        <ChevronRight className="size-5" />
-                                    </button>
-                                )}
+                                <button
+                                    onClick={nextStep}
+                                    className={`px-8 py-3 text-white font-bold rounded-xl transition-colors flex items-center gap-2 shadow-lg ${
+                                        step === 'observation'
+                                            ? 'bg-green-500 hover:bg-green-600 shadow-green-200'
+                                            : 'bg-violet-500 hover:bg-violet-600 shadow-violet-200'
+                                    }`}
+                                >
+                                    {step === 'observation' ? (
+                                        <>
+                                            <ShoppingCart className="size-5" />
+                                            Finalizar
+                                        </>
+                                    ) : (
+                                        <>
+                                            Continuar
+                                            <ChevronRight className="size-5" />
+                                        </>
+                                    )}
+                                </button>
                             </div>
                         </div>
                     </div>

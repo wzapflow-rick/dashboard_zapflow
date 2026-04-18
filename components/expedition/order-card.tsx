@@ -211,14 +211,14 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
 
             <div className="flex flex-col gap-1 pt-2">
                 <div className="flex items-center justify-between">
-                    <span className={cn(
-                        "text-[10px] font-bold uppercase py-1.5 px-2.5 rounded flex items-center gap-1",
-                        order.forma_pagamento === 'pix' ? "bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300" :
-                            order.forma_pagamento === 'dinheiro' ? "bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300" :
-                                "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300"
-                    )}>
-                        {order.forma_pagamento || 'Pagar na Entrega'}
-                    </span>
+	                    <span className={cn(
+	                        "text-[10px] font-bold uppercase py-1.5 px-2.5 rounded flex items-center gap-1",
+	                        (order.forma_pagamento === 'pix' || order.tipo_pagamento === 'pix') ? "bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300" :
+	                            (order.forma_pagamento === 'dinheiro' || order.tipo_pagamento === 'dinheiro') ? "bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300" :
+	                                "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300"
+	                    )}>
+	                        {order.forma_pagamento || order.tipo_pagamento || 'Pagar na Entrega'}
+	                    </span>
                     <span className="text-base font-bold text-slate-900 dark:text-white">
                         R$ {Number(order.valor_total || order.total || 0).toFixed(2).replace('.', ',')}
                     </span>

@@ -5,7 +5,7 @@ import { getOrderCreatedMessage, getStatusMessage, WhatsAppMessages } from '@/ll
 const EVO_API_URL = process.env.EVOLUTION_API_URL || 'https://evo.wzapflow.com.br';
 const EVO_API_KEY = process.env.EVOLUTION_API_KEY || '';
 const EVO_INSTANCE = process.env.EVOLUTION_INSTANCE || 'zapflow_testes';
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://menu.wzapflow.com.br';
 
 // Verificar se a API key está configurada
 function checkApiKey() {

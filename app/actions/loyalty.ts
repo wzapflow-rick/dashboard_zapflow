@@ -68,12 +68,16 @@ export interface PointsHistory {
 // ==================== CONFIGURAÇÃO ====================
 
 // Buscar configuração do programa de fidelidade
-export async function getLoyaltyConfig(): Promise<LoyaltyConfig | null> {
+export async function getLoyaltyConfig(empresaId?: number): Promise<LoyaltyConfig | null> {
     try {
-        const user = await getMe();
-        if (!user?.empresaId) return null;
+        let targetEmpresaId = empresaId;
+        if (!targetEmpresaId) {
+            const user = await getMe();
+            targetEmpresaId = user?.empresaId;
+        }
+        if (!targetEmpresaId) return null;
 
-        const res = await nocoFetch(LOYALTY_CONFIG_TABLE_ID, `/records?where=(empresa_id,eq,${user.empresaId})`);
+        const res = await nocoFetch(LOYALTY_CONFIG_TABLE_ID, `/records?where=(empresa_id,eq,${targetEmpresaId})`);
         const data = await res.json();
         
         if (data.list && data.list.length > 0) {
@@ -146,13 +150,17 @@ export async function saveLoyaltyConfig(configData: Partial<LoyaltyConfig>) {
 // ==================== PONTOS DO CLIENTE ====================
 
 // Buscar pontos de um cliente por telefone
-export async function getClientPoints(telefone: string): Promise<ClientPoints | null> {
+export async function getClientPoints(telefone: string, empresaId?: number): Promise<ClientPoints | null> {
     try {
-        const user = await getMe();
-        if (!user?.empresaId) return null;
+        let targetEmpresaId = empresaId;
+        if (!targetEmpresaId) {
+            const user = await getMe();
+            targetEmpresaId = user?.empresaId;
+        }
+        if (!targetEmpresaId) return null;
 
         const res = await nocoFetch(LOYALTY_POINTS_TABLE_ID, 
-            `/records?where=(empresa_id,eq,${user.empresaId})~and(cliente_telefone,eq,${telefone})`);
+            `/records?where=(empresa_id,eq,${targetEmpresaId})~and(cliente_telefone,eq,${telefone})`);
         const data = await res.json();
         
         return data.list?.[0] || null;

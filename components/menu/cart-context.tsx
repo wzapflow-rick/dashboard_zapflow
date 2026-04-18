@@ -29,6 +29,7 @@ interface CartContextType {
   items: CartItem[];
   cupom: { id?: number; codigo: string; desconto: number; tipo: string } | null;
   addItem: (item: Omit<CartItem, 'id'>) => void;
+  updateItem: (id: string, item: Partial<CartItem>) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantidade: number) => void;
   setCupom: (cupom: { id?: number; codigo: string; desconto: number; tipo: string } | null) => void;
@@ -121,6 +122,10 @@ export function CartProvider({ children, pontosPorReal = 1, empresaId }: { child
     setItems(prev => [...prev, { ...item, id }]);
   }, []);
 
+  const updateItem = useCallback((id: string, updatedItem: Partial<CartItem>) => {
+    setItems(prev => prev.map(item => item.id === id ? { ...item, ...updatedItem } : item));
+  }, []);
+
   const removeItem = useCallback((id: string) => {
     setItems(prev => prev.filter(item => item.id !== id));
   }, []);
@@ -175,6 +180,7 @@ export function CartProvider({ children, pontosPorReal = 1, empresaId }: { child
       items,
       cupom,
       addItem,
+      updateItem,
       removeItem,
       updateQuantity,
       setCupom,

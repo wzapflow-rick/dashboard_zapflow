@@ -27,11 +27,14 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
     items = [];
   }
 
-  const formaPagamento: { [key: string]: string } = {
-    'pix': 'PIX',
-    'dinheiro': 'Dinheiro',
-    'cartao': 'Cartão',
-  };
+	  const formaPagamento: { [key: string]: string } = {
+	    'pix': 'PIX',
+	    'dinheiro': 'Dinheiro',
+	    'cartao': 'Cartão',
+	    'PIX': 'PIX',
+	    'Dinheiro': 'Dinheiro',
+	    'Cartão': 'Cartão',
+	  };
 
   return (
     <AnimatePresence>
@@ -181,9 +184,13 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
                     <CreditCard className="size-3" />
                     Pagamento
                   </h3>
-                  <p className="text-sm font-bold text-slate-900 dark:text-white">
-                    {formaPagamento[order.forma_pagamento] || order.forma_pagamento || 'N/A'}
-                  </p>
+	                  <p className="text-sm font-bold text-slate-900 dark:text-white">
+	                    {formaPagamento[order.forma_pagamento] || 
+	                     formaPagamento[order.tipo_pagamento] || 
+	                     order.forma_pagamento || 
+	                     order.tipo_pagamento || 
+	                     'N/A'}
+	                  </p>
                   {order.forma_pagamento === 'dinheiro' && order.troco_necessario > 0 && (
                     <p className="text-xs text-slate-500 dark:text-slate-400">Troco para: {formatPrice(order.troco_necessario)}</p>
                   )}
