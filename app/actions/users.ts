@@ -1,7 +1,7 @@
 'use server';
 
 import bcrypt from 'bcryptjs';
-import { getMe } from './auth';
+import { getMe, requireAdmin } from '@/lib/session-server';
 import { revalidatePath } from 'next/cache';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
@@ -52,8 +52,7 @@ export async function getUsers() {
 
 export async function createUser(data: { nome: string; email: string; senha: string; role: string }) {
     try {
-        const me = await getMe();
-        if (!me?.empresaId || me.role !== 'admin') throw new Error('Não autorizado');
+        const me = await requireAdmin();
 
         const hashedPassword = bcrypt.hashSync(data.senha, 10);
 
@@ -78,8 +77,7 @@ export async function createUser(data: { nome: string; email: string; senha: str
 
 export async function updateUser(id: number, data: { nome?: string; email?: string; senha?: string; role?: string; ativo?: boolean }) {
     try {
-        const me = await getMe();
-        if (!me?.empresaId || me.role !== 'admin') throw new Error('Não autorizado');
+        const me = await requireAdmin();
 
         const body: any = { id };
         if (data.nome !== undefined) body.nome = data.nome;
@@ -102,8 +100,7 @@ export async function updateUser(id: number, data: { nome?: string; email?: stri
 
 export async function deleteUser(id: number | string) {
     try {
-        const me = await getMe();
-        if (!me?.empresaId || me.role !== 'admin') throw new Error('Não autorizado');
+        const me = await requireAdmin();
 
         const numericId = Number(id);
         if (isNaN(numericId)) throw new Error('ID inválido');

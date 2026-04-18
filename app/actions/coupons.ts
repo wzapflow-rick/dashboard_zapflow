@@ -1,8 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getMe } from './auth';
-import { requireAdmin } from '@/lib/session';
+import { getMe, requireAdmin } from '@/lib/session-server';
 import { CouponSchema } from '@/lib/validations';
 import { logAction } from '@/lib/audit';
 

@@ -16,6 +16,8 @@ interface Product {
     preco: number;
     imagem?: string | null;
     complementGroups?: any[];
+    saborGroups?: any[];
+    additionalGroups?: any[];
 }
 
 interface CategoryGroup {
@@ -124,8 +126,16 @@ export default function MenuFilter({
 }: MenuFilterProps) {
     const [search, setSearch] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<number | 'all' | 'composites'>('all');
-    const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-    const [selectedComposite, setSelectedComposite] = useState<CompositeProduct | null>(null);
+interface ProductWithEditingData extends Product {
+    _editingData?: any;
+}
+
+interface CompositeProductWithEditingData extends CompositeProduct {
+    _editingData?: any;
+}
+
+const [selectedProduct, setSelectedProduct] = useState<ProductWithEditingData | null>(null);
+const [selectedComposite, setSelectedComposite] = useState<CompositeProductWithEditingData | null>(null);
     const [editingItemId, setEditingItemId] = useState<string | null>(null);
     const { addItem, items } = useCart();
 
@@ -138,24 +148,24 @@ export default function MenuFilter({
 
             setEditingItemId(itemId);
 
-            if (item.isComposite) {
-                const composite = allComposites.find(c => c._grupoId === item.grupoId);
-                if (composite) {
-                    setSelectedComposite({
-                        ...composite,
-                        _editingData: item
-                    });
-                }
-            } else {
-                // Encontrar o produto original para ter os grupos
-                const product = grouped.flatMap(g => g.products).find(p => p.id === item.productId);
-                if (product) {
-                    setSelectedProduct({
-                        ...product,
-                        _editingData: item
-                    });
-                }
-            }
+             if (item.isComposite) {
+                 const composite = allComposites.find(c => c._grupoId === item.grupoId);
+                 if (composite) {
+                     setSelectedComposite({
+                         ...composite,
+                         _editingData: item
+                     } as CompositeProductWithEditingData);
+                 }
+             } else {
+                 // Encontrar o produto original para ter os grupos
+                 const product = grouped.flatMap(g => g.products).find(p => p.id === item.productId);
+                 if (product) {
+                     setSelectedProduct({
+                         ...product,
+                         _editingData: item
+                     } as ProductWithEditingData);
+                 }
+             }
         };
 
         window.addEventListener('edit-cart-item', handleEdit);

@@ -2,8 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
-import { getMe } from './auth';
-import { requireAdmin, encrypt } from '@/lib/session';
+import { encrypt } from '@/lib/session';
+import { getMe, requireAdmin } from '@/lib/session-server';
 import { CompanyUpdateSchema } from '@/lib/validations';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';

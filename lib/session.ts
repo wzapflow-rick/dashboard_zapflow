@@ -1,5 +1,4 @@
 import { SignJWT, jwtVerify } from 'jose';
-import { getMe } from '@/app/actions/auth';
 
 function getJWTSecret(): string {
     const secret = process.env.JWT_SECRET;
@@ -35,27 +34,4 @@ export async function decrypt(input: string): Promise<any> {
     } catch (e) {
         return null;
     }
-}
-
-export async function requireAdmin() {
-    const user = await getMe();
-    if (!user?.empresaId) throw new Error('Não autorizado');
-    if (user.role !== 'admin') throw new Error('Acesso negado: apenas administradores');
-    return user;
-}
-
-export async function requireOnboardingDone() {
-    const user = await getMe();
-    if (!user?.empresaId) throw new Error('Não autorizado');
-    if (!user.onboarded) throw new Error('Complete o onboarding primeiro');
-    return user;
-}
-
-export async function requireRole(allowedRoles: string[]) {
-    const user = await getMe();
-    if (!user?.empresaId) throw new Error('Não autorizado');
-    if (!allowedRoles.includes(user.role)) {
-        throw new Error(`Acesso negado: necessário um dos perfis: ${allowedRoles.join(', ')}`);
-    }
-    return user;
 }

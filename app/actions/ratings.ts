@@ -1,6 +1,6 @@
 'use server';
 
-import { getMe } from './auth';
+import { getMe } from '@/lib/session-server';
 import { revalidatePath } from 'next/cache';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';

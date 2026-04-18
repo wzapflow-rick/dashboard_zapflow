@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getMe } from './auth';
+import { getMe } from '@/lib/session-server';
 import { InsumoSchema } from '@/lib/validations';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
@@ -89,8 +89,7 @@ export async function upsertInsumo(insumoData: any) {
 
         let result;
         if (payload.id) {
-            const updatePayload = { ...payload };
-            delete updatePayload.empresa_id;
+            const { empresa_id, ...updatePayload } = payload;
 
             const res = await nocoFetch('/records', {
                 method: 'PATCH',

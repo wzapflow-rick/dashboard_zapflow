@@ -112,7 +112,20 @@ export async function getPublicMenu(slug: string) {
 
         // Mapear todos os grupos por ID para facilitar busca de adicionais vinculados
         const gruposMap = new Map<number, any>();
-        gruposSlots.forEach(g => {
+        gruposSlots.forEach((g: { 
+            id: number; 
+            nome: string; 
+            descricao: string; 
+            tipo: string; 
+            qtd_slots: number; 
+            regra_preco: string; 
+            min_slots: number; 
+            max_slots: number; 
+            itens: number[]; 
+            modo_preco: string; 
+            preco_fixo: number; 
+            completamentos_ids: number[] 
+        }) => {
             const groupItems = g.itens
                 .map((itemId: number) => itensBaseMap.get(itemId))
                 .filter(Boolean)

@@ -1,7 +1,6 @@
 'use server';
 
-import { cookies } from 'next/headers';
-import { decrypt } from '@/lib/session';
+import { getMe } from '@/lib/session-server';
 import { HorarioSchema } from '@/lib/validations';
 import { z } from 'zod';
 
@@ -44,11 +43,8 @@ export type HorarioItem = {
 
 export async function saveHorariosFuncionamento(horarios: HorarioItem[], nomeEmpresa: string) {
     try {
-        const sessionValue = (await cookies()).get('session')?.value;
-        if (!sessionValue) return { error: 'Não autorizado' };
-
-        const payload = await decrypt(sessionValue);
-        if (!payload) return { error: 'Sessão inválida' };
+        const user = await getMe();
+        if (!user) return { error: 'Não autorizado' };
 
         // Validação com Zod
         const validated = HorariosArraySchema.safeParse(horarios);
@@ -57,7 +53,7 @@ export async function saveHorariosFuncionamento(horarios: HorarioItem[], nomeEmp
             return { error: `Dados inválidos: ${errorMsg}` };
         }
 
-        const empresaId = payload.empresaId;
+        const empresaId = user.empresaId;
 
         // Busca registros existentes para deletar
         const existing = await nocoFetch(HORARIOS_TABLE_ID, `/records?where=(empresa_id,eq,${empresaId})`);
@@ -101,13 +97,10 @@ export async function saveHorariosFuncionamento(horarios: HorarioItem[], nomeEmp
 }
 
 export async function getHorariosFuncionamento() {
-    const sessionValue = (await cookies()).get('session')?.value;
-    if (!sessionValue) return { error: 'Não autorizado', horarios: [] };
+    const user = await getMe();
+    if (!user) return { error: 'Não autorizado', horarios: [] };
 
-    const payload = await decrypt(sessionValue);
-    if (!payload) return { error: 'Sessão inválida', horarios: [] };
-
-    const empresaId = payload.empresaId;
+    const empresaId = user.empresaId;
     const res = await nocoFetch(HORARIOS_TABLE_ID, `/records?where=(empresa_id,eq,${empresaId})&sort=dia_semana`);
     if (!res) return { error: 'Erro ao buscar horários', horarios: [] };
 

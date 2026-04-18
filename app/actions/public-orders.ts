@@ -277,12 +277,10 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
         }
         
         // Deduzir pontos se foram usados
-        if (data.pontosUsados && data.pontosUsados > 0 && data.descontoPontos) {
+        if (data.pontosUsados && data.pontosUsados > 0) {
             deductPointsForOrder(
                 data.clienteTelefone.replace(/\D/g, ''),
-                data.pontosUsados,
-                data.descontoPontos,
-                order.id
+                data.pontosUsados
             ).catch(err => console.error('Erro ao deduzir pontos:', err));
         }
         

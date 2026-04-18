@@ -39,6 +39,18 @@ export function sanitizeHtml(str: string): string {
         .replace(/'/g, '&#x27;');
 }
 
+// Interfaces de Usuário
+export interface User {
+    userId: number;
+    email: string;
+    empresaId: number;
+    nome: string;
+    onboarded: boolean;
+    controle_estoque: boolean;
+    role: string;
+    source?: string;
+}
+
 // Auth
 export const LoginSchema = z.object({
     email: z.string().email('E-mail inválido').min(3, 'E-mail deve ter pelo menos 3 caracteres'),

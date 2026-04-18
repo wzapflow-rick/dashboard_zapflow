@@ -1,8 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getMe } from './auth';
-import { LoyaltyConfigSchema, LoyaltyRedeemSchema } from '@/lib/validations';
+import { getMe } from '@/lib/session-server';
+import { LoyaltyConfigSchema, LoyaltyRedeemSchema, User } from '@/lib/validations';
 import { logAction } from '@/lib/audit';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
@@ -48,21 +48,33 @@ export interface ClientPoints {
     cliente_telefone: string;
     cliente_nome?: string;
     pontos_acumulados: number;
-    pontos_gastos: number;
-    total_gasto: number;
-    ultima_atualizacao: string;
-    empresa_id: number | string;
+    pontos_gastos?: number;
+    total_gasto?: number;
 }
 
-export interface PointsHistory {
-    id?: number | string;
-    cliente_telefone: string;
-    tipo: 'ganho' | 'resgate' | 'expirado' | 'ajuste';
-    pontos: number;
-    descricao: string;
-    pedido_id?: number | string;
-    data: string;
-    empresa_id: number | string;
+// ==================== PONTOS DO CLIENTE ====================
+
+// Buscar pontos de um cliente pelo telefone
+export async function getClientPoints(telefone: string): Promise<ClientPoints | null> {
+    try {
+        const user = await getMe();
+        if (!user?.empresaId) return null;
+
+        const res = await nocoFetch(LOYALTY_POINTS_TABLE_ID, `/records?where=(cliente_telefone,eq,${telefone})~and(empresa_id,eq,${user.empresaId})`);
+        const data = await res.json();
+        
+        if (data.list && data.list.length > 0) {
+            return data.list[0];
+        }
+        
+        return {
+            cliente_telefone: telefone,
+            pontos_acumulados: 0
+        };
+    } catch (error) {
+        console.error('getClientPoints error:', error);
+        return null;
+    }
 }
 
 // ==================== CONFIGURAÇÃO ====================
@@ -71,8 +83,9 @@ export interface PointsHistory {
 export async function getLoyaltyConfig(empresaId?: number): Promise<LoyaltyConfig | null> {
     try {
         let targetEmpresaId = empresaId;
+        let user: User | null = null;
         if (!targetEmpresaId) {
-            const user = await getMe();
+            user = await getMe();
             targetEmpresaId = user?.empresaId;
         }
         if (!targetEmpresaId) return null;
@@ -86,7 +99,7 @@ export async function getLoyaltyConfig(empresaId?: number): Promise<LoyaltyConfi
         
         // Retornar configuração padrão se não existir
         return {
-            empresa_id: user.empresaId,
+            empresa_id: targetEmpresaId,
             pontos_por_real: 1,
             valor_ponto: 0.10,
             pontos_para_desconto: 100,
@@ -104,338 +117,160 @@ export async function getLoyaltyConfig(empresaId?: number): Promise<LoyaltyConfi
 export async function saveLoyaltyConfig(configData: Partial<LoyaltyConfig>) {
     try {
         const user = await getMe();
-        if (!user?.empresaId) throw new Error('Não autorizado');
+        if (!user?.empresaId) return { error: 'Não autorizado' };
 
-        // Validação com Zod
         const validated = LoyaltyConfigSchema.safeParse(configData);
         if (!validated.success) {
-            const errorMsg = validated.error.issues.map((issue: any) => issue.message).join(', ');
-            throw new Error(`Dados inválidos: ${errorMsg}`);
+            return { error: 'Dados inválidos', details: validated.error.format() };
         }
 
         // Verificar se já existe configuração
-        const checkRes = await nocoFetch(LOYALTY_CONFIG_TABLE_ID, `/records?where=(empresa_id,eq,${user.empresaId})`);
-        const checkData = await checkRes.json();
-        const existingConfig = checkData.list?.[0];
+        const existingRes = await nocoFetch(LOYALTY_CONFIG_TABLE_ID, `/records?where=(empresa_id,eq,${user.empresaId})`);
+        const existingData = await existingRes.json();
+        const existing = existingData.list?.[0];
 
         const payload = {
             ...validated.data,
             empresa_id: user.empresaId,
         };
 
-        let result;
-        if (existingConfig?.id) {
-            const res = await nocoFetch(LOYALTY_CONFIG_TABLE_ID, '/records', {
+        let res;
+        if (existing) {
+            res = await nocoFetch(LOYALTY_CONFIG_TABLE_ID, '/records', {
                 method: 'PATCH',
-                body: JSON.stringify({ ...payload, id: existingConfig.id }),
+                body: JSON.stringify({ id: existing.id, ...payload }),
             });
-            result = await res.json();
         } else {
-            const res = await nocoFetch(LOYALTY_CONFIG_TABLE_ID, '/records', {
+            res = await nocoFetch(LOYALTY_CONFIG_TABLE_ID, '/records', {
                 method: 'POST',
                 body: JSON.stringify(payload),
             });
-            result = await res.json();
         }
 
-        await logAction('UPDATE_LOYALTY_CONFIG', 'Configuração de fidelidade atualizada');
-        revalidatePath('/dashboard/settings');
-        return { success: true, data: result };
-    } catch (error: any) {
+        await logAction('LOYALTY_CONFIG_UPDATE', `Configuração de fidelidade atualizada para empresa ${user.empresaId}`);
+        revalidatePath('/dashboard/growth');
+        return { success: true };
+    } catch (error) {
         console.error('saveLoyaltyConfig error:', error);
-        throw new Error(error.message || 'Erro ao salvar configuração');
+        return { error: 'Erro ao salvar configuração' };
     }
 }
 
-// ==================== PONTOS DO CLIENTE ====================
+// ==================== OPERAÇÕES ====================
 
-// Buscar pontos de um cliente por telefone
-export async function getClientPoints(telefone: string, empresaId?: number): Promise<ClientPoints | null> {
-    try {
-        let targetEmpresaId = empresaId;
-        if (!targetEmpresaId) {
-            const user = await getMe();
-            targetEmpresaId = user?.empresaId;
-        }
-        if (!targetEmpresaId) return null;
-
-        const res = await nocoFetch(LOYALTY_POINTS_TABLE_ID, 
-            `/records?where=(empresa_id,eq,${targetEmpresaId})~and(cliente_telefone,eq,${telefone})`);
-        const data = await res.json();
-        
-        return data.list?.[0] || null;
-    } catch (error) {
-        console.error('getClientPoints error:', error);
-        return null;
-    }
-}
-
-// Buscar pontos de todos os clientes (para dashboard)
-export async function getAllClientsPoints(): Promise<ClientPoints[]> {
+// Adicionar pontos a um cliente
+export async function addPointsToClient(telefone: string, valorPedido: number, nomeCliente?: string) {
     try {
         const user = await getMe();
-        if (!user?.empresaId) return [];
+        if (!user?.empresaId) return { error: 'Não autorizado' };
 
-        const res = await nocoFetch(LOYALTY_POINTS_TABLE_ID, 
-            `/records?limit=1000&where=(empresa_id,eq,${user.empresaId})&sort=-pontos_acumulados`);
-        const data = await res.json();
-        
-        return (data.list || []).map((c: any) => ({ ...c, id: c.id || c.Id }));
-    } catch (error) {
-        console.error('getAllClientsPoints error:', error);
-        return [];
-    }
-}
+        const config = await getLoyaltyConfig(user.empresaId);
+        if (!config || !config.ativo) return { error: 'Programa de fidelidade inativo' };
 
-// Adicionar pontos após pedido
-export async function addPointsForOrder(
-    telefone: string, 
-    nomeCliente: string, 
-    valorPedido: number, 
-    pedidoId: number | string
-) {
-    try {
-        const user = await getMe();
-        if (!user?.empresaId) return;
-
-        // Buscar configuração
-        const config = await getLoyaltyConfig();
-        if (!config || !config.ativo) return;
-
-        // Calcular pontos ganhos
         const pontosGanhos = Math.floor(valorPedido * config.pontos_por_real);
-        if (pontosGanhos <= 0) return;
+        if (pontosGanhos <= 0) return { success: true, pontos: 0 };
 
-        // Buscar ou criar registro do cliente
-        let clientPoints = await getClientPoints(telefone);
-        
-        if (clientPoints?.id) {
-            // Atualizar pontos existentes
+        // Buscar cliente existente
+        const existingRes = await nocoFetch(LOYALTY_POINTS_TABLE_ID, `/records?where=(cliente_telefone,eq,${telefone})~and(empresa_id,eq,${user.empresaId})`);
+        const existingData = await existingRes.json();
+        const existing = existingData.list?.[0];
+
+        if (existing) {
             await nocoFetch(LOYALTY_POINTS_TABLE_ID, '/records', {
                 method: 'PATCH',
                 body: JSON.stringify({
-                    id: clientPoints.id,
-                    pontos_acumulados: (clientPoints.pontos_acumulados || 0) + pontosGanhos,
-                    total_gasto: (clientPoints.total_gasto || 0) + valorPedido,
-                    ultima_atualizacao: new Date().toISOString(),
+                    id: existing.id,
+                    pontos_acumulados: (existing.pontos_acumulados || 0) + pontosGanhos,
+                    cliente_nome: nomeCliente || existing.cliente_nome
                 }),
             });
         } else {
-            // Criar novo registro
             await nocoFetch(LOYALTY_POINTS_TABLE_ID, '/records', {
                 method: 'POST',
                 body: JSON.stringify({
-                    empresa_id: user.empresaId,
                     cliente_telefone: telefone,
-                    cliente_nome: nomeCliente,
+                    cliente_nome: nomeCliente || 'Cliente',
                     pontos_acumulados: pontosGanhos,
-                    pontos_gastos: 0,
-                    total_gasto: valorPedido,
-                    ultima_atualizacao: new Date().toISOString(),
+                    empresa_id: user.empresaId
                 }),
             });
         }
 
-        // Registrar no histórico
-        await addPointsHistory(telefone, 'ganho', pontosGanhos, `Pedido #${pedidoId}`, pedidoId);
-
-        revalidatePath('/dashboard/settings');
-        return { pontosGanhos };
+        await logAction('LOYALTY_POINTS_ADD', `Adicionados ${pontosGanhos} pontos ao cliente ${telefone} (valor: R$ ${valorPedido.toFixed(2)})`);
+        return { success: true, pontos: pontosGanhos };
     } catch (error) {
-        console.error('addPointsForOrder error:', error);
-        return null;
+        console.error('addPointsToClient error:', error);
+        return { error: 'Erro ao adicionar pontos' };
     }
 }
 
-// Resgatar pontos
-export async function redeemPoints(data: { cliente_telefone: string; pontos_resgatar: number }) {
+// Resgatar pontos (converter em desconto)
+export async function redeemPoints(data: { cliente_telefone: string, pontos_resgatar: number }) {
     try {
         const user = await getMe();
-        if (!user?.empresaId) throw new Error('Não autorizado');
+        if (!user?.empresaId) return { error: 'Não autorizado' };
 
-        // Validação
         const validated = LoyaltyRedeemSchema.safeParse(data);
-        if (!validated.success) {
-            throw new Error('Dados inválidos');
+        if (!validated.success) return { error: 'Dados inválidos' };
+
+        const { cliente_telefone, pontos_resgatar } = validated.data;
+
+        // Verificar pontos do cliente
+        const existingRes = await nocoFetch(LOYALTY_POINTS_TABLE_ID, `/records?where=(cliente_telefone,eq,${cliente_telefone})~and(empresa_id,eq,${user.empresaId})`);
+        const existingData = await existingRes.json();
+        const existing = existingData.list?.[0];
+
+        if (!existing || (existing.pontos_acumulados || 0) < pontos_resgatar) {
+            return { error: 'Pontos insuficientes' };
         }
 
-        // Buscar pontos do cliente
-        const clientPoints = await getClientPoints(validated.data.cliente_telefone);
-        if (!clientPoints) {
-            throw new Error('Cliente não possui pontos');
-        }
-
-        const pontosDisponiveis = (clientPoints.pontos_acumulados || 0) - (clientPoints.pontos_gastos || 0);
-        if (validated.data.pontos_resgatar > pontosDisponiveis) {
-            throw new Error(`Pontos insuficientes. Disponíveis: ${pontosDisponiveis}`);
-        }
-
-        // Buscar configuração para calcular valor do desconto
-        const config = await getLoyaltyConfig();
-        if (!config) throw new Error('Configuração não encontrada');
-
-        let valorDesconto = 0;
-        if (config.desconto_tipo === 'valor_fixo') {
-            valorDesconto = (validated.data.pontos_resgatar / config.pontos_para_desconto) * config.desconto_valor;
-        } else {
-            valorDesconto = (validated.data.pontos_resgatar / config.pontos_para_desconto) * config.desconto_valor;
-        }
-
-        // Atualizar pontos do cliente
+        // Subtrair pontos
         await nocoFetch(LOYALTY_POINTS_TABLE_ID, '/records', {
             method: 'PATCH',
             body: JSON.stringify({
-                id: clientPoints.id,
-                pontos_gastos: (clientPoints.pontos_gastos || 0) + validated.data.pontos_resgatar,
-                ultima_atualizacao: new Date().toISOString(),
+                id: existing.id,
+                pontos_acumulados: existing.pontos_acumulados - pontos_resgatar
             }),
         });
 
-        // Registrar no histórico
-        await addPointsHistory(
-            validated.data.cliente_telefone, 
-            'resgate', 
-            validated.data.pontos_resgatar, 
-            `Resgate de R$ ${valorDesconto.toFixed(2).replace('.', ',')}`
-        );
-
-        await logAction('REDEEM_POINTS', `Cliente ${validated.data.cliente_telefone} resgatou ${validated.data.pontos_resgatar} pontos`);
-        revalidatePath('/dashboard/settings');
-
-        return { 
-            success: true, 
-            valorDesconto,
-            pontosResgatados: validated.data.pontos_resgatar 
-        };
-    } catch (error: any) {
+        await logAction('LOYALTY_POINTS_REDEEM', `Resgatados ${pontos_resgatar} pontos do cliente ${cliente_telefone}`);
+        return { success: true };
+    } catch (error) {
         console.error('redeemPoints error:', error);
-        throw new Error(error.message || 'Erro ao resgatar pontos');
-    }
-}
-
-// Deduzir pontos no pedido (usado pelo sistema de pedidos)
-export async function deductPointsForOrder(
-    clienteTelefone: string, 
-    pontosParaDeduzir: number,
-    valorDesconto: number,
-    pedidoId: number | string
-) {
-    try {
-        const user = await getMe();
-        if (!user?.empresaId) throw new Error('Não autorizado');
-
-        // Buscar pontos do cliente
-        const clientPoints = await getClientPoints(clienteTelefone);
-        if (!clientPoints) return null;
-
-        const pontosDisponiveis = (clientPoints.pontos_acumulados || 0) - (clientPoints.pontos_gastos || 0);
-        if (pontosParaDeduzir > pontosDisponiveis) {
-            return null; // Não tem pontos suficientes
-        }
-
-        // Atualizar pontos do cliente
-        await nocoFetch(LOYALTY_POINTS_TABLE_ID, '/records', {
-            method: 'PATCH',
-            body: JSON.stringify({
-                id: clientPoints.id,
-                pontos_gastos: (clientPoints.pontos_gastos || 0) + pontosParaDeduzir,
-                ultima_atualizacao: new Date().toISOString(),
-            }),
-        });
-
-        // Registrar no histórico
-        await addPointsHistory(
-            clienteTelefone, 
-            'resgate', 
-            pontosParaDeduzir, 
-            `Resgate via pedido #${pedidoId} - R$ ${valorDesconto.toFixed(2).replace('.', ',')}`,
-            pedidoId
-        );
-
-        return { 
-            success: true, 
-            pontosDeduzidos: pontosParaDeduzir,
-            valorDesconto
-        };
-    } catch (error) {
-        console.error('deductPointsForOrder error:', error);
-        return null;
-    }
-}
-
-// ==================== HISTÓRICO ====================
-
-async function addPointsHistory(
-    telefone: string, 
-    tipo: 'ganho' | 'resgate' | 'expirado' | 'ajuste',
-    pontos: number,
-    descricao: string,
-    pedidoId?: number | string
-) {
-    try {
-        const user = await getMe();
-        if (!user?.empresaId) return;
-
-        // Tabela de histórico (pode ser a mesma ou uma separada)
-        await nocoFetch(LOYALTY_POINTS_TABLE_ID, '/records', {
-            method: 'POST',
-            body: JSON.stringify({
-                empresa_id: user.empresaId,
-                cliente_telefone: telefone,
-                tipo,
-                pontos,
-                descricao,
-                pedido_id: pedidoId,
-                data: new Date().toISOString(),
-            }),
-        });
-    } catch (error) {
-        console.error('addPointsHistory error:', error);
-    }
-}
-
-// Buscar histórico de pontos de um cliente
-export async function getClientPointsHistory(telefone: string) {
-    try {
-        const user = await getMe();
-        if (!user?.empresaId) return [];
-
-        const res = await nocoFetch(LOYALTY_POINTS_TABLE_ID,
-            `/records?limit=50&where=(empresa_id,eq,${user.empresaId})~and(cliente_telefone,eq,${telefone})&sort=-data`);
-        const data = await res.json();
-        
-        return data.list || [];
-    } catch (error) {
-        console.error('getClientPointsHistory error:', error);
-        return [];
+        return { error: 'Erro ao resgatar pontos' };
     }
 }
 
 // ==================== ESTATÍSTICAS ====================
 
+// Obter estatísticas do programa de fidelidade
 export async function getLoyaltyStats() {
     try {
         const user = await getMe();
         if (!user?.empresaId) return null;
 
-        const config = await getLoyaltyConfig();
-        const clientsPoints = await getAllClientsPoints();
-
-        const totalClientes = clientsPoints.length;
-        const totalPontosAcumulados = clientsPoints.reduce((sum, c) => sum + (c.pontos_acumulados || 0), 0);
-        const totalPontosResgatados = clientsPoints.reduce((sum, c) => sum + (c.pontos_gastos || 0), 0);
-        const pontosAtivos = totalPontosAcumulados - totalPontosResgatados;
-
-        // Top 10 clientes com mais pontos
-        const topClients = clientsPoints.slice(0, 10);
+        const config = await getLoyaltyConfig(user.empresaId);
+        
+        const pointsRes = await nocoFetch(LOYALTY_POINTS_TABLE_ID, `/records?where=(empresa_id,eq,${user.empresaId})&sort=-pontos_acumulados&limit=100`);
+        const pointsData = await pointsRes.json();
+        const clients = pointsData.list || [];
+        
+        const totalPontosAcumulados = clients.reduce((sum: number, c: any) => sum + (c.pontos_acumulados || 0), 0);
+        const totalPontosResgatados = clients.reduce((sum: number, c: any) => sum + (c.pontos_gastos || 0), 0);
 
         return {
-            config,
-            totalClientes,
+            totalClientes: clients.length,
             totalPontosAcumulados,
             totalPontosResgatados,
-            pontosAtivos,
-            topClients,
+            pontosAtivos: totalPontosAcumulados - totalPontosResgatados,
+            topClients: clients.slice(0, 5).map((c: any) => ({
+                id: c.id,
+                cliente_nome: c.cliente_nome || 'Cliente',
+                cliente_telefone: c.cliente_telefone,
+                pontos_acumulados: c.pontos_acumulados || 0,
+                pontos_gastos: c.pontos_gastos || 0,
+                total_gasto: c.total_gasto || 0
+            }))
         };
     } catch (error) {
         console.error('getLoyaltyStats error:', error);
@@ -443,31 +278,70 @@ export async function getLoyaltyStats() {
     }
 }
 
-// Verificar se cliente tem pontos suficientes para resgate
-export async function checkPointsAvailability(telefone: string, pontosNecessarios: number) {
+export async function getAllClientsPoints(): Promise<ClientPoints[]> {
     try {
-        const clientPoints = await getClientPoints(telefone);
-        if (!clientPoints) return { available: false, pontos: 0 };
+        const user = await getMe();
+        if (!user?.empresaId) return [];
 
-        const pontosDisponiveis = (clientPoints.pontos_acumulados || 0) - (clientPoints.pontos_gastos || 0);
-        return {
-            available: pontosDisponiveis >= pontosNecessarios,
-            pontos: pontosDisponiveis,
-        };
+        const res = await nocoFetch(LOYALTY_POINTS_TABLE_ID, `/records?where=(empresa_id,eq,${user.empresaId})&sort=-pontos_acumulados&limit=1000`);
+        const data = await res.json();
+        return data.list || [];
     } catch (error) {
-        console.error('checkPointsAvailability error:', error);
-        return { available: false, pontos: 0 };
+        console.error('getAllClientsPoints error:', error);
+        return [];
     }
 }
 
-// Calcular valor de desconto por pontos
-export async function calculatePointsValue(pontos: number) {
+export async function calculatePointsValue(points: number): Promise<number> {
     try {
-        const config = await getLoyaltyConfig();
+        const user = await getMe();
+        if (!user?.empresaId) return 0;
+
+        const config = await getLoyaltyConfig(user.empresaId);
         if (!config) return 0;
 
-        return (pontos / config.pontos_para_desconto) * config.desconto_valor;
+        return points * (config.valor_ponto || 0);
     } catch (error) {
+        console.error('calculatePointsValue error:', error);
         return 0;
+    }
+}
+
+// ==================== INTEGRAÇÃO COM PEDIDOS ====================
+
+// Adicionar pontos quando um pedido é criado
+export async function addPointsForOrder(telefone: string, nomeCliente: string, valorPedido: number) {
+    return await addPointsToClient(telefone, valorPedido, nomeCliente);
+}
+
+// Deduzir pontos quando um pedido é cancelado
+export async function deductPointsForOrder(telefone: string, pontos: number) {
+    try {
+        const user = await getMe();
+        if (!user?.empresaId) return { error: 'Não autorizado' };
+
+        // Buscar cliente
+        const existingRes = await nocoFetch(LOYALTY_POINTS_TABLE_ID, `/records?where=(cliente_telefone,eq,${telefone})~and(empresa_id,eq,${user.empresaId})`);
+        const existingData = await existingRes.json();
+        const existing = existingData.list?.[0];
+
+        if (!existing) return { error: 'Cliente não encontrado' };
+
+        const currentPoints = existing.pontos_acumulados || 0;
+        const newPoints = Math.max(0, currentPoints - pontos);
+
+        await nocoFetch(LOYALTY_POINTS_TABLE_ID, '/records', {
+            method: 'PATCH',
+            body: JSON.stringify({
+                id: existing.id,
+                pontos_acumulados: newPoints
+            }),
+        });
+
+        await logAction('LOYALTY_POINTS_DEDUCT', `Deduzidos ${pontos} pontos do cliente ${telefone}`);
+        return { success: true, newPoints };
+    } catch (error) {
+        console.error('deductPointsForOrder error:', error);
+        return { error: 'Erro ao deduzir pontos' };
     }
 }

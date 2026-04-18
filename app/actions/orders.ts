@@ -1,8 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getMe } from './auth';
-import { requireRole } from '@/lib/session';
+import { getMe, requireRole } from '@/lib/session-server';
 import { getReceitaDoProduto, atualizarEstoqueInsumo, getInsumos } from './insumos';
 import { getReceitaDoComplemento, getInsumosDoGrupo } from './complements';
 import { getReceitaDoItemBase } from './itens-base';
@@ -236,8 +235,7 @@ export async function updateOrderStatus(id: number, status: string, motivo?: str
                 addPointsForOrder(
                     orderData.telefone_cliente,
                     orderData.cliente_nome || 'Cliente',
-                    Number(orderData.valor_total),
-                    id
+                    Number(orderData.valor_total)
                 ).catch(err => console.error('Falha ao adicionar pontos:', err));
             }
 
@@ -245,7 +243,7 @@ export async function updateOrderStatus(id: number, status: string, motivo?: str
         }
 
         if (orderData.telefone_cliente) {
-            sendOrderStatusMessage(orderData.telefone_cliente, id, status, user.empresaId, orderData.tipo_entrega, orderData.telefone_cliente)
+            sendOrderStatusMessage(orderData.telefone_cliente, id, status, user.empresaId, orderData.tipo_entrega)
                 .catch(err => console.error('Falha ao enviar WhatsApp:', err));
         }
 

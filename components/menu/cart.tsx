@@ -497,7 +497,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
 
     setLoadingPoints(true);
     try {
-      const points = await getClientPoints(cleanPhone, empresaId);
+     const points  = await getClientPoints(cleanPhone);
       // Calcular pontos disponíveis (acumulados - gastos)
       const pontosDisponiveis = (points?.pontos_acumulados || 0) - (points?.pontos_gastos || 0);
       setClientPoints(pontosDisponiveis);
@@ -1665,6 +1665,4 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
   );
 }
 
-function cn(...classes: (string | boolean | undefined)[]) {
-  return classes.filter(Boolean).join(' ');
-}
+

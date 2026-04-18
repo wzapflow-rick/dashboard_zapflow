@@ -99,8 +99,7 @@ export async function sendOrderStatusMessage(
     orderId: number,
     status: string,
     empresaId?: number,
-    tipoEntrega?: string,
-    customerPhone?: string
+    tipoEntrega?: string
 ): Promise<boolean> {
     const isDelivery = tipoEntrega === 'delivery';
     const trackUrl = `${BASE_URL}/track/${orderId}`;

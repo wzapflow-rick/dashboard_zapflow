@@ -1,6 +1,6 @@
 'use server';
 
-import { getMe } from './auth';
+// getMe removido por não ser utilizado e evitar problemas de runtime
 
 const NOCODB_URL = process.env.NOCODB_URL || 'https://db.wzapflow.com.br';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';

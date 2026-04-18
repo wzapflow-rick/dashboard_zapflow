@@ -269,11 +269,11 @@ export async function updateOnboarding(onboardingData: any) {
 }
 
 export async function logout() {
-    (await cookies()).set('session', '', { expires: new Date(0) });
+    const { logout: logoutServer } = await import('@/lib/session-server');
+    return await logoutServer();
 }
 
 export async function getMe() {
-    const sessionValue = (await cookies()).get('session')?.value;
-    if (!sessionValue) return null;
-    return await decrypt(sessionValue);
+    const { getMe: getMeServer } = await import('@/lib/session-server');
+    return await getMeServer();
 }

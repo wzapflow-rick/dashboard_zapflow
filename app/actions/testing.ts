@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getMe } from './auth';
+import { getMe } from '@/lib/session-server';
 import { getProducts, upsertProduct, upsertCategory } from './products';
 import { upsertCustomer } from './customers';
 import { upsertInsumo } from './insumos';
