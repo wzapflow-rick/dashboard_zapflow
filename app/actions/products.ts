@@ -5,16 +5,19 @@ import { getMe, requireAdmin } from '@/lib/session-server';
 import { saveReceitaDoProduto } from './insumos';
 import { ProductSchema, CategorySchema } from '@/lib/validations';
 import { logAction } from '@/lib/audit';
+import { v2 as cloudinary } from 'cloudinary';
 
 const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
 const TABLE_ID = 'mh81t2xp1uml6pc';
 const CATEGORIES_TABLE_ID = 'mo5so5g7gvlbwyo';
 
-// SSL check should be enabled in production
-if (process.env.NODE_ENV === 'development') {
-  // process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'; // Disabling only if absolutely strictly necessary for dev
-}
+// Configurar Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 export interface Category {
   id: number;
@@ -80,27 +83,19 @@ export async function uploadImageAction(formData: FormData) {
   const file = formData.get('image') as File;
   if (!file || file.size === 0) return null;
 
-  const apiKey = process.env.IMGBB_API_KEY;
-  if (!apiKey) throw new Error('ImgBB API Key is missing');
-
-  const imgbbData = new FormData();
-  imgbbData.append('image', file);
-
   try {
-    const res = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
-      method: 'POST',
-      body: imgbbData,
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const base64Image = `data:${file.type};base64,${buffer.toString('base64')}`;
+
+    const result = await cloudinary.uploader.upload(base64Image, {
+      folder: 'zapflow_products',
     });
-    const data = await res.json();
-    if (data.success) {
-      return data.data.url;
-    } else {
-      console.error('ImgBB error:', data);
-      throw new Error(data.error?.message || 'Falha no upload da imagem (ImgBB)');
-    }
-  } catch (error) {
-    console.error('Falha ao conectar no ImgBB:', error);
-    throw new Error('Falha na comunicação com serviço de imagens');
+
+    return result.secure_url;
+  } catch (error: any) {
+    console.error('Cloudinary upload error:', error);
+    throw new Error(error.message || 'Falha no upload da imagem para o Cloudinary');
   }
 }
 
