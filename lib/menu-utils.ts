@@ -10,7 +10,8 @@ import { parseCurrency } from '@/lib/utils';
 interface ProductData {
   id?: number | string;
   nome: string;
-  categorias: number;
+  categorias: number | string;
+  categoria_id: number | string;
   preco: number;
   descricao: string;
   disponivel: boolean;
@@ -23,28 +24,17 @@ export async function saveProduct(
   isCreatingCategory: boolean,
   selectedInsumos?: { insumo_id: string | number; quantidade_necessaria: number }[]
 ) {
-  let finalCategoryId = Number(formData.get('categoria_id'));
+  let finalCategoryId: string | number = formData.get('categoria_id') as string;
 
   if (isCreatingCategory) {
     const novaCategoriaNome = formData.get('novaCategoria') as string;
     const novaCat = await upsertCategory({ nome: novaCategoriaNome });
     finalCategoryId = novaCat.id;
-  }
-
-  // Upload image if provided
-  let imagemUrl = editingProduct?.imagem || 'https://picsum.photos/seed/food/200/200';
-  const file = formData.get('imagem_file') as File;
-  if (file && file.size > 0) {
-    const uploadFormData = new FormData();
-    uploadFormData.append('image', file);
-    try {
-      const uploadedUrl = await uploadImageAction(uploadFormData);
-      if (uploadedUrl) {
-        imagemUrl = uploadedUrl;
-      }
-    } catch (uploadError) {
-      console.error('Upload Error:', uploadError);
-      toast.error('Ocorreu um erro ao fazer upload da imagem.');
+  } else {
+    // Convert to number if it's completely numeric
+    const num = Number(finalCategoryId);
+    if (!isNaN(num) && finalCategoryId.toString().trim() !== '') {
+      finalCategoryId = num;
     }
   }
 
@@ -66,13 +56,37 @@ export async function saveProduct(
     id: editingProduct?.id,
     nome: formData.get('nome') as string,
     categorias: finalCategoryId,
+    categoria_id: finalCategoryId,
     preco: precoNumerico,
     descricao: formData.get('descricao') as string,
     disponivel: editingProduct ? editingProduct.disponivel : true,
-    imagem: imagemUrl
+    imagem: editingProduct?.imagem || ''
   };
 
-  const savedProduct = await upsertProduct(productData, selectedInsumos);
+  // 1. Salva o produto primeiro. Isso garante a validação do DB. 
+  // Caso falhe, a imagem não será enviada ao servidor (rollback preventivo).
+  let savedProduct = await upsertProduct(productData, selectedInsumos);
+
+  // 2. Com o produto salvo, processa o upload da imagem.
+  const file = formData.get('imagem_file') as File;
+  if (file && file.size > 0) {
+    const uploadFormData = new FormData();
+    uploadFormData.append('image', file);
+    try {
+      const uploadedUrl = await uploadImageAction(uploadFormData);
+      if (uploadedUrl) {
+        // Se a imagem subiu com sucesso, atualiza o produto com a nova imagem
+        savedProduct = await upsertProduct({
+          ...productData,
+          id: savedProduct.id,
+          imagem: uploadedUrl
+        });
+      }
+    } catch (uploadError) {
+      console.error('Upload Error:', uploadError);
+      toast.error('Produto salvo, mas sem imagem devido a falha no upload.');
+    }
+  }
 
   return savedProduct;
 

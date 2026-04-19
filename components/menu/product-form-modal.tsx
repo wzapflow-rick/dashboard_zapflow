@@ -45,6 +45,9 @@ export default function ProductFormModal({
     }, []);
 
     useEffect(() => {
+        // Limpar possíveis mensagens de erro (toasts) que ficaram presas na tela
+        toast.dismiss();
+
         setIsCreatingCategory(false);
         setIsSubmitting(false);
         setImagePreview(editingProduct?.imagem || null);
@@ -56,6 +59,11 @@ export default function ProductFormModal({
             setUsaInsumos(false);
             setSelectedInsumos([]);
         }
+
+        // Limpar mensagens ao desmontar
+        return () => {
+            toast.dismiss();
+        };
     }, [isOpen, editingProduct, productInsumos]);
 
     if (!isOpen) return null;

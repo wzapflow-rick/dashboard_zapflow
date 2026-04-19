@@ -12,7 +12,7 @@ const DANGEROUS_PATTERNS = [
 
 export function sanitizeString(str: string): string {
     if (typeof str !== 'string') return '';
-    
+
     let sanitized = str
         .replace(/<[^>]*>/g, '')
         .replace(/[<>]/g, '')
@@ -21,17 +21,17 @@ export function sanitizeString(str: string): string {
         .replace(/'/g, '&#x27;')
         .replace(/\//g, '&#x2F;')
         .trim();
-    
+
     for (const pattern of DANGEROUS_PATTERNS) {
         sanitized = sanitized.replace(pattern, '');
     }
-    
+
     return sanitized;
 }
 
 export function sanitizeHtml(str: string): string {
     if (typeof str !== 'string') return '';
-    
+
     return str
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
@@ -62,8 +62,8 @@ export const ProductSchema = z.object({
     id: z.number().optional().or(z.string().optional()),
     nome: z.string().min(2, 'Nome muito curto').transform(sanitizeString),
     preco: z.coerce.number().min(0, 'Preço não pode ser negativo').default(0),
-    categoria_id: z.coerce.number().int().positive().optional().nullable(),
-    categorias: z.coerce.number().int().positive().optional().nullable(),
+    categoria_id: z.any().optional().nullable(),
+    categorias: z.any().optional().nullable(),
     descricao: z.string().optional().transform(val => val ? sanitizeString(val) : val),
     disponivel: z.boolean().default(true),
     imagem_url: z.string().url().optional().or(z.literal('')).optional(),

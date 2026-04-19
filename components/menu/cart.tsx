@@ -497,7 +497,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
 
     setLoadingPoints(true);
     try {
-     const points  = await getClientPoints(cleanPhone);
+      const points = await getClientPoints(cleanPhone);
       // Calcular pontos disponíveis (acumulados - gastos)
       const pontosDisponiveis = (points?.pontos_acumulados || 0) - (points?.pontos_gastos || 0);
       setClientPoints(pontosDisponiveis);
@@ -690,8 +690,8 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                             (step === 'payment' && idx === 2)
                             ? "bg-green-500 text-white"
                             : idx < (step === 'customer' ? 1 : step === 'payment' ? 2 : 0)
-                              ? "bg-green-100 text-green-600"
-                              : "bg-slate-200 text-slate-500"
+                              ? "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
+                              : "bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400"
                         )}>
                           {idx < (step === 'customer' ? 1 : step === 'payment' ? 2 : 0) ? (
                             <Check className="size-4" />
@@ -699,8 +699,8 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                             idx + 1
                           )}
                         </div>
-                        <span className="text-xs font-medium text-slate-600 hidden sm:block">{label}</span>
-                        {idx < 2 && <ChevronRight className="size-4 text-slate-300 hidden sm:block" />}
+                        <span className="text-xs font-medium text-slate-600 dark:text-slate-400 hidden sm:block">{label}</span>
+                        {idx < 2 && <ChevronRight className="size-4 text-slate-300 dark:text-slate-600 hidden sm:block" />}
                       </div>
                     ))}
                   </div>
@@ -715,73 +715,73 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                   <div className="p-4 space-y-4">
                     {items.length === 0 ? (
                       <div className="py-12 text-center">
-                        <ShoppingCart className="size-12 text-slate-200 mx-auto mb-3" />
-                        <p className="text-slate-500 font-medium">Carrinho vazio</p>
-                        <p className="text-sm text-slate-400 mt-1">Adicione itens do cardápio</p>
+                        <ShoppingCart className="size-12 text-slate-200 dark:text-slate-700 mx-auto mb-3" />
+                        <p className="text-slate-500 dark:text-slate-400 font-medium">Carrinho vazio</p>
+                        <p className="text-sm text-slate-400 dark:text-slate-600 mt-1">Adicione itens do cardápio</p>
                       </div>
                     ) : (
                       <>
-	                        {items.map((item) => (
-	                          <div key={item.id} className="bg-slate-50 rounded-xl p-3 border border-slate-100">
-	                            <div className="flex gap-3">
-	                              <div className="flex-1">
-	                                <h4 className="font-bold text-slate-900 text-sm">{item.nome}</h4>
-	                                {item.complementos && item.complementos.length > 0 && (
-	                                  <div className="mt-1 space-y-0.5">
-	                                    {item.complementos.map((grupo, idx) => (
-	                                      <p key={idx} className="text-[10px] text-slate-500">
-	                                        {grupo.grupoNome}: {grupo.items.map(i => i.nome).join(', ')}
-	                                      </p>
-	                                    ))}
-	                                  </div>
-	                                )}
-	                                  {item.observacao && typeof item.observacao === 'string' && item.observacao.trim() !== '' && (
-	                                    <div className="mt-1.5 flex items-start gap-1.5 bg-white/50 p-1.5 rounded-lg border border-slate-100">
-	                                      <MessageSquare className="size-3 text-slate-400 mt-0.5 shrink-0" />
-	                                      <p className="text-[10px] text-slate-600 italic leading-tight">
-	                                        {item.observacao}
-	                                      </p>
-	                                    </div>
-	                                  )}
-	                                <p className="text-xs text-violet-600 font-bold mt-1">{formatPrice(item.preco)}</p>
-	                              </div>
-
-	                              <div className="flex flex-col items-end gap-2">
-                                  <div className="flex items-center gap-1">
-                                    <button
-                                      onClick={() => {
-                                        setIsOpen(false);
-                                        window.dispatchEvent(new CustomEvent('edit-cart-item', { detail: { itemId: item.id } }));
-                                      }}
-                                      className="p-1.5 hover:bg-violet-100 rounded-lg transition-colors group"
-                                      title="Editar item"
-                                    >
-                                      <Edit2 className="size-4 text-violet-400 group-hover:text-violet-600" />
-                                    </button>
-                                    <button
-                                      onClick={() => removeItem(item.id)}
-                                      className="p-1.5 hover:bg-red-100 rounded-lg transition-colors group"
-                                      title="Remover item"
-                                    >
-                                      <Trash2 className="size-4 text-red-400 group-hover:text-red-600" />
-                                    </button>
+                        {items.map((item) => (
+                          <div key={item.id} className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3 border border-slate-100 dark:border-slate-700">
+                            <div className="flex gap-3">
+                              <div className="flex-1">
+                                <h4 className="font-bold text-slate-900 dark:text-white text-sm">{item.nome}</h4>
+                                {item.complementos && item.complementos.length > 0 && (
+                                  <div className="mt-1 space-y-0.5">
+                                    {item.complementos.map((grupo, idx) => (
+                                      <p key={idx} className="text-[10px] text-slate-500 dark:text-slate-400">
+                                        {grupo.grupoNome}: {grupo.items.map(i => i.nome).join(', ')}
+                                      </p>
+                                    ))}
                                   </div>
+                                )}
+                                {item.observacao && typeof item.observacao === 'string' && item.observacao.trim() !== '' && (
+                                  <div className="mt-1.5 flex items-start gap-1.5 bg-white/50 dark:bg-slate-900/50 p-1.5 rounded-lg border border-slate-100 dark:border-slate-700">
+                                    <MessageSquare className="size-3 text-slate-400 mt-0.5 shrink-0" />
+                                    <p className="text-[10px] text-slate-600 dark:text-slate-400 italic leading-tight">
+                                      {item.observacao}
+                                    </p>
+                                  </div>
+                                )}
+                                <p className="text-xs text-violet-600 dark:text-violet-400 font-bold mt-1">{formatPrice(item.preco)}</p>
+                              </div>
 
-	                                <div className="flex items-center gap-2 bg-white rounded-lg border border-slate-200">
+                              <div className="flex flex-col items-end gap-2">
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    onClick={() => {
+                                      setIsOpen(false);
+                                      window.dispatchEvent(new CustomEvent('edit-cart-item', { detail: { itemId: item.id } }));
+                                    }}
+                                    className="p-1.5 hover:bg-violet-100 dark:hover:bg-violet-900/30 rounded-lg transition-colors group"
+                                    title="Editar item"
+                                  >
+                                    <Edit2 className="size-4 text-violet-400 group-hover:text-violet-600" />
+                                  </button>
+                                  <button
+                                    onClick={() => removeItem(item.id)}
+                                    className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors group"
+                                    title="Remover item"
+                                  >
+                                    <Trash2 className="size-4 text-red-400 group-hover:text-red-600" />
+                                  </button>
+                                </div>
+
+                                <div className="flex items-center gap-2 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700">
                                   <button
                                     onClick={() => updateQuantity(item.id, item.quantidade - 1)}
-                                    className="p-1.5 hover:bg-slate-100 rounded-l-lg transition-colors"
+                                    className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-l-lg transition-colors"
                                   >
-                                    <Minus className="size-3 text-slate-500" />
+                                    <Minus className="size-3 text-slate-500 dark:text-slate-400" />
                                   </button>
-                                  <span className="text-sm font-bold text-slate-900 w-6 text-center">
+                                  <span className="text-sm font-bold text-slate-900 dark:text-white w-6 text-center">
                                     {item.quantidade}
                                   </span>
                                   <button
                                     onClick={() => updateQuantity(item.id, item.quantidade + 1)}
-                                    className="p-1.5 hover:bg-slate-100 rounded-r-lg transition-colors"
+                                    className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-r-lg transition-colors"
                                   >
-                                    <Plus className="size-3 text-slate-500" />
+                                    <Plus className="size-3 text-slate-500 dark:text-slate-400" />
                                   </button>
                                 </div>
                               </div>
@@ -811,14 +811,14 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                                     quantidade: 1,
                                     imagem: sugestao.imagem || undefined
                                   })}
-                                  className="w-full flex items-center justify-between p-3 bg-amber-50 border border-amber-100 rounded-xl hover:bg-amber-100 transition-colors"
+                                  className="w-full flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/30 rounded-xl hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
                                 >
                                   <div className="text-left">
-                                    <p className="text-sm font-bold text-slate-900">{sugestao.nome}</p>
-                                    <p className="text-[10px] text-amber-600">{sugestao.sugestao}</p>
+                                    <p className="text-sm font-bold text-slate-900 dark:text-white">{sugestao.nome}</p>
+                                    <p className="text-[10px] text-amber-600 dark:text-amber-400">{sugestao.sugestao}</p>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    <span className="text-sm font-bold text-violet-600">{formatPrice(sugestao.preco)}</span>
+                                    <span className="text-sm font-bold text-violet-600 dark:text-violet-400">{formatPrice(sugestao.preco)}</span>
                                     <Plus className="size-4 text-amber-500" />
                                   </div>
                                 </button>
@@ -837,11 +837,11 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                     {/* ETAPA 1: Apenas telefone para verificar cadastro */}
                     {!phoneChecked ? (
                       <>
-                        <div className="bg-green-50 border border-green-100 rounded-xl p-4 flex gap-3">
+                        <div className="bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-900/30 rounded-xl p-4 flex gap-3">
                           <Phone className="size-5 text-green-500 shrink-0 mt-0.5" />
                           <div>
-                            <p className="text-sm font-bold text-slate-900">Digite seu WhatsApp</p>
-                            <p className="text-xs text-slate-600 mt-1">Vamos verificar se você já é nosso cliente</p>
+                            <p className="text-sm font-bold text-slate-900 dark:text-white">Digite seu WhatsApp</p>
+                            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Vamos verificar se você já é nosso cliente</p>
                           </div>
                         </div>
 
@@ -874,7 +874,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                         {checkingCustomer && (
                           <div className="flex items-center justify-center gap-2 py-4">
                             <Loader2 className="size-5 text-green-500 animate-spin" />
-                            <span className="text-sm text-slate-600">Verificando cadastro...</span>
+                            <span className="text-sm text-slate-600 dark:text-slate-400">Verificando cadastro...</span>
                           </div>
                         )}
                       </>
@@ -882,14 +882,14 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                       <>
                         {/* Cliente já existe - mostrar info */}
                         {isExistingCustomer && (
-                          <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/30 rounded-xl p-4">
                             <div className="flex items-center gap-3">
                               <div className="size-10 bg-green-500 rounded-full flex items-center justify-center">
                                 <Check className="size-5 text-white" />
                               </div>
                               <div>
-                                <p className="text-sm font-bold text-green-800">Bem-vindo de volta, {customerData.nome}!</p>
-                                <p className="text-xs text-green-600">Seus dados já estão salvos</p>
+                                <p className="text-sm font-bold text-green-800 dark:text-green-400">Bem-vindo de volta, {customerData.nome}!</p>
+                                <p className="text-xs text-green-600 dark:text-green-500">Seus dados já estão salvos</p>
                               </div>
                             </div>
                           </div>
@@ -897,20 +897,20 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
 
                         {/* Novo cadastro */}
                         {!isExistingCustomer && (
-                          <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 flex gap-3">
+                          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/30 rounded-xl p-4 flex gap-3">
                             <User className="size-5 text-amber-500 shrink-0 mt-0.5" />
                             <div>
-                              <p className="text-sm font-bold text-slate-900">Novo cliente</p>
-                              <p className="text-xs text-slate-600 mt-1">Cadastre-se rapidinho para finalizar</p>
+                              <p className="text-sm font-bold text-slate-900 dark:text-white">Novo cliente</p>
+                              <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Cadastre-se rapidinho para finalizar</p>
                             </div>
                           </div>
                         )}
 
                         {/* Pontos do cliente */}
                         {loadingPoints && (
-                          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center gap-3">
-                            <Loader2 className="size-4 text-slate-400 animate-spin" />
-                            <span className="text-sm text-slate-500">Verificando seus pontos...</span>
+                          <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 flex items-center gap-3">
+                            <Loader2 className="size-4 text-slate-400 dark:text-slate-500 animate-spin" />
+                            <span className="text-sm text-slate-500 dark:text-slate-400">Verificando seus pontos...</span>
                           </div>
                         )}
 
@@ -921,21 +921,21 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                             className={cn(
                               "border rounded-xl p-4 flex items-center gap-3",
                               clientPoints >= 100
-                                ? "bg-green-50 border-green-200"
-                                : "bg-amber-50 border-amber-200"
+                                ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900/30"
+                                : "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-900/30"
                             )}
                           >
                             <Star className={cn("size-6", clientPoints >= 100 ? "text-green-500" : "text-amber-500")} />
                             <div>
-                              <p className="text-sm font-bold text-slate-900">
+                              <p className="text-sm font-bold text-slate-900 dark:text-white">
                                 Você tem <span className="text-lg">{clientPoints}</span> pontos!
                               </p>
                               {clientPoints >= 100 ? (
-                                <p className="text-xs text-green-600 font-medium">
+                                <p className="text-xs text-green-600 dark:text-green-400 font-medium">
                                   🎉 Você pode resgatar {Math.floor(clientPoints / 100) * 10} reais de desconto!
                                 </p>
                               ) : (
-                                <p className="text-xs text-amber-600">
+                                <p className="text-xs text-amber-600 dark:text-amber-400">
                                   Faltam {100 - (clientPoints % 100)} pontos para o próximo desconto de R$ 10
                                 </p>
                               )}
@@ -1000,13 +1000,13 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                                 className={cn(
                                   "p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2",
                                   isDelivery
-                                    ? "border-green-500 bg-green-50"
-                                    : "border-slate-200 hover:border-slate-300"
+                                    ? "border-green-500 bg-green-50 dark:bg-green-900/20"
+                                    : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-800"
                                 )}
                               >
                                 <span className="text-2xl">🛵</span>
-                                <span className="text-sm font-bold text-slate-900">Delivery</span>
-                                <span className="text-xs text-slate-500">
+                                <span className="text-sm font-bold text-slate-900 dark:text-white">Delivery</span>
+                                <span className="text-xs text-slate-500 dark:text-slate-400">
                                   {deliveryConfig && !deliveryConfig.auto_radius && deliveryConfig.taxa_entrega_fixa > 0
                                     ? `Taxa: R$ ${deliveryConfig.taxa_entrega_fixa.toFixed(2).replace('.', ',')}`
                                     : deliveryConfig?.auto_radius
@@ -1023,13 +1023,13 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                                 className={cn(
                                   "p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2",
                                   !isDelivery
-                                    ? "border-green-500 bg-green-50"
-                                    : "border-slate-200 hover:border-slate-300"
+                                    ? "border-green-500 bg-green-50 dark:bg-green-900/20"
+                                    : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-800"
                                 )}
                               >
                                 <span className="text-2xl">🏪</span>
-                                <span className="text-sm font-bold text-slate-900">Retirada</span>
-                                <span className="text-xs text-slate-500">Grátis</span>
+                                <span className="text-sm font-bold text-slate-900 dark:text-white">Retirada</span>
+                                <span className="text-xs text-slate-500 dark:text-slate-400">Grátis</span>
                               </button>
                             </div>
                           </div>
@@ -1084,7 +1084,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                                   type="button"
                                   onClick={calculateDelivery}
                                   disabled={deliveryLoading}
-                                  className="w-full py-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-700 font-bold text-sm hover:bg-blue-100 transition-all flex items-center justify-center gap-2"
+                                  className="w-full py-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-900/30 rounded-xl text-blue-700 dark:text-blue-400 font-bold text-sm hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-all flex items-center justify-center gap-2"
                                 >
                                   {deliveryLoading ? (
                                     <>
@@ -1102,24 +1102,24 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
 
                               {/* Mostrar taxa fixa quando raio automático está desativado */}
                               {isDelivery && deliveryConfig && !deliveryConfig.auto_radius && deliveryConfig.taxa_entrega_fixa > 0 && (
-                                <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4">
                                   <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                      <MapPin className="size-4 text-green-600" />
-                                      <span className="text-sm font-medium text-green-800">Taxa de entrega</span>
+                                      <MapPin className="size-4 text-green-600 dark:text-green-400" />
+                                      <span className="text-sm font-medium text-green-800 dark:text-green-300">Taxa de entrega</span>
                                     </div>
-                                    <span className="font-bold text-green-800">R$ {deliveryConfig.taxa_entrega_fixa.toFixed(2).replace('.', ',')}</span>
+                                    <span className="font-bold text-green-800 dark:text-green-300">R$ {deliveryConfig.taxa_entrega_fixa.toFixed(2).replace('.', ',')}</span>
                                   </div>
                                 </div>
                               )}
 
                               {/* Resultado do cálculo */}
                               {deliveryInfo && (
-                                <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+                                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-3">
                                   <div className="flex justify-between items-center text-sm">
-                                    <span className="text-blue-700">📍 {deliveryInfo.distance}km</span>
-                                    <span className="text-blue-700">⏱️ {deliveryInfo.duration}min</span>
-                                    <span className="font-bold text-blue-800">R$ {deliveryFee.toFixed(2)}</span>
+                                    <span className="text-blue-700 dark:text-blue-300">📍 {deliveryInfo.distance}km</span>
+                                    <span className="text-blue-700 dark:text-blue-300">⏱️ {deliveryInfo.duration}min</span>
+                                    <span className="font-bold text-blue-800 dark:text-blue-200">R$ {deliveryFee.toFixed(2)}</span>
                                   </div>
                                 </div>
                               )}
@@ -1127,15 +1127,15 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                           )}
 
                           {!isDelivery && (
-                            <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
-                              <p className="text-sm font-bold text-green-800">Retirada no balcão</p>
-                              <p className="text-xs text-green-600 mt-1">Seu pedido ficará pronto para retirada</p>
+                            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4 text-center">
+                              <p className="text-sm font-bold text-green-800 dark:text-green-400">Retirada no balcão</p>
+                              <p className="text-xs text-green-600 dark:text-green-500 mt-1">Seu pedido ficará pronto para retirada</p>
                             </div>
                           )}
 
                           {/* Agendamento - apenas para retirada */}
                           {!isDelivery && (
-                            <div className="border-t border-slate-200 pt-4 mt-4">
+                            <div className="border-t border-slate-200 dark:border-slate-700 pt-4 mt-4">
                               <label className="flex items-center gap-3 cursor-pointer">
                                 <div className="relative">
                                   <input
@@ -1146,41 +1146,41 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                                   />
                                   <div className={cn(
                                     "w-11 h-6 rounded-full transition-colors",
-                                    agendarPedido ? "bg-violet-500" : "bg-slate-200"
+                                    agendarPedido ? "bg-violet-500" : "bg-slate-200 dark:bg-slate-700"
                                   )}>
                                     <div className={cn(
-                                      "absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform",
+                                      "absolute top-0.5 left-0.5 w-5 h-5 bg-white dark:bg-slate-200 rounded-full shadow transition-transform",
                                       agendarPedido && "translate-x-5"
                                     )} />
                                   </div>
                                 </div>
                                 <div>
-                                  <p className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                  <p className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                     📅 Agendar pedido
                                   </p>
-                                  <p className="text-xs text-slate-500">Quero buscar em outro horário</p>
+                                  <p className="text-xs text-slate-500 dark:text-slate-400">Quero buscar em outro horário</p>
                                 </div>
                               </label>
 
                               {agendarPedido && (
                                 <div className="grid grid-cols-2 gap-3 mt-3 ml-14">
                                   <div>
-                                    <label className="text-xs font-medium text-slate-600">Data</label>
+                                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Data</label>
                                     <input
                                       type="date"
                                       value={dataAgendamento}
                                       onChange={(e) => setDataAgendamento(e.target.value)}
                                       min={new Date().toISOString().split('T')[0]}
-                                      className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                                      className="w-full mt-1 px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg text-sm"
                                     />
                                   </div>
                                   <div>
-                                    <label className="text-xs font-medium text-slate-600">Horário</label>
+                                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Horário</label>
                                     <input
                                       type="time"
                                       value={horaAgendamento}
                                       onChange={(e) => setHoraAgendamento(e.target.value)}
-                                      className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                                      className="w-full mt-1 px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg text-sm"
                                     />
                                   </div>
                                 </div>
@@ -1214,16 +1214,16 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                       </>
                     ) : (
                       <>
-                        <div className="bg-green-50 border border-green-100 rounded-xl p-4">
-                          <p className="text-sm font-bold text-slate-900">Escolha a forma de pagamento</p>
-                          <p className="text-xs text-slate-600 mt-1">Após confirmar, seu pedido será enviado para produção</p>
+                        <div className="bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-900/30 rounded-xl p-4">
+                          <p className="text-sm font-bold text-slate-900 dark:text-white">Escolha a forma de pagamento</p>
+                          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Após confirmar, seu pedido será enviado para produção</p>
                         </div>
 
                         {mpQrCode && paymentData.forma === 'pix' ? (
                           <div className="space-y-4">
-                            <div className="bg-violet-50 border border-violet-100 rounded-xl p-4 text-center">
-                              <p className="font-bold text-violet-900">Pagamento PIX</p>
-                              <p className="text-xs text-violet-600">Escaneie o QR Code ou copie o código</p>
+                            <div className="bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-900/30 rounded-xl p-4 text-center">
+                              <p className="font-bold text-violet-900 dark:text-violet-400">Pagamento PIX</p>
+                              <p className="text-xs text-violet-600 dark:text-violet-500">Escaneie o QR Code ou copie o código</p>
                             </div>
 
                             {mpQrCodeBase64 && (
@@ -1239,14 +1239,14 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                             )}
 
                             {mpQrCode && (
-                              <div className="bg-slate-50 rounded-xl p-4">
-                                <label className="text-xs font-bold text-slate-500 uppercase">Código PIX</label>
+                              <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4">
+                                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Código PIX</label>
                                 <div className="flex items-center gap-2 mt-1">
                                   <input
                                     type="text"
                                     value={mpQrCode}
                                     readOnly
-                                    className="flex-1 text-xs text-slate-600 bg-white border rounded-lg px-3 py-2"
+                                    className="flex-1 text-xs text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2"
                                   />
                                   <button
                                     onClick={copyPixCode}
@@ -1280,19 +1280,19 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                               className={cn(
                                 "w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all",
                                 paymentData.forma === 'pix'
-                                  ? "border-green-500 bg-green-50"
-                                  : "border-slate-200 hover:border-slate-300"
+                                  ? "border-green-500 bg-green-50 dark:bg-green-900/20"
+                                  : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-800"
                               )}
                             >
                               <div className={cn(
                                 "size-12 rounded-xl flex items-center justify-center",
-                                paymentData.forma === 'pix' ? "bg-green-500 text-white" : "bg-slate-100 text-slate-500"
+                                paymentData.forma === 'pix' ? "bg-green-500 text-white" : "bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400"
                               )}>
                                 <QrCode className="size-6" />
                               </div>
                               <div className="text-left flex-1">
-                                <p className="font-bold text-slate-900">PIX</p>
-                                <p className="text-xs text-slate-500">Pagamento instantâneo online</p>
+                                <p className="font-bold text-slate-900 dark:text-white">PIX</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">Pagamento instantâneo online</p>
                               </div>
                               {paymentData.forma === 'pix' && (
                                 <Check className="size-5 text-green-500" />
@@ -1304,19 +1304,19 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                               className={cn(
                                 "w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all",
                                 paymentData.forma === 'dinheiro'
-                                  ? "border-green-500 bg-green-50"
-                                  : "border-slate-200 hover:border-slate-300"
+                                  ? "border-green-500 bg-green-50 dark:bg-green-900/20"
+                                  : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-800"
                               )}
                             >
                               <div className={cn(
                                 "size-12 rounded-xl flex items-center justify-center",
-                                paymentData.forma === 'dinheiro' ? "bg-green-500 text-white" : "bg-slate-100 text-slate-500"
+                                paymentData.forma === 'dinheiro' ? "bg-green-500 text-white" : "bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400"
                               )}>
                                 <Banknote className="size-6" />
                               </div>
                               <div className="text-left flex-1">
-                                <p className="font-bold text-slate-900">Dinheiro</p>
-                                <p className="text-xs text-slate-500">Pagamento na entrega</p>
+                                <p className="font-bold text-slate-900 dark:text-white">Dinheiro</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">Pagamento na entrega</p>
                               </div>
                               {paymentData.forma === 'dinheiro' && (
                                 <Check className="size-5 text-green-500" />
@@ -1328,19 +1328,19 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                               className={cn(
                                 "w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all",
                                 paymentData.forma === 'cartao'
-                                  ? "border-green-500 bg-green-50"
-                                  : "border-slate-200 hover:border-slate-300"
+                                  ? "border-green-500 bg-green-50 dark:bg-green-900/20"
+                                  : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-800"
                               )}
                             >
                               <div className={cn(
                                 "size-12 rounded-xl flex items-center justify-center",
-                                paymentData.forma === 'cartao' ? "bg-green-500 text-white" : "bg-slate-100 text-slate-500"
+                                paymentData.forma === 'cartao' ? "bg-green-500 text-white" : "bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400"
                               )}>
                                 <CreditCard className="size-6" />
                               </div>
                               <div className="text-left flex-1">
-                                <p className="font-bold text-slate-900">Cartão</p>
-                                <p className="text-xs text-slate-500">Débito ou crédito online</p>
+                                <p className="font-bold text-slate-900 dark:text-white">Cartão</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">Débito ou crédito online</p>
                               </div>
                               {paymentData.forma === 'cartao' && (
                                 <Check className="size-5 text-green-500" />
@@ -1354,7 +1354,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                           <motion.div
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
-                            className="bg-slate-50 rounded-xl p-4"
+                            className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4"
                           >
                             <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
                               Precisa de troco?
@@ -1367,7 +1367,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                               className="w-full mt-2 px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none text-slate-900 dark:text-white bg-white dark:bg-slate-800 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                             />
                             {paymentData.troco > 0 && (
-                              <p className="text-xs text-slate-500 mt-2">
+                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
                                 Troco: {formatPrice(paymentData.troco - totalFinal)}
                               </p>
                             )}
@@ -1379,16 +1379,16 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                           <motion.div
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="border border-amber-200 bg-amber-50 rounded-xl p-4"
+                            className="border border-amber-200 dark:border-amber-900/30 bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4"
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
                                 <Star className="size-6 text-amber-500" />
                                 <div>
-                                  <p className="text-sm font-bold text-slate-900">
+                                  <p className="text-sm font-bold text-slate-900 dark:text-white">
                                     Usar {pontosDisponiveis} pontos?
                                   </p>
-                                  <p className="text-xs text-amber-700">
+                                  <p className="text-xs text-amber-700 dark:text-amber-400">
                                     Desconto de {formatPrice(maxDescontoPorPontos)}
                                   </p>
                                 </div>
@@ -1397,20 +1397,20 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                                 onClick={() => setUsePoints(!usePoints)}
                                 className={cn(
                                   "relative w-14 h-8 rounded-full transition-colors",
-                                  usePoints ? "bg-green-500" : "bg-slate-300"
+                                  usePoints ? "bg-green-500" : "bg-slate-300 dark:bg-slate-700"
                                 )}
                               >
                                 <div className={cn(
-                                  "absolute top-1 w-6 h-6 rounded-full bg-white transition-transform shadow-md",
+                                  "absolute top-1 w-6 h-6 rounded-full bg-white dark:bg-slate-200 transition-transform shadow-md",
                                   usePoints ? "left-7" : "left-1"
                                 )} />
                               </button>
                             </div>
                             {usePoints && descontoPontos > 0 && (
-                              <div className="mt-3 pt-3 border-t border-amber-200">
+                              <div className="mt-3 pt-3 border-t border-amber-200 dark:border-amber-900/30">
                                 <div className="flex justify-between text-sm">
-                                  <span className="text-amber-700">Desconto ({pontosASeremUsados} pontos)</span>
-                                  <span className="font-bold text-green-600">-{formatPrice(descontoPontos)}</span>
+                                  <span className="text-amber-700 dark:text-amber-400">Desconto ({pontosASeremUsados} pontos)</span>
+                                  <span className="font-bold text-green-600 dark:text-green-400">-{formatPrice(descontoPontos)}</span>
                                 </div>
                               </div>
                             )}
@@ -1427,48 +1427,48 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                     <motion.div
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      className="size-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4"
+                      className="size-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4"
                     >
                       <Check className="size-10 text-green-500" />
                     </motion.div>
 
-                    <h3 className="text-xl font-bold text-slate-900 mb-2">
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
                       Pedido #{orderId} Recebido!
                     </h3>
-                    <p className="text-sm text-slate-600 mb-6">
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
                       Seu pedido foi enviado para produção. Você receberá atualizações pelo WhatsApp.
                     </p>
 
-                    <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 mb-6">
-                      <div className="flex items-center gap-2 justify-center text-amber-700">
+                    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/30 rounded-xl p-4 mb-6">
+                      <div className="flex items-center gap-2 justify-center text-amber-700 dark:text-amber-400">
                         <Star className="size-4" />
                         <span className="font-bold text-sm">Você ganhou {pontosGanhos} pontos!</span>
                       </div>
-                      <p className="text-xs text-amber-600 mt-1">Pontos adicionados à sua conta</p>
+                      <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">Pontos adicionados à sua conta</p>
                     </div>
 
-                    <div className="bg-slate-50 rounded-xl p-4 text-left mb-6">
-                      <h4 className="font-bold text-slate-900 text-sm mb-2">Resumo do Pedido</h4>
+                    <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 text-left mb-6">
+                      <h4 className="font-bold text-slate-900 dark:text-white text-sm mb-2">Resumo do Pedido</h4>
                       <div className="space-y-1 text-sm">
                         <div className="flex justify-between">
-                          <span className="text-slate-500">Subtotal</span>
-                          <span className="font-medium">{formatPrice(subtotal)}</span>
+                          <span className="text-slate-500 dark:text-slate-400">Subtotal</span>
+                          <span className="font-medium text-slate-700 dark:text-slate-300">{formatPrice(subtotal)}</span>
                         </div>
                         {desconto > 0 && (
-                          <div className="flex justify-between text-green-600">
+                          <div className="flex justify-between text-green-600 dark:text-green-400">
                             <span>Desconto cupom</span>
                             <span>-{formatPrice(desconto)}</span>
                           </div>
                         )}
                         {descontoPontos > 0 && (
-                          <div className="flex justify-between text-amber-600">
+                          <div className="flex justify-between text-amber-600 dark:text-amber-400">
                             <span>Desconto pontos</span>
                             <span>-{formatPrice(descontoPontos)}</span>
                           </div>
                         )}
-                        <div className="flex justify-between font-bold text-base pt-2 border-t border-slate-200">
+                        <div className="flex justify-between font-bold text-base pt-2 border-t border-slate-200 dark:border-slate-700">
                           <span>Total</span>
-                          <span>{formatPrice(totalFinal)}</span>
+                          <span className="text-slate-900 dark:text-white">{formatPrice(totalFinal)}</span>
                         </div>
                       </div>
                     </div>
@@ -1485,7 +1485,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
 
               {/* Footer - Cart Step */}
               {step === 'cart' && items.length > 0 && (
-                <div className="p-4 bg-slate-50 border-t border-slate-100 shrink-0 space-y-4">
+                <div className="p-4 bg-slate-50 dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700 shrink-0 space-y-4">
                   {/* Cupom Input */}
                   <div>
                     <div className="flex gap-2">
@@ -1496,14 +1496,14 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                           value={cupomInput}
                           onChange={(e) => setCupomInput(e.target.value.toUpperCase())}
                           placeholder="Cupom de desconto"
-                          className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-medium text-slate-900 dark:text-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                          className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-900 dark:text-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
                           disabled={!!cupom}
                         />
                       </div>
                       {cupom ? (
                         <button
                           onClick={removeCupom}
-                          className="px-4 py-2.5 bg-red-100 text-red-600 rounded-xl text-sm font-bold hover:bg-red-200 transition-colors"
+                          className="px-4 py-2.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl text-sm font-bold hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors"
                         >
                           Remover
                         </button>
@@ -1521,7 +1521,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                       <p className="text-xs text-red-500 mt-1">{cupomError}</p>
                     )}
                     {cupom && (
-                      <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                      <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1">
                         <Check className="size-3" />
                         Cupom {cupom.codigo}: {cupom.tipo === 'percentual' ? `${cupom.desconto}%` : formatPrice(cupom.desconto)} de desconto
                       </p>
@@ -1530,42 +1530,42 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
 
                   {/* Points Preview */}
                   {pontosGanhos > 0 && (
-                    <div className="flex items-center justify-between p-3 bg-amber-50 border border-amber-100 rounded-xl">
+                    <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/30 rounded-xl">
                       <div className="flex items-center gap-2">
                         <Star className="size-4 text-amber-500" />
-                        <span className="text-sm text-slate-600">Você ganhará:</span>
+                        <span className="text-sm text-slate-600 dark:text-slate-400">Você ganhará:</span>
                       </div>
-                      <span className="text-sm font-bold text-amber-600">{pontosGanhos} pontos</span>
+                      <span className="text-sm font-bold text-amber-600 dark:text-amber-400">{pontosGanhos} pontos</span>
                     </div>
                   )}
 
                   {/* Totals */}
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-slate-500">Subtotal</span>
+                      <span className="text-slate-500 dark:text-slate-400">Subtotal</span>
                       <span className="font-medium text-slate-700 dark:text-slate-300">{formatPrice(subtotal)}</span>
                     </div>
                     {cupom && desconto > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-green-600">Desconto ({cupom.codigo})</span>
-                        <span className="font-medium text-green-600">-{formatPrice(desconto)}</span>
+                        <span className="text-green-600 dark:text-green-400">Desconto ({cupom.codigo})</span>
+                        <span className="font-medium text-green-600 dark:text-green-400">-{formatPrice(desconto)}</span>
                       </div>
                     )}
                     {descontoPontos > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-amber-600">Desconto Pontos</span>
-                        <span className="font-medium text-amber-600">-{formatPrice(descontoPontos)}</span>
+                        <span className="text-amber-600 dark:text-amber-400">Desconto Pontos</span>
+                        <span className="font-medium text-amber-600 dark:text-amber-400">-{formatPrice(descontoPontos)}</span>
                       </div>
                     )}
                     {deliveryFee > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-slate-600">Taxa de Entrega</span>
+                        <span className="text-slate-600 dark:text-slate-400">Taxa de Entrega</span>
                         <span className="font-medium text-slate-700 dark:text-slate-300">{formatPrice(deliveryFee)}</span>
                       </div>
                     )}
-                    <div className="flex justify-between items-center pt-2 border-t border-slate-200">
-                      <span className="text-base font-bold text-slate-900">Total</span>
-                      <span className="text-xl font-black text-slate-900">{formatPrice(totalFinal)}</span>
+                    <div className="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-slate-700">
+                      <span className="text-base font-bold text-slate-900 dark:text-white">Total</span>
+                      <span className="text-xl font-black text-slate-900 dark:text-white">{formatPrice(totalFinal)}</span>
                     </div>
                   </div>
 
@@ -1582,11 +1582,11 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
 
               {/* Footer - Customer Step */}
               {step === 'customer' && (
-                <div className="p-4 bg-slate-50 border-t border-slate-100 shrink-0">
+                <div className="p-4 bg-slate-50 dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700 shrink-0">
                   <button
                     onClick={proceedToPayment}
                     disabled={checkingCustomer || (!phoneChecked && customerData.telefone.replace(/\D/g, '').length < 10) || (phoneChecked && !isExistingCustomer && !customerData.nome) || (phoneChecked && !customerData.endereco)}
-                    className="w-full bg-green-500 hover:bg-green-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl transition-all flex items-center justify-center gap-2"
+                    className="w-full bg-green-500 hover:bg-green-600 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl transition-all flex items-center justify-center gap-2"
                   >
                     {checkingCustomer ? (
                       <>

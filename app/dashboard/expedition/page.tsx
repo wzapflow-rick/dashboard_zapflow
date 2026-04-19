@@ -2,7 +2,7 @@
 
 import React from 'react';
 import DashboardLayout, { SidebarProvider } from '@/components/dashboard-layout';
-import ExpeditionMonitor from '@/components/expedition-monitor';
+import ExpeditionMonitor from '@/components/expedition/expedition-monitor';
 
 export default function ExpeditionPage() {
   return (

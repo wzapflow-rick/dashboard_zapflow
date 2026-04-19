@@ -2,7 +2,7 @@
 
 import React from 'react';
 import DashboardLayout, { SidebarProvider } from '@/components/dashboard-layout';
-import CustomerBase from '@/components/customer-base';
+import CustomerBase from '@/components/management/customer-base';
 
 export default function CustomersPage() {
   return (

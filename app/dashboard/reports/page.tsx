@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import DashboardLayout, { SidebarProvider } from '@/components/dashboard-layout';
-import { 
-    DollarSign, 
-    TrendingUp, 
-    TrendingDown, 
-    ShoppingBag, 
-    CreditCard, 
-    Truck, 
+import {
+    DollarSign,
+    TrendingUp,
+    TrendingDown,
+    ShoppingBag,
+    CreditCard,
+    Truck,
     Calendar,
     Download,
     ChevronDown,
@@ -88,11 +88,11 @@ function ReportsContent() {
 
     const handleExport = () => {
         if (!report) return;
-        
+
         // Export to CSV
         const headers = ['Data', 'Produto', 'Quantidade', 'Valor Total', 'Forma Pagamento', 'Tipo Entrega'];
         const rows = Object.entries(report.vendasPorDia).map(([data, valor]) => [data, '', '', valor, '', '']);
-        
+
         const csvContent = [
             'RELATÓRIO DE VENDAS',
             `Período: ${report.periodo.inicio} até ${report.periodo.fim}`,
@@ -122,10 +122,10 @@ function ReportsContent() {
         <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-black text-slate-900">Relatórios</h1>
-                    <p className="text-slate-500 mt-1">Análisis de vendas e desempenho</p>
+                    <h1 className="text-2xl font-black text-slate-900 dark:text-zinc-200">Relatórios</h1>
+                    <p className="text-slate-500 dark:text-slate-400 mt-1">Análise de vendas e desempenho</p>
                 </div>
-                <button 
+                <button
                     onClick={handleExport}
                     disabled={!report}
                     className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl font-bold hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -136,14 +136,14 @@ function ReportsContent() {
             </div>
 
             {/* Date Range Selector */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-4">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
                 <div className="flex flex-wrap items-center gap-4">
                     <div className="flex gap-2">
                         {quickRanges.map((range) => (
                             <button
                                 key={range.label}
                                 onClick={() => handleQuickRange(range.days)}
-                                className="px-3 py-1.5 text-sm font-medium rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors"
+                                className="px-3 py-1.5 text-sm font-medium rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-zinc-200 transition-colors"
                             >
                                 {range.label}
                             </button>
@@ -154,14 +154,14 @@ function ReportsContent() {
                             type="date"
                             value={dateRange.start}
                             onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                            className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm"
+                            className="px-3 py-1.5 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-zinc-200 rounded-lg text-sm"
                         />
-                        <span className="text-slate-400">até</span>
+                        <span className="text-slate-400 dark:text-slate-500">até</span>
                         <input
                             type="date"
                             value={dateRange.end}
                             onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                            className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm"
+                            className="px-3 py-1.5 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-zinc-200 rounded-lg text-sm"
                         />
                     </div>
                 </div>
@@ -170,75 +170,75 @@ function ReportsContent() {
             {loading ? (
                 <div className="text-center py-12">
                     <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto" />
-                    <p className="text-slate-500 mt-2">Carregando...</p>
+                    <p className="text-slate-500 dark:text-slate-400 mt-2">Carregando...</p>
                 </div>
             ) : report ? (
                 <>
                     {/* Main Metrics */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="bg-white rounded-2xl border border-slate-200 p-4">
-                            <div className="flex items-center gap-2 text-slate-500 mb-2">
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
+                            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 mb-2">
                                 <DollarSign className="size-4" />
                                 <span className="text-sm font-medium">Faturamento</span>
                             </div>
-                            <p className="text-2xl font-black text-green-600">{formatCurrency(report.totalVendas)}</p>
-                            <p className="text-xs text-slate-400 mt-1">{report.quantidadePedidos} pedidos</p>
+                            <p className="text-2xl font-black text-green-600 dark:text-green-400">{formatCurrency(report.totalVendas)}</p>
+                            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{report.quantidadePedidos} pedidos</p>
                         </div>
 
-                        <div className="bg-white rounded-2xl border border-slate-200 p-4">
-                            <div className="flex items-center gap-2 text-slate-500 mb-2">
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
+                            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 mb-2">
                                 <TrendingUp className="size-4" />
                                 <span className="text-sm font-medium">Média/Pedido</span>
                             </div>
-                            <p className="text-2xl font-black text-violet-600">{formatCurrency(report.mediaPorPedido)}</p>
-                            <p className="text-xs text-slate-400 mt-1">por pedido</p>
+                            <p className="text-2xl font-black text-violet-600 dark:text-violet-400">{formatCurrency(report.mediaPorPedido)}</p>
+                            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">por pedido</p>
                         </div>
 
-                        <div className="bg-white rounded-2xl border border-slate-200 p-4">
-                            <div className="flex items-center gap-2 text-slate-500 mb-2">
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
+                            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 mb-2">
                                 <ShoppingBag className="size-4" />
                                 <span className="text-sm font-medium">Descontos</span>
                             </div>
-                            <p className="text-2xl font-black text-red-500">{formatCurrency(report.totalDescontos)}</p>
-                            <p className="text-xs text-slate-400 mt-1">total concedidos</p>
+                            <p className="text-2xl font-black text-red-500 dark:text-red-400">{formatCurrency(report.totalDescontos)}</p>
+                            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">total concedidos</p>
                         </div>
 
-                        <div className="bg-white rounded-2xl border border-slate-200 p-4">
-                            <div className="flex items-center gap-2 text-slate-500 mb-2">
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
+                            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 mb-2">
                                 <Truck className="size-4" />
                                 <span className="text-sm font-medium">Taxas Entrega</span>
                             </div>
-                            <p className="text-2xl font-black text-blue-600">{formatCurrency(report.totalTaxasEntrega)}</p>
-                            <p className="text-xs text-slate-400 mt-1">recebidas</p>
+                            <p className="text-2xl font-black text-blue-600 dark:text-blue-400">{formatCurrency(report.totalTaxasEntrega)}</p>
+                            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">recebidas</p>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Top Produtos */}
-                        <div className="bg-white rounded-2xl border border-slate-200 p-4">
-                            <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
+                            <h3 className="font-bold text-slate-900 dark:text-zinc-200 mb-4 flex items-center gap-2">
                                 <BarChart3 className="size-5 text-primary" />
                                 Produtos Mais Vendidos
                             </h3>
                             <div className="space-y-3">
                                 {report.topProdutos.map((produto, idx) => (
                                     <div key={idx} className="flex items-center gap-3">
-                                        <span className="w-6 h-6 rounded-full bg-violet-100 text-violet-600 text-xs font-bold flex items-center justify-center">
+                                        <span className="w-6 h-6 rounded-full bg-violet-100 dark:bg-violet-900/50 text-violet-600 dark:text-violet-400 text-xs font-bold flex items-center justify-center">
                                             {idx + 1}
                                         </span>
-                                        <span className="flex-1 font-medium text-slate-900 text-sm truncate">{produto.nome}</span>
-                                        <span className="text-sm font-bold text-slate-500">{produto.qtd}x</span>
+                                        <span className="flex-1 font-medium text-slate-900 dark:text-zinc-200 text-sm truncate">{produto.nome}</span>
+                                        <span className="text-sm font-bold text-slate-500 dark:text-slate-400">{produto.qtd}x</span>
                                     </div>
                                 ))}
                                 {report.topProdutos.length === 0 && (
-                                    <p className="text-slate-400 text-center py-4">Nenhum produto vendido no período</p>
+                                    <p className="text-slate-400 dark:text-slate-500 text-center py-4">Nenhum produto vendido no período</p>
                                 )}
                             </div>
                         </div>
 
                         {/* Pagamentos */}
-                        <div className="bg-white rounded-2xl border border-slate-200 p-4">
-                            <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
+                            <h3 className="font-bold text-slate-900 dark:text-zinc-200 mb-4 flex items-center gap-2">
                                 <CreditCard className="size-5 text-primary" />
                                 Forma de Pagamento
                             </h3>
@@ -246,25 +246,24 @@ function ReportsContent() {
                                 {Object.entries(report.pagamentos).map(([forma, valor]) => (
                                     <div key={forma} className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
-                                            <div className={`w-2 h-2 rounded-full ${
-                                                forma === 'pix' ? 'bg-purple-500' :
-                                                forma === 'dinheiro' ? 'bg-green-500' :
-                                                forma === 'cartão' ? 'bg-blue-500' : 'bg-slate-400'
-                                            }`} />
-                                            <span className="font-medium text-slate-900 capitalize">{forma}</span>
+                                            <div className={`w-2 h-2 rounded-full ${forma === 'pix' ? 'bg-purple-500' :
+                                                    forma === 'dinheiro' ? 'bg-green-500' :
+                                                        forma === 'cartão' ? 'bg-blue-500' : 'bg-slate-400'
+                                                }`} />
+                                            <span className="font-medium text-slate-900 dark:text-zinc-200 capitalize">{forma}</span>
                                         </div>
-                                        <span className="font-bold text-slate-700">{formatCurrency(valor)}</span>
+                                        <span className="font-bold text-slate-700 dark:text-slate-300">{formatCurrency(valor)}</span>
                                     </div>
                                 ))}
                                 {Object.keys(report.pagamentos).length === 0 && (
-                                    <p className="text-slate-400 text-center py-4">Nenhum pagamento registrado</p>
+                                    <p className="text-slate-400 dark:text-slate-500 text-center py-4">Nenhum pagamento registrado</p>
                                 )}
                             </div>
                         </div>
 
                         {/* Tipo de Entrega */}
-                        <div className="bg-white rounded-2xl border border-slate-200 p-4">
-                            <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
+                            <h3 className="font-bold text-slate-900 dark:text-zinc-200 mb-4 flex items-center gap-2">
                                 <Truck className="size-5 text-primary" />
                                 Tipo de Entrega
                             </h3>
@@ -272,31 +271,31 @@ function ReportsContent() {
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <Truck className="size-4 text-blue-500" />
-                                        <span className="font-medium text-slate-900">Delivery</span>
+                                        <span className="font-medium text-slate-900 dark:text-zinc-200">Delivery</span>
                                     </div>
-                                    <span className="font-bold text-blue-600">{report.entregas.delivery}</span>
+                                    <span className="font-bold text-blue-600 dark:text-blue-400">{report.entregas.delivery}</span>
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <ShoppingBag className="size-4 text-purple-500" />
-                                        <span className="font-medium text-slate-900">Retirada</span>
+                                        <span className="font-medium text-slate-900 dark:text-zinc-200">Retirada</span>
                                     </div>
-                                    <span className="font-bold text-purple-600">{report.entregas.retirada}</span>
+                                    <span className="font-bold text-purple-600 dark:text-purple-400">{report.entregas.retirada}</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Status dos Pedidos */}
-                        <div className="bg-white rounded-2xl border border-slate-200 p-4">
-                            <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
+                            <h3 className="font-bold text-slate-900 dark:text-zinc-200 mb-4 flex items-center gap-2">
                                 <PieChart className="size-5 text-primary" />
                                 Status dos Pedidos
                             </h3>
                             <div className="space-y-2">
                                 {Object.entries(report.statusCounts).map(([status, count]) => (
                                     <div key={status} className="flex items-center justify-between text-sm">
-                                        <span className="capitalize text-slate-600">{status}</span>
-                                        <span className="font-bold text-slate-900">{count}</span>
+                                        <span className="capitalize text-slate-600 dark:text-slate-400">{status}</span>
+                                        <span className="font-bold text-slate-900 dark:text-zinc-200">{count}</span>
                                     </div>
                                 ))}
                             </div>
@@ -304,8 +303,8 @@ function ReportsContent() {
                     </div>
 
                     {/* Comparativo Mensal */}
-                    <div className="bg-white rounded-2xl border border-slate-200 p-4">
-                        <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
+                        <h3 className="font-bold text-slate-900 dark:text-zinc-200 mb-4 flex items-center gap-2">
                             <Calendar className="size-5 text-primary" />
                             Evolução Mensal (Últimos 6 meses)
                         </h3>
@@ -315,12 +314,12 @@ function ReportsContent() {
                                 const height = (mes.total / max) * 100;
                                 return (
                                     <div key={idx} className="flex-1 flex flex-col items-center gap-2">
-                                        <div 
+                                        <div
                                             className="w-full bg-violet-500 rounded-t-lg transition-all hover:bg-violet-600"
                                             style={{ height: `${height}%`, minHeight: mes.total > 0 ? '4px' : '0' }}
                                         />
-                                        <span className="text-xs text-slate-500 uppercase">{mes.mes}</span>
-                                        <span className="text-xs font-bold text-slate-700">{formatCurrency(mes.total)}</span>
+                                        <span className="text-xs text-slate-500 dark:text-slate-400 uppercase">{mes.mes}</span>
+                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{formatCurrency(mes.total)}</span>
                                     </div>
                                 );
                             })}
@@ -329,7 +328,7 @@ function ReportsContent() {
                 </>
             ) : (
                 <div className="text-center py-12">
-                    <p className="text-slate-500">Nenhum dado encontrado para o período selecionado</p>
+                    <p className="text-slate-500 dark:text-slate-400">Nenhum dado encontrado para o período selecionado</p>
                 </div>
             )}
         </div>

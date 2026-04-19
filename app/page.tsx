@@ -42,7 +42,7 @@ export default function RegistrationPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-white">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-white dark:bg-slate-900 transition-colors">
       {/* Left Side: Form */}
       <div className="flex-1 flex flex-col justify-center px-8 lg:px-24 py-12">
         <div className="max-w-md w-full mx-auto">
@@ -50,17 +50,17 @@ export default function RegistrationPage() {
             <div className="size-10 bg-primary rounded-lg flex items-center justify-center text-white">
               <Zap className="size-6 fill-current" />
             </div>
-            <span className="text-2xl font-black tracking-tighter text-slate-900">ZapFlow</span>
+            <span className="text-2xl font-black tracking-tighter text-slate-900 dark:text-white">ZapFlow</span>
           </div>
 
           <div className="mb-8">
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Comece sua automação agora</h1>
-            <p className="text-slate-500 mt-2">Crie sua conta e conecte seu WhatsApp em menos de 5 minutos.</p>
+            <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Comece sua automação agora</h1>
+            <p className="text-slate-500 dark:text-slate-400 mt-2">Crie sua conta e conecte seu WhatsApp em menos de 5 minutos.</p>
           </div>
 
           <form className="space-y-5" onSubmit={handleSubmit}>
             <div className="space-y-1.5">
-              <label className="text-sm font-bold text-slate-700">Nome Completo</label>
+              <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Nome Completo</label>
               <input
                 name="nome"
                 type="text"
@@ -116,11 +116,11 @@ export default function RegistrationPage() {
             </button>
           </form>
 
-          <p className="text-center text-sm text-slate-500 mt-8">
-            Já possui uma conta? <Link href="/login" className="text-primary font-bold hover:underline">Fazer Login</Link>
+          <p className="text-center text-sm text-slate-500 dark:text-slate-400 mt-8">
+            Já possui uma conta? <Link href="/login" className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline">Fazer Login</Link>
           </p>
 
-          <div className="mt-12 pt-8 border-t border-slate-100 flex items-center justify-center gap-6 opacity-50 grayscale">
+          <div className="mt-12 pt-8 border-t border-slate-100 dark:border-slate-800 flex items-center justify-center gap-6 opacity-50 grayscale dark:invert">
             <div className="relative h-6 w-24">
               <Image src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" fill className="object-contain" referrerPolicy="no-referrer" />
             </div>

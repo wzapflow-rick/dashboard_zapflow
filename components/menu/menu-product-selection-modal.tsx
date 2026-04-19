@@ -84,7 +84,7 @@ export default function MenuProductSelectionModal({
 
     const saborGroups = product.saborGroups || [];
     const additionalGroups = product.additionalGroups || [];
-    
+
     const hasFlavors = saborGroups.length > 0;
     const hasAdditions = additionalGroups.length > 0;
 
@@ -131,12 +131,12 @@ export default function MenuProductSelectionModal({
         allGroups.forEach((grupo: ComplementGroup) => {
             const selectedItems = selections[grupo.id] || [];
             if (selectedItems.length === 0) return;
-            
+
             if (grupo.tipo_calculo === 'fixo') {
                 price += (grupo.preco_fixo || 0);
                 return;
             }
-            
+
             const prices = selectedItems.map(i => Number(i.preco || 0));
 
             if (grupo.cobrar_mais_caro) {
@@ -268,7 +268,7 @@ export default function MenuProductSelectionModal({
                     animate={{ y: 0 }}
                     exit={{ y: "100%" }}
                     transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                    className="relative w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+                    className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
                 >
                     {/* Header Image */}
                     <div className="relative h-40 shrink-0">
@@ -304,7 +304,7 @@ export default function MenuProductSelectionModal({
                     <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
                         {step === 'observation' ? (
                             <div className="space-y-4">
-                                <div className="flex items-center gap-2 text-slate-900 mb-2">
+                                <div className="flex items-center gap-2 text-slate-900 dark:text-white mb-2">
                                     <MessageSquare className="size-5 text-violet-500" />
                                     <h3 className="font-bold">Alguma observação?</h3>
                                 </div>
@@ -312,7 +312,7 @@ export default function MenuProductSelectionModal({
                                     value={observacao}
                                     onChange={(e) => setObservacao(e.target.value)}
                                     placeholder="Ex: Tirar cebola, ponto da carne, etc..."
-                                    className="w-full h-32 p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-300 resize-none"
+                                    className="w-full h-32 p-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-300 resize-none dark:text-white"
                                 />
                             </div>
                         ) : (
@@ -320,14 +320,14 @@ export default function MenuProductSelectionModal({
                                 <div key={grupo.id} className="space-y-3">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <h3 className="font-bold text-slate-900">{grupo.nome}</h3>
-                                            <p className="text-xs text-slate-500">
+                                            <h3 className="font-bold text-slate-900 dark:text-white">{grupo.nome}</h3>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">
                                                 {Number(grupo.minimo || 0) > 0 ? `Obrigatório • Mín ${grupo.minimo}` : 'Opcional'}
                                                 {Number(grupo.maximo || 0) > 0 && ` • Máx ${grupo.maximo}`}
                                             </p>
                                         </div>
                                         {isFractionalGroup(grupo) && (
-                                            <div className="px-2 py-1 bg-violet-50 text-violet-600 rounded-lg text-[10px] font-bold uppercase">
+                                            <div className="px-2 py-1 bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 rounded-lg text-[10px] font-bold uppercase">
                                                 {Math.round(getGroupFraction(grupo.id) * 100)}% Selecionado
                                             </div>
                                         )}
@@ -340,19 +340,17 @@ export default function MenuProductSelectionModal({
                                                 <button
                                                     key={item.id}
                                                     onClick={() => toggleItem(grupo, item)}
-                                                    className={`w-full p-3 rounded-xl border flex items-center justify-between transition-all ${
-                                                        isSelected
-                                                            ? 'border-violet-500 bg-violet-50'
-                                                            : 'border-slate-100 hover:border-slate-200 bg-white'
-                                                    }`}
+                                                    className={`w-full p-3 rounded-xl border flex items-center justify-between transition-all ${isSelected
+                                                            ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/30'
+                                                            : 'border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 bg-white dark:bg-slate-800'
+                                                        }`}
                                                 >
                                                     <div className="flex items-center gap-3">
-                                                        <div className={`size-5 rounded border-2 flex items-center justify-center transition-colors ${
-                                                            isSelected ? 'bg-violet-500 border-violet-500' : 'border-slate-300'
-                                                        }`}>
-                                                            {isSelected && <Check className="size-3 text-white" />}
+                                                        <div className={`size-5 rounded border-2 flex items-center justify-center transition-colors ${isSelected ? 'bg-violet-500 border-violet-500 text-white' : 'border-slate-300 dark:border-slate-600'
+                                                            }`}>
+                                                            {isSelected && <Check className="size-3" />}
                                                         </div>
-                                                        <span className="text-sm font-medium text-slate-700">{item.nome}</span>
+                                                        <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{item.nome}</span>
                                                     </div>
                                                     {Number(item.preco || 0) > 0 && (
                                                         <span className="text-xs font-bold text-violet-600">+{fmt(item.preco)}</span>
@@ -367,29 +365,28 @@ export default function MenuProductSelectionModal({
                     </div>
 
                     {/* Footer */}
-                    <div className="shrink-0 p-6 border-t border-slate-100 bg-slate-50/50">
+                    <div className="shrink-0 p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50">
                         <div className="flex items-center justify-between mb-4">
                             <div>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total do item</p>
-                                <p className="text-2xl font-black text-slate-900">{fmt(finalPrice)}</p>
+                                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Total do item</p>
+                                <p className="text-2xl font-black text-slate-900 dark:text-white">{fmt(finalPrice)}</p>
                             </div>
                             <div className="flex gap-2">
                                 {step !== 'flavors' && (
                                     <button
                                         onClick={prevStep}
-                                        className="p-3 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-colors"
+                                        className="p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                                     >
                                         <ChevronLeft className="size-6" />
                                     </button>
                                 )}
-                                
+
                                 <button
                                     onClick={nextStep}
-                                    className={`px-8 py-3 text-white font-bold rounded-xl transition-colors flex items-center gap-2 shadow-lg ${
-                                        step === 'observation'
+                                    className={`px-8 py-3 text-white font-bold rounded-xl transition-colors flex items-center gap-2 shadow-lg ${step === 'observation'
                                             ? 'bg-green-500 hover:bg-green-600 shadow-green-200'
                                             : 'bg-violet-500 hover:bg-violet-600 shadow-violet-200'
-                                    }`}
+                                        }`}
                                 >
                                     {step === 'observation' ? (
                                         <>

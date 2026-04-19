@@ -24,7 +24,7 @@ export function TopProductsList({ products }: TopProductsListProps) {
                             <p className="text-sm font-semibold text-slate-900 truncate group-hover:text-primary dark:hover:text-blue-300 transition-colors dark:text-slate-200">
                                 {product.name}
                             </p>
-                            <p className="text-xs text-slate-500">{product.sales} vendas</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">{product.sales} vendas</p>
                         </div>
                         <span className="text-sm font-bold text-primary dark:text-blue-400 ">{product.price}</span>
                     </div>

@@ -201,14 +201,13 @@ function OnboardingContent() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col selection:bg-primary/20">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col selection:bg-primary/20 transition-colors">
+      <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-8 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="size-8 bg-primary rounded-lg flex items-center justify-center text-white">
             <Zap className="size-5 fill-current" />
           </div>
-          <span className="text-xl font-black tracking-tighter text-slate-900">ZapFlow</span>
+          <span className="text-xl font-black tracking-tighter text-slate-900 dark:text-white">ZapFlow</span>
         </div>
 
         <div className="hidden md:flex items-center gap-6">
@@ -216,13 +215,13 @@ function OnboardingContent() {
             <div key={step.id} className="flex items-center gap-2">
               <div className={cn(
                 "size-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all",
-                currentStep >= step.id ? "bg-primary text-white" : "bg-slate-200 text-slate-500"
+                currentStep >= step.id ? "bg-primary text-white" : "bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400"
               )}>
                 {currentStep > step.id ? <Check className="size-3" /> : step.id}
               </div>
               <span className={cn(
                 "text-xs font-bold uppercase tracking-wider",
-                currentStep >= step.id ? "text-slate-900" : "text-slate-400"
+                currentStep >= step.id ? "text-slate-900 dark:text-white" : "text-slate-400 dark:text-slate-500"
               )}>{step.name}</span>
             </div>
           ))}
@@ -237,17 +236,17 @@ function OnboardingContent() {
             {currentStep === 1 && (
               <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8 text-center">
                 <div className="space-y-4">
-                  <h2 className="text-3xl font-black text-slate-900 tracking-tight">Qual o nome da sua empresa?</h2>
+                  <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Qual o nome da sua empresa?</h2>
                   <input
                     type="text"
                     placeholder="Nome da sua loja"
                     value={companyName}
                     onChange={(e) => setCompanyName(e.target.value)}
-                    className="w-full max-w-sm mx-auto bg-white border-2 border-slate-100 rounded-2xl py-4 px-6 text-center text-lg font-bold text-slate-800 outline-none focus:border-primary transition-all block"
+                    className="w-full max-w-sm mx-auto bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl py-4 px-6 text-center text-lg font-bold text-slate-800 dark:text-white outline-none focus:border-primary transition-all block"
                   />
                   <div className="pt-4">
-                    <h3 className="text-xl font-bold text-slate-900">E o seu nicho?</h3>
-                    <p className="text-slate-500 mt-2 text-sm">Isso nos ajuda a configurar seu cardápio.</p>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">E o seu nicho?</h3>
+                    <p className="text-slate-500 dark:text-slate-400 mt-2 text-sm">Isso nos ajuda a configurar seu cardápio.</p>
                   </div>
                 </div>
 
@@ -256,15 +255,15 @@ function OnboardingContent() {
                     <button key={niche.id} onClick={() => setSelectedNiche(niche.id)}
                       className={cn(
                         "p-6 rounded-2xl border-2 transition-all flex flex-col items-center gap-4 group",
-                        selectedNiche === niche.id ? "border-primary bg-primary/5 ring-4 ring-primary/10" : "border-white bg-white hover:border-slate-200 shadow-sm"
+                        selectedNiche === niche.id ? "border-primary bg-primary/5 ring-4 ring-primary/10" : "border-white dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-slate-200 dark:hover:border-slate-600 shadow-sm"
                       )}>
                       <div className={cn(
                         "size-16 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110",
-                        selectedNiche === niche.id ? "bg-primary text-white" : "bg-slate-100 text-slate-500"
+                        selectedNiche === niche.id ? "bg-primary text-white" : "bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400"
                       )}>
                         <niche.icon className="size-8" />
                       </div>
-                      <span className={cn("font-bold text-sm", selectedNiche === niche.id ? "text-primary" : "text-slate-700")}>
+                      <span className={cn("font-bold text-sm", selectedNiche === niche.id ? "text-primary" : "text-slate-700 dark:text-slate-300")}>
                         {niche.name}
                       </span>
                     </button>
@@ -282,21 +281,21 @@ function OnboardingContent() {
             {currentStep === 2 && (
               <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8 text-center">
                 <div>
-                  <h2 className="text-3xl font-black text-slate-900 tracking-tight">Conecte seu WhatsApp</h2>
-                  <p className="text-slate-500 mt-2">Escaneie o QR Code abaixo para ativar a automação.</p>
+                  <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Conecte seu WhatsApp</h2>
+                  <p className="text-slate-500 dark:text-slate-400 mt-2">Escaneie o QR Code abaixo para ativar a automação.</p>
                 </div>
 
-                <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-xl max-w-sm mx-auto relative overflow-hidden">
+                <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xl max-w-sm mx-auto relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-full h-1.5 bg-primary" />
 
                   {connectionState === 'connected' ? (
                     <div className="aspect-square flex flex-col items-center justify-center gap-4">
-                      <div className="size-20 rounded-full bg-emerald-100 flex items-center justify-center">
-                        <Wifi className="size-10 text-emerald-600" />
+                      <div className="size-20 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                        <Wifi className="size-10 text-emerald-600 dark:text-emerald-400" />
                       </div>
                       <div>
-                        <p className="font-black text-xl text-emerald-600">WhatsApp Conectado!</p>
-                        <p className="text-slate-500 text-sm mt-1">{instanceName}</p>
+                        <p className="font-black text-xl text-emerald-600 dark:text-emerald-400">WhatsApp Conectado!</p>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">{instanceName}</p>
                       </div>
                     </div>
                   ) : qrCode ? (
@@ -312,16 +311,16 @@ function OnboardingContent() {
                       </button>
                     </div>
                   ) : (
-                    <div className="aspect-square bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center">
+                    <div className="aspect-square bg-slate-50 dark:bg-slate-900 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 flex items-center justify-center">
                       {loadingQr ? (
                         <div className="flex flex-col items-center gap-3">
                           <Loader2 className="size-12 text-primary animate-spin" />
-                          <span className="text-sm text-slate-500 font-medium">Gerando QR Code...</span>
+                          <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">Gerando QR Code...</span>
                         </div>
                       ) : (
                         <div className="flex flex-col items-center gap-3">
-                          <QrCode className="size-16 text-slate-300" />
-                          <span className="text-sm text-slate-400">Clique abaixo para gerar</span>
+                          <QrCode className="size-16 text-slate-300 dark:text-slate-600" />
+                          <span className="text-sm text-slate-400 dark:text-slate-500">Clique abaixo para gerar</span>
                         </div>
                       )}
                     </div>
@@ -337,7 +336,7 @@ function OnboardingContent() {
                 )}
 
                 <div className="flex flex-col md:flex-row items-center justify-center gap-4 pt-2">
-                  <button onClick={prevStep} className="flex items-center gap-2 text-slate-500 font-bold hover:text-slate-700 px-6 py-4">
+                  <button onClick={prevStep} className="flex items-center gap-2 text-slate-500 dark:text-slate-400 font-bold hover:text-slate-700 dark:hover:text-slate-200 px-6 py-4">
                     <ChevronLeft className="size-5" /> Voltar
                   </button>
                   {connectionState === 'connected' && (
@@ -355,12 +354,12 @@ function OnboardingContent() {
             {currentStep === 3 && (
               <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
                 <div className="text-center">
-                  <h2 className="text-3xl font-black text-slate-900 tracking-tight">Horário de Funcionamento</h2>
-                  <p className="text-slate-500 mt-2">Defina quando sua loja estará aberta.</p>
+                  <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Horário de Funcionamento</h2>
+                  <p className="text-slate-500 dark:text-slate-400 mt-2">Defina quando sua loja estará aberta.</p>
                 </div>
 
-                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div className="divide-y divide-slate-100">
+                <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                  <div className="divide-y divide-slate-100 dark:divide-slate-700">
                     {DIAS_SEMANA.map((dia) => {
                       const h = horarios.find(x => x.dia_semana === dia.id)!;
                       return (
@@ -370,23 +369,23 @@ function OnboardingContent() {
                               onClick={() => updateHorario(dia.id, 'fechado', !h.fechado)}
                               className={cn(
                                 "size-5 rounded border-2 flex items-center justify-center transition-colors shrink-0",
-                                !h.fechado ? "bg-primary border-primary text-white" : "border-slate-300"
+                                !h.fechado ? "bg-primary border-primary text-white" : "border-slate-300 dark:border-slate-600"
                               )}>
                               {!h.fechado && <Check className="size-3" />}
                             </button>
-                            <span className="font-bold text-slate-700 text-sm">{dia.label}</span>
+                            <span className="font-bold text-slate-700 dark:text-slate-200 text-sm">{dia.label}</span>
                           </div>
                           {h.fechado ? (
-                            <span className="text-xs text-slate-400 font-medium">Fechado</span>
+                            <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">Fechado</span>
                           ) : (
                             <div className="flex items-center gap-2">
                               <TimeInput value={h.hora_abertura}
                                 onChange={val => updateHorario(dia.id, 'hora_abertura', val)}
-                                className="px-2 py-1.5 bg-slate-100 rounded-lg text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary/30" />
-                              <span className="text-slate-400 text-xs">às</span>
+                                className="px-2 py-1.5 bg-slate-100 dark:bg-slate-700 rounded-lg text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-primary/30" />
+                              <span className="text-slate-400 dark:text-slate-500 text-xs text-center min-w-[20px]">às</span>
                               <TimeInput value={h.hora_fechamento}
                                 onChange={val => updateHorario(dia.id, 'hora_fechamento', val)}
-                                className="px-2 py-1.5 bg-slate-100 rounded-lg text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary/30" />
+                                className="px-2 py-1.5 bg-slate-100 dark:bg-slate-700 rounded-lg text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-primary/30" />
                             </div>
                           )}
                         </div>
@@ -396,7 +395,7 @@ function OnboardingContent() {
                 </div>
 
                 <div className="flex flex-col md:flex-row items-center justify-center gap-4">
-                  <button onClick={prevStep} className="flex items-center gap-2 text-slate-500 font-bold hover:text-slate-700 px-6 py-4">
+                  <button onClick={prevStep} className="flex items-center gap-2 text-slate-500 dark:text-slate-400 font-bold hover:text-slate-700 dark:hover:text-slate-200 px-6 py-4">
                     <ChevronLeft className="size-5" /> Voltar
                   </button>
                   <button onClick={handleFinish} disabled={loading}
@@ -410,12 +409,12 @@ function OnboardingContent() {
             {/* STEP 4: Conclusão */}
             {currentStep === 4 && (
               <motion.div key="step4" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center space-y-8">
-                <div className="size-24 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-xl shadow-emerald-100/50">
+                <div className="size-24 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto shadow-xl shadow-emerald-100/50">
                   <CheckCircle2 className="size-12" />
                 </div>
                 <div>
-                  <h2 className="text-4xl font-black text-slate-900 tracking-tight">Tudo pronto, {companyName}!</h2>
-                  <p className="text-slate-500 mt-4 text-lg max-w-md mx-auto">Sua loja já está configurada e pronta no ZapFlow.</p>
+                  <h2 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">Tudo pronto, {companyName}!</h2>
+                  <p className="text-slate-500 dark:text-slate-400 mt-4 text-lg max-w-md mx-auto">Sua loja já está configurada e pronta no ZapFlow.</p>
                 </div>
                 <button onClick={() => { router.push('/dashboard'); router.refresh(); }}
                   className="w-full md:w-64 bg-primary hover:bg-primary/90 text-white font-bold py-5 rounded-2xl shadow-xl shadow-primary/30 flex items-center justify-center gap-2 mx-auto transition-all active:scale-95">

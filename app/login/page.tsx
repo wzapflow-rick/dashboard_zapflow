@@ -40,7 +40,7 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen flex flex-col lg:flex-row bg-white">
+        <div className="min-h-screen flex flex-col lg:flex-row bg-white dark:bg-slate-900 transition-colors">
             {/* Left Side: Form */}
             <div className="flex-1 flex flex-col justify-center px-8 lg:px-24 py-12">
                 <div className="max-w-md w-full mx-auto">
@@ -100,11 +100,11 @@ export default function LoginPage() {
                         </button>
                     </form>
 
-                    <p className="text-center text-sm text-slate-500 mt-8">
-                        Não tem uma conta? <Link href="/" className="text-primary font-bold hover:underline">Criar Conta Grátis</Link>
+                    <p className="text-center text-sm text-slate-500 dark:text-slate-400 mt-8">
+                        Não tem uma conta? <Link href="/" className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline">Criar Conta Grátis</Link>
                     </p>
 
-                    <div className="mt-12 pt-8 border-t border-slate-100 flex items-center justify-center gap-6 opacity-50 grayscale">
+                    <div className="mt-12 pt-8 border-t border-slate-100 dark:border-slate-800 flex items-center justify-center gap-6 opacity-50 grayscale dark:invert">
                         <div className="relative h-6 w-24">
                             <Image src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" fill className="object-contain" referrerPolicy="no-referrer" />
                         </div>

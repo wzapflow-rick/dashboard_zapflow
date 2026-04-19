@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  X, 
-  ChevronRight, 
+import {
+  X,
+  ChevronRight,
   ChevronLeft,
   Store,
   Package,
@@ -260,7 +260,7 @@ export default function OnboardingTutorial() {
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="relative w-full max-w-lg bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-700"
+            className="relative w-full max-w-lg max-h-[85vh] bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-y-auto border border-slate-200 dark:border-slate-700"
           >
             {/* Header with gradient */}
             <div className={`bg-gradient-to-r ${step.color} p-8 text-white text-center`}>
@@ -273,7 +273,7 @@ export default function OnboardingTutorial() {
               >
                 <Icon className="size-10" />
               </motion.div>
-              
+
               <motion.h2
                 key={`title-${step.id}`}
                 initial={{ opacity: 0, y: 10 }}
@@ -282,7 +282,7 @@ export default function OnboardingTutorial() {
               >
                 {step.title}
               </motion.h2>
-              
+
               <motion.p
                 key={`desc-${step.id}`}
                 initial={{ opacity: 0, y: 10 }}
@@ -334,19 +334,18 @@ export default function OnboardingTutorial() {
                 {tutorialSteps.map((_, index) => (
                   <div
                     key={index}
-                    className={`h-2 rounded-full transition-all ${
-                      index === currentStep 
-                        ? 'w-8 bg-purple-500' 
-                        : index < currentStep 
-                          ? 'w-2 bg-purple-300' 
+                    className={`h-2 rounded-full transition-all ${index === currentStep
+                        ? 'w-8 bg-purple-500'
+                        : index < currentStep
+                          ? 'w-2 bg-purple-300'
                           : 'w-2 bg-slate-200'
-                    }`}
+                      }`}
                   />
                 ))}
               </div>
 
               {/* Navigation */}
-              <div className="flex items-center justify-between mt-6">
+              <div className="flex items-center justify-between mt-6 sticky bottom-0 bg-white dark:bg-slate-800 py-4 border-t border-slate-100 dark:border-slate-700">
                 {isFirstStep ? (
                   <button
                     onClick={handleSkip}
