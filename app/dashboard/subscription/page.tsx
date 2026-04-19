@@ -15,28 +15,48 @@ import { cn } from '@/lib/utils';
 
 const plans = [
   { 
-    name: 'Essencial', 
-    price: 'R$ 97', 
+    name: 'Start', 
+    price: 'R$ 79,90', 
     period: '/mês',
-    desc: 'Ideal para quem está começando no delivery.',
-    features: ['Até 300 pedidos/mês', 'Cardápio Digital', 'Gestão de Pedidos', 'Suporte via Chat'],
+    desc: 'Perfeito para começar sua jornada no delivery.',
+    features: [
+      'Cardápio digital (Link + QrCode)',
+      'Painel Kanban básico',
+      'Pix + Cartões',
+      'Taxa Fixa por bairro'
+    ],
     current: false
   },
   { 
-    name: 'Pro', 
-    price: 'R$ 197', 
+    name: 'PRO', 
+    price: 'R$ 149,90', 
     period: '/mês',
-    desc: 'O plano mais completo para escalar suas vendas.',
-    features: ['Pedidos Ilimitados', 'Recuperação de Carrinhos (IA)', 'Relatórios Avançados', 'Suporte Prioritário', 'Múltiplos Atendentes'],
+    desc: 'O plano ideal para escalar suas vendas.',
+    features: [
+      'Cardápio digital (Link + QrCode)',
+      'Painel Kanban com notificação no whatsapp',
+      'Pix + Cartões',
+      'Taxa de entregas calculada pelo Google Maps',
+      'Agente de IA no whatsapp',
+      'Cupons de desconto'
+    ],
     current: true,
     popular: true
   },
   { 
-    name: 'Enterprise', 
-    price: 'Sob Consulta', 
-    period: '',
-    desc: 'Para redes de franquias e grandes operações.',
-    features: ['Multi-unidades', 'API de Integração', 'Gerente de Conta', 'SLA Garantido'],
+    name: 'ELITE', 
+    price: 'R$ 297,90', 
+    period: '/mês',
+    desc: 'Solução completa para operações avançadas.',
+    features: [
+      'Cardápio digital com Customização Total (Link + QrCode)',
+      'Painel Kanban com notificação no whatsapp',
+      'Pix + Cartões',
+      'App para os entregadores',
+      'Agente de IA no whatsapp',
+      'Cupons de desconto e Programa de pontos',
+      'Relatórios de Performance'
+    ],
     current: false
   },
 ];
@@ -56,10 +76,10 @@ export default function SubscriptionPage() {
             <div className="space-y-2">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-xs font-bold uppercase tracking-wider">
                 <Star className="size-3 fill-current" />
-                Plano Atual: Pro
+                Plano Atual: PRO
               </div>
               <h2 className="text-3xl font-black">Sua próxima fatura é em 15 de Outubro</h2>
-              <p className="text-white/70 font-medium">Valor: R$ 197,00 • Cartão final 4242</p>
+              <p className="text-white/70 font-medium">Valor: R$ 149,90 • Cartão final 4242</p>
             </div>
             <div className="flex gap-3 shrink-0">
               <button className="px-6 py-3 bg-white text-primary font-bold rounded-xl hover:bg-slate-50 transition-all">Alterar Plano</button>
@@ -78,7 +98,7 @@ export default function SubscriptionPage() {
               >
                 {plan.popular && (
                   <div className="absolute top-4 right-4">
-                    <span className="bg-primary text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">Popular</span>
+                    <span className="bg-primary text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">Mais Popular</span>
                   </div>
                 )}
                 
