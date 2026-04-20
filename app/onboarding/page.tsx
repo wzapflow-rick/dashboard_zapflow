@@ -82,7 +82,7 @@ function OnboardingContent() {
         if (company?.id) {
            setEmpresaId(Number(company.id));
           if (company.nome_fantasia) {
-            setCompanyName(company.nome_fantasia);
+           setCompanyName(String(company.nome_fantasia));     
           }
         }
       } catch (e) {
