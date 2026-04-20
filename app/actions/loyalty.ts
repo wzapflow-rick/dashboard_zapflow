@@ -39,7 +39,10 @@ export async function getClientPoints(telefone: string): Promise<ClientPoints | 
             where: `(cliente_telefone,eq,${telefone})~and(empresa_id,eq,${user.empresaId})`,
         });
 
-        return result as ClientPoints || { cliente_telefone: telefone, pontos_acumulados: 0 };
+        if (result) {
+            return result as unknown as ClientPoints;
+        }
+        return { cliente_telefone: telefone, pontos_acumulados: 0 };
     } catch (error) {
         console.error('getClientPoints error:', error);
         return null;
@@ -61,7 +64,7 @@ export async function getLoyaltyConfig(empresaId?: number): Promise<LoyaltyConfi
             where: `(empresa_id,eq,${targetEmpresaId})`,
         });
 
-        if (result) return result as LoyaltyConfig;
+        if (result) return result as unknown as LoyaltyConfig;
 
         return {
             empresa_id: targetEmpresaId,
@@ -229,7 +232,7 @@ export async function getAllClientsPoints(): Promise<ClientPoints[]> {
             sort: '-pontos_acumulados',
             limit: 1000,
         });
-        return (data.list || []) as ClientPoints[];
+        return (data.list || []) as unknown as ClientPoints[];
     } catch (error) {
         console.error('getAllClientsPoints error:', error);
         return [];
