@@ -406,7 +406,7 @@ export async function verificarEstoqueDoPedido(orderId: number) {
         if (!Array.isArray(itens)) return { hasEnough: true, shortages: [] };
 
         const currentInsumos = await getInsumos();
-        const insumosMap = new Map<number, any>(currentInsumos.map((i: any) => [i.id, i]));
+        const insumosMap = new Map<number, any>(currentInsumos.map((i: any) => [Number(i.id), i]));
 
         const necessidades = new Map<number, NecessidadeInsumo>();
 
@@ -417,17 +417,17 @@ export async function verificarEstoqueDoPedido(orderId: number) {
 
             const receitaProduto = await getReceitaDoProduto(produtoId);
             for (const r of receitaProduto) {
-                const insumo = insumosMap.get(r.insumo_id) as any;
+                const insumo = insumosMap.get(Number(r.insumo_id)) as any;
                 if (!insumo) continue;
 
                 const totalPreciso = Number(r.quantidade_necessaria) * quantidadeVendida;
-                const prev = necessidades.get(r.insumo_id) || {
+                const prev = necessidades.get(Number(r.insumo_id)) || {
                     nome: insumo.nome,
                     total: 0,
                     disponivel: Number(insumo.quantidade_atual),
                     unidade: insumo.unidade_medida,
                 };
-                necessidades.set(r.insumo_id, { ...prev, total: prev.total + totalPreciso });
+                necessidades.set(Number(r.insumo_id), { ...prev, total: prev.total + totalPreciso });
             }
 
             const complements = item.complements || item.adicionais || [];
@@ -436,16 +436,16 @@ export async function verificarEstoqueDoPedido(orderId: number) {
                     if (!comp.id) continue;
                     const receitaComp = await getReceitaDoComplemento(comp.id);
                     for (const r of receitaComp) {
-                        const insumo = insumosMap.get(r.insumo_id) as any;
+                        const insumo = insumosMap.get(Number(r.insumo_id)) as any;
                         if (!insumo) continue;
                         const totalPreciso = Number(r.quantidade_necessaria) * quantidadeVendida;
-                        const prev = necessidades.get(r.insumo_id) || {
+                        const prev = necessidades.get(Number(r.insumo_id)) || {
                             nome: insumo.nome,
                             total: 0,
                             disponivel: Number(insumo.quantidade_atual),
                             unidade: insumo.unidade_medida,
                         };
-                        necessidades.set(r.insumo_id, { ...prev, total: prev.total + totalPreciso });
+                        necessidades.set(Number(r.insumo_id), { ...prev, total: prev.total + totalPreciso });
                     }
                 }
             }
