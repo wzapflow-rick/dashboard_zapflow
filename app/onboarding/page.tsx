@@ -80,7 +80,7 @@ function OnboardingContent() {
       try {
         const company = await getCompanyDetails();
         if (company?.id) {
-          setEmpresaId(company.id);
+           setEmpresaId(Number(company.id));
           if (company.nome_fantasia) {
             setCompanyName(company.nome_fantasia);
           }
