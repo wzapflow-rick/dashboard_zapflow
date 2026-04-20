@@ -333,7 +333,7 @@ export async function getCompositeProductsStock(): Promise<{ grupoId: number; es
         for (const grupo of grupos) {
             const itens = parseJsonArray(grupo.itens);
             if (itens.length === 0) {
-                results.push({ grupoId: grupo.id, estoquePossivel: 0 });
+            results.push({ grupoId: Number(grupo.id), estoquePossivel: 0 });                
                 continue;
             }
 
