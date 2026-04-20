@@ -101,8 +101,9 @@ export function Header({ isOpen, setIsOpen, setIsMobileMenuOpen }: HeaderProps) 
     React.useEffect(() => {
         const checkOrders = async () => {
             try {
-                const { getPendingOrdersForPolling } = await import('@/app/actions/orders');
-                const pendingOrders = await getPendingOrdersForPolling();
+    const { getOrders } = await import('@/app/actions/orders');
+   const allOrders = await getOrders();
+   const pendingOrders = allOrders.filter((o: any) => o.status === 'pendente');
                 const ids = pendingOrders.map((o: any) => o.id);
                 setPendingCount(ids.length);
 
