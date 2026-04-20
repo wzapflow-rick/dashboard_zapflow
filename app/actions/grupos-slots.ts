@@ -295,7 +295,7 @@ export async function getCompositeProducts(): Promise<CompositeProduct[]> {
                 completamentos_ids: parseJsonArray(g.completamentos_ids),
                 minimo: g.min_slots,
                 maximo: g.max_slots,
-                items,
+                items: items as any[],
             };
         });
     } catch (e) {
