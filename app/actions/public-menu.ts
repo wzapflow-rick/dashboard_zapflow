@@ -150,30 +150,37 @@ export interface PublicMenuData {
  */
 export async function getPublicMenu(slug: string): Promise<PublicMenuData | null> {
     try {
-        // ── 1. Buscar empresa de forma eficiente ──────────────────────────────
-        // Tenta primeiro pelo login (campo único), depois por nome_fantasia
-        const [byLogin, byNome, byNincho] = await Promise.all([
-            noco.findOne(EMPRESAS_TABLE_ID, {
-                where: `(login,eq,${slug})`,
-            }),
-            noco.findOne(EMPRESAS_TABLE_ID, {
+        // ── 1. Buscar empresa de forma eficiente ──────────────────────────────────────────
+        // Estratégia de busca (do mais específico para o mais genérico):
+        // 1. Campo 'slug' dedicado (se existir no futuro)
+        // 2. Campo 'login' que é único por empresa
+        // 3. Campo 'nome_fantasia' com match exato (case-insensitive via slug)
+        // IMPORTANTE: Não buscamos por 'nincho' pois não é único (várias empresas
+        //             podem ter o mesmo niço como 'pizzaria') e causaria retorno errado.
+
+        // Primeiro: busca por login exato (campo único)
+        let empresa: Record<string, unknown> | null = await noco.findOne(EMPRESAS_TABLE_ID, {
+            where: `(login,eq,${slug})`,
+        });
+
+        // Segundo: busca por nome_fantasia exato
+        if (!empresa) {
+            empresa = await noco.findOne(EMPRESAS_TABLE_ID, {
                 where: `(nome_fantasia,eq,${slug})`,
-            }),
-            noco.findOne(EMPRESAS_TABLE_ID, {
-                where: `(nincho,eq,${slug})`,
-            }),
-        ]);
+            });
+        }
 
-        let empresa: Record<string, unknown> | null = byLogin ?? byNome ?? byNincho ?? null;
-
-        // Se não encontrou por match exato, busca por slug gerado do nome_fantasia
+        // Terceiro: busca por slug gerado a partir do nome_fantasia
+        // (ex: "VR Pizza Show" -> "vr-pizza-show")
         if (!empresa) {
             const allEmpresas = await noco.list(EMPRESAS_TABLE_ID, {
                 limit: 500,
                 fields: 'id,nome_fantasia,email,telefone_loja,nincho,cidade,endereco,controle_estoque,ativo,login',
             });
             empresa = (allEmpresas.list as Record<string, unknown>[]).find((e) => {
-                return toSlug(String(e.nome_fantasia || '')) === slug.toLowerCase();
+                const slugFromNome = toSlug(String(e.nome_fantasia || ''));
+                const slugFromLogin = toSlug(String(e.login || ''));
+                return slugFromNome === slug.toLowerCase() || slugFromLogin === slug.toLowerCase();
             }) ?? null;
         }
 
