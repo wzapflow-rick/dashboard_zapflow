@@ -4,33 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { incrementCouponUsage } from './coupons';
 import { deductPointsForOrder } from './loyalty';
 import { sendOrderCreatedMessage } from './whatsapp';
-
-const NOCODB_URL = process.env.NOCODB_URL || '';
-const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const ORDERS_TABLE_ID = 'mui7bozvx9zb2n9'; // pedidos
-const CLIENTS_TABLE_ID = 'mkodxks6hpm2bg9'; // clientes
-const COUPONS_TABLE_ID = 'm5echqy6luac5g6'; // cupons
-
-async function nocoFetch(tableId: string, endpoint: string, options: RequestInit = {}) {
-    const url = `${NOCODB_URL}/api/v2/tables/${tableId}${endpoint}`;
-    const res = await fetch(url, {
-        ...options,
-        headers: {
-            'xc-token': NOCODB_TOKEN,
-            'Content-Type': 'application/json',
-            ...(options.headers || {}),
-        },
-        cache: 'no-store',
-    });
-
-    if (!res.ok) {
-        const text = await res.text();
-        console.error(`NocoDB Error: ${res.status} ${text}`);
-        throw new Error(`NocoDB API Error: ${res.status}`);
-    }
-
-    return res;
-}
+import { noco } from '@/lib/nocodb';
+import { PEDIDOS_TABLE_ID, CLIENTES_TABLE_ID } from '@/lib/constants';
 
 interface OrderItem {
     id: number;
@@ -69,96 +44,72 @@ interface CreatePublicOrderData {
     formaPagamento: 'pix' | 'dinheiro' | 'cartao';
     troco?: number;
     observacoes?: string;
-    dataAgendamento?: string | null; // ISO date string para agendamento
+    dataAgendamento?: string | null;
 }
 
-// Verificar se cliente existe
 export async function checkCustomerByPhone(empresaId: number, telefone: string) {
     try {
         const cleanPhone = telefone.replace(/\D/g, '');
-        
-        // Buscar por telefone - pode ter DDD ou não, com 9 ou sem
+
         const phoneVariations = [
             cleanPhone,
-            cleanPhone.slice(-11), // Remove DDD se tiver 12 dígitos
-            cleanPhone.slice(-10), // Remove DDD e 9 se tiver 11 dígitos
-            '55' + cleanPhone, // Adiciona 55 na frente
+            cleanPhone.slice(-11),
+            cleanPhone.slice(-10),
+            '55' + cleanPhone,
         ];
-        
+
         for (const phone of phoneVariations) {
-            // Tentar com campo 'empresa_id'
-            let checkRes = await nocoFetch(CLIENTS_TABLE_ID, 
-                `/records?where=(empresa_id,eq,${empresaId})~and(telefone,like,${phone})`);
-            let checkData = await checkRes.json();
-            
-            if (checkData.list && checkData.list.length > 0) {
-                return checkData.list[0];
-            }
-            
-            // Tentar com campo 'empresa_id' também
-            checkRes = await nocoFetch(CLIENTS_TABLE_ID, 
-                `/records?where=(empresa_id,eq,${empresaId})~and(telefone,like,${phone})`);
-            checkData = await checkRes.json();
-            
-            if (checkData.list && checkData.list.length > 0) {
-                return checkData.list[0];
+            const data = await noco.list(CLIENTES_TABLE_ID, {
+                where: `(empresa_id,eq,${empresaId})~and(telefone,like,${phone})`,
+            });
+
+            if (data.list && data.list.length > 0) {
+                return data.list[0];
             }
         }
-        
-        // Última tentativa: buscar todos os clientes da empresa e filtrar manualmente
-        const allClientsRes = await nocoFetch(CLIENTS_TABLE_ID, 
-            `/records?where=(empresa_id,eq,${empresaId})&limit=1000`);
-        const allClientsData = await allClientsRes.json();
+
+        // Última tentativa: buscar todos e filtrar manualmente
+        const allClientsData = await noco.list(CLIENTES_TABLE_ID, {
+            where: `(empresa_id,eq,${empresaId})`,
+            limit: 1000,
+        });
         const allClients = allClientsData.list || [];
-        
+
         const found = allClients.find((c: any) => {
             const clientPhone = (c.telefone || '').replace(/\D/g, '');
             return phoneVariations.some(p => clientPhone.includes(p) || p.includes(clientPhone));
         });
-        
-        if (found) return found;
-        
-        return null;
+
+        return found || null;
     } catch (error) {
         console.error('Erro ao verificar cliente:', error);
         return null;
     }
 }
 
-// Verificar ou criar cliente
 async function ensureCliente(empresaId: number, telefone: string, nome: string, endereco?: string, bairro?: string) {
     try {
-        // Buscar cliente existente
-        const checkRes = await nocoFetch(CLIENTS_TABLE_ID, 
-            `/records?where=(empresa_id,eq,${empresaId})~and(telefone,eq,${telefone})`);
-        const checkData = await checkRes.json();
-        
-        if (checkData.list && checkData.list.length > 0) {
-            // Atualizar nome e endereço se fornecidos
-            const existing = checkData.list[0];
-            await nocoFetch(CLIENTS_TABLE_ID, '/records', {
-                method: 'PATCH',
-                body: JSON.stringify({
-                    id: existing.id,
-                    nome: nome || existing.nome,
-                    endereco: endereco || existing.endereco,
-                    bairro_entrega: bairro || existing.bairro_entrega,
-                }),
+        const data = await noco.list(CLIENTES_TABLE_ID, {
+            where: `(empresa_id,eq,${empresaId})~and(telefone,eq,${telefone})`,
+        });
+
+        if (data.list && data.list.length > 0) {
+            const existing = data.list[0] as any;
+            await noco.update(CLIENTES_TABLE_ID, {
+                id: existing.id,
+                nome: nome || existing.nome,
+                endereco: endereco || existing.endereco,
+                bairro_entrega: bairro || existing.bairro_entrega,
             });
             return existing.id;
         } else {
-            // Criar novo cliente
-            const createRes = await nocoFetch(CLIENTS_TABLE_ID, '/records', {
-                method: 'POST',
-                body: JSON.stringify({
-                    empresa_id: empresaId,
-                    nome: nome || 'Cliente Cardápio',
-                    telefone,
-                    endereco: endereco || '',
-                    bairro_entrega: bairro || '',
-                }),
-            });
-            const created = await createRes.json();
+            const created = await noco.create(CLIENTES_TABLE_ID, {
+                empresa_id: empresaId,
+                nome: nome || 'Cliente Cardápio',
+                telefone,
+                endereco: endereco || '',
+                bairro_entrega: bairro || '',
+            }) as any;
             return created.id;
         }
     } catch (error) {
@@ -167,15 +118,12 @@ async function ensureCliente(empresaId: number, telefone: string, nome: string, 
     }
 }
 
-// Criar pedido público (com status pagamento_pendente)
 export async function createPublicOrder(data: CreatePublicOrderData) {
     try {
-        // Validar dados obrigatórios
         if (!data.empresaId || !data.clienteTelefone || !data.itens?.length) {
             throw new Error('Dados incompletos para criar pedido');
         }
 
-        // Garantir que o cliente existe
         await ensureCliente(
             data.empresaId,
             data.clienteTelefone,
@@ -184,71 +132,63 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
             data.clienteBairro
         );
 
-	        // Montar itens formatados para exibição no kanban e dashboard
-	        const itensFormatados = data.itens.map((item: any) => {
-	            let produtoNome = item.nome;
-	            
-	            // Adicionar complementos ao nome se existirem
-	            if (item.complementos && item.complementos.length > 0) {
-	                const complementosStr = item.complementos
-	                    .map((c: any) => c.items.map((i: any) => i.nome).join(', '))
-	                    .join(' + ');
-	                if (complementosStr) {
-	                    produtoNome += ` (${complementosStr})`;
-	                }
-	            }
-	            
-	            return {
-	                produto: produtoNome,
-	                nome: produtoNome,
-	                quantidade: item.quantidade,
-	                preco: item.preco,
-	                subtotal: Number(item.preco) * Number(item.quantidade),
-	                observacao: item.observacao || '',
-	            };
-	        });
+        const itensFormatados = data.itens.map((item: any) => {
+            let produtoNome = item.nome;
 
-        // Montar payload do pedido
-        // Nota: endereco_entrega e bairro_entrega precisam existir como colunas na tabela NocoDB
-        const enderecoCompleto = data.tipoEntrega === 'retirada' 
-            ? 'Retirada no balcão' 
+            if (item.complementos && item.complementos.length > 0) {
+                const complementosStr = item.complementos
+                    .map((c: any) => c.items.map((i: any) => i.nome).join(', '))
+                    .join(' + ');
+                if (complementosStr) {
+                    produtoNome += ` (${complementosStr})`;
+                }
+            }
+
+            return {
+                produto: produtoNome,
+                nome: produtoNome,
+                quantidade: item.quantidade,
+                preco: item.preco,
+                subtotal: Number(item.preco) * Number(item.quantidade),
+                observacao: item.observacao || '',
+            };
+        });
+
+        const enderecoCompleto = data.tipoEntrega === 'retirada'
+            ? 'Retirada no balcão'
             : [data.clienteEndereco, data.clienteBairro].filter(Boolean).join(', ') || '';
-        
-	        const orderPayload: any = {
-	            empresa_id: data.empresaId,
-	            telefone_cliente: data.clienteTelefone,
-	            cliente_nome: data.clienteNome,
-	            tipo_entrega: data.tipoEntrega,
-	            taxa_entrega: data.taxaEntrega || 0,
-	            itens: JSON.stringify(itensFormatados),
-	            subtotal: data.subtotal,
-	            desconto: data.desconto || 0,
-	            valor_total: data.total,
-	            cupom_codigo: data.cupomCodigo || '',
-	            pontos_ganhos: data.pontosGanhos || 0,
-	            forma_pagamento: data.formaPagamento,
-	            tipo_pagamento: data.formaPagamento, // Adicionado para garantir compatibilidade com o Kanban
-	            troco_necessario: data.troco || 0,
-	            status: data.dataAgendamento ? 'agendado' : (data.formaPagamento === 'dinheiro' ? 'pendente' : 'pagamento_pendente'),
-	            origem: 'cardapio_publico',
-	            criado_em: new Date().toISOString(),
-	        };
 
-        // Adicionar agendamento se existir
+        const orderPayload: any = {
+            empresa_id: data.empresaId,
+            telefone_cliente: data.clienteTelefone,
+            cliente_nome: data.clienteNome,
+            tipo_entrega: data.tipoEntrega,
+            taxa_entrega: data.taxaEntrega || 0,
+            itens: JSON.stringify(itensFormatados),
+            subtotal: data.subtotal,
+            desconto: data.desconto || 0,
+            valor_total: data.total,
+            cupom_codigo: data.cupomCodigo || '',
+            pontos_ganhos: data.pontosGanhos || 0,
+            forma_pagamento: data.formaPagamento,
+            tipo_pagamento: data.formaPagamento,
+            troco_necessario: data.troco || 0,
+            status: data.dataAgendamento ? 'agendado' : (data.formaPagamento === 'dinheiro' ? 'pendente' : 'pagamento_pendente'),
+            origem: 'cardapio_publico',
+            criado_em: new Date().toISOString(),
+            endereco_entrega: enderecoCompleto,
+            bairro_entrega: data.tipoEntrega === 'retirada' ? '' : (data.clienteBairro || ''),
+        };
+
         if (data.dataAgendamento) {
             orderPayload.data_agendamento = data.dataAgendamento;
-            orderPayload.observacoes = data.observacoes 
+            orderPayload.observacoes = data.observacoes
                 ? `${data.observacoes}\n📅 Agendado para: ${new Date(data.dataAgendamento).toLocaleString('pt-BR')}`
                 : `📅 Agendado para: ${new Date(data.dataAgendamento).toLocaleString('pt-BR')}`;
         }
 
-        // Adicionar campos de endereço (NocoDB ignorará se as colunas não existirem)
-        orderPayload.endereco_entrega = enderecoCompleto;
-        orderPayload.bairro_entrega = data.tipoEntrega === 'retirada' ? '' : (data.clienteBairro || '');
-        
-        // Incluir endereço no campo observacoes como fallback
         if (data.tipoEntrega === 'delivery' && enderecoCompleto && enderecoCompleto !== 'Retirada no balcão') {
-            orderPayload.observacoes = data.observacoes 
+            orderPayload.observacoes = data.observacoes
                 ? `${data.observacoes}\n📍 Endereço: ${enderecoCompleto}`
                 : `📍 Endereço: ${enderecoCompleto}`;
         }
@@ -257,39 +197,29 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
             endereco_entrega: orderPayload.endereco_entrega,
             bairro_entrega: orderPayload.bairro_entrega,
             tipo_entrega: orderPayload.tipo_entrega,
-            clienteEndereco: data.clienteEndereco,
-            clienteBairro: data.clienteBairro,
             observacoes: orderPayload.observacoes,
         });
 
-        const res = await nocoFetch(ORDERS_TABLE_ID, '/records', {
-            method: 'POST',
-            body: JSON.stringify(orderPayload),
-        });
+        const order = await noco.create(PEDIDOS_TABLE_ID, orderPayload) as any;
 
-        const order = await res.json();
-        
-        // Incrementar uso do cupom se foi usado
         if (data.cupomId) {
-            incrementCouponUsage(data.cupomId).catch(err => 
+            incrementCouponUsage(data.cupomId).catch(err =>
                 console.error('Erro ao incrementar uso do cupom:', err)
             );
         }
-        
-        // Deduzir pontos se foram usados
+
         if (data.pontosUsados && data.pontosUsados > 0) {
             deductPointsForOrder(
                 data.clienteTelefone.replace(/\D/g, ''),
                 data.pontosUsados
             ).catch(err => console.error('Erro ao deduzir pontos:', err));
         }
-        
-        // Enviar mensagem de confirmação com link de rastreamento
+
         sendOrderCreatedMessage(data.clienteTelefone, order.id, data.total, data.dataAgendamento, itensFormatados)
             .catch(err => console.error('Erro ao enviar mensagem WhatsApp:', err));
-        
+
         revalidatePath('/dashboard/expedition');
-        
+
         return {
             success: true,
             orderId: order.id,
@@ -301,12 +231,11 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
     }
 }
 
-// Verificar status do pedido (para o cliente acompanhar)
 export async function checkOrderStatus(orderId: number) {
     try {
-        const res = await nocoFetch(ORDERS_TABLE_ID, `/records/${orderId}`);
-        const order = await res.json();
-        
+        const order = await noco.findById(PEDIDOS_TABLE_ID, orderId) as any;
+        if (!order) return null;
+
         return {
             id: order.id,
             status: order.status,
@@ -319,16 +248,10 @@ export async function checkOrderStatus(orderId: number) {
     }
 }
 
-// Atualizar status do pedido (para o painel admin)
 export async function updateOrderStatusPublic(orderId: number, status: string) {
     try {
-        const res = await nocoFetch(ORDERS_TABLE_ID, '/records', {
-            method: 'PATCH',
-            body: JSON.stringify({ id: orderId, status }),
-        });
-
+        await noco.update(PEDIDOS_TABLE_ID, { id: orderId, status });
         revalidatePath('/dashboard/expedition');
-        
         return { success: true };
     } catch (error) {
         console.error('Erro ao atualizar status:', error);
@@ -336,12 +259,10 @@ export async function updateOrderStatusPublic(orderId: number, status: string) {
     }
 }
 
-// Confirmar pagamento (muda de pagamento_pendente para pendente)
 export async function confirmPayment(orderId: number) {
     return updateOrderStatusPublic(orderId, 'pendente');
 }
 
-// Cancelar pedido por falta de pagamento
 export async function cancelUnpaidOrder(orderId: number) {
     return updateOrderStatusPublic(orderId, 'cancelado');
 }

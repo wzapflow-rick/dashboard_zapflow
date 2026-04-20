@@ -5,30 +5,8 @@ import { getMe } from '@/lib/session-server';
 import { getProducts, upsertProduct, upsertCategory } from './products';
 import { upsertCustomer } from './customers';
 import { upsertInsumo } from './insumos';
-
-const NOCODB_URL = process.env.NOCODB_URL || '';
-const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const ORDERS_TABLE_ID = 'mui7bozvx9zb2n9';
-
-async function nocoFetch(tableId: string, endpoint: string, options: RequestInit = {}) {
-    const url = `${NOCODB_URL}/api/v2/tables/${tableId}${endpoint}`;
-    const res = await fetch(url, {
-        ...options,
-        headers: {
-            'xc-token': NOCODB_TOKEN,
-            'Content-Type': 'application/json',
-            ...(options.headers || {}),
-        },
-        cache: 'no-store',
-    });
-
-    if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`NocoDB API Error: ${res.status} ${text}`);
-    }
-
-    return res;
-}
+import { noco } from '@/lib/nocodb';
+import { PEDIDOS_TABLE_ID } from '@/lib/constants';
 
 const FIRST_NAMES = ['João', 'Maria', 'Pedro', 'Ana', 'Lucas', 'Julia', 'Carlos', 'Beatriz', 'Marcos', 'Fernanda'];
 const LAST_NAMES = ['Silva', 'Santos', 'Oliveira', 'Souza', 'Rodrigues', 'Ferreira', 'Almeida', 'Pereira', 'Carvalho', 'Gomes'];
@@ -42,16 +20,13 @@ export async function generateMockOrder() {
         const products = await getProducts();
         if (products.length === 0) throw new Error('Adicione pelo menos um produto ao cardápio antes de testar.');
 
-        // 1. Gerar dados do cliente
         const firstName = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)];
         const lastName = LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)];
         const nome = `${firstName} ${lastName}`;
         const telefone = `55${Math.floor(10 + Math.random() * 90)}9${Math.floor(1000 + Math.random() * 9000)}${Math.floor(1000 + Math.random() * 9000)}`;
 
-        // 2. Garantir que o cliente exista na base
         await upsertCustomer({ nome, telefone });
 
-        // 3. Escolher 1 a 3 produtos aleatórios
         const numItems = Math.floor(Math.random() * 3) + 1;
         const selectedProducts = [];
         let total = 0;
@@ -79,10 +54,9 @@ export async function generateMockOrder() {
                 adicionais: [],
                 quantidade: 1
             });
-            total += 5.00; // Mock delivery tax
+            total += 5.00;
         }
 
-        // 4. Criar o pedido
         const orderPayload = {
             empresa_id: user.empresaId,
             telefone_cliente: telefone,
@@ -96,15 +70,12 @@ export async function generateMockOrder() {
             origem: 'Módulo de Testes'
         };
 
-        const res = await nocoFetch(ORDERS_TABLE_ID, '/records', {
-            method: 'POST',
-            body: JSON.stringify(orderPayload)
-        });
+        const result = await noco.create(PEDIDOS_TABLE_ID, orderPayload);
 
         revalidatePath('/dashboard/expedition');
         revalidatePath('/dashboard/customers');
 
-        return await res.json();
+        return result;
     } catch (error: any) {
         console.error('Mock Generation Error:', error);
         throw new Error(error.message || 'Falha ao gerar pedido de teste');
@@ -116,7 +87,6 @@ export async function setupPizzariaFicticia() {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        // 1. Criar Insumos
         const insumos = [
             { nome: 'Queijo Mussarela', quantidade_atual: 10, unidade_medida: 'kg', estoque_minimo: 2, custo_por_unidade: 45 },
             { nome: 'Molho de Tomate', quantidade_atual: 5, unidade_medida: 'L', estoque_minimo: 1, custo_por_unidade: 8 },
@@ -129,10 +99,8 @@ export async function setupPizzariaFicticia() {
             savedInsumos.push(result);
         }
 
-        // 2. Criar Categoria
         const categoria = await upsertCategory({ nome: 'Pizzas (Teste)' });
 
-        // 3. Criar Produto com Receita
         const pizza = {
             nome: 'Pizza de Calabresa (Teste)',
             preco: 59.90,
@@ -142,9 +110,9 @@ export async function setupPizzariaFicticia() {
         };
 
         const receita = [
-            { insumo_id: savedInsumos[0].id, quantidade_necessaria: 0.200 }, // 200g mussarela
-            { insumo_id: savedInsumos[1].id, quantidade_necessaria: 0.100 }, // 100ml molho
-            { insumo_id: savedInsumos[2].id, quantidade_necessaria: 0.150 }  // 150g calabresa
+            { insumo_id: savedInsumos[0].id, quantidade_necessaria: 0.200 },
+            { insumo_id: savedInsumos[1].id, quantidade_necessaria: 0.100 },
+            { insumo_id: savedInsumos[2].id, quantidade_necessaria: 0.150 }
         ];
 
         await upsertProduct(pizza, receita);

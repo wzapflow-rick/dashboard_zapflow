@@ -3,12 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import { getMe } from '@/lib/session-server';
 import { getInsumos } from './insumos';
-
-const NOCODB_URL = process.env.NOCODB_URL || '';
-const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-
-const ITENS_BASE_TABLE_ID = 'mfcp67skbxq4nt5';
-const ITEM_BASE_INSUMO_TABLE_ID = 'mev9fkmt1jaapiv';
+import { noco } from '@/lib/nocodb';
+import { ITENS_BASE_TABLE_ID, ITEM_BASE_INSUMO_TABLE_ID } from '@/lib/constants';
 
 export interface ItemBase {
     id: number;
@@ -25,27 +21,6 @@ export interface ItemBaseInsumo {
     quantidade: number;
 }
 
-async function nocoFetch(tableId: string, endpoint: string, options: RequestInit = {}) {
-    const url = `${NOCODB_URL}/api/v2/tables/${tableId}${endpoint}`;
-    const res = await fetch(url, {
-        ...options,
-        headers: {
-            'xc-token': NOCODB_TOKEN,
-            'Content-Type': 'application/json',
-            ...(options.headers || {}),
-        },
-        cache: 'no-store',
-    });
-
-    if (!res.ok) {
-        const text = await res.text();
-        console.error(`NocoDB Error (Table ${tableId}): ${res.status} ${text}`);
-        throw new Error(`NocoDB API Error: ${res.status} - ${text}`);
-    }
-
-    return res;
-}
-
 // --- ITENS BASE (BIBLIOTECA DE SABORES) ---
 
 export async function getItensBase(): Promise<ItemBase[]> {
@@ -53,14 +28,15 @@ export async function getItensBase(): Promise<ItemBase[]> {
         const user = await getMe();
         if (!user?.empresaId) return [];
 
-        const res = await nocoFetch(
-            ITENS_BASE_TABLE_ID,
-            `/records?limit=1000&where=(empresa_id,eq,${user.empresaId})&sort=nome`
-        );
-        const data = await res.json();
+        const data = await noco.list(ITENS_BASE_TABLE_ID, {
+            where: `(empresa_id,eq,${user.empresaId})`,
+            sort: 'nome',
+            limit: 1000,
+        });
+
         return (data.list || []).map((i: any) => ({
             ...i,
-            id: Number(i.id) //Converter para número para evitar problemas de comparação
+            id: Number(i.id)
         }));
     } catch (e) {
         console.error('getItensBase error:', e);
@@ -73,35 +49,25 @@ export async function upsertItemBase(itemData: Partial<ItemBase>) {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        const isUpdate = !!itemData.id;
         const payload: any = {
             ...itemData,
             empresa_id: user.empresaId,
         };
 
-        // Remove campos de sistema e IDs internos para evitar conflitos de tipo UUID
         delete payload.Id;
         delete payload.created_at;
         delete payload.updated_at;
 
-        if (isUpdate) {
-            const res = await nocoFetch(ITENS_BASE_TABLE_ID, '/records', {
-                method: 'PATCH',
-                body: JSON.stringify({ ...payload, id: itemData.id }),
-            });
-            const data = await res.json();
-            revalidatePath('/dashboard/menu');
-            return { ...itemData, ...data };
+        let data;
+        if (itemData.id) {
+            data = await noco.update(ITENS_BASE_TABLE_ID, { ...payload, id: itemData.id });
         } else {
-            const res = await nocoFetch(ITENS_BASE_TABLE_ID, '/records', {
-                method: 'POST',
-                body: JSON.stringify(payload),
-            });
-            const data = await res.json();
-            console.log(' upsertItemBase response:', data);
-            revalidatePath('/dashboard/menu');
-            return { ...payload, ...data };
+            data = await noco.create(ITENS_BASE_TABLE_ID, payload);
+            console.log('upsertItemBase response:', data);
         }
+
+        revalidatePath('/dashboard/menu');
+        return { ...itemData, ...(data as any) };
     } catch (e: any) {
         console.error('upsertItemBase error:', e);
         throw new Error(e.message || 'Erro ao salvar item base');
@@ -110,10 +76,7 @@ export async function upsertItemBase(itemData: Partial<ItemBase>) {
 
 export async function deleteItemBase(id: number) {
     try {
-        await nocoFetch(ITENS_BASE_TABLE_ID, '/records', {
-            method: 'DELETE',
-            body: JSON.stringify([{ id: id }]),
-        });
+        await noco.delete(ITENS_BASE_TABLE_ID, id);
         revalidatePath('/dashboard/menu');
         return { success: true };
     } catch (e: any) {
@@ -122,23 +85,24 @@ export async function deleteItemBase(id: number) {
     }
 }
 
-// --- FICHA TÉCNICA DO ITEM BASE (item_base_insumo) ---
+// --- FICHA TÉCNICA DO ITEM BASE ---
 
 export async function getReceitaDoItemBase(itemBaseId: number): Promise<ItemBaseInsumo[]> {
     try {
         const user = await getMe();
         if (!user?.empresaId) return [];
-        
-        const res = await nocoFetch(
-            ITEM_BASE_INSUMO_TABLE_ID,
-            `/records?limit=1000&where=(produto_id,eq,${itemBaseId})~and(empresa_id,eq,${user.empresaId})`
-        );
-        const data = await res.json();
-        return (data.list || []).map((i: any) => ({ 
-            id: i.id, 
+
+        const data = await noco.list(ITEM_BASE_INSUMO_TABLE_ID, {
+            where: `(produto_id,eq,${itemBaseId})~and(empresa_id,eq,${user.empresaId})`,
+            limit: 1000,
+        });
+
+        return (data.list || []).map((i: any) => ({
+            id: i.id,
             produto_id: i.produto_id,
             insumo_id: i.insumo_id,
-            quantidade: i.quantidade_usada 
+            insumo: i.insumo_id,
+            quantidade: i.quantidade_usada
         }));
     } catch (e) {
         console.error('getReceitaDoItemBase error:', e);
@@ -151,44 +115,35 @@ export async function saveReceitaDoItemBase(
     insumosList: { insumo: number; quantidade: number }[]
 ) {
     try {
-        const existingRes = await nocoFetch(
-            ITEM_BASE_INSUMO_TABLE_ID,
-            `/records?limit=1000&where=(produto_id,eq,${itemBaseId})`
-        );
-        const existingData = await existingRes.json();
+        const existingData = await noco.list(ITEM_BASE_INSUMO_TABLE_ID, {
+            where: `(produto_id,eq,${itemBaseId})`,
+            limit: 1000,
+        });
 
         if (existingData.list?.length > 0) {
-            const idsToDelete = existingData.list.map((r: any) => ({ id: r.id }));
-            await nocoFetch(ITEM_BASE_INSUMO_TABLE_ID, '/records', {
-                method: 'DELETE',
-                body: JSON.stringify(idsToDelete),
-            });
+            for (const r of existingData.list) {
+                await noco.delete(ITEM_BASE_INSUMO_TABLE_ID, (r as any).id);
+            }
         }
 
         if (insumosList.length > 0) {
-            // Obter empresa do usuário
             const user = await getMe();
             if (!user?.empresaId) throw new Error('Usuário não autorizado');
-            
-            const records = insumosList.map(item => ({
-                produto_id: Number(itemBaseId),
-                insumo_id: Number(item.insumo),
-                quantidade_usada: parseFloat(Number(item.quantidade || 1).toFixed(3)),
-                empresa_id: user.empresaId,
-            }));
-            console.log('Inserindo registros na tabela item_base_insumo:', JSON.stringify(records, null, 2));
-            
-            await nocoFetch(ITEM_BASE_INSUMO_TABLE_ID, '/records', {
-                method: 'POST',
-                body: JSON.stringify(records),
-            });
+
+            for (const item of insumosList) {
+                await noco.create(ITEM_BASE_INSUMO_TABLE_ID, {
+                    produto_id: Number(itemBaseId),
+                    insumo_id: Number(item.insumo),
+                    quantidade_usada: parseFloat(Number(item.quantidade || 1).toFixed(3)),
+                    empresa_id: user.empresaId,
+                });
+            }
         }
 
         revalidatePath('/dashboard/menu');
-        
-        // Recalcular preço de custo do item base
+
         await recalcularPrecoCustoItemBase(itemBaseId);
-        
+
         return { success: true };
     } catch (e: any) {
         console.error('saveReceitaDoItemBase error:', e);
@@ -196,56 +151,45 @@ export async function saveReceitaDoItemBase(
     }
 }
 
-// Recalcular preço de custo do item base com base nos insumos vinculados
 async function recalcularPrecoCustoItemBase(itemBaseId: number | string): Promise<void> {
     const id = Number(itemBaseId);
     if (isNaN(id)) return;
     try {
-        // 1. Buscar a receita do item base
-        const receitaRes = await nocoFetch(
-            ITEM_BASE_INSUMO_TABLE_ID,
-            `/records?limit=1000&where=(item,eq,${itemBaseId})`
-        );
-        const receitaData = await receitaRes.json();
+        const receitaData = await noco.list(ITEM_BASE_INSUMO_TABLE_ID, {
+            where: `(item,eq,${itemBaseId})`,
+            limit: 1000,
+        });
         const receita = receitaData.list || [];
 
         if (receita.length === 0) {
-            // Se não há insumos, zera o preço de custo
             await atualizarPrecoCustoItemBase(id, 0);
             return;
         }
 
-        // 2. Buscar insumos da empresa para obter custo_por_unidade
         const user = await getMe();
         if (!user?.empresaId) return;
-        
+
         const insumos = await getInsumos();
         const insumosMap = new Map<number, number>();
         insumos.forEach((insumo: any) => {
             insumosMap.set(insumo.id, Number(insumo.custo_por_unidade || 0));
         });
 
-        // 3. Calcular custo total
         let custoTotal = 0;
         receita.forEach((item: any) => {
             const custoInsumo = insumosMap.get(item.insumo) || 0;
             custoTotal += custoInsumo * Number(item.quantidade || 0);
         });
 
-        // 4. Atualizar preço de custo do item base
         await atualizarPrecoCustoItemBase(id, custoTotal);
     } catch (error) {
         console.error('Erro ao recalcular preço de custo do item base:', error);
-        // Não lança erro para não interromper o fluxo
     }
 }
 
 async function atualizarPrecoCustoItemBase(itemBaseId: number, custo: number): Promise<void> {
     try {
-        await nocoFetch(ITENS_BASE_TABLE_ID, '/records', {
-            method: 'PATCH',
-            body: JSON.stringify({ id: itemBaseId, preco_custo: custo }),
-        });
+        await noco.update(ITENS_BASE_TABLE_ID, { id: itemBaseId, preco_custo: custo });
         revalidatePath('/dashboard/menu');
     } catch (error) {
         console.error('Erro ao atualizar preço de custo do item base:', error);

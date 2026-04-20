@@ -1,33 +1,8 @@
 'use server';
 
 import { getMe } from '@/lib/session-server';
-
-const NOCODB_URL = process.env.NOCODB_URL || '';
-const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const TABLE_ID = 'mui7bozvx9zb2n9'; // pedidos
-
-async function nocoFetch(endpoint: string, options: RequestInit = {}) {
-    const url = `${NOCODB_URL}/api/v2/tables/${TABLE_ID}${endpoint}`;
-    console.log(`[Dashboard] Fetching: ${url}`);
-
-    const res = await fetch(url, {
-        ...options,
-        headers: {
-            'xc-token': NOCODB_TOKEN,
-            'Content-Type': 'application/json',
-            ...(options.headers || {}),
-        },
-        cache: 'no-store',
-    });
-
-    if (!res.ok) {
-        const text = await res.text();
-        console.error(`NocoDB Error (Dashboard): ${res.status} ${text}`);
-        throw new Error(`NocoDB API Error: ${res.status} ${text}`);
-    }
-
-    return res;
-}
+import { noco } from '@/lib/nocodb';
+import { PEDIDOS_TABLE_ID } from '@/lib/constants';
 
 export async function getDashboardData(period: string = 'Hoje') {
     try {
@@ -49,30 +24,28 @@ export async function getDashboardData(period: string = 'Hoje') {
             startDate.setDate(1);
             startDate.setHours(0, 0, 0, 0);
         } else {
-            startDate = new Date(1970, 0, 1); // Start of time
+            startDate = new Date(1970, 0, 1);
         }
 
-        const isoStartDate = startDate.toISOString();
-        console.log(`[Dashboard] Period: ${period}, StartDate: ${isoStartDate}`);
+        console.log(`[Dashboard] Period: ${period}, StartDate: ${startDate.toISOString()}`);
 
-        // Build the where clause (only by empresa_id to avoid NocoDB date parsing issues)
-        const whereClause = `(empresa_id,eq,${user.empresaId})`;
-
-        // Fetch orders for the company (up to 1000)
-        const res = await nocoFetch(`/records?limit=1000&where=${encodeURIComponent(whereClause)}&sort=-id`);
-        const data = await res.json();
+        const data = await noco.list(PEDIDOS_TABLE_ID, {
+            where: `(empresa_id,eq,${user.empresaId})`,
+            sort: '-id',
+            limit: 1000,
+        });
         const allOrders = data.list || [];
 
-        // Filter orders by date in memory
+        // Filtrar por data em memória (evita problemas de parsing de datas no NocoDB)
         const orders = allOrders.filter((o: any) => o.criado_em && new Date(o.criado_em) >= startDate);
 
-        // 1. Calculate Revenue and Order Count
+        // 1. Calcular faturamento e contagem
         const finalizedOrders = orders.filter((o: any) => o.status === 'finalizado');
         const totalRevenue = finalizedOrders.reduce((sum: number, o: any) => sum + Number(o.valor_total || 0), 0);
         const totalOrders = orders.length;
         const averageTicket = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
-        // 2. Aggregate Top Products
+        // 2. Top produtos
         const productStats = new Map();
         orders.forEach((order: any) => {
             let items = [];
@@ -83,7 +56,7 @@ export async function getDashboardData(period: string = 'Hoje') {
                     items = order.itens;
                 }
             } catch (e) {
-                // Ignore parsing errors for individual orders
+                // Ignorar erros de parsing
             }
 
             items.forEach((item: any) => {
@@ -104,11 +77,10 @@ export async function getDashboardData(period: string = 'Hoje') {
                 image: `https://picsum.photos/seed/${encodeURIComponent(p.name)}/100/100`
             }));
 
-        // 3. Sales By Hour — all 24h, converting UTC to Brasília (UTC-3)
+        // 3. Vendas por hora (UTC-3 Brasília)
         const salesByHour = new Array(24).fill(0);
         orders.forEach((order: any) => {
             const date = new Date(order.criado_em);
-            // Convert UTC to Brasília (UTC-3)
             const brasiliaHour = (date.getUTCHours() - 3 + 24) % 24;
             salesByHour[brasiliaHour]++;
         });
@@ -122,7 +94,7 @@ export async function getDashboardData(period: string = 'Hoje') {
             ],
             topProducts,
             chartData: salesByHour,
-            rawOrders: orders.slice(0, 5) // Recent orders
+            rawOrders: orders.slice(0, 5)
         };
     } catch (error: any) {
         console.error('API Error (getDashboardData):', error.message);

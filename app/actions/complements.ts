@@ -2,55 +2,24 @@
 
 import { getMe } from '@/lib/session-server';
 import { getReceitaDoProduto } from './insumos';
-
-const NOCODB_URL = process.env.NOCODB_URL || '';
-const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-
-// Replace with actual Table IDs provided by the user
-const GRUPOS_TABLE_ID = 'm3o1prjcnvi678q';
-const COMPLEMENTOS_TABLE_ID = 'mj3ut032mx8zi72';
-const P_GRUPOS_TABLE_ID = 'mmzk2podf4zqps6';
-const C_INSUMO_TABLE_ID = 'mev9fkmt1jaapiv';
-// New table for fixed group ingredients (e.g., pizza dough, box) — user must provide table ID
-const GRUPO_INSUMOS_TABLE_ID = 'mev9fkmt1jaapiv'; // mesma tabela de complemento_insumo, filtrada por grupo_id
-
-async function nocoFetch(tableId: string, endpoint: string, options: RequestInit = {}) {
-    if (!tableId || tableId.startsWith('PLACEHOLDER')) {
-        console.warn('NocoDB API call skipped: Table ID not configured');
-        return { ok: true, json: async () => ({ list: [], id: Date.now() }) } as any; // Mock for development without table
-    }
-
-    const url = `${NOCODB_URL}/api/v2/tables/${tableId}${endpoint}`;
-    const res = await fetch(url, {
-        ...options,
-        headers: {
-            'xc-token': NOCODB_TOKEN,
-            'Content-Type': 'application/json',
-            ...(options.headers || {}),
-        },
-        cache: 'no-store',
-    });
-
-    if (!res.ok) {
-        const text = await res.text();
-        console.error(`NocoDB Error (Table ${tableId}): ${res.status} ${text}`);
-        throw new Error(`NocoDB API Error: ${res.status}`);
-    }
-
-    return res;
-}
+import { noco } from '@/lib/nocodb';
+import {
+  GRUPOS_COMPLEMENTOS_TABLE_ID,
+  COMPLEMENTOS_TABLE_ID,
+  TAXAS_ENTREGA_TABLE_ID,
+  PRODUTO_INSUMOS_TABLE_ID,
+} from '@/lib/constants';
 
 // --- GRUPOS DE COMPLEMENTOS ---
+
 export async function getGruposComplementos() {
     try {
         const user = await getMe();
         if (!user?.empresaId) return [];
 
-        if (GRUPOS_TABLE_ID.startsWith('PLACEHOLDER')) return [];
-
-        // Removed sort parameter to prevent ERR_FIELD_NOT_FOUND
-        const res = await nocoFetch(GRUPOS_TABLE_ID, `/records?where=(empresa_id,eq,${user.empresaId})`);
-        const data = await res.json();
+        const data = await noco.list(GRUPOS_COMPLEMENTOS_TABLE_ID, {
+            where: `(empresa_id,eq,${user.empresaId})`,
+        });
         return (data.list || []).map((g: any) => ({ ...g, id: g.Id || g.id }));
     } catch (e) {
         console.error('getGruposComplementos error:', e);
@@ -63,26 +32,25 @@ export async function upsertGrupoComplemento(grupo: any) {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        const isUpdate = !!grupo.id || !!grupo.Id;
-        const method = isUpdate ? 'PATCH' : 'POST';
-
-        const payload = {
+        const payload: any = {
             ...grupo,
             empresa_id: user.empresaId
         };
-        // Normalize primary key if needed
-        if (grupo.Id) {
-            payload.id = grupo.Id;
+
+        // Normalizar chave primária
+        if (payload.Id) {
+            payload.id = payload.Id;
             delete payload.Id;
         }
 
-        const res = await nocoFetch(GRUPOS_TABLE_ID, '/records', {
-            method,
-            body: JSON.stringify(payload)
-        });
+        let data;
+        if (payload.id) {
+            data = await noco.update(GRUPOS_COMPLEMENTOS_TABLE_ID, payload);
+        } else {
+            data = await noco.create(GRUPOS_COMPLEMENTOS_TABLE_ID, payload);
+        }
 
-        const data = await res.json();
-        return { ...payload, ...data, id: data.Id || data.id };
+        return { ...payload, ...data, id: (data as any).Id || (data as any).id };
     } catch (e: any) {
         throw new Error(e.message || 'Erro ao salvar grupo');
     }
@@ -90,10 +58,7 @@ export async function upsertGrupoComplemento(grupo: any) {
 
 export async function deleteGrupoComplemento(id: number) {
     try {
-        await nocoFetch(GRUPOS_TABLE_ID, '/records', {
-            method: 'DELETE',
-            body: JSON.stringify({ id }) // Uses lowercase `id` which is standard
-        });
+        await noco.delete(GRUPOS_COMPLEMENTOS_TABLE_ID, id);
         return { success: true };
     } catch (e: any) {
         throw new Error(e.message || 'Erro ao deletar grupo');
@@ -101,12 +66,12 @@ export async function deleteGrupoComplemento(id: number) {
 }
 
 // --- ITENS DE COMPLEMENTOS ---
+
 export async function getItensDoGrupo(grupoId: number) {
     try {
-        if (COMPLEMENTOS_TABLE_ID.startsWith('PLACEHOLDER')) return [];
-        // Removed sort parameter to prevent ERR_FIELD_NOT_FOUND
-        const res = await nocoFetch(COMPLEMENTOS_TABLE_ID, `/records?where=(grupo_id,eq,${grupoId})`);
-        const data = await res.json();
+        const data = await noco.list(COMPLEMENTOS_TABLE_ID, {
+            where: `(grupo_id,eq,${grupoId})`,
+        });
         return (data.list || []).map((i: any) => ({ ...i, id: i.Id || i.id }));
     } catch (e) {
         console.error('getItensDoGrupo error:', e);
@@ -116,23 +81,21 @@ export async function getItensDoGrupo(grupoId: number) {
 
 export async function upsertItemComplemento(item: any) {
     try {
-        const isUpdate = !!item.id || !!item.Id;
-        const method = isUpdate ? 'PATCH' : 'POST';
+        const payload: any = { ...item };
 
-        const payload = { ...item };
-        // Normalize primary key if needed
-        if (item.Id) {
-            payload.id = item.Id;
+        if (payload.Id) {
+            payload.id = payload.Id;
             delete payload.Id;
         }
 
-        const res = await nocoFetch(COMPLEMENTOS_TABLE_ID, '/records', {
-            method,
-            body: JSON.stringify(payload)
-        });
+        let data;
+        if (payload.id) {
+            data = await noco.update(COMPLEMENTOS_TABLE_ID, payload);
+        } else {
+            data = await noco.create(COMPLEMENTOS_TABLE_ID, payload);
+        }
 
-        const data = await res.json();
-        return { ...payload, ...data, id: data.Id || data.id };
+        return { ...payload, ...data, id: (data as any).Id || (data as any).id };
     } catch (e: any) {
         throw new Error(e.message || 'Erro ao salvar item do complemento');
     }
@@ -140,10 +103,7 @@ export async function upsertItemComplemento(item: any) {
 
 export async function deleteItemComplemento(id: number) {
     try {
-        await nocoFetch(COMPLEMENTOS_TABLE_ID, '/records', {
-            method: 'DELETE',
-            body: JSON.stringify({ id })
-        });
+        await noco.delete(COMPLEMENTOS_TABLE_ID, id);
         return { success: true };
     } catch (e: any) {
         throw new Error(e.message || 'Erro ao deletar item do complemento');
@@ -151,10 +111,12 @@ export async function deleteItemComplemento(id: number) {
 }
 
 // --- VINCULAÇÃO DE GRUPOS A PRODUTOS ---
+
 export async function getGruposDoProduto(produtoId: number) {
     try {
-        const res = await nocoFetch(P_GRUPOS_TABLE_ID, `/records?where=(produto_id,eq,${produtoId})`);
-        const data = await res.json();
+        const data = await noco.list(TAXAS_ENTREGA_TABLE_ID, {
+            where: `(produto_id,eq,${produtoId})`,
+        });
         return (data.list || []).map((i: any) => ({ ...i, id: i.Id || i.id }));
     } catch (e) {
         console.error('getGruposDoProduto error:', e);
@@ -164,28 +126,25 @@ export async function getGruposDoProduto(produtoId: number) {
 
 export async function updateGruposDoProduto(produtoId: number, grupoIds: number[]) {
     try {
-        const atuaisRes = await nocoFetch(P_GRUPOS_TABLE_ID, `/records?where=(produto_id,eq,${produtoId})`);
-        const atuaisData = await atuaisRes.json();
+        const atuaisData = await noco.list(TAXAS_ENTREGA_TABLE_ID, {
+            where: `(produto_id,eq,${produtoId})`,
+        });
         const atuaisList = atuaisData.list || [];
 
-        const atuaisMap = new Map<number, number>(atuaisList.map((g: any) => [Number(g.grupo_id), g.Id || g.id]));
+        const atuaisMap = new Map<number, number>(
+            atuaisList.map((g: any) => [Number(g.grupo_id), g.Id || g.id])
+        );
         const setNovos = new Set(grupoIds);
 
         for (const [grupo_id, recordId] of atuaisMap.entries()) {
             if (!setNovos.has(grupo_id)) {
-                await nocoFetch(P_GRUPOS_TABLE_ID, '/records', {
-                    method: 'DELETE',
-                    body: JSON.stringify({ id: recordId })
-                });
+                await noco.delete(TAXAS_ENTREGA_TABLE_ID, recordId);
             }
         }
 
         for (const grupo_id of grupoIds) {
             if (!atuaisMap.has(grupo_id)) {
-                await nocoFetch(P_GRUPOS_TABLE_ID, '/records', {
-                    method: 'POST',
-                    body: JSON.stringify({ produto_id: produtoId, grupo_id })
-                });
+                await noco.create(TAXAS_ENTREGA_TABLE_ID, { produto_id: produtoId, grupo_id });
             }
         }
 
@@ -197,11 +156,12 @@ export async function updateGruposDoProduto(produtoId: number, grupoIds: number[
 }
 
 // --- FICHA TÉCNICA DO COMPLEMENTO (COMPLEMENTO_INSUMO) ---
+
 export async function getReceitaDoComplemento(complementoId: number) {
     try {
-        if (C_INSUMO_TABLE_ID.startsWith('PLACEHOLDER')) return [];
-        const res = await nocoFetch(C_INSUMO_TABLE_ID, `/records?where=(complemento_id,eq,${complementoId})`);
-        const data = await res.json();
+        const data = await noco.list(PRODUTO_INSUMOS_TABLE_ID, {
+            where: `(complemento_id,eq,${complementoId})`,
+        });
         return data.list || [];
     } catch (e) {
         console.error('getReceitaDoComplemento error:', e);
@@ -211,31 +171,25 @@ export async function getReceitaDoComplemento(complementoId: number) {
 
 export async function saveReceitaDoComplemento(complementoId: number, insumosList: { insumo_id: number, quantidade_necessaria: number }[]) {
     try {
-        if (C_INSUMO_TABLE_ID.startsWith('PLACEHOLDER')) return { success: false };
-
-        // 1. Deletar atual
-        const existingRes = await nocoFetch(C_INSUMO_TABLE_ID, `/records?where=(complemento_id,eq,${complementoId})`);
-        const existingData = await existingRes.json();
+        // Deletar receita atual
+        const existingData = await noco.list(PRODUTO_INSUMOS_TABLE_ID, {
+            where: `(complemento_id,eq,${complementoId})`,
+        });
         if (existingData.list?.length > 0) {
             for (const r of existingData.list) {
-                await nocoFetch(C_INSUMO_TABLE_ID, '/records', {
-                    method: 'DELETE',
-                    body: JSON.stringify({ id: r.Id || r.id })
-                });
+                await noco.delete(PRODUTO_INSUMOS_TABLE_ID, (r as any).Id || (r as any).id);
             }
         }
 
-        // 2. Inserir novos
+        // Inserir novos
         if (insumosList.length > 0) {
-            const records = insumosList.map(item => ({
-                complemento_id: complementoId,
-                insumo_id: item.insumo_id,
-                quantidade_necessaria: item.quantidade_necessaria
-            }));
-            await nocoFetch(C_INSUMO_TABLE_ID, '/records', {
-                method: 'POST',
-                body: JSON.stringify(records)
-            });
+            for (const item of insumosList) {
+                await noco.create(PRODUTO_INSUMOS_TABLE_ID, {
+                    complemento_id: complementoId,
+                    insumo_id: item.insumo_id,
+                    quantidade_necessaria: item.quantidade_necessaria
+                });
+            }
         }
         return { success: true };
     } catch (e) {
@@ -245,10 +199,10 @@ export async function saveReceitaDoComplemento(complementoId: number, insumosLis
 }
 
 // --- CADASTRO EM MASSA (PRODUTOS -> COMPLEMENTOS) ---
+
 export async function bulkCreateComplements(grupoId: number, products: any[], fator: number = 1) {
     try {
         for (const product of products) {
-            // 1. Criar o complemento
             const payload = {
                 grupo_id: grupoId,
                 nome: product.nome,
@@ -257,17 +211,12 @@ export async function bulkCreateComplements(grupoId: number, products: any[], fa
                 fator_proporcao: fator,
                 status: true
             };
-            const resComp = await nocoFetch(COMPLEMENTOS_TABLE_ID, '/records', {
-                method: 'POST',
-                body: JSON.stringify(payload)
-            });
-            const compData = await resComp.json();
+
+            const compData = await noco.create(COMPLEMENTOS_TABLE_ID, payload) as any;
             const compId = compData.id || compData.Id;
 
-            // 2. Buscar receita do produto original
             const receitaProduto = await getReceitaDoProduto(product.id);
             if (receitaProduto && receitaProduto.length > 0) {
-                // 3. Vincular receita ao novo complemento
                 await saveReceitaDoComplemento(compId, receitaProduto.map((r: any) => ({
                     insumo_id: r.insumo_id,
                     quantidade_necessaria: r.quantidade_necessaria
@@ -281,14 +230,13 @@ export async function bulkCreateComplements(grupoId: number, products: any[], fa
     }
 }
 
-// --- INSUMOS FIXOS DO GRUPO (BASE — ex: Massa, Caixa de Papelão) ---
-// Deduzidos uma vez por produto vendido, independente dos sabores escolhidos.
+// --- INSUMOS FIXOS DO GRUPO ---
 
 export async function getInsumosDoGrupo(grupoId: number) {
     try {
-        if (GRUPO_INSUMOS_TABLE_ID.startsWith('PLACEHOLDER')) return [];
-        const res = await nocoFetch(GRUPO_INSUMOS_TABLE_ID, `/records?where=(grupo_id,eq,${grupoId})`);
-        const data = await res.json();
+        const data = await noco.list(PRODUTO_INSUMOS_TABLE_ID, {
+            where: `(grupo_id,eq,${grupoId})`,
+        });
         return (data.list || []).map((i: any) => ({ ...i, id: i.Id || i.id }));
     } catch (e) {
         console.error('getInsumosDoGrupo error:', e);
@@ -298,31 +246,25 @@ export async function getInsumosDoGrupo(grupoId: number) {
 
 export async function saveInsumosDoGrupo(grupoId: number, insumosList: { insumo_id: number, quantidade_necessaria: number }[]) {
     try {
-        if (GRUPO_INSUMOS_TABLE_ID.startsWith('PLACEHOLDER')) return { success: false, reason: 'table_not_configured' };
-
-        // 1. Deletar registros atuais
-        const existingRes = await nocoFetch(GRUPO_INSUMOS_TABLE_ID, `/records?where=(grupo_id,eq,${grupoId})`);
-        const existingData = await existingRes.json();
+        // Deletar registros atuais
+        const existingData = await noco.list(PRODUTO_INSUMOS_TABLE_ID, {
+            where: `(grupo_id,eq,${grupoId})`,
+        });
         if (existingData.list?.length > 0) {
             for (const r of existingData.list) {
-                await nocoFetch(GRUPO_INSUMOS_TABLE_ID, '/records', {
-                    method: 'DELETE',
-                    body: JSON.stringify({ id: r.Id || r.id })
-                });
+                await noco.delete(PRODUTO_INSUMOS_TABLE_ID, (r as any).Id || (r as any).id);
             }
         }
 
-        // 2. Inserir novos
+        // Inserir novos
         if (insumosList.length > 0) {
-            const records = insumosList.map(item => ({
-                grupo_id: grupoId,
-                insumo_id: item.insumo_id,
-                quantidade_necessaria: item.quantidade_necessaria
-            }));
-            await nocoFetch(GRUPO_INSUMOS_TABLE_ID, '/records', {
-                method: 'POST',
-                body: JSON.stringify(records)
-            });
+            for (const item of insumosList) {
+                await noco.create(PRODUTO_INSUMOS_TABLE_ID, {
+                    grupo_id: grupoId,
+                    insumo_id: item.insumo_id,
+                    quantidade_necessaria: item.quantidade_necessaria
+                });
+            }
         }
         return { success: true };
     } catch (e) {

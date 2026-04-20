@@ -3,41 +3,15 @@
 import { getMe } from '@/lib/session-server';
 import { HorarioSchema } from '@/lib/validations';
 import { z } from 'zod';
+import { noco } from '@/lib/nocodb';
+import { HORARIOS_TABLE_ID } from '@/lib/constants';
 
-const NOCODB_URL = process.env.NOCODB_URL || '';
-const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const HORARIOS_TABLE_ID = 'mpaclmaji3b6dla';
-
-// Schema para array de horários
 const HorariosArraySchema = z.array(HorarioSchema).min(1, 'Adicione pelo menos um horário');
 
-async function nocoFetch(tableId: string, endpoint: string, options: RequestInit = {}) {
-    try {
-        const res = await fetch(`${NOCODB_URL}/api/v2/tables/${tableId}${endpoint}`, {
-            ...options,
-            headers: {
-                'xc-token': NOCODB_TOKEN,
-                'Content-Type': 'application/json',
-                ...(options.headers || {}),
-            },
-            cache: 'no-store',
-        });
-        if (!res.ok) {
-            const text = await res.text();
-            console.error(`NocoDB Error: ${res.status}`, text);
-            return null;
-        }
-        return res;
-    } catch (err) {
-        console.error('NocoDB Exception:', err);
-        return null;
-    }
-}
-
 export type HorarioItem = {
-    dia_semana: number;    // 0=Dom, 1=Seg, 2=Ter, 3=Qua, 4=Qui, 5=Sex, 6=Sáb
-    hora_abertura: string; // "HH:mm"
-    hora_fechamento: string; // "HH:mm"
+    dia_semana: number;
+    hora_abertura: string;
+    hora_fechamento: string;
     fechado_o_dia_todo?: boolean;
 };
 
@@ -46,7 +20,6 @@ export async function saveHorariosFuncionamento(horarios: HorarioItem[], nomeEmp
         const user = await getMe();
         if (!user) return { error: 'Não autorizado' };
 
-        // Validação com Zod
         const validated = HorariosArraySchema.safeParse(horarios);
         if (!validated.success) {
             const errorMsg = validated.error.issues.map((issue: any) => issue.message).join(', ');
@@ -55,38 +28,27 @@ export async function saveHorariosFuncionamento(horarios: HorarioItem[], nomeEmp
 
         const empresaId = user.empresaId;
 
-        // Busca registros existentes para deletar
-        const existing = await nocoFetch(HORARIOS_TABLE_ID, `/records?where=(empresa_id,eq,${empresaId})`);
-        if (existing) {
-            const data = await existing.json();
+        // Deletar registros existentes
+        const existing = await noco.list(HORARIOS_TABLE_ID, {
+            where: `(empresa_id,eq,${empresaId})`,
+        });
 
-            // Deleta registros existentes
-            if (data.list && data.list.length > 0) {
-                const idsToDelete = data.list.map((r: { id: number }) => ({ id: r.id }));
-                await nocoFetch(HORARIOS_TABLE_ID, '/records', {
-                    method: 'DELETE',
-                    body: JSON.stringify(idsToDelete),
-                });
+        if (existing.list && existing.list.length > 0) {
+            for (const r of existing.list) {
+                await noco.delete(HORARIOS_TABLE_ID, (r as any).id || (r as any).Id);
             }
         }
 
-        // Insere os novos horários validados
-        const records = validated.data.map(h => ({
-            empresa_id: empresaId,
-            nome_empresa: nomeEmpresa,
-            dia_semana: h.dia_semana,
-            hora_abertura: h.hora_abertura,
-            hora_fechamento: h.hora_fechamento,
-            fechado_o_dia_todo: h.fechado_o_dia_todo,
-        }));
-
-        const insertRes = await nocoFetch(HORARIOS_TABLE_ID, '/records', {
-            method: 'POST',
-            body: JSON.stringify(records),
-        });
-
-        if (!insertRes) {
-            return { error: 'Erro ao inserir horários no NocoDB' };
+        // Inserir novos horários
+        for (const h of validated.data) {
+            await noco.create(HORARIOS_TABLE_ID, {
+                empresa_id: empresaId,
+                nome_empresa: nomeEmpresa,
+                dia_semana: h.dia_semana,
+                hora_abertura: h.hora_abertura,
+                hora_fechamento: h.hora_fechamento,
+                fechado_o_dia_todo: h.fechado_o_dia_todo,
+            });
         }
 
         return { success: true };
@@ -100,10 +62,13 @@ export async function getHorariosFuncionamento() {
     const user = await getMe();
     if (!user) return { error: 'Não autorizado', horarios: [] };
 
-    const empresaId = user.empresaId;
-    const res = await nocoFetch(HORARIOS_TABLE_ID, `/records?where=(empresa_id,eq,${empresaId})&sort=dia_semana`);
-    if (!res) return { error: 'Erro ao buscar horários', horarios: [] };
-
-    const data = await res.json();
-    return { horarios: data.list || [] };
+    try {
+        const data = await noco.list(HORARIOS_TABLE_ID, {
+            where: `(empresa_id,eq,${user.empresaId})`,
+            sort: 'dia_semana',
+        });
+        return { horarios: data.list || [] };
+    } catch {
+        return { error: 'Erro ao buscar horários', horarios: [] };
+    }
 }

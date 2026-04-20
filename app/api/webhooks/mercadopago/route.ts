@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { noco } from '@/lib/nocodb';
+import { PEDIDOS_TABLE_ID } from '@/lib/constants';
 
-const NOCODB_URL = process.env.NOCODB_URL || 'https://db.wzapflow.com.br';
-const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN || '';
-
-const ORDERS_TABLE_ID = 'mui7bozvx9zb2n9';
-const EMPRESAS_TABLE_ID = 'mp08yd7oaxn5xo2';
 
 interface MPPaymentData {
   id: number;
@@ -30,26 +27,6 @@ interface OrderData {
   empresa_id: number;
   valor_total: number;
   status: string;
-}
-
-async function nocoFetch(tableId: string, endpoint: string, options: RequestInit = {}) {
-  const url = `${NOCODB_URL}/api/v2/tables/${tableId}${endpoint}`;
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      'xc-token': NOCODB_TOKEN,
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
-    cache: 'no-store',
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`NocoDB Error: ${res.status} ${text}`);
-  }
-
-  return res.json();
 }
 
 export async function POST(req: NextRequest) {
@@ -95,8 +72,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ received: true });
     }
 
-    // Buscar pedido no NocoDB
-    const order = await nocoFetch(ORDERS_TABLE_ID, `/records/${orderId}`) as OrderData;
+    const order = await noco.findById(PEDIDOS_TABLE_ID, orderId) as OrderData;
 
     if (!order) {
       console.log(`[MercadoPago Webhook] Pedido ${orderId} não encontrado`);
@@ -107,14 +83,7 @@ export async function POST(req: NextRequest) {
 
     // Verificar se o pagamento foi aprovado
     if (paymentData.status === 'approved') {
-      // Atualizar status do pagamento no pedido
-      await nocoFetch(ORDERS_TABLE_ID, '/records', {
-        method: 'PATCH',
-        body: JSON.stringify({
-          id: orderId,
-          status_pagamento: 'aprovado',
-        }),
-      });
+      await noco.update(PEDIDOS_TABLE_ID, { id: orderId, status_pagamento: 'aprovado' });
 
       console.log(`[MercadoPago Webhook] Pagamento aprovado para pedido ${orderId}`);
 
@@ -136,14 +105,7 @@ export async function POST(req: NextRequest) {
         console.error('[MercadoPago Webhook] Erro ao enviar WhatsApp:', waError);
       }
     } else if (paymentData.status === 'rejected' || paymentData.status === 'cancelled') {
-      // Pagamento rejeitado ou cancelado
-      await nocoFetch(ORDERS_TABLE_ID, '/records', {
-        method: 'PATCH',
-        body: JSON.stringify({
-          id: orderId,
-          status_pagamento: 'rejeitado',
-        }),
-      });
+      await noco.update(PEDIDOS_TABLE_ID, { id: orderId, status_pagamento: 'rejeitado' });
 
       console.log(`[MercadoPago Webhook] Pagamento ${paymentData.status} para pedido ${orderId}`);
     }

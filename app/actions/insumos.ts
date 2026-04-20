@@ -3,16 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import { getMe } from '@/lib/session-server';
 import { InsumoSchema } from '@/lib/validations';
-
-const NOCODB_URL = process.env.NOCODB_URL || '';
-const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const INSUMOS_TABLE_ID = 'mvis2y8mlpwqr9q';
-const PRODUTO_INSUMO_TABLE_ID = 'mev9fkmt1jaapiv';
-
-// SSL check should be enabled in production
-if (process.env.NODE_ENV === 'development') {
-    // process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-}
+import { noco } from '@/lib/nocodb';
+import { INSUMOS_TABLE_ID, PRODUTO_INSUMOS_TABLE_ID } from '@/lib/constants';
 
 export interface Insumo {
     id: number;
@@ -29,29 +21,6 @@ export interface ProdutoInsumo {
     produto_id: number | string;
     insumo_id: number | string;
     quantidade_necessaria: number;
-    // Joins
-    nc_ms8p__insumos_id?: any;
-}
-
-export async function nocoFetch(endpoint: string, options: RequestInit = {}, tableId: string) {
-    const url = `${NOCODB_URL}/api/v2/tables/${tableId}${endpoint}`;
-    const res = await fetch(url, {
-        ...options,
-        headers: {
-            'xc-token': NOCODB_TOKEN,
-            'Content-Type': 'application/json',
-            ...(options.headers || {}),
-        },
-        cache: 'no-store',
-    });
-
-    if (!res.ok) {
-        const text = await res.text();
-        console.error(`NocoDB Error: ${res.status} ${text}`);
-        throw new Error(`NocoDB API Error: ${res.status}`);
-    }
-
-    return res;
 }
 
 export async function getInsumos() {
@@ -59,8 +28,11 @@ export async function getInsumos() {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        const res = await nocoFetch(`/records?limit=1000&where=(empresa_id,eq,${user.empresaId})&sort=-id`, {}, INSUMOS_TABLE_ID);
-        const data = await res.json();
+        const data = await noco.list(INSUMOS_TABLE_ID, {
+            where: `(empresa_id,eq,${user.empresaId})`,
+            sort: '-id',
+            limit: 1000,
+        });
         return (data.list || []).map((item: any) => ({ ...item, id: item.id || item.Id }));
     } catch (error) {
         console.error('API Error:', error);
@@ -73,35 +45,25 @@ export async function upsertInsumo(insumoData: any) {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        // Validação com Zod
         const validated = InsumoSchema.safeParse(insumoData);
         if (!validated.success) {
             const errorMsg = validated.error.issues.map((issue: any) => issue.message).join(', ');
             throw new Error(`Dados inválidos: ${errorMsg}`);
         }
 
-        const payload = {
+        const payload: any = {
             ...validated.data,
             empresa_id: user.empresaId
         };
-        delete (payload as any).created_at;
-        delete (payload as any).updated_at;
+        delete payload.created_at;
+        delete payload.updated_at;
 
         let result;
         if (payload.id) {
             const { empresa_id, ...updatePayload } = payload;
-
-            const res = await nocoFetch('/records', {
-                method: 'PATCH',
-                body: JSON.stringify({ ...updatePayload, Id: payload.id, id: payload.id })
-            }, INSUMOS_TABLE_ID);
-            result = await res.json();
+            result = await noco.update(INSUMOS_TABLE_ID, updatePayload);
         } else {
-            const res = await nocoFetch('/records', {
-                method: 'POST',
-                body: JSON.stringify(payload)
-            }, INSUMOS_TABLE_ID);
-            result = await res.json();
+            result = await noco.create(INSUMOS_TABLE_ID, payload);
         }
 
         revalidatePath('/dashboard/insumos');
@@ -119,12 +81,8 @@ export async function deleteInsumo(id: number | string) {
         if (isNaN(numericId)) {
             throw new Error('ID inválido');
         }
-        
-        // NocoDB requires both 'id' and 'Id' for delete operations
-        await nocoFetch('/records', {
-            method: 'DELETE',
-            body: JSON.stringify([{ id: numericId, Id: numericId }])
-        }, INSUMOS_TABLE_ID);
+
+        await noco.delete(INSUMOS_TABLE_ID, numericId);
         revalidatePath('/dashboard/insumos');
         revalidatePath('/dashboard/menu');
         return { success: true };
@@ -140,9 +98,10 @@ export async function deleteInsumo(id: number | string) {
 
 export async function getReceitaDoProduto(produtoId: number | string) {
     try {
-        // Nested query or simple query
-        const res = await nocoFetch(`/records?limit=1000&where=(produto_id,eq,${produtoId})`, {}, PRODUTO_INSUMO_TABLE_ID);
-        const data = await res.json();
+        const data = await noco.list(PRODUTO_INSUMOS_TABLE_ID, {
+            where: `(produto_id,eq,${produtoId})`,
+            limit: 1000,
+        });
         return (data.list || []).map((item: any) => ({ ...item, id: item.id || item.Id }));
     } catch (error) {
         console.error('API Error:', error);
@@ -152,8 +111,7 @@ export async function getReceitaDoProduto(produtoId: number | string) {
 
 export async function getTodasReceitas() {
     try {
-        const res = await nocoFetch(`/records?limit=1000`, {}, PRODUTO_INSUMO_TABLE_ID);
-        const data = await res.json();
+        const data = await noco.list(PRODUTO_INSUMOS_TABLE_ID, { limit: 1000 });
         return (data.list || []).map((item: any) => ({ ...item, id: item.id || item.Id }));
     } catch (error) {
         console.error('API Error:', error);
@@ -163,32 +121,29 @@ export async function getTodasReceitas() {
 
 export async function saveReceitaDoProduto(produtoId: number | string, insumosList: { insumo_id: number | string, quantidade_necessaria: number }[]) {
     try {
-        // Primeiro, deleta a receita existente do produto para recriar
-        const existingRes = await nocoFetch(`/records?limit=1000&where=(produto_id,eq,${produtoId})`, {}, PRODUTO_INSUMO_TABLE_ID);
-        const existingData = await existingRes.json();
+        // Deletar receita existente para recriar
+        const existingData = await noco.list(PRODUTO_INSUMOS_TABLE_ID, {
+            where: `(produto_id,eq,${produtoId})`,
+            limit: 1000,
+        });
 
         if (existingData.list && existingData.list.length > 0) {
-            const idsToDelete = existingData.list.map((r: any) => ({ Id: r.id, id: r.id }));
-            await nocoFetch('/records', {
-                method: 'DELETE',
-                body: JSON.stringify(idsToDelete)
-            }, PRODUTO_INSUMO_TABLE_ID);
+            for (const r of existingData.list) {
+                await noco.delete(PRODUTO_INSUMOS_TABLE_ID, (r as any).id);
+            }
         }
 
-        // Agora, insere novos se houver
+        // Inserir novos registros
         if (insumosList.length > 0) {
-            const recordsToInsert = insumosList.map(item => ({
-                produto_id: produtoId,
-                produtos: produtoId,
-                insumo_id: item.insumo_id,
-                insumos: item.insumo_id,
-                quantidade_necessaria: item.quantidade_necessaria
-            }));
-
-            await nocoFetch('/records', {
-                method: 'POST',
-                body: JSON.stringify(recordsToInsert)
-            }, PRODUTO_INSUMO_TABLE_ID);
+            for (const item of insumosList) {
+                await noco.create(PRODUTO_INSUMOS_TABLE_ID, {
+                    produto_id: produtoId,
+                    produtos: produtoId,
+                    insumo_id: item.insumo_id,
+                    insumos: item.insumo_id,
+                    quantidade_necessaria: item.quantidade_necessaria
+                });
+            }
         }
 
         revalidatePath('/dashboard/menu');
@@ -201,22 +156,15 @@ export async function saveReceitaDoProduto(produtoId: number | string, insumosLi
 
 export async function atualizarEstoqueInsumo(id: number, quantidade_alterada: number) {
     try {
-        // 1. Buscar valor atual
-        const res = await nocoFetch(`/records/${id}`, {}, INSUMOS_TABLE_ID);
-        const current = await res.json();
+        const current = await noco.findById(INSUMOS_TABLE_ID, id) as any;
 
-        const currentQty = Number(current.quantidade_atual || 0);
+        const currentQty = Number(current?.quantidade_atual || 0);
         const newQty = currentQty + quantidade_alterada;
 
-        // 2. Atualizar
-        await nocoFetch('/records', {
-            method: 'PATCH',
-            body: JSON.stringify({
-                id: id,
-                Id: id,
-                quantidade_atual: newQty
-            })
-        }, INSUMOS_TABLE_ID);
+        await noco.update(INSUMOS_TABLE_ID, {
+            id,
+            quantidade_atual: newQty
+        });
 
         revalidatePath('/dashboard/insumos');
         return { success: true, newQuantity: newQty };
@@ -232,21 +180,16 @@ export async function setNovoEstoqueInsumo(id: number, nova_quantidade: number) 
         if (isNaN(numericId) || numericId <= 0) {
             throw new Error('ID do insumo inválido');
         }
-        
+
         const numericQty = Number(nova_quantidade);
         if (isNaN(numericQty) || numericQty < 0) {
             throw new Error('Quantidade inválida');
         }
-        
-        // NocoDB requires both 'id' and 'Id' for PATCH operations
-        await nocoFetch('/records', {
-            method: 'PATCH',
-            body: JSON.stringify({
-                id: numericId,
-                Id: numericId,
-                quantidade_atual: numericQty
-            })
-        }, INSUMOS_TABLE_ID);
+
+        await noco.update(INSUMOS_TABLE_ID, {
+            id: numericId,
+            quantidade_atual: numericQty
+        });
 
         revalidatePath('/dashboard/insumos');
         return { success: true, newQuantity: numericQty };

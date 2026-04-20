@@ -1,8 +1,7 @@
 import { getMe } from '@/lib/session-server';
+import { noco } from '@/lib/nocodb';
 
-const NOCODB_URL = process.env.NOCODB_URL || '';
-const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const AUDIT_TABLE_ID = 'm_audit_logs'; // Exemplo, deve ser criada no NocoDB
+const AUDIT_TABLE_ID = 'm_audit_logs'; // Tabela de auditoria (criar no NocoDB se necessário)
 
 export async function logAction(action: string, details: string) {
     try {
@@ -15,17 +14,7 @@ export async function logAction(action: string, details: string) {
             timestamp: new Date().toISOString()
         };
 
-        // Só tenta logar se a URL estiver configurada
-        if (!NOCODB_URL || !NOCODB_TOKEN) return;
-
-        await fetch(`${NOCODB_URL}/api/v2/tables/${AUDIT_TABLE_ID}/records`, {
-            method: 'POST',
-            headers: {
-                'xc-token': NOCODB_TOKEN,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
-        });
+        await noco.create(AUDIT_TABLE_ID, payload);
     } catch (error) {
         console.warn('Erro ao registrar log de auditoria:', error);
     }

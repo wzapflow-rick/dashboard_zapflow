@@ -2,47 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/session-server';
-
-const NOCODB_URL = process.env.NOCODB_URL || '';
-const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-
-function getTableId(table: 'campanhas' | 'disparos'): string {
-    if (table === 'campanhas') {
-        const id = process.env.NOCODB_TABLE_CAMPANHAS;
-        if (!id) throw new Error('NOCODB_TABLE_CAMPANHAS não configurado');
-        return id;
-    } else {
-        const id = process.env.NOCODB_TABLE_DISPAROS;
-        if (!id) throw new Error('NOCODB_TABLE_DISPAROS não configurado');
-        return id;
-    }
-}
-
-function nocoUrl(table: 'campanhas' | 'disparos', endpoint: string) {
-    const tableId = getTableId(table);
-    return `${NOCODB_URL}/api/v2/tables/${tableId}${endpoint}`;
-}
-
-async function nocoFetch(table: 'campanhas' | 'disparos', endpoint: string, options: RequestInit = {}) {
-    const url = nocoUrl(table, endpoint);
-    const res = await fetch(url, {
-        ...options,
-        headers: {
-            'xc-token': NOCODB_TOKEN,
-            'Content-Type': 'application/json',
-            ...(options.headers || {}),
-        },
-        cache: 'no-store',
-    });
-
-    if (!res.ok) {
-        const text = await res.text();
-        console.error(`NocoDB Error (${table}): ${res.status} ${text}`);
-        throw new Error(`NocoDB API Error: ${res.status}`);
-    }
-
-    return res;
-}
+import { noco } from '@/lib/nocodb';
+import { CAMPANHAS_TABLE_ID, DISPAROS_TABLE_ID } from '@/lib/constants';
 
 export type CampanhaTipo = 'reengajamento' | 'cupom' | 'pos_pedido' | 'horario' | 'data_especial' | 'produto_destaque';
 
@@ -102,8 +63,18 @@ export interface DisparoStats {
 export async function getCampanhas(): Promise<CampanhaConfig[]> {
     try {
         const user = await requireAdmin();
-        const res = await nocoFetch('campanhas', `?where=(empresa_id,eq,${user.empresaId})&sort=-id&limit=100`);
-        const data = await res.json();
+
+        if (!CAMPANHAS_TABLE_ID) {
+            console.warn('NOCODB_TABLE_CAMPANHAS não configurado');
+            return [];
+        }
+
+        const data = await noco.list(CAMPANHAS_TABLE_ID, {
+            where: `(empresa_id,eq,${user.empresaId})`,
+            sort: '-id',
+            limit: 100,
+        });
+
         return (data.list || []).map((c: any) => ({
             ...c,
             id: c.id || c.Id,
@@ -119,6 +90,8 @@ export async function createCampanha(data: CampanhaFormData): Promise<{ success:
     try {
         const user = await requireAdmin();
 
+        if (!CAMPANHAS_TABLE_ID) throw new Error('NOCODB_TABLE_CAMPANHAS não configurado');
+
         const payload = {
             empresa_id: user.empresaId,
             ...data,
@@ -126,11 +99,7 @@ export async function createCampanha(data: CampanhaFormData): Promise<{ success:
             max_envios_semana: data.max_envios_semana || 2,
         };
 
-        const res = await nocoFetch('campanhas', '/records', {
-            method: 'POST',
-            body: JSON.stringify(payload),
-        });
-        const result = await res.json();
+        const result = await noco.create(CAMPANHAS_TABLE_ID, payload);
 
         revalidatePath('/dashboard/campanhas');
         return { success: true, data: result };
@@ -144,15 +113,14 @@ export async function updateCampanha(id: number, data: Partial<CampanhaFormData>
     try {
         await requireAdmin();
 
+        if (!CAMPANHAS_TABLE_ID) throw new Error('NOCODB_TABLE_CAMPANHAS não configurado');
+
         const payload = {
             ...data,
             dias_semana: data.dias_semana ? JSON.stringify(data.dias_semana) : undefined,
         };
 
-        await nocoFetch('campanhas', '/records', {
-            method: 'PATCH',
-            body: JSON.stringify({ ...payload, id }),
-        });
+        await noco.update(CAMPANHAS_TABLE_ID, { ...payload, id });
 
         revalidatePath('/dashboard/campanhas');
         return { success: true };
@@ -166,10 +134,9 @@ export async function deleteCampanha(id: number): Promise<{ success: boolean; er
     try {
         await requireAdmin();
 
-        await nocoFetch('campanhas', '/records', {
-            method: 'DELETE',
-            body: JSON.stringify([{ id }]),
-        });
+        if (!CAMPANHAS_TABLE_ID) throw new Error('NOCODB_TABLE_CAMPANHAS não configurado');
+
+        await noco.delete(CAMPANHAS_TABLE_ID, id);
 
         revalidatePath('/dashboard/campanhas');
         return { success: true };
@@ -183,10 +150,9 @@ export async function toggleCampanha(id: number, ativo: boolean): Promise<{ succ
     try {
         await requireAdmin();
 
-        await nocoFetch('campanhas', '/records', {
-            method: 'PATCH',
-            body: JSON.stringify({ id, ativo }),
-        });
+        if (!CAMPANHAS_TABLE_ID) throw new Error('NOCODB_TABLE_CAMPANHAS não configurado');
+
+        await noco.update(CAMPANHAS_TABLE_ID, { id, ativo });
 
         revalidatePath('/dashboard/campanhas');
         return { success: true };
@@ -199,14 +165,23 @@ export async function toggleCampanha(id: number, ativo: boolean): Promise<{ succ
 export async function getDisparos(campanhaId?: number): Promise<DisparoLog[]> {
     try {
         const user = await requireAdmin();
-        
-        let whereClause = `(empresa_id,eq,${user.empresaId})`;
-        if (campanhaId) {
-            whereClause += `~and(campanha_id,eq,${campanhaId})`;
+
+        if (!DISPAROS_TABLE_ID) {
+            console.warn('NOCODB_TABLE_DISPAROS não configurado');
+            return [];
         }
-        
-        const res = await nocoFetch('disparos', `?where=${whereClause}&sort=-enviado_em&limit=100`);
-        const data = await res.json();
+
+        let where = `(empresa_id,eq,${user.empresaId})`;
+        if (campanhaId) {
+            where += `~and(campanha_id,eq,${campanhaId})`;
+        }
+
+        const data = await noco.list(DISPAROS_TABLE_ID, {
+            where,
+            sort: '-enviado_em',
+            limit: 100,
+        });
+
         return (data.list || []).map((d: any) => ({
             ...d,
             id: d.id || d.Id
@@ -220,24 +195,29 @@ export async function getDisparos(campanhaId?: number): Promise<DisparoLog[]> {
 export async function getDisparosStats(): Promise<DisparoStats> {
     try {
         const user = await requireAdmin();
-        
+
+        if (!DISPAROS_TABLE_ID) {
+            return { total_enviados: 0, total_erros: 0, total_clientes_alcancados: 0 };
+        }
+
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        
-        const res = await nocoFetch('disparos', `?where=(empresa_id,eq,${user.empresaId})~and(enviado_em,gt,${thirtyDaysAgo.toISOString()})`);
-        const data = await res.json();
-        
+
+        const data = await noco.list(DISPAROS_TABLE_ID, {
+            where: `(empresa_id,eq,${user.empresaId})~and(enviado_em,gt,${thirtyDaysAgo.toISOString()})`,
+        });
+
         const disparos = data.list || [];
-        
+
         const total_enviados = disparos.filter((d: any) => d.status === 'enviado').length;
         const total_erros = disparos.filter((d: any) => d.status === 'erro').length;
-        
+
         const uniqueClientes = new Set(
             disparos
                 .filter((d: any) => d.status === 'enviado')
                 .map((d: any) => d.cliente_id)
         );
-        
+
         return {
             total_enviados,
             total_erros,
@@ -255,9 +235,13 @@ export async function getCampanhasParaN8N(empresaId: string, apiKey: string): Pr
             throw new Error('API key inválida');
         }
 
-        const res = await nocoFetch('campanhas', `?where=(empresa_id,eq,${empresaId})~and(ativo,eq,true)&limit=100`);
-        const data = await res.json();
-        
+        if (!CAMPANHAS_TABLE_ID) return [];
+
+        const data = await noco.list(CAMPANHAS_TABLE_ID, {
+            where: `(empresa_id,eq,${empresaId})~and(ativo,eq,true)`,
+            limit: 100,
+        });
+
         return (data.list || []).map((c: any) => ({
             ...c,
             id: c.id || c.Id,
@@ -280,6 +264,8 @@ export async function registrarDisparo(data: {
     erroDetalhe?: string;
 }): Promise<{ success: boolean; error?: string }> {
     try {
+        if (!DISPAROS_TABLE_ID) throw new Error('NOCODB_TABLE_DISPAROS não configurado');
+
         const payload = {
             empresa_id: data.empresaId,
             campanha_id: data.campanhaId,
@@ -292,10 +278,7 @@ export async function registrarDisparo(data: {
             enviado_em: new Date().toISOString(),
         };
 
-        await nocoFetch('disparos', '/records', {
-            method: 'POST',
-            body: JSON.stringify(payload),
-        });
+        await noco.create(DISPAROS_TABLE_ID, payload);
 
         revalidatePath('/dashboard/campanhas');
         return { success: true };

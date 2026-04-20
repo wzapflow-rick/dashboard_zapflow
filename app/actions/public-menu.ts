@@ -1,25 +1,15 @@
 'use server';
 
-const NOCODB_URL = process.env.NOCODB_URL || '';
-const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-
-const EMPRESAS_TABLE_ID = 'mp08yd7oaxn5xo2';
-const PRODUCTS_TABLE_ID = 'mh81t2xp1uml6pc';
-const CATEGORIES_TABLE_ID = 'mo5so5g7gvlbwyo';
-const GRUPOS_SLOTS_TABLE_ID = 'm1h9jeye8hcd4k6';
-const ITENS_BASE_TABLE_ID = 'mfcp67skbxq4nt5';
-const ITEM_BASE_INSUMO_TABLE_ID = 'mev9fkmt1jaapiv';
-const LOYALTY_CONFIG_TABLE_ID = 'mjzzdfgdohupgjh';
-
-async function nocoFetch(tableId: string, endpoint: string) {
-    const url = `${NOCODB_URL}/api/v2/tables/${tableId}${endpoint}`;
-    const res = await fetch(url, {
-        headers: { 'xc-token': NOCODB_TOKEN, 'Content-Type': 'application/json' },
-        cache: 'no-store',
-    });
-    if (!res.ok) return null;
-    return res.json();
-}
+import { noco } from '@/lib/nocodb';
+import {
+    EMPRESAS_TABLE_ID,
+    PRODUTOS_TABLE_ID,
+    CATEGORIAS_TABLE_ID,
+    GRUPOS_SLOTS_TABLE_ID,
+    ITENS_BASE_TABLE_ID,
+    PRODUTO_INSUMOS_TABLE_ID,
+    LOYALTY_CONFIG_TABLE_ID,
+} from '@/lib/constants';
 
 function toSlug(text: string) {
     return text
@@ -39,7 +29,6 @@ function parseJsonArray(value: any): number[] {
             const parsed = JSON.parse(value);
             return Array.isArray(parsed) ? parsed : [];
         } catch {
-            // Tentar parsear como string de números separados por vírgula
             return value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
         }
     }
@@ -49,8 +38,7 @@ function parseJsonArray(value: any): number[] {
 export async function getPublicMenu(slug: string) {
     console.log('>>> getPublicMenu START for slug:', slug);
     try {
-        // Find company by slug
-        const empresasData = await nocoFetch(EMPRESAS_TABLE_ID, '/records?limit=200');
+        const empresasData = await noco.list(EMPRESAS_TABLE_ID, { limit: 200 });
         if (!empresasData?.list) return null;
 
         const empresa = empresasData.list.find((e: any) => {
@@ -66,24 +54,23 @@ export async function getPublicMenu(slug: string) {
         const controleEstoque = empresa.controle_estoque === true || empresa.controle_estoque === 1 || empresa.controle_estoque === '1';
 
         const [productsData, categoriesData, gruposSlotsData, itensBaseData, itemBaseInsumosData] = await Promise.all([
-            nocoFetch(PRODUCTS_TABLE_ID, `/records?where=(empresa_id,eq,${empresa.id})&limit=500`),
-            nocoFetch(CATEGORIES_TABLE_ID, `/records?where=(empresa_id,eq,${empresa.id})&limit=100`),
-            nocoFetch(GRUPOS_SLOTS_TABLE_ID, `/records?limit=1000`),
-            nocoFetch(ITENS_BASE_TABLE_ID, `/records?limit=2000`),
-            nocoFetch(ITEM_BASE_INSUMO_TABLE_ID, `/records?limit=5000&where=(empresa_id,eq,${empresa.id})`),
+            noco.list(PRODUTOS_TABLE_ID, { where: `(empresa_id,eq,${empresa.id})`, limit: 500 }),
+            noco.list(CATEGORIAS_TABLE_ID, { where: `(empresa_id,eq,${empresa.id})`, limit: 100 }),
+            noco.list(GRUPOS_SLOTS_TABLE_ID, { limit: 1000 }),
+            noco.list(ITENS_BASE_TABLE_ID, { limit: 2000 }),
+            noco.list(PRODUTO_INSUMOS_TABLE_ID, { where: `(empresa_id,eq,${empresa.id})`, limit: 5000 }),
         ]);
 
-        const products = controleEstoque 
+        const products = controleEstoque
             ? (productsData?.list || []).filter((p: any) => p.disponivel !== false)
             : productsData?.list || [];
-        
+
         if (products.length > 0) {
             console.log('[DEBUG] Estrutura bruta do primeiro produto:', JSON.stringify(products[0], null, 2));
         }
 
         const categories = categoriesData?.list || [];
-        
-        // Processar grupos_slots
+
         const gruposSlots = (gruposSlotsData?.list || [])
             .map((g: any) => ({
                 id: g.id,
@@ -110,22 +97,8 @@ export async function getPublicMenu(slug: string) {
             });
         });
 
-        // Mapear todos os grupos por ID para facilitar busca de adicionais vinculados
         const gruposMap = new Map<number, any>();
-        gruposSlots.forEach((g: { 
-            id: number; 
-            nome: string; 
-            descricao: string; 
-            tipo: string; 
-            qtd_slots: number; 
-            regra_preco: string; 
-            min_slots: number; 
-            max_slots: number; 
-            itens: number[]; 
-            modo_preco: string; 
-            preco_fixo: number; 
-            completamentos_ids: number[] 
-        }) => {
+        gruposSlots.forEach((g: any) => {
             const groupItems = g.itens
                 .map((itemId: number) => itensBaseMap.get(itemId))
                 .filter(Boolean)
@@ -152,12 +125,10 @@ export async function getPublicMenu(slug: string) {
             });
         });
 
-        // Montar produtos simples
         const productsWithGroups = products.map((p: any) => {
             const gruposVinculados = parseJsonArray(p.grupos);
             console.log(`[DEBUG] Produto: ${p.nome}, Grupos Vinculados:`, gruposVinculados);
-            
-            // Separar grupos de sabor (fracionado) e adicionais vinculados
+
             const saborGroups: any[] = [];
             const additionalGroups: any[] = [];
 
@@ -167,13 +138,11 @@ export async function getPublicMenu(slug: string) {
                     if (g.tipo === 'fracionado') {
                         saborGroups.push(g);
                     } else {
-                        // Qualquer grupo que não seja fracionado entra como adicional no Passo 2
                         if (!additionalGroups.find(ag => ag.id === g.id)) {
                             additionalGroups.push(g);
                         }
                     }
 
-                    // Se o grupo tem adicionais vinculados (completamentos), adicioná-los também
                     if (g.completamentos_ids && g.completamentos_ids.length > 0) {
                         g.completamentos_ids.forEach((compId: number) => {
                             const compGroup = gruposMap.get(compId);
@@ -187,19 +156,15 @@ export async function getPublicMenu(slug: string) {
                 }
             });
 
-            console.log(`[DEBUG] Produto: ${p.nome}, saborGroups: ${saborGroups.length}, additionalGroups: ${additionalGroups.length}`);
-
-            return { 
-                ...p, 
-                id: p.id, 
+            return {
+                ...p,
+                id: p.id,
                 saborGroups,
                 additionalGroups,
-                // Manter compatibilidade se necessário
                 complementGroups: [...saborGroups, ...additionalGroups]
             };
         });
 
-        // Agrupar por categoria
         const grouped = categories
             .map((cat: any) => ({
                 id: cat.id,
@@ -215,7 +180,6 @@ export async function getPublicMenu(slug: string) {
             grouped.push({ id: 0, name: 'Outros', products: uncategorized });
         }
 
-        // Produtos compostos (fracionados)
         const compositeProducts = gruposSlots
             .filter((g: any) => g.tipo === 'fracionado' && g.itens && g.itens.length > 0)
             .map((g: any) => {
@@ -238,7 +202,9 @@ export async function getPublicMenu(slug: string) {
                 };
             });
 
-        const loyaltyData = await nocoFetch(LOYALTY_CONFIG_TABLE_ID, `/records?where=(empresa_id,eq,${empresa.id})`);
+        const loyaltyData = await noco.list(LOYALTY_CONFIG_TABLE_ID, {
+            where: `(empresa_id,eq,${empresa.id})`,
+        });
         const loyaltyConfig = loyaltyData?.list?.[0] || {
             empresa_id: empresa.id,
             pontos_por_real: 1,
@@ -249,7 +215,6 @@ export async function getPublicMenu(slug: string) {
             ativo: false,
         };
 
-        // Upsell (lógica simplificada)
         const upsellProducts = productsWithGroups.filter((p: any) => {
             const nome = (p.nome || '').toLowerCase();
             return nome.includes('coca') || nome.includes('suco') || nome.includes('agua') || nome.includes('sobremesa');

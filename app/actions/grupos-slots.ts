@@ -4,13 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { getMe } from '@/lib/session-server';
 import { getInsumos } from './insumos';
 import { getReceitaDoItemBase } from './itens-base';
-
-const NOCODB_URL = process.env.NOCODB_URL || '';
-const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-
-const GRUPOS_SLOTS_TABLE_ID = 'm1h9jeye8hcd4k6';
-const ITENS_BASE_TABLE_ID = 'mfcp67skbxq4nt5';
-const PRODUTOS_TABLE_ID = 'mh81t2xp1uml6pc';
+import { noco } from '@/lib/nocodb';
+import { GRUPOS_SLOTS_TABLE_ID, ITENS_BASE_TABLE_ID, PRODUTOS_TABLE_ID } from '@/lib/constants';
 
 export type TipoGrupo = 'fracionado' | 'adicional';
 export type RegraPreco = 'mais_caro' | 'media' | 'soma';
@@ -32,25 +27,30 @@ export interface GrupoSlot {
     completamentos_ids?: number[];
 }
 
-async function nocoFetch(tableId: string, endpoint: string, options: RequestInit = {}) {
-    const url = `${NOCODB_URL}/api/v2/tables/${tableId}${endpoint}`;
-    const res = await fetch(url, {
-        ...options,
-        headers: {
-            'xc-token': NOCODB_TOKEN,
-            'Content-Type': 'application/json',
-            ...(options.headers || {}),
-        },
-        cache: 'no-store',
-    });
+export interface CompositeProduct {
+    id: string;
+    _grupoId: number;
+    _isComposite: true;
+    nome: string;
+    descricao?: string;
+    imagem?: string;
+    tipo_calculo?: string;
+    cobrar_mais_caro?: boolean;
+    preco_fixo?: number;
+    completamentos_ids?: number[];
+    minimo: number;
+    maximo: number;
+    items: CompositeItem[];
+}
 
-    if (!res.ok) {
-        const text = await res.text();
-        console.error(`NocoDB Error (Table ${tableId}): ${res.status} ${text}`);
-        throw new Error(`NocoDB API Error: ${res.status}`);
-    }
-
-    return res;
+export interface CompositeItem {
+    id: number;
+    nome: string;
+    preco: number;
+    descricao?: string;
+    imagem?: string;
+    fator_proporcao: number;
+    grupo_id: number;
 }
 
 function parseJsonArray(value: any): number[] {
@@ -71,12 +71,11 @@ export async function getGruposSlots(): Promise<GrupoSlot[]> {
         const user = await getMe();
         if (!user?.empresaId) return [];
 
-        const res = await nocoFetch(
-            GRUPOS_SLOTS_TABLE_ID,
-            `/records?limit=1000&where=(empresa_id,eq,${user.empresaId})`
-        );
-        const data = await res.json();
-        
+        const data = await noco.list(GRUPOS_SLOTS_TABLE_ID, {
+            where: `(empresa_id,eq,${user.empresaId})`,
+            limit: 1000,
+        });
+
         return (data.list || []).map((g: any) => ({
             ...g,
             itens: parseJsonArray(g.itens)
@@ -116,25 +115,15 @@ export async function upsertGrupoSlot(grupoData: Partial<GrupoSlot>) {
         delete payload.created_at;
         delete payload.updated_at;
 
-        const isUpdate = !!grupoData.id;
-
-        if (isUpdate) {
-            const res = await nocoFetch(GRUPOS_SLOTS_TABLE_ID, '/records', {
-                method: 'PATCH',
-                body: JSON.stringify({ Id: grupoData.id, id: grupoData.id, ...payload }),
-            });
-            const data = await res.json();
-            revalidatePath('/dashboard/menu');
-            return { ...grupoData, ...data };
+        let data;
+        if (grupoData.id) {
+            data = await noco.update(GRUPOS_SLOTS_TABLE_ID, { id: grupoData.id, ...payload });
         } else {
-            const res = await nocoFetch(GRUPOS_SLOTS_TABLE_ID, '/records', {
-                method: 'POST',
-                body: JSON.stringify(payload),
-            });
-            const data = await res.json();
-            revalidatePath('/dashboard/menu');
-            return { ...payload, ...data };
+            data = await noco.create(GRUPOS_SLOTS_TABLE_ID, payload);
         }
+
+        revalidatePath('/dashboard/menu');
+        return { ...grupoData, ...(data as any) };
     } catch (e: any) {
         console.error('upsertGrupoSlot error:', e);
         throw new Error(e.message || 'Erro ao salvar grupo');
@@ -143,10 +132,7 @@ export async function upsertGrupoSlot(grupoData: Partial<GrupoSlot>) {
 
 export async function deleteGrupoSlot(id: number) {
     try {
-        await nocoFetch(GRUPOS_SLOTS_TABLE_ID, '/records', {
-            method: 'DELETE',
-            body: JSON.stringify([{ id }]),
-        });
+        await noco.delete(GRUPOS_SLOTS_TABLE_ID, id);
         revalidatePath('/dashboard/menu');
         return { success: true };
     } catch (e: any) {
@@ -158,13 +144,11 @@ export async function deleteGrupoSlot(id: number) {
 
 export async function getItensDoGrupoSlot(grupoId: number): Promise<number[]> {
     try {
-        const res = await nocoFetch(
-            GRUPOS_SLOTS_TABLE_ID,
-            `/records?limit=1&where=(id,eq,${grupoId})`
-        );
-        const data = await res.json();
-        console.log('[DEBUG getItensDoGrupoSlot] Response:', JSON.stringify(data.list?.[0]));
-        const grupo = data.list?.[0];
+        const grupo = await noco.findOne(GRUPOS_SLOTS_TABLE_ID, {
+            where: `(id,eq,${grupoId})`,
+        }) as any;
+
+        console.log('[DEBUG getItensDoGrupoSlot] Response:', JSON.stringify(grupo));
         const itens = grupo ? parseJsonArray(grupo.itens) : [];
         console.log('[DEBUG getItensDoGrupoSlot] Itens parseados:', itens);
         return itens;
@@ -176,40 +160,29 @@ export async function getItensDoGrupoSlot(grupoId: number): Promise<number[]> {
 
 export async function addItemBaseAoGrupo(grupoId: number, itemId: number) {
     try {
-        const res = await nocoFetch(
-            GRUPOS_SLOTS_TABLE_ID,
-            `/records?limit=1&where=(id,eq,${grupoId})`
-        );
-        const data = await res.json();
-        const grupo = data.list?.[0];
-        
+        const grupo = await noco.findOne(GRUPOS_SLOTS_TABLE_ID, {
+            where: `(id,eq,${grupoId})`,
+        }) as any;
+
         if (!grupo) throw new Error('Grupo não encontrado');
-        
+
         console.log('[DEBUG addItemBaseAoGrupo] Grupo atual:', JSON.stringify(grupo));
-        
+
         const itensAtuais = parseJsonArray(grupo.itens);
-        
+
         if (itensAtuais.includes(itemId)) {
             return { success: true, alreadyExists: true };
         }
-        
+
         const novosItens = [...itensAtuais, itemId];
-        
         console.log('[DEBUG addItemBaseAoGrupo] Salvando itens:', JSON.stringify(novosItens));
-        
-        await nocoFetch(GRUPOS_SLOTS_TABLE_ID, '/records', {
-            method: 'PATCH',
-            body: JSON.stringify({ Id: grupoId, id: grupoId, itens: JSON.stringify(novosItens) }),
-        });
-        
+
+        await noco.update(GRUPOS_SLOTS_TABLE_ID, { id: grupoId, itens: JSON.stringify(novosItens) });
+
         // Verificar se salvou
-        const res2 = await nocoFetch(
-            GRUPOS_SLOTS_TABLE_ID,
-            `/records?limit=1&where=(id,eq,${grupoId})`
-        );
-        const data2 = await res2.json();
-        console.log('[DEBUG addItemBaseAoGrupo] Depois de salvar:', JSON.stringify(data2.list?.[0]));
-        
+        const grupoAtualizado = await noco.findOne(GRUPOS_SLOTS_TABLE_ID, { where: `(id,eq,${grupoId})` });
+        console.log('[DEBUG addItemBaseAoGrupo] Depois de salvar:', JSON.stringify(grupoAtualizado));
+
         revalidatePath('/dashboard/menu');
         return { success: true };
     } catch (e: any) {
@@ -219,23 +192,17 @@ export async function addItemBaseAoGrupo(grupoId: number, itemId: number) {
 
 export async function removeItemBaseDoGrupo(grupoId: number, itemId: number) {
     try {
-        const res = await nocoFetch(
-            GRUPOS_SLOTS_TABLE_ID,
-            `/records?limit=1&where=(id,eq,${grupoId})`
-        );
-        const data = await res.json();
-        const grupo = data.list?.[0];
-        
+        const grupo = await noco.findOne(GRUPOS_SLOTS_TABLE_ID, {
+            where: `(id,eq,${grupoId})`,
+        }) as any;
+
         if (!grupo) return { success: true };
-        
+
         const itensAtuais = parseJsonArray(grupo.itens);
         const novosItens = itensAtuais.filter(id => id !== itemId);
-        
-        await nocoFetch(GRUPOS_SLOTS_TABLE_ID, '/records', {
-            method: 'PATCH',
-            body: JSON.stringify({ Id: grupoId, id: grupoId, itens: JSON.stringify(novosItens) }),
-        });
-        
+
+        await noco.update(GRUPOS_SLOTS_TABLE_ID, { id: grupoId, itens: JSON.stringify(novosItens) });
+
         revalidatePath('/dashboard/menu');
         return { success: true };
     } catch (e: any) {
@@ -247,12 +214,9 @@ export async function removeItemBaseDoGrupo(grupoId: number, itemId: number) {
 
 export async function getGruposDoProduto(produtoId: number): Promise<number[]> {
     try {
-        const res = await nocoFetch(
-            PRODUTOS_TABLE_ID,
-            `/records?limit=1&where=(id,eq,${produtoId})`
-        );
-        const data = await res.json();
-        const produto = data.list?.[0];
+        const produto = await noco.findOne(PRODUTOS_TABLE_ID, {
+            where: `(id,eq,${produtoId})`,
+        }) as any;
         return produto ? parseJsonArray(produto.grupos) : [];
     } catch (e) {
         console.error('getGruposDoProduto error:', e);
@@ -262,15 +226,11 @@ export async function getGruposDoProduto(produtoId: number): Promise<number[]> {
 
 export async function updateGruposDoProduto(produtoId: number, grupoIds: number[]) {
     try {
-        await nocoFetch(PRODUTOS_TABLE_ID, '/records', {
-            method: 'PATCH',
-            body: JSON.stringify({ 
-                Id: produtoId, 
-                id: produtoId,
-                grupos: JSON.stringify(grupoIds) 
-            }),
+        await noco.update(PRODUTOS_TABLE_ID, {
+            id: produtoId,
+            grupos: JSON.stringify(grupoIds)
         });
-        
+
         revalidatePath('/dashboard/menu');
         return { success: true };
     } catch (e) {
@@ -279,55 +239,21 @@ export async function updateGruposDoProduto(produtoId: number, grupoIds: number[
     }
 }
 
-// --- PRODUTOS COMPOSTOS (GRUPOS DE SLOTS PARA O MODAL DE PEDIDOS) ---
-
-export interface CompositeProduct {
-    id: string;
-    _grupoId: number;
-    _isComposite: true;
-    nome: string;
-    descricao?: string;
-    imagem?: string;
-    tipo_calculo?: string;
-    cobrar_mais_caro?: boolean;
-    preco_fixo?: number;
-    completamentos_ids?: number[];
-    minimo: number;
-    maximo: number;
-    items: CompositeItem[];
-}
-
-export interface CompositeItem {
-    id: number;
-    nome: string;
-    preco: number;
-    descricao?: string;
-    imagem?: string;
-    fator_proporcao: number;
-    grupo_id: number;
-}
+// --- PRODUTOS COMPOSTOS ---
 
 export async function getCompositeProducts(): Promise<CompositeProduct[]> {
     try {
         const user = await getMe();
         if (!user?.empresaId) return [];
 
-        // Buscar grupos de slots da empresa_id
-        const gruposRes = await nocoFetch(
-            GRUPOS_SLOTS_TABLE_ID,
-            `/records?limit=1000&where=(empresa_id,eq,${user.empresaId})`
-        );
-        const gruposData = await gruposRes.json();
-        const grupos = (gruposData.list || []).filter((g: any) => g.tipo === 'fracionado');
+        const [gruposData, itensData] = await Promise.all([
+            noco.list(GRUPOS_SLOTS_TABLE_ID, { where: `(empresa_id,eq,${user.empresaId})`, limit: 1000 }),
+            noco.list(ITENS_BASE_TABLE_ID, { where: `(empresa_id,eq,${user.empresaId})`, limit: 2000 }),
+        ]);
 
+        const grupos = (gruposData.list || []).filter((g: any) => g.tipo === 'fracionado');
         if (grupos.length === 0) return [];
 
-        // Buscar itens base da empresa_id
-        const itensRes = await nocoFetch(
-            ITENS_BASE_TABLE_ID,
-            `/records?limit=2000&where=(empresa_id,eq,${user.empresaId})`
-        );
-        const itensData = await itensRes.json();
         const itensMap = new Map<number, any>();
         (itensData.list || []).forEach((item: any) => {
             itensMap.set(item.id, {
@@ -338,7 +264,6 @@ export async function getCompositeProducts(): Promise<CompositeProduct[]> {
             });
         });
 
-        // Montar produtos compostos
         return grupos.map((g: any) => {
             const itens = parseJsonArray(g.itens);
             const items = itens
@@ -379,41 +304,30 @@ export async function getCompositeProducts(): Promise<CompositeProduct[]> {
     }
 }
 
-// Calcular estoque possível para produtos compostos
 export async function getCompositeProductsStock(): Promise<{ grupoId: number; estoquePossivel: number }[]> {
     try {
         const user = await getMe();
         if (!user?.empresaId) return [];
 
-        // Buscar grupos de slots da empresa_id
-        const gruposRes = await nocoFetch(
-            GRUPOS_SLOTS_TABLE_ID,
-            `/records?limit=1000&where=(empresa_id,eq,${user.empresaId})`
-        );
-        const gruposData = await gruposRes.json();
-        const grupos = (gruposData.list || []).filter((g: any) => g.tipo === 'fracionado');
+        const [gruposData, itensData] = await Promise.all([
+            noco.list(GRUPOS_SLOTS_TABLE_ID, { where: `(empresa_id,eq,${user.empresaId})`, limit: 1000 }),
+            noco.list(ITENS_BASE_TABLE_ID, { where: `(empresa_id,eq,${user.empresaId})`, limit: 2000 }),
+        ]);
 
+        const grupos = (gruposData.list || []).filter((g: any) => g.tipo === 'fracionado');
         if (grupos.length === 0) return [];
 
-        // Buscar itens base da empresa_id
-        const itensRes = await nocoFetch(
-            ITENS_BASE_TABLE_ID,
-            `/records?limit=2000&where=(empresa_id,eq,${user.empresaId})`
-        );
-        const itensData = await itensRes.json();
         const itensMap = new Map<number, any>();
         (itensData.list || []).forEach((item: any) => {
             itensMap.set(item.id, item);
         });
 
-        // Buscar insumos da empresa_id
         const insumos = await getInsumos();
         const insumosMap = new Map<number, number>();
         insumos.forEach((insumo: any) => {
             insumosMap.set(insumo.id, Number(insumo.quantidade_atual || 0));
         });
 
-        // Para cada grupo, calcular estoque possível
         const results: { grupoId: number; estoquePossivel: number }[] = [];
 
         for (const grupo of grupos) {
@@ -425,19 +339,13 @@ export async function getCompositeProductsStock(): Promise<{ grupoId: number; es
 
             let estoqueMinimo = Infinity;
 
-            // Para cada item base do grupo
             for (const itemId of itens) {
                 const itemBase = itensMap.get(itemId);
                 if (!itemBase) continue;
 
-                // Buscar receita do item base
                 const receita = await getReceitaDoItemBase(itemId);
-                if (receita.length === 0) {
-                    // Se não tem insumos, consideramos ilimitado (ou zero?)
-                    continue;
-                }
+                if (receita.length === 0) continue;
 
-                // Calcular quantas unidades deste item base podem ser produzidas
                 let minPossivel = Infinity;
                 for (const r of receita) {
                     const estoqueInsumo = insumosMap.get(r.insumo) || 0;

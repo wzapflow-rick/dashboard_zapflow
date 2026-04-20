@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getMe } from '@/app/actions/auth';
-
-const NOCODB_URL = process.env.NOCODB_URL || '';
-const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const EMPRESAS_TABLE_ID = 'mp08yd7oaxn5xo2';
+import { noco } from '@/lib/nocodb';
+import { EMPRESAS_TABLE_ID } from '@/lib/constants';
 
 export async function GET(
     request: Request,
@@ -11,20 +8,13 @@ export async function GET(
 ) {
     try {
         const { empresaId } = await params;
-        
-        const res = await fetch(
-            `${NOCODB_URL}/api/v2/tables/${EMPRESAS_TABLE_ID}/records/${empresaId}`,
-            {
-                headers: { 'xc-token': NOCODB_TOKEN },
-                cache: 'no-store',
-            }
-        );
 
-        if (!res.ok) {
+        const data = await noco.findById(EMPRESAS_TABLE_ID, Number(empresaId)) as any;
+
+        if (!data) {
             return NextResponse.json({ error: 'Empresa não encontrada' }, { status: 404 });
         }
 
-        const data = await res.json();
         return NextResponse.json({
             id: data.id,
             nome: data.nome_fantasia

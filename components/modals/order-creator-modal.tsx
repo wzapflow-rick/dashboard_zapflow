@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { X, Search, Plus, Minus, ShoppingCart, User, Phone, Check, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getProducts } from '@/app/actions/products';
-import { nocoFetch } from '@/app/actions/insumos';
 import { getCompositeProducts, type CompositeProduct, type CompositeItem } from '@/app/actions/grupos-slots';
 import { createManualOrder } from '@/app/actions/orders';
 import { toast } from 'sonner';

@@ -4,65 +4,38 @@ import { revalidatePath } from 'next/cache';
 import { getMe } from '@/lib/session-server';
 import { CustomerUpsertSchema } from '@/lib/validations';
 import { logAction } from '@/lib/audit';
+import { noco } from '@/lib/nocodb';
+import { CLIENTES_TABLE_ID, PEDIDOS_TABLE_ID, LOYALTY_POINTS_TABLE_ID } from '@/lib/constants';
 
-const NOCODB_URL = process.env.NOCODB_URL || '';
-const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const TABLE_ID = 'mkodxks6hpm2bg9'; // clientes-clientes
-const LOYALTY_TABLE_ID = 'm8slxvm3dp4sup4'; // loyalty_points
-
-// Rate limiting para upsert de clientes
 const customerUpsertAttempts = new Map<string, { count: number; lastAttempt: number }>();
 const MAX_CUSTOMER_ATTEMPTS = 10;
-const CUSTOMER_WINDOW_MS = 60 * 1000; // 1 minuto
-
-async function nocoFetch(endpoint: string, options: RequestInit = {}) {
-    const url = `${NOCODB_URL}/api/v2/tables/${TABLE_ID}${endpoint}`;
-    const res = await fetch(url, {
-        ...options,
-        headers: {
-            'xc-token': NOCODB_TOKEN,
-            'Content-Type': 'application/json',
-            ...(options.headers || {}),
-        },
-        cache: 'no-store',
-    });
-
-    if (!res.ok) {
-        const text = await res.text();
-        console.error(`NocoDB Error (Customers): ${res.status} ${text}`);
-        throw new Error(`NocoDB API Error: ${res.status}`);
-    }
-
-    return res;
-}
-
-const ORDERS_TABLE_ID = 'mui7bozvx9zb2n9'; // pedidos
+const CUSTOMER_WINDOW_MS = 60 * 1000;
 
 export async function getCustomers() {
     try {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        // 1. Buscar Clientes
-        const clientsRes = await nocoFetch(`/records?limit=1000&where=(empresa_id,eq,${user.empresaId})&sort=-id`);
-        const clientsData = await clientsRes.json();
+        const [clientsData, ordersData, pointsData] = await Promise.all([
+            noco.list(CLIENTES_TABLE_ID, {
+                where: `(empresa_id,eq,${user.empresaId})`,
+                sort: '-id',
+                limit: 1000,
+            }),
+            noco.list(PEDIDOS_TABLE_ID, {
+                where: `(empresa_id,eq,${user.empresaId})`,
+                limit: 1000,
+            }),
+            noco.list(LOYALTY_POINTS_TABLE_ID, {
+                where: `(empresa_id,eq,${user.empresaId})`,
+                limit: 1000,
+            }),
+        ]);
+
         const clients = clientsData.list || [];
-
-        // 2. Buscar Todos os Pedidos para calcular estatísticas reais
-        const ordersRes = await fetch(`${NOCODB_URL}/api/v2/tables/${ORDERS_TABLE_ID}/records?limit=1000&where=(empresa_id,eq,${user.empresaId})`, {
-            headers: { 'xc-token': NOCODB_TOKEN }
-        });
-        const ordersData = await ordersRes.json();
         const allOrders = ordersData.list || [];
-
-        // 3. Buscar Pontos de Fidelidade
-        const pointsRes = await fetch(`${NOCODB_URL}/api/v2/tables/${LOYALTY_TABLE_ID}/records?limit=1000&where=(empresa_id,eq,${user.empresaId})`, {
-            headers: { 'xc-token': NOCODB_TOKEN }
-        });
-        const pointsData = await pointsRes.json();
         const pointsList = pointsData.list || [];
 
-        // 4. Mapear pedidos por telefone (usando plain object em vez de Map)
         const ordersByPhone: Record<string, any[]> = {};
         allOrders.forEach((order: any) => {
             const phone = String(order.telefone_cliente || '');
@@ -70,14 +43,12 @@ export async function getCustomers() {
             ordersByPhone[phone].push(order);
         });
 
-        // 5. Mapear pontos por telefone (usando plain object em vez de Map)
         const pointsByPhone: Record<string, number> = {};
         pointsList.forEach((p: any) => {
             const pontos = (p.pontos_acumulados || 0) - (p.pontos_gastos || 0);
             pointsByPhone[String(p.cliente_telefone || '')] = pontos;
         });
 
-        // 6. Enriquecer clientes com dados reais e garantir serialização
         return clients.map((client: any) => {
             const phone = String(client.telefone || '');
             const history = ordersByPhone[phone] || [];
@@ -108,10 +79,11 @@ export async function getCustomerHistory(phone: string) {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        const res = await fetch(`${NOCODB_URL}/api/v2/tables/${ORDERS_TABLE_ID}/records?limit=100&where=(empresa_id,eq,${user.empresaId})~and(telefone_cliente,eq,${phone})&sort=-id`, {
-            headers: { 'xc-token': NOCODB_TOKEN }
+        const data = await noco.list(PEDIDOS_TABLE_ID, {
+            where: `(empresa_id,eq,${user.empresaId})~and(telefone_cliente,eq,${phone})`,
+            sort: '-id',
+            limit: 100,
         });
-        const data = await res.json();
         return data.list || [];
     } catch (error) {
         console.error('API Error:', error);
@@ -124,7 +96,6 @@ export async function upsertCustomer(customerData: any) {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        // Validação com Zod
         const validated = CustomerUpsertSchema.safeParse(customerData);
         if (!validated.success) {
             const errorMsg = validated.error.issues.map((issue: any) => issue.message).join(', ');
@@ -133,11 +104,10 @@ export async function upsertCustomer(customerData: any) {
 
         const { telefone, nome, bairro_entrega, endereco_completo } = validated.data;
 
-        // Rate limiting por empresa
         const now = Date.now();
         const attemptKey = `${user.empresaId}:${telefone}`;
         const attempt = customerUpsertAttempts.get(attemptKey);
-        
+
         if (attempt && attempt.count >= MAX_CUSTOMER_ATTEMPTS) {
             const timeSinceLast = now - attempt.lastAttempt;
             if (timeSinceLast < CUSTOMER_WINDOW_MS) {
@@ -147,39 +117,29 @@ export async function upsertCustomer(customerData: any) {
             }
         }
 
-        // 1. Verificar se o cliente já existe para esta empresa
-        const checkRes = await nocoFetch(`/records?where=(empresa_id,eq,${user.empresaId})~and(telefone,eq,${telefone})`);
-        const checkData = await checkRes.json();
-        const existingCustomer = checkData.list?.[0];
+        const existingCustomer = await noco.findOne(CLIENTES_TABLE_ID, {
+            where: `(empresa_id,eq,${user.empresaId})~and(telefone,eq,${telefone})`,
+        }) as any;
 
         if (existingCustomer) {
-            // 2. Atualizar se existir (PATCH)
-            await nocoFetch('/records', {
-                method: 'PATCH',
-                body: JSON.stringify({
-                    id: existingCustomer.id,
-                    nome: nome || existingCustomer.nome,
-                    bairro_entrega: bairro_entrega || existingCustomer.bairro_entrega,
-                    endereco: endereco_completo || existingCustomer.endereco
-                })
+            await noco.update(CLIENTES_TABLE_ID, {
+                id: existingCustomer.id,
+                nome: nome || existingCustomer.nome,
+                bairro_entrega: bairro_entrega || existingCustomer.bairro_entrega,
+                endereco: endereco_completo || existingCustomer.endereco
             });
             await logAction('UPDATE_CUSTOMER', `Cliente atualizado: ${telefone}`);
         } else {
-            // 3. Criar se não existir (POST)
-            await nocoFetch('/records', {
-                method: 'POST',
-                body: JSON.stringify({
-                    empresa_id: user.empresaId,
-                    nome: nome || 'Cliente sem nome',
-                    telefone,
-                    bairro_entrega,
-                    endereco: endereco_completo || ''
-                })
+            await noco.create(CLIENTES_TABLE_ID, {
+                empresa_id: user.empresaId,
+                nome: nome || 'Cliente sem nome',
+                telefone,
+                bairro_entrega,
+                endereco: endereco_completo || ''
             });
             await logAction('CREATE_CUSTOMER', `Novo cliente cadastrado: ${telefone}`);
         }
 
-        // Incrementar tentativas
         const currentAttempt = customerUpsertAttempts.get(attemptKey) || { count: 0, lastAttempt: now };
         currentAttempt.count += 1;
         currentAttempt.lastAttempt = now;

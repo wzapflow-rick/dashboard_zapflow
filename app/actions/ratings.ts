@@ -2,52 +2,20 @@
 
 import { getMe } from '@/lib/session-server';
 import { revalidatePath } from 'next/cache';
+import { noco } from '@/lib/nocodb';
+import { AVALIACOES_TABLE_ID, CLIENTES_TABLE_ID } from '@/lib/constants';
 
-const NOCODB_URL = process.env.NOCODB_URL || '';
-const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const RATINGS_TABLE_ID = 'm3ebs9cm1yjgmo1';
-const CLIENTS_TABLE_ID = 'mkodxks6hpm2bg9';
-
-async function nocoFetch(endpoint: string, options: RequestInit = {}, tableId: string = RATINGS_TABLE_ID) {
-    const url = `${NOCODB_URL}/api/v2/tables/${tableId}${endpoint}`;
-    const res = await fetch(url, {
-        ...options,
-        headers: {
-            'xc-token': NOCODB_TOKEN,
-            'Content-Type': 'application/json',
-            ...(options.headers || {}),
-        },
-        cache: 'no-store',
-    });
-
-    if (!res.ok) {
-        const text = await res.text();
-        console.error(`NocoDB Error (Ratings): ${res.status} ${text}`);
-        return null;
-    }
-
-    return res;
-}
-
-// Buscar cliente por telefone
 export async function getClientByPhone(telefone: string): Promise<{ nome?: string; id?: number } | null> {
     try {
         const user = await getMe();
         if (!user?.empresaId) return null;
 
         const cleanPhone = telefone.replace(/\D/g, '');
-        
-        const res = await nocoFetch(
-            `/records?where=(empresa_id,eq,${user.empresaId})~and(telefone,eq,${cleanPhone})&limit=1`,
-            {},
-            CLIENTS_TABLE_ID
-        );
-        
-        if (!res) return null;
-        
-        const data = await res.json();
-        const client = data.list?.[0];
-        
+
+        const client = await noco.findOne(CLIENTES_TABLE_ID, {
+            where: `(empresa_id,eq,${user.empresaId})~and(telefone,eq,${cleanPhone})`,
+        }) as any;
+
         return client ? { nome: client.nome, id: client.id } : null;
     } catch (error) {
         console.error('getClientByPhone error:', error);
@@ -75,14 +43,7 @@ export async function createRating(data: {
     comentario?: string;
 }) {
     try {
-        const res = await nocoFetch('/records', {
-            method: 'POST',
-            body: JSON.stringify(data)
-        });
-
-        if (!res) throw new Error('Erro ao salvar avaliação');
-
-        const result = await res.json();
+        const result = await noco.create(AVALIACOES_TABLE_ID, data);
         revalidatePath('/dashboard/customers');
         return { success: true, data: result };
     } catch (error) {
@@ -96,10 +57,12 @@ export async function getRatingsByEmpresa(): Promise<Rating[]> {
         const user = await getMe();
         if (!user?.empresaId) return [];
 
-        const res = await nocoFetch(`/records?where=(empresa_id,eq,${user.empresaId})&sort=-created_at&limit=100`);
-        if (!res) return [];
+        const data = await noco.list(AVALIACOES_TABLE_ID, {
+            where: `(empresa_id,eq,${user.empresaId})`,
+            sort: '-created_at',
+            limit: 100,
+        });
 
-        const data = await res.json();
         return (data.list || []).map((r: any) => ({
             id: r.id,
             pedido_id: r.pedido_id,
@@ -118,10 +81,10 @@ export async function getRatingsByEmpresa(): Promise<Rating[]> {
 
 export async function getAverageRatings(empresaId: number) {
     try {
-        const res = await nocoFetch(`/records?where=(empresa_id,eq,${empresaId})&limit=500`);
-        if (!res) return null;
-
-        const data = await res.json();
+        const data = await noco.list(AVALIACOES_TABLE_ID, {
+            where: `(empresa_id,eq,${empresaId})`,
+            limit: 500,
+        });
         const ratings = data.list || [];
 
         if (ratings.length === 0) return null;
@@ -150,11 +113,10 @@ export async function getAverageRatings(empresaId: number) {
 
 export async function getRatingByOrder(orderId: number) {
     try {
-        const res = await nocoFetch(`/records?where=(pedido_id,eq,${orderId})&limit=1`);
-        if (!res) return null;
-
-        const data = await res.json();
-        return data.list?.[0] || null;
+        const result = await noco.findOne(AVALIACOES_TABLE_ID, {
+            where: `(pedido_id,eq,${orderId})`,
+        });
+        return result || null;
     } catch (error) {
         console.error('getRatingByOrder error:', error);
         return null;

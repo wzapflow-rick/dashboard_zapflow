@@ -2,48 +2,27 @@
 
 import { cookies } from 'next/headers';
 import { encrypt, decrypt } from '@/lib/session';
+import { noco } from '@/lib/nocodb';
+import { ENTREGADORES_TABLE_ID, PEDIDOS_TABLE_ID } from '@/lib/constants';
 
-const NOCODB_URL = process.env.NOCODB_URL || '';
-const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const DRIVERS_TABLE_ID = 'm4hbqkhwu2qvrry';
-
-async function nocoFetch(tableId: string, endpoint: string, options: RequestInit = {}) {
-    const url = `${NOCODB_URL}/api/v2/tables/${tableId}${endpoint}`;
-    const res = await fetch(url, {
-        ...options,
-        headers: {
-            'xc-token': NOCODB_TOKEN,
-            'Content-Type': 'application/json',
-            ...(options.headers || {}),
-        },
-        cache: 'no-store',
-    });
-    return res;
-}
-
-// Login do entregador (email + senha simples)
 export async function driverLogin(email: string, password: string) {
     try {
-        // Buscar entregador por email (senha é o telefone por segurança)
-        const res = await nocoFetch(DRIVERS_TABLE_ID, 
-            `/records?where=(email,eq,${email})~and(ativo,eq,true)`);
-        const data = await res.json();
-        const driver = data.list?.[0];
+        const data = await noco.list(ENTREGADORES_TABLE_ID, {
+            where: `(email,eq,${email})~and(ativo,eq,true)`,
+        });
+        const driver = data.list?.[0] as any;
 
         if (!driver) {
             return { success: false, error: 'Entregador não encontrado' };
         }
 
-        // Verificar senha (por enquanto usa telefone como senha)
-        // TODO: Implementar senha própria no futuro
         const cleanPassword = password.replace(/\D/g, '');
         const cleanPhone = (driver.telefone || '').replace(/\D/g, '');
-        
+
         if (cleanPassword !== cleanPhone) {
             return { success: false, error: 'Senha incorreta' };
         }
 
-        // Criar sessão
         const session = await encrypt({
             driverId: driver.id,
             driverName: driver.nome,
@@ -57,17 +36,13 @@ export async function driverLogin(email: string, password: string) {
             secure: isProduction,
             sameSite: 'strict',
             path: '/',
-            maxAge: 60 * 60 * 8, // 8 horas
+            maxAge: 60 * 60 * 8,
         });
 
-        // Marcar como disponível
-        await nocoFetch(DRIVERS_TABLE_ID, '/records', {
-            method: 'PATCH',
-            body: JSON.stringify({ id: driver.id, Id: driver.id, status: 'disponivel' }),
-        });
+        await noco.update(ENTREGADORES_TABLE_ID, { id: driver.id, status: 'disponivel' });
 
-        return { 
-            success: true, 
+        return {
+            success: true,
             driver: {
                 id: driver.id,
                 nome: driver.nome,
@@ -81,7 +56,6 @@ export async function driverLogin(email: string, password: string) {
     }
 }
 
-// Verificar sessão do entregador
 export async function getDriverSession() {
     try {
         const cookie = (await cookies()).get('driver_session');
@@ -100,41 +74,33 @@ export async function getDriverSession() {
     }
 }
 
-// Logout do entregador
 export async function driverLogout() {
-    (await cookies()).delete('driver_session');
-    
-    // Marcar como offline
     const session = await getDriverSession();
+
+    (await cookies()).delete('driver_session');
+
     if (session?.driverId) {
-        await nocoFetch(DRIVERS_TABLE_ID, '/records', {
-            method: 'PATCH',
-            body: JSON.stringify({ 
-                id: session.driverId, 
-                Id: session.driverId, 
-                status: 'offline' 
-            }),
+        await noco.update(ENTREGADORES_TABLE_ID, {
+            id: session.driverId,
+            status: 'offline'
         }).catch(() => {});
     }
-    
+
     return { success: true };
 }
 
-// Buscar pedidos do entregador
 export async function getDriverOrders(driverId: number) {
     try {
         const session = await getDriverSession();
         if (!session?.driverId || session.driverId !== driverId) {
             throw new Error('Acesso negado: Sessão inválida');
         }
-        
-        const ORDERS_TABLE_ID = 'mui7bozvx9zb2n9';
-        
-        // Buscar pedidos atribuídos ao entregador
-        const res = await nocoFetch(ORDERS_TABLE_ID, 
-            `/records?where=(entregador_id,eq,${driverId})~and(status,neq,finalizado)~and(status,neq,cancelado)&sort=-id`);
-        const data = await res.json();
-        
+
+        const data = await noco.list(PEDIDOS_TABLE_ID, {
+            where: `(entregador_id,eq,${driverId})~and(status,neq,finalizado)~and(status,neq,cancelado)`,
+            sort: '-id',
+        });
+
         return (data.list || []).map((order: any) => ({
             id: order.id,
             cliente_nome: order.cliente_nome,
@@ -155,42 +121,26 @@ export async function getDriverOrders(driverId: number) {
     }
 }
 
-// Atualizar status do pedido pelo entregador
 export async function updateOrderStatusByDriver(orderId: number, newStatus: string) {
     try {
         const session = await getDriverSession();
         if (!session?.driverId) {
             throw new Error('Não autorizado');
         }
-        
-        const ORDERS_TABLE_ID = 'mui7bozvx9zb2n9';
-        
-        // SECURE: Verify order belongs to this driver before updating
-        const checkRes = await nocoFetch(ORDERS_TABLE_ID, `/records/${orderId}`);
-        const order = await checkRes.json();
-        
+
+        const order = await noco.findById(PEDIDOS_TABLE_ID, orderId) as any;
+
         if (!order || Number(order.entregador_id) !== Number(session.driverId)) {
             throw new Error('Acesso negado: Pedido não pertence a este entregador');
         }
-        
-        const res = await nocoFetch(ORDERS_TABLE_ID, '/records', {
-            method: 'PATCH',
-            body: JSON.stringify({ id: orderId, Id: orderId, status: newStatus }),
-        });
 
-        // Se finalizou, incrementar entregas do dia
+        await noco.update(PEDIDOS_TABLE_ID, { id: orderId, status: newStatus });
+
         if (newStatus === 'finalizado') {
-            // Buscar entregador atual
-            const driverRes = await nocoFetch(DRIVERS_TABLE_ID, `/records/${session.driverId}`);
-            const driver = await driverRes.json();
-            
-            await nocoFetch(DRIVERS_TABLE_ID, '/records', {
-                method: 'PATCH',
-                body: JSON.stringify({ 
-                    id: session.driverId, 
-                    Id: session.driverId, 
-                    entregas_hoje: (driver.entregas_hoje || 0) + 1 
-                }),
+            const driver = await noco.findById(ENTREGADORES_TABLE_ID, session.driverId) as any;
+            await noco.update(ENTREGADORES_TABLE_ID, {
+                id: session.driverId,
+                entregas_hoje: (driver?.entregas_hoje || 0) + 1
             });
         }
 

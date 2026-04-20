@@ -6,11 +6,8 @@ import { saveReceitaDoProduto } from './insumos';
 import { ProductSchema, CategorySchema } from '@/lib/validations';
 import { logAction } from '@/lib/audit';
 import { v2 as cloudinary } from 'cloudinary';
-
-const NOCODB_URL = process.env.NOCODB_URL || '';
-const NOCODB_TOKEN = process.env.NOCODB_TOKEN || '';
-const TABLE_ID = 'mh81t2xp1uml6pc';
-const CATEGORIES_TABLE_ID = 'mo5so5g7gvlbwyo';
+import { noco } from '@/lib/nocodb';
+import { PRODUTOS_TABLE_ID, CATEGORIAS_TABLE_ID } from '@/lib/constants';
 
 // Configurar Cloudinary
 cloudinary.config({
@@ -26,42 +23,18 @@ export interface Category {
   ordem?: number;
 }
 
-async function nocoFetch(endpoint: string, options: RequestInit = {}, tableId: string = TABLE_ID) {
-  const url = `${NOCODB_URL}/api/v2/tables/${tableId}${endpoint}`;
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      'xc-token': NOCODB_TOKEN,
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
-    cache: 'no-store',
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    let errorMessage = text;
-    try {
-      const json = JSON.parse(text);
-      errorMessage = json.message || json.error || text;
-    } catch {}
-    console.error(`NocoDB Error: ${res.status} ${errorMessage}`);
-    throw new Error(`NocoDB API Error: ${res.status} - ${errorMessage}`);
-  }
-
-  return res;
-}
-
 export async function getProducts() {
   try {
     const user = await getMe();
     if (!user?.empresaId) throw new Error('Não autorizado');
 
-    const res = await nocoFetch(`/records?limit=1000&where=(empresa_id,eq,${user.empresaId})&sort=-id`);
-    const data = await res.json();
+    const data = await noco.list(PRODUTOS_TABLE_ID, {
+      where: `(empresa_id,eq,${user.empresaId})`,
+      sort: '-id',
+      limit: 1000,
+    });
     const products = data.list || [];
-    
-    // Garantir que retornamos apenas objetos planos serializáveis
+
     return products.map((p: any) => JSON.parse(JSON.stringify({
       id: p.id || p.Id,
       nome: p.nome || '',
@@ -104,11 +77,12 @@ export async function getCategories(): Promise<Category[]> {
     const user = await getMe();
     if (!user?.empresaId) throw new Error('Não autorizado');
 
-    const res = await nocoFetch(`/records?limit=1000&where=(empresa_id,eq,${user.empresaId})`, {}, CATEGORIES_TABLE_ID);
-    const data = await res.json();
+    const data = await noco.list(CATEGORIAS_TABLE_ID, {
+      where: `(empresa_id,eq,${user.empresaId})`,
+      limit: 1000,
+    });
     const categories = data.list || [];
-    
-    // Garantir serialização
+
     return categories.map((c: any) => JSON.parse(JSON.stringify({
       id: c.id || c.Id,
       nome: c.nome || '',
@@ -125,7 +99,6 @@ export async function upsertCategory(categoryData: any) {
   try {
     const user = await requireAdmin();
 
-    // Validação Premium com Zod
     const validated = CategorySchema.safeParse(categoryData);
     if (!validated.success) {
       const errorMsg = validated.error.issues.map((issue: any) => issue.message).join(', ');
@@ -133,45 +106,32 @@ export async function upsertCategory(categoryData: any) {
     }
 
     const category = validated.data;
-    const payload = {
+    const payload: any = {
       ...category,
       empresa_id: user.empresaId,
       disponivel: true
     };
 
-    // Remove IDs de sistema se presentes no payload (exceto o ID principal)
-    delete (payload as any).created_at;
-    delete (payload as any).updated_at;
+    delete payload.created_at;
+    delete payload.updated_at;
+
+    let result;
 
     if (payload.id) {
-      const updatePayload: any = { 
-        Id: payload.id, 
-        id: payload.id 
-      };
-      
+      const updatePayload: any = { id: payload.id };
       if (payload.nome) updatePayload.nome = payload.nome;
       if (payload.ordem !== undefined) updatePayload.ordem = payload.ordem;
       if (payload.disponivel !== undefined) updatePayload.disponivel = payload.disponivel;
 
-      const res = await nocoFetch('/records', {
-        method: 'PATCH',
-        body: JSON.stringify(updatePayload)
-      }, CATEGORIES_TABLE_ID);
-      revalidatePath('/dashboard/categories');
-      revalidatePath('/dashboard/menu');
-      const data = await res.json();
+      result = await noco.update(CATEGORIAS_TABLE_ID, updatePayload);
       await logAction('SAVE_CATEGORY', `Sucesso ao salvar categoria: ${category.nome}`);
-      return { ...categoryData, ...data };
     } else {
-      const res = await nocoFetch('/records', {
-        method: 'POST',
-        body: JSON.stringify(payload)
-      }, CATEGORIES_TABLE_ID);
-      const data = await res.json();
-      revalidatePath('/dashboard/categories');
-      revalidatePath('/dashboard/menu');
-      return { ...categoryData, ...data };
+      result = await noco.create(CATEGORIAS_TABLE_ID, payload);
     }
+
+    revalidatePath('/dashboard/categories');
+    revalidatePath('/dashboard/menu');
+    return { ...categoryData, ...result };
   } catch (error: any) {
     console.error('API Error:', error);
     throw new Error(error.message || 'Failed to save category');
@@ -182,17 +142,12 @@ export async function deleteCategory(id: number | string) {
   try {
     const user = await requireAdmin();
 
-    // Segurança Premium: Verificar se a categoria pertence à empresa
-    const checkRes = await nocoFetch(`/records/${id}`, {}, CATEGORIES_TABLE_ID);
-    const category = await checkRes.json();
+    const category = await noco.findById(CATEGORIAS_TABLE_ID, id) as any;
     if (!category || Number(category.empresa_id) !== Number(user.empresaId)) {
       throw new Error('Acesso negado: Categoria não pertence a esta empresa');
     }
 
-    await nocoFetch('/records', {
-      method: 'DELETE',
-      body: JSON.stringify([{ Id: id, id: id }])
-    }, CATEGORIES_TABLE_ID);
+    await noco.delete(CATEGORIAS_TABLE_ID, id);
     revalidatePath('/dashboard/categories');
     revalidatePath('/dashboard/menu');
     return { success: true };
@@ -206,16 +161,12 @@ export async function updateProductAvailability(id: number | string, disponivel:
   try {
     const user = await requireAdmin();
 
-    const checkRes = await nocoFetch(`/records/${id}`);
-    const product = await checkRes.json();
+    const product = await noco.findById(PRODUTOS_TABLE_ID, id) as any;
     if (!product || Number(product.empresa_id) !== Number(user.empresaId)) {
       throw new Error('Acesso negado: Produto não pertence a esta empresa');
     }
 
-    await nocoFetch('/records', {
-      method: 'PATCH',
-      body: JSON.stringify({ Id: id, id: id, disponivel })
-    });
+    await noco.update(PRODUTOS_TABLE_ID, { id, disponivel });
     revalidatePath('/dashboard/menu');
     return { success: true };
   } catch (error) {
@@ -228,16 +179,12 @@ export async function deleteProduct(id: number | string) {
   try {
     const user = await requireAdmin();
 
-    const checkRes = await nocoFetch(`/records/${id}`);
-    const product = await checkRes.json();
+    const product = await noco.findById(PRODUTOS_TABLE_ID, id) as any;
     if (!product || Number(product.empresa_id) !== Number(user.empresaId)) {
       throw new Error('Acesso negado: Produto não pertence a esta empresa');
     }
 
-    await nocoFetch('/records', {
-      method: 'DELETE',
-      body: JSON.stringify([{ Id: id, id: id }])
-    });
+    await noco.delete(PRODUTOS_TABLE_ID, id);
     revalidatePath('/dashboard/menu');
     await logAction('DELETE_PRODUCT', `Produto ID ${id} excluído permanentemente`);
     return { success: true };
@@ -251,7 +198,6 @@ export async function upsertProduct(productData: any, selectedInsumos?: { insumo
   try {
     const user = await requireAdmin();
 
-    // Garantir que preco seja um número válido
     if (productData.preco === '' || productData.preco === undefined || productData.preco === null) {
       productData.preco = 0;
     }
@@ -260,7 +206,6 @@ export async function upsertProduct(productData: any, selectedInsumos?: { insumo
       productData.preco = 0;
     }
 
-    // Validação Premium com Zod
     const validated = ProductSchema.safeParse(productData);
     if (!validated.success) {
       const errorMsg = validated.error.issues.map((issue: any) => issue.message).join(', ');
@@ -268,34 +213,24 @@ export async function upsertProduct(productData: any, selectedInsumos?: { insumo
     }
 
     const product = validated.data;
-    const payload = {
+    const payload: any = {
       ...product,
       empresa_id: user.empresaId
     };
 
-    delete (payload as any).created_at;
-    delete (payload as any).updated_at;
+    delete payload.created_at;
+    delete payload.updated_at;
 
     let savedProduct;
 
     if (payload.id) {
-      // Update
       const updatePayload = { ...payload };
-      delete (updatePayload as any).empresa_id;
+      delete updatePayload.empresa_id;
 
-      const res = await nocoFetch('/records', {
-        method: 'PATCH',
-        body: JSON.stringify({ ...updatePayload, Id: payload.id, id: payload.id })
-      });
-      const data = await res.json();
+      const data = await noco.update(PRODUTOS_TABLE_ID, updatePayload);
       savedProduct = { ...productData, ...data };
     } else {
-      // Insert
-      const res = await nocoFetch('/records', {
-        method: 'POST',
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
+      const data = await noco.create(PRODUTOS_TABLE_ID, payload);
       savedProduct = { ...productData, ...data };
     }
 
