@@ -97,13 +97,12 @@ export async function getReceitaDoItemBase(itemBaseId: number): Promise<ItemBase
             limit: 1000,
         });
 
-        return (data.list || []).map((i: any) => ({
-            id: i.id,
-            produto_id: i.produto_id,
-            insumo_id: i.insumo_id,
-            insumo: i.insumo_id,
-            quantidade: i.quantidade_usada
-        }));
+   return (data.list || []).map((i: any) => ({
+    id: Number(i.id),
+    item: Number(i.produto_id),
+    insumo: Number(i.insumo_id),
+    quantidade: Number(i.quantidade_usada),
+}));
     } catch (e) {
         console.error('getReceitaDoItemBase error:', e);
         return [];
