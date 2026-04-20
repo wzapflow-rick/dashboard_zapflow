@@ -85,10 +85,10 @@ export default function SettingsPage() {
 
         if (compData) {
           setPackagingFeeEnabled(!!compData.cobra_embalagem);
-          setValorEmbalagem(compData.valor_embalagem || 0);
+          setValorEmbalagem(Number(compData.valor_embalagem || 0));
           setAutoRadius(!!compData.raio_entrega_automatico);
-          setValorPorKm(compData.valor_por_km || 0);
-          setTaxaEntregaFixa(compData.taxa_entrega_fixa || 0);
+          setValorPorKm(Number(compData.valor_por_km || 0));
+          setTaxaEntregaFixa(Number(compData.taxa_entrega_fixa || 0));
           setInventoryControlEnabled(!!compData.controle_estoque);
         }
       } catch (err) {
