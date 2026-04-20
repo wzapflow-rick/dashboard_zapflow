@@ -55,6 +55,10 @@ export const GRUPOS_SLOTS_TABLE_ID =
 export const ITENS_BASE_TABLE_ID =
   process.env.NOCODB_TABLE_ITENS_BASE || 'mfcp67skbxq4nt5';
 
+/** Tabela de relação item base <-> insumo */
+export const ITEM_BASE_INSUMO_TABLE_ID =
+  process.env.NOCODB_TABLE_ITEM_BASE_INSUMO || '';
+
 // ============================================================
 // ESTOQUE E INSUMOS
 // ============================================================
