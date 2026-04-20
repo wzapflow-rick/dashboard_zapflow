@@ -38,7 +38,7 @@ export async function getDrivers() {
             sort: '-id',
             limit: 1000,
         });
-        return (data.list || []) as Driver[];
+        return (data.list || []) as unknown as Driver[];
     } catch (error) {
         console.error('Erro ao buscar entregadores:', error);
         return [];
@@ -62,7 +62,7 @@ export async function getAvailableDrivers() {
             (d.ativo === true || d.ativo === 1 || d.ativo === 'true')
         );
 
-        return available as Driver[];
+        return available as unknown as Driver[];
     } catch (error) {
         return [];
     }
