@@ -21,6 +21,13 @@ import {
   RATE_LIMIT,
 } from '@/lib/constants';
 
+interface NecessidadeInsumo {
+    nome: string;
+    total: number;
+    disponivel: number;
+    unidade: string;
+}
+
 // Rate limiting para atualização de status
 const orderUpdateAttempts = new Map<string, { count: number; lastAttempt: number }>();
 
@@ -150,7 +157,6 @@ export async function updateOrderStatus(id: number, status: string, motivo?: str
             }
         }
 
-        // SECURE: Buscar e verificar que o pedido pertence à empresa do usuário
         const orderData = await noco.findById(PEDIDOS_TABLE_ID, id) as any;
 
         if (!orderData || Number(orderData.empresa_id) !== Number(user.empresaId)) {
@@ -400,9 +406,9 @@ export async function verificarEstoqueDoPedido(orderId: number) {
         if (!Array.isArray(itens)) return { hasEnough: true, shortages: [] };
 
         const currentInsumos = await getInsumos();
-        const insumosMap = new Map(currentInsumos.map((i: any) => [i.id, i]));
+        const insumosMap = new Map<number, any>(currentInsumos.map((i: any) => [i.id, i]));
 
-        const necessidades = new Map<number, { nome: string, total: number, disponivel: number, unidade: string }>();
+        const necessidades = new Map<number, NecessidadeInsumo>();
 
         for (const item of itens) {
             const produtoId = item.id;
@@ -419,7 +425,7 @@ export async function verificarEstoqueDoPedido(orderId: number) {
                     nome: insumo.nome,
                     total: 0,
                     disponivel: Number(insumo.quantidade_atual),
-                    unidade: insumo.unidade_medida
+                    unidade: insumo.unidade_medida,
                 };
                 necessidades.set(r.insumo_id, { ...prev, total: prev.total + totalPreciso });
             }
@@ -437,7 +443,7 @@ export async function verificarEstoqueDoPedido(orderId: number) {
                             nome: insumo.nome,
                             total: 0,
                             disponivel: Number(insumo.quantidade_atual),
-                            unidade: insumo.unidade_medida
+                            unidade: insumo.unidade_medida,
                         };
                         necessidades.set(r.insumo_id, { ...prev, total: prev.total + totalPreciso });
                     }
