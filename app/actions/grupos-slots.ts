@@ -360,7 +360,7 @@ export async function getCompositeProductsStock(): Promise<{ grupoId: number; es
             }
 
             results.push({
-                grupoId: grupo.id,
+                grupoId: Number(grupo.id),
                 estoquePossivel: estoqueMinimo === Infinity ? 0 : estoqueMinimo,
             });
         }
