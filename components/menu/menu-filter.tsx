@@ -1,28 +1,36 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
-import { Search, X } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { Search, X, Star, ChevronDown } from 'lucide-react';
 import Image from 'next/image';
 import { useCart } from './cart-context';
 import { toast } from 'sonner';
-import MenuProductSelection from './menu-product-selection';
 import MenuProductSelectionModal from './menu-product-selection-modal';
 import CompositeProductModal from './composite-product-modal';
+
+// ── Tipos ──────────────────────────────────────────────────────────────────────
 
 interface Product {
     id: number;
     nome: string;
     descricao?: string;
     preco: number;
+    preco_original?: number;
     imagem?: string | null;
+    disponivel?: boolean;
+    destaque?: boolean;
     complementGroups?: any[];
     saborGroups?: any[];
     additionalGroups?: any[];
+    _editingData?: any;
 }
 
 interface CategoryGroup {
     id: number;
     name: string;
+    icone?: string | null;
+    cor?: string | null;
+    ordem?: number;
     products: Product[];
 }
 
@@ -40,6 +48,7 @@ interface CompositeProduct {
     minimo: number;
     maximo: number;
     items: any[];
+    _editingData?: any;
 }
 
 interface MenuFilterProps {
@@ -52,34 +61,88 @@ interface MenuFilterProps {
     allGroups?: any[];
 }
 
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
 const fmt = (price: number) => `R$ ${price.toFixed(2).replace('.', ',')}`;
 
+const PLACEHOLDER_IMG = '/images/produto-placeholder.svg';
+
+function getProductImage(product: Product): string {
+    if (product.imagem && product.imagem.startsWith('http')) {
+        return product.imagem;
+    }
+    return PLACEHOLDER_IMG;
+}
+
+// ── Componente: Card de Produto ────────────────────────────────────────────────
+
 function ProductCard({ product, onClick }: { product: Product; onClick: () => void }) {
-    const hasComplements = product.complementGroups && product.complementGroups.length > 0;
-    
+    const hasComplements =
+        (product.complementGroups && product.complementGroups.length > 0) ||
+        (product.saborGroups && product.saborGroups.length > 0) ||
+        (product.additionalGroups && product.additionalGroups.length > 0);
+
+    const hasDiscount = product.preco_original && product.preco_original > product.preco;
+    const imgSrc = getProductImage(product);
+
     return (
-        <div 
+        <div
             onClick={onClick}
-            className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm p-3 flex gap-3 hover:shadow-md transition-all cursor-pointer"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === 'Enter' && onClick()}
+            className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-3 flex gap-3 hover:shadow-md hover:border-violet-200 dark:hover:border-violet-700 transition-all cursor-pointer active:scale-[0.99] group"
         >
-            <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-slate-100 shrink-0">
+            {/* Imagem */}
+            <div className="relative w-[88px] h-[88px] rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-700 shrink-0">
                 <Image
-                    src={product.imagem || `https://picsum.photos/seed/${product.id}/200/200`}
+                    src={imgSrc}
                     alt={product.nome}
                     fill
-                    className="object-cover"
-                    referrerPolicy="no-referrer"
+                    sizes="88px"
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_IMG;
+                    }}
                 />
-            </div>
-            <div className="flex flex-col flex-1 min-w-0">
-                <h3 className="font-bold text-slate-900 dark:text-white text-sm">{product.nome}</h3>
-                {product.descricao && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">{product.descricao}</p>
+                {/* Badge destaque */}
+                {product.destaque && (
+                    <div className="absolute top-1.5 left-1.5 bg-amber-400 text-amber-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow-sm">
+                        <Star className="size-2.5 fill-current" />
+                        Top
+                    </div>
                 )}
-                <div className="mt-auto pt-1 flex items-center justify-between">
-                    <span className="text-base font-black text-violet-600">{fmt(product.preco)}</span>
-                    <span className="text-xs font-bold text-green-600 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-lg">
-                        {hasComplements ? 'Escolher' : 'Adicionar'}
+            </div>
+
+            {/* Conteúdo */}
+            <div className="flex flex-col flex-1 min-w-0 py-0.5">
+                <h3 className="font-bold text-slate-900 dark:text-white text-sm leading-tight line-clamp-2">
+                    {product.nome}
+                </h3>
+                {product.descricao && (
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+                        {product.descricao}
+                    </p>
+                )}
+                <div className="mt-auto pt-2 flex items-end justify-between gap-2">
+                    <div>
+                        {hasDiscount && (
+                            <p className="text-xs text-slate-400 line-through leading-none mb-0.5">
+                                {fmt(product.preco_original!)}
+                            </p>
+                        )}
+                        <span className="text-base font-black text-violet-600 dark:text-violet-400 leading-none">
+                            {fmt(product.preco)}
+                        </span>
+                    </div>
+                    <span
+                        className={`text-xs font-bold px-2.5 py-1.5 rounded-xl shrink-0 transition-colors ${
+                            hasComplements
+                                ? 'text-violet-600 bg-violet-50 dark:bg-violet-900/20 dark:text-violet-400 group-hover:bg-violet-100'
+                                : 'text-green-600 bg-green-50 dark:bg-green-900/20 dark:text-green-400 group-hover:bg-green-100'
+                        }`}
+                    >
+                        {hasComplements ? 'Escolher' : '+ Adicionar'}
                     </span>
                 </div>
             </div>
@@ -87,26 +150,50 @@ function ProductCard({ product, onClick }: { product: Product; onClick: () => vo
     );
 }
 
+// ── Componente: Card de Produto Composto ──────────────────────────────────────
+
 function CompositeCard({ product, onClick }: { product: CompositeProduct; onClick: () => void }) {
-    const prices = product.items.map(i => i.preco).filter(p => p > 0);
+    const prices = product.items.map((i: any) => i.preco).filter((p: number) => p > 0);
     const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
-    
+
+    const saborLabel =
+        product.minimo === product.maximo
+            ? `${product.minimo} sabor${product.minimo > 1 ? 'es' : ''}`
+            : `${product.minimo} a ${product.maximo} sabores`;
+
     return (
-        <div 
+        <div
             onClick={onClick}
-            className="bg-white dark:bg-slate-800 rounded-xl border border-amber-200 dark:border-amber-700 shadow-sm p-3 flex gap-3 hover:shadow-md transition-all cursor-pointer"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === 'Enter' && onClick()}
+            className="bg-white dark:bg-slate-800 rounded-2xl border border-amber-200 dark:border-amber-700/50 shadow-sm p-3 flex gap-3 hover:shadow-md hover:border-amber-300 dark:hover:border-amber-600 transition-all cursor-pointer active:scale-[0.99] group"
         >
-            <div className="relative w-20 h-20 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
-                <span className="text-3xl">🍕</span>
+            {/* Ícone */}
+            <div className="relative w-[88px] h-[88px] rounded-xl bg-gradient-to-br from-amber-50 to-orange-100 dark:from-amber-900/20 dark:to-orange-900/20 flex items-center justify-center shrink-0 border border-amber-100 dark:border-amber-800/30">
+                <span className="text-4xl group-hover:scale-110 transition-transform duration-200">🍕</span>
             </div>
-            <div className="flex flex-col flex-1 min-w-0">
-                <h3 className="font-bold text-slate-900 dark:text-white text-sm">{product.nome}</h3>
-                <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
-                    {product.minimo === product.maximo ? `${product.minimo} sabor` : `${product.minimo} a ${product.maximo} sabores`}
+
+            {/* Conteúdo */}
+            <div className="flex flex-col flex-1 min-w-0 py-0.5">
+                <div className="flex items-start gap-2">
+                    <h3 className="font-bold text-slate-900 dark:text-white text-sm leading-tight flex-1 line-clamp-2">
+                        {product.nome}
+                    </h3>
+                </div>
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 font-medium">
+                    {saborLabel}
                 </p>
-                <div className="mt-auto pt-1 flex items-center justify-between">
-                    <span className="text-base font-black text-amber-600">A partir de {fmt(minPrice)}</span>
-                    <span className="text-xs font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-lg">
+                {product.descricao && (
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
+                        {product.descricao}
+                    </p>
+                )}
+                <div className="mt-auto pt-2 flex items-end justify-between gap-2">
+                    <span className="text-base font-black text-amber-600 dark:text-amber-400 leading-none">
+                        {minPrice > 0 ? `A partir de ${fmt(minPrice)}` : 'Consulte o preço'}
+                    </span>
+                    <span className="text-xs font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-400 px-2.5 py-1.5 rounded-xl shrink-0 group-hover:bg-amber-100 transition-colors">
                         Montar
                     </span>
                 </div>
@@ -115,6 +202,49 @@ function CompositeCard({ product, onClick }: { product: CompositeProduct; onClic
     );
 }
 
+// ── Componente: Chip de Categoria ─────────────────────────────────────────────
+
+function CategoryChip({
+    label,
+    isActive,
+    onClick,
+    imageUrl,
+}: {
+    label: string;
+    isActive: boolean;
+    onClick: () => void;
+    imageUrl?: string | null;
+}) {
+    return (
+        <button
+            onClick={onClick}
+            className={`shrink-0 flex items-center gap-2 px-3 py-2 rounded-full text-sm font-semibold transition-all ${
+                isActive
+                    ? 'bg-violet-500 text-white shadow-md shadow-violet-200 dark:shadow-violet-900/30'
+                    : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+            }`}
+        >
+            {imageUrl && (
+                <div className="relative size-5 rounded-full overflow-hidden shrink-0">
+                    <Image
+                        src={imageUrl}
+                        alt={label}
+                        fill
+                        sizes="20px"
+                        className="object-cover"
+                        onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).style.display = 'none';
+                        }}
+                    />
+                </div>
+            )}
+            {label}
+        </button>
+    );
+}
+
+// ── Componente Principal ───────────────────────────────────────────────────────
+
 export default function MenuFilter({
     grouped,
     compositeProducts,
@@ -122,138 +252,157 @@ export default function MenuFilter({
     whatsappNumber,
     empresaNome,
     allComposites = [],
-    allGroups = []
+    allGroups = [],
 }: MenuFilterProps) {
     const [search, setSearch] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<number | 'all' | 'composites'>('all');
-interface ProductWithEditingData extends Product {
-    _editingData?: any;
-}
-
-interface CompositeProductWithEditingData extends CompositeProduct {
-    _editingData?: any;
-}
-
-const [selectedProduct, setSelectedProduct] = useState<ProductWithEditingData | null>(null);
-const [selectedComposite, setSelectedComposite] = useState<CompositeProductWithEditingData | null>(null);
+    const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+    const [selectedComposite, setSelectedComposite] = useState<CompositeProduct | null>(null);
     const [editingItemId, setEditingItemId] = useState<string | null>(null);
+    const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set());
+
     const { addItem, items } = useCart();
 
-    // Escutar evento de edição do carrinho
+    // ── Escutar evento de edição do carrinho ──────────────────────────────────
     useEffect(() => {
-        const handleEdit = (e: any) => {
+        const handleEdit = (e: CustomEvent) => {
             const { itemId } = e.detail;
-            const item = items.find(i => i.id === itemId);
+            const item = items.find((i) => i.id === itemId);
             if (!item) return;
 
             setEditingItemId(itemId);
 
-             if (item.isComposite) {
-                 const composite = allComposites.find(c => c._grupoId === item.grupoId);
-                 if (composite) {
-                     setSelectedComposite({
-                         ...composite,
-                         _editingData: item
-                     } as CompositeProductWithEditingData);
-                 }
-             } else {
-                 // Encontrar o produto original para ter os grupos
-                 const product = grouped.flatMap(g => g.products).find(p => p.id === item.productId);
-                 if (product) {
-                     setSelectedProduct({
-                         ...product,
-                         _editingData: item
-                     } as ProductWithEditingData);
-                 }
-             }
+            if (item.isComposite) {
+                const composite = allComposites.find((c: any) => c._grupoId === item.grupoId);
+                if (composite) {
+                    setSelectedComposite({ ...composite, _editingData: item });
+                }
+            } else {
+                const product = grouped.flatMap((g) => g.products).find((p) => p.id === item.productId);
+                if (product) {
+                    setSelectedProduct({ ...product, _editingData: item });
+                }
+            }
         };
 
-        window.addEventListener('edit-cart-item', handleEdit);
-        return () => window.removeEventListener('edit-cart-item', handleEdit);
+        window.addEventListener('edit-cart-item', handleEdit as EventListener);
+        return () => window.removeEventListener('edit-cart-item', handleEdit as EventListener);
     }, [items, allComposites, grouped]);
 
+    // ── Chips de categoria com imagem do primeiro produto ─────────────────────
     const categories = useMemo(() => {
-        const cats: { id: number | 'composites'; name: string }[] = [];
-        
+        const cats: { id: number | 'composites'; name: string; imageUrl?: string | null }[] = [];
+
         if (compositeProducts.length > 0) {
-            cats.push({ id: 'composites', name: 'Montar Pedido' });
+            cats.push({ id: 'composites', name: '🍕 Montar' });
         }
-        
-        grouped.forEach((g: CategoryGroup) => {
-            cats.push({ id: g.id, name: g.name });
+
+        grouped.forEach((g) => {
+            // Usa a imagem do primeiro produto da categoria como ícone
+            const firstProductWithImage = g.products.find(
+                (p) => p.imagem && p.imagem.startsWith('http')
+            );
+            cats.push({
+                id: g.id,
+                name: g.name,
+                imageUrl: firstProductWithImage?.imagem ?? null,
+            });
         });
-        
+
         return cats;
     }, [grouped, compositeProducts]);
 
+    // ── Filtro de dados ───────────────────────────────────────────────────────
     const filteredData = useMemo(() => {
         let filteredComposites = compositeProducts;
         let filteredGroups = grouped;
 
-        if (search) {
-            const searchLower = search.toLowerCase();
-            
-            filteredComposites = compositeProducts.filter((p: CompositeProduct) =>
-                p.nome.toLowerCase().includes(searchLower)
+        if (search.trim()) {
+            const q = search.toLowerCase().trim();
+            filteredComposites = compositeProducts.filter((p) =>
+                p.nome.toLowerCase().includes(q) || p.descricao?.toLowerCase().includes(q)
             );
-            
-            filteredGroups = grouped.map((g: CategoryGroup) => ({
-                ...g,
-                products: g.products.filter((p: Product) =>
-                    p.nome.toLowerCase().includes(searchLower) ||
-                    p.descricao?.toLowerCase().includes(searchLower)
-                )
-            })).filter((g: CategoryGroup) => g.products.length > 0);
+            filteredGroups = grouped
+                .map((g) => ({
+                    ...g,
+                    products: g.products.filter(
+                        (p) =>
+                            p.nome.toLowerCase().includes(q) ||
+                            p.descricao?.toLowerCase().includes(q)
+                    ),
+                }))
+                .filter((g) => g.products.length > 0);
         }
 
         if (selectedCategory !== 'all') {
             if (selectedCategory === 'composites') {
                 return { composites: filteredComposites, groups: [] };
             }
-            filteredGroups = filteredGroups.filter((g: CategoryGroup) => g.id === selectedCategory);
+            filteredGroups = filteredGroups.filter((g) => g.id === selectedCategory);
             filteredComposites = [];
         }
 
         return { composites: filteredComposites, groups: filteredGroups };
     }, [grouped, compositeProducts, search, selectedCategory]);
 
-    const hasProducts = filteredData.groups.length > 0 || filteredData.composites.length > 0;
+    const totalResults =
+        filteredData.groups.reduce((acc, g) => acc + g.products.length, 0) +
+        filteredData.composites.length;
 
-    const handleProductClick = (product: any) => {
-        const hasSaborGroups = product.saborGroups && product.saborGroups.length > 0;
-        const hasAdditionalGroups = product.additionalGroups && product.additionalGroups.length > 0;
-        
-        if (hasSaborGroups || hasAdditionalGroups) {
-            setSelectedProduct(product);
-        } else {
-            addItem({
-                productId: product.id,
-                nome: product.nome,
-                preco: Number(product.preco || 0),
-                quantidade: 1,
-                imagem: product.imagem || undefined
-            });
-            toast.success(`${product.nome} adicionado ao carrinho!`);
-        }
-    };
+    const hasResults = totalResults > 0;
 
-    const handleCompositeClick = (composite: CompositeProduct) => {
+    // ── Handlers ──────────────────────────────────────────────────────────────
+    const handleProductClick = useCallback(
+        (product: Product) => {
+            const hasSaborGroups = product.saborGroups && product.saborGroups.length > 0;
+            const hasAdditionalGroups = product.additionalGroups && product.additionalGroups.length > 0;
+
+            if (hasSaborGroups || hasAdditionalGroups) {
+                setSelectedProduct(product);
+            } else {
+                addItem({
+                    productId: product.id,
+                    nome: product.nome,
+                    preco: Number(product.preco || 0),
+                    quantidade: 1,
+                    imagem: product.imagem || undefined,
+                });
+                toast.success(`${product.nome} adicionado!`, { duration: 1500 });
+            }
+        },
+        [addItem]
+    );
+
+    const handleCompositeClick = useCallback((composite: CompositeProduct) => {
         setSelectedComposite(composite);
-    };
+    }, []);
 
-    const closeProductModal = () => {
+    const closeProductModal = useCallback(() => {
         setSelectedProduct(null);
         setEditingItemId(null);
-    };
+    }, []);
 
-    const closeCompositeModal = () => {
+    const closeCompositeModal = useCallback(() => {
         setSelectedComposite(null);
         setEditingItemId(null);
-    };
+    }, []);
 
+    const toggleCategory = useCallback((catId: number) => {
+        setExpandedCategories((prev) => {
+            const next = new Set(prev);
+            if (next.has(catId)) {
+                next.delete(catId);
+            } else {
+                next.add(catId);
+            }
+            return next;
+        });
+    }, []);
+
+    // ── Render ────────────────────────────────────────────────────────────────
     return (
-        <div className="space-y-6">
-            {/* Product Selection Modal */}
+        <div className="space-y-5">
+            {/* Modais */}
             {selectedProduct && (
                 <MenuProductSelectionModal
                     product={selectedProduct}
@@ -264,87 +413,94 @@ const [selectedComposite, setSelectedComposite] = useState<CompositeProductWithE
                     editingItemId={editingItemId || undefined}
                 />
             )}
-
-            {/* Composite Selection Modal */}
             {selectedComposite && (
                 <CompositeProductModal
                     product={selectedComposite}
                     whatsappNumber={whatsappNumber}
                     empresaNome={empresaNome}
                     allComposites={allComposites}
-                    allGroups={allGroups.length > 0 ? allGroups : grouped.flatMap(g => g.products.flatMap(p => [...(p.saborGroups || []), ...(p.additionalGroups || [])]))}
+                    allGroups={
+                        allGroups.length > 0
+                            ? allGroups
+                            : grouped.flatMap((g) =>
+                                  g.products.flatMap((p) => [
+                                      ...(p.saborGroups || []),
+                                      ...(p.additionalGroups || []),
+                                  ])
+                              )
+                    }
                     onClose={closeCompositeModal}
                     editingItemId={editingItemId || undefined}
                 />
             )}
 
-            {/* Search Bar */}
+            {/* Barra de Busca */}
             <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-slate-400" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4.5 text-slate-400 pointer-events-none" />
                 <input
                     type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Buscar produtos..."
-                    className="w-full pl-12 pr-12 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-300 dark:text-white"
+                    placeholder="Buscar no cardápio..."
+                    className="w-full pl-11 pr-10 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent transition-all placeholder:text-slate-400 dark:text-white"
                 />
                 {search && (
                     <button
                         onClick={() => setSearch('')}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                        aria-label="Limpar busca"
                     >
                         <X className="size-4" />
                     </button>
                 )}
             </div>
 
-            {/* Category Filters */}
+            {/* Chips de Categoria */}
             {categories.length > 1 && (
-                <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
-                    <button
+                <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 custom-scrollbar">
+                    <CategoryChip
+                        label="Todos"
+                        isActive={selectedCategory === 'all'}
                         onClick={() => setSelectedCategory('all')}
-                        className={`shrink-0 px-4 py-2 rounded-full text-sm font-bold transition-all ${
-                            selectedCategory === 'all'
-                                ? 'bg-violet-500 text-white'
-                                : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
-                        }`}
-                    >
-                        Todos
-                    </button>
+                    />
                     {categories.map((cat) => (
-                        <button
+                        <CategoryChip
                             key={cat.id}
+                            label={cat.name}
+                            isActive={selectedCategory === cat.id}
                             onClick={() => setSelectedCategory(cat.id)}
-                            className={`shrink-0 px-4 py-2 rounded-full text-sm font-bold transition-all ${
-                                selectedCategory === cat.id
-                                    ? 'bg-violet-500 text-white'
-                                    : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
-                            }`}
-                        >
-                            {cat.name}
-                        </button>
+                            imageUrl={cat.imageUrl}
+                        />
                     ))}
                 </div>
             )}
 
-            {/* Results Count */}
-            {search && (
+            {/* Contador de resultados na busca */}
+            {search.trim() && (
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                    {hasProducts 
-                        ? `${filteredData.groups.reduce((acc, g) => acc + g.products.length, 0) + filteredData.composites.length} produto(s) encontrado(s)`
-                        : 'Nenhum produto encontrado'}
+                    {hasResults ? (
+                        <>
+                            <span className="font-semibold text-slate-700 dark:text-slate-200">{totalResults}</span>{' '}
+                            {totalResults === 1 ? 'resultado' : 'resultados'} para{' '}
+                            <span className="font-semibold text-violet-600">"{search}"</span>
+                        </>
+                    ) : (
+                        <>Nenhum resultado para <span className="font-semibold">"{search}"</span></>
+                    )}
                 </p>
             )}
 
-            {/* Composite Products */}
+            {/* Produtos Compostos */}
             {filteredData.composites.length > 0 && (
                 <section>
-                    <h2 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-                        <span className="h-1 w-6 rounded-full bg-amber-400 inline-block" />
-                        Monte seu Pedido
-                    </h2>
+                    <div className="flex items-center gap-2 mb-3">
+                        <span className="h-1 w-6 rounded-full bg-amber-400 shrink-0" />
+                        <h2 className="text-base font-black text-slate-800 dark:text-white uppercase tracking-wide">
+                            Monte seu Pedido
+                        </h2>
+                    </div>
                     <div className="space-y-3">
-                        {filteredData.composites.map((composite: CompositeProduct) => (
+                        {filteredData.composites.map((composite) => (
                             <CompositeCard
                                 key={composite.id}
                                 product={composite}
@@ -355,30 +511,78 @@ const [selectedComposite, setSelectedComposite] = useState<CompositeProductWithE
                 </section>
             )}
 
-            {/* Products by Category */}
-            {filteredData.groups.map((group: CategoryGroup) => (
-                <section key={group.id}>
-                    <h2 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-                        <span className="h-1 w-6 rounded-full bg-violet-500 inline-block" />
-                        {group.name}
-                    </h2>
-                    <div className="space-y-3">
-                        {group.products.map((product: Product) => (
-                            <ProductCard
-                                key={product.id}
-                                product={product}
-                                onClick={() => handleProductClick(product)}
-                            />
-                        ))}
-                    </div>
-                </section>
-            ))}
+            {/* Produtos por Categoria */}
+            {filteredData.groups.map((group) => {
+                const isExpanded = expandedCategories.has(group.id) || search.trim() !== '';
+                const PREVIEW_COUNT = 4;
+                const showToggle = !search.trim() && group.products.length > PREVIEW_COUNT;
+                const displayedProducts =
+                    showToggle && !isExpanded
+                        ? group.products.slice(0, PREVIEW_COUNT)
+                        : group.products;
 
-            {/* No Results */}
-            {!hasProducts && search && (
-                <div className="text-center py-12">
-                    <Search className="size-12 text-slate-300 mx-auto mb-3" />
-                    <p className="text-slate-500">Nenhum produto encontrado para "{search}"</p>
+                return (
+                    <section key={group.id}>
+                        <div className="flex items-center gap-2 mb-3">
+                            <span className="h-1 w-6 rounded-full bg-violet-500 shrink-0" />
+                            <h2 className="text-base font-black text-slate-800 dark:text-white uppercase tracking-wide flex-1">
+                                {group.name}
+                            </h2>
+                            <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                                {group.products.length} {group.products.length === 1 ? 'item' : 'itens'}
+                            </span>
+                        </div>
+                        <div className="space-y-3">
+                            {displayedProducts.map((product) => (
+                                <ProductCard
+                                    key={product.id}
+                                    product={product}
+                                    onClick={() => handleProductClick(product)}
+                                />
+                            ))}
+                        </div>
+
+                        {/* Botão "Ver mais / Ver menos" */}
+                        {showToggle && (
+                            <button
+                                onClick={() => toggleCategory(group.id)}
+                                className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 text-sm font-semibold text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/10 rounded-xl transition-colors"
+                            >
+                                {isExpanded ? (
+                                    <>
+                                        <ChevronDown className="size-4 rotate-180 transition-transform" />
+                                        Ver menos
+                                    </>
+                                ) : (
+                                    <>
+                                        <ChevronDown className="size-4 transition-transform" />
+                                        Ver mais {group.products.length - PREVIEW_COUNT} itens
+                                    </>
+                                )}
+                            </button>
+                        )}
+                    </section>
+                );
+            })}
+
+            {/* Estado vazio na busca */}
+            {!hasResults && search.trim() && (
+                <div className="text-center py-16">
+                    <div className="size-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
+                        <Search className="size-8 text-slate-300 dark:text-slate-600" />
+                    </div>
+                    <p className="font-semibold text-slate-700 dark:text-white mb-1">
+                        Nenhum resultado
+                    </p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                        Tente buscar por outro nome ou categoria
+                    </p>
+                    <button
+                        onClick={() => setSearch('')}
+                        className="mt-4 text-sm font-semibold text-violet-600 hover:text-violet-700 transition-colors"
+                    >
+                        Limpar busca
+                    </button>
                 </div>
             )}
         </div>

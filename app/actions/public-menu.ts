@@ -7,11 +7,14 @@ import {
     CATEGORIAS_TABLE_ID,
     GRUPOS_SLOTS_TABLE_ID,
     ITENS_BASE_TABLE_ID,
-    PRODUTO_INSUMOS_TABLE_ID,
     LOYALTY_CONFIG_TABLE_ID,
 } from '@/lib/constants';
 
-function toSlug(text: string) {
+// ============================================================
+// HELPERS
+// ============================================================
+
+function toSlug(text: string): string {
     return text
         .toLowerCase()
         .normalize('NFD')
@@ -21,9 +24,9 @@ function toSlug(text: string) {
         .replace(/\s+/g, '-');
 }
 
-function parseJsonArray(value: any): number[] {
+function parseJsonArray(value: unknown): number[] {
     if (!value) return [];
-    if (Array.isArray(value)) return value;
+    if (Array.isArray(value)) return value as number[];
     if (typeof value === 'string') {
         try {
             const parsed = JSON.parse(value);
@@ -35,79 +38,230 @@ function parseJsonArray(value: any): number[] {
     return [];
 }
 
-export async function getPublicMenu(slug: string) {
-    console.log('>>> getPublicMenu START for slug:', slug);
-    try {
-        const empresasData = await noco.list(EMPRESAS_TABLE_ID, { limit: 200 });
-        if (!empresasData?.list) return null;
+// ============================================================
+// TIPOS
+// ============================================================
 
-        const empresa = empresasData.list.find((e: any) => {
-            const slugMatch = (e.slug || '').toLowerCase() === slug.toLowerCase();
-            const ninchoMatch = (e.nincho || '').toLowerCase() === slug.toLowerCase();
-            const nomeMatch = (e.nome_fantasia || '').toLowerCase() === slug.toLowerCase();
-            const slugFromNome = toSlug(e.nome_fantasia || '') === slug.toLowerCase();
-            return slugMatch || ninchoMatch || nomeMatch || slugFromNome;
-        });
+export interface PublicEmpresa {
+    id: number;
+    nome: string;
+    telefone: string | null;
+    nincho: string | null;
+    slug: string | null;
+    cidade: string | null;
+    endereco: string | null;
+    cor_primaria?: string | null;
+}
+
+export interface PublicProduct {
+    id: number;
+    nome: string;
+    descricao?: string;
+    preco: number;
+    preco_original?: number;
+    imagem?: string | null;
+    disponivel: boolean;
+    destaque: boolean;
+    ordem: number;
+    saborGroups: PublicGroup[];
+    additionalGroups: PublicGroup[];
+    complementGroups: PublicGroup[];
+}
+
+export interface PublicGroup {
+    id: number;
+    nome: string;
+    tipo: string;
+    minimo: number;
+    maximo: number;
+    obrigatorio: boolean;
+    tipo_calculo: string;
+    cobrar_mais_caro: boolean;
+    total_slots: number;
+    preco_fixo: number;
+    completamentos_ids: number[];
+    items: PublicGroupItem[];
+}
+
+export interface PublicGroupItem {
+    id: number;
+    nome: string;
+    preco: number;
+    fator_proporcao: number;
+}
+
+export interface PublicCategory {
+    id: number;
+    name: string;
+    icone?: string | null;
+    cor?: string | null;
+    ordem: number;
+    products: PublicProduct[];
+}
+
+export interface PublicCompositeProduct {
+    id: string;
+    _grupoId: number;
+    _isComposite: true;
+    _tipo: string;
+    nome: string;
+    descricao: string;
+    imagem: string;
+    tipo_calculo: string;
+    cobrar_mais_caro: boolean;
+    minimo: number;
+    maximo: number;
+    preco_fixo: number;
+    completamentos_ids: number[];
+    items: PublicGroupItem[];
+}
+
+export interface PublicMenuData {
+    empresa: PublicEmpresa;
+    grouped: PublicCategory[];
+    compositeProducts: PublicCompositeProduct[];
+    upsellProducts: PublicProduct[];
+    loyaltyConfig: {
+        empresa_id: number;
+        pontos_por_real: number;
+        valor_ponto: number;
+        pontos_para_desconto: number;
+        desconto_tipo: string;
+        desconto_valor: number;
+        ativo: boolean;
+    };
+    allGroups: PublicGroup[];
+}
+
+// ============================================================
+// FUNÇÃO PRINCIPAL
+// ============================================================
+
+/**
+ * Busca todos os dados necessários para renderizar o cardápio público de uma empresa.
+ *
+ * Estratégia de busca da empresa:
+ * 1. Tenta buscar pelo campo `login` (usado como slug único)
+ * 2. Tenta buscar pelo campo `nome_fantasia` (match exato)
+ * 3. Tenta buscar pelo campo `nincho`
+ * 4. Tenta match de slug gerado a partir do `nome_fantasia`
+ *
+ * Performance: todas as queries paralelas após encontrar a empresa.
+ */
+export async function getPublicMenu(slug: string): Promise<PublicMenuData | null> {
+    try {
+        // ── 1. Buscar empresa de forma eficiente ──────────────────────────────
+        // Tenta primeiro pelo login (campo único), depois por nome_fantasia
+        const [byLogin, byNome, byNincho] = await Promise.all([
+            noco.findOne(EMPRESAS_TABLE_ID, {
+                where: `(login,eq,${slug})`,
+            }),
+            noco.findOne(EMPRESAS_TABLE_ID, {
+                where: `(nome_fantasia,eq,${slug})`,
+            }),
+            noco.findOne(EMPRESAS_TABLE_ID, {
+                where: `(nincho,eq,${slug})`,
+            }),
+        ]);
+
+        let empresa: Record<string, unknown> | null = byLogin ?? byNome ?? byNincho ?? null;
+
+        // Se não encontrou por match exato, busca por slug gerado do nome_fantasia
+        if (!empresa) {
+            const allEmpresas = await noco.list(EMPRESAS_TABLE_ID, {
+                limit: 500,
+                fields: 'id,nome_fantasia,email,telefone_loja,nincho,cidade,endereco,controle_estoque,ativo,login',
+            });
+            empresa = (allEmpresas.list as Record<string, unknown>[]).find((e) => {
+                return toSlug(String(e.nome_fantasia || '')) === slug.toLowerCase();
+            }) ?? null;
+        }
 
         if (!empresa) return null;
 
-        const controleEstoque = empresa.controle_estoque === true || empresa.controle_estoque === 1 || empresa.controle_estoque === '1';
+        const empresaId = empresa.id as number;
+        const controleEstoque =
+            empresa.controle_estoque === true ||
+            empresa.controle_estoque === 1 ||
+            empresa.controle_estoque === '1';
 
-        const [productsData, categoriesData, gruposSlotsData, itensBaseData, itemBaseInsumosData] = await Promise.all([
-            noco.list(PRODUTOS_TABLE_ID, { where: `(empresa_id,eq,${empresa.id})`, limit: 500 }),
-            noco.list(CATEGORIAS_TABLE_ID, { where: `(empresa_id,eq,${empresa.id})`, limit: 100 }),
-            noco.list(GRUPOS_SLOTS_TABLE_ID, { limit: 1000 }),
-            noco.list(ITENS_BASE_TABLE_ID, { limit: 2000 }),
-            noco.list(PRODUTO_INSUMOS_TABLE_ID, { where: `(empresa_id,eq,${empresa.id})`, limit: 5000 }),
+        // ── 2. Buscar todos os dados em paralelo (filtrados por empresa_id) ──
+        const [
+            productsData,
+            categoriesData,
+            gruposSlotsData,
+            itensBaseData,
+            loyaltyData,
+        ] = await Promise.all([
+            noco.list(PRODUTOS_TABLE_ID, {
+                where: `(empresa_id,eq,${empresaId})~and(disponivel,eq,true)`,
+                sort: 'ordem',
+                limit: 500,
+            }),
+            noco.list(CATEGORIAS_TABLE_ID, {
+                where: `(empresa_id,eq,${empresaId})~and(disponivel,eq,true)`,
+                sort: 'ordem',
+                limit: 100,
+            }),
+            noco.list(GRUPOS_SLOTS_TABLE_ID, {
+                where: `(empresa_id,eq,${empresaId})`,
+                limit: 500,
+            }),
+            noco.list(ITENS_BASE_TABLE_ID, {
+                where: `(empresa_id,eq,${empresaId})`,
+                limit: 1000,
+            }),
+            noco.list(LOYALTY_CONFIG_TABLE_ID, {
+                where: `(empresa_id,eq,${empresaId})`,
+                limit: 1,
+            }),
         ]);
 
+        // ── 3. Processar produtos ─────────────────────────────────────────────
+        const rawProducts = productsData.list as Record<string, unknown>[];
+
+        // Filtrar por estoque se necessário (já filtramos disponivel=true na query)
         const products = controleEstoque
-            ? (productsData?.list || []).filter((p: any) => p.disponivel !== false)
-            : productsData?.list || [];
+            ? rawProducts.filter((p) => {
+                  const controlaProd = p.controla_estoque === true || p.controla_estoque === 1;
+                  if (!controlaProd) return true;
+                  return Number(p.quantidade_estoque ?? 0) > 0;
+              })
+            : rawProducts;
 
-        if (products.length > 0) {
-            console.log('[DEBUG] Estrutura bruta do primeiro produto:', JSON.stringify(products[0], null, 2));
-        }
+        // ── 4. Processar grupos/slots ─────────────────────────────────────────
+        const gruposSlots = (gruposSlotsData.list as Record<string, unknown>[]).map((g) => ({
+            id: g.id as number,
+            nome: g.nome as string,
+            descricao: g.descricao as string | undefined,
+            tipo: (g.tipo as string) || 'fracionado',
+            qtd_slots: Number(g.qtd_slots ?? 2),
+            regra_preco: (g.regra_preco as string) || 'mais_caro',
+            min_slots: Number(g.min_slots ?? 1),
+            max_slots: Number(g.max_slots ?? 2),
+            itens: parseJsonArray(g.itens),
+            modo_preco: (g.modo_preco as string) || 'por_item',
+            preco_fixo: Number(g.preco_fixo ?? 0),
+            completamentos_ids: parseJsonArray(g.completamentos_ids),
+        }));
 
-        const categories = categoriesData?.list || [];
-
-        const gruposSlots = (gruposSlotsData?.list || [])
-            .map((g: any) => ({
-                id: g.id,
-                nome: g.nome,
-                descricao: g.descricao,
-                tipo: g.tipo || 'fracionado',
-                qtd_slots: Number(g.qtd_slots || 2),
-                regra_preco: g.regra_preco || 'mais_caro',
-                min_slots: Number(g.min_slots || 1),
-                max_slots: Number(g.max_slots || 2),
-                itens: parseJsonArray(g.itens),
-                modo_preco: g.modo_preco || 'por_item',
-                preco_fixo: Number(g.preco_fixo || 0),
-                completamentos_ids: parseJsonArray(g.completamentos_ids),
-            }));
-
-        const itensBaseMap = new Map<number, any>();
-        (itensBaseData?.list || []).forEach((item: any) => {
-            itensBaseMap.set(item.id, {
-                id: item.id,
-                nome: item.nome,
-                preco_sugerido: Number(item.preco_sugerido || 0),
-                preco_custo: Number(item.preco_custo || 0),
+        // ── 5. Mapear itens base ──────────────────────────────────────────────
+        const itensBaseMap = new Map<number, PublicGroupItem>();
+        (itensBaseData.list as Record<string, unknown>[]).forEach((item) => {
+            itensBaseMap.set(item.id as number, {
+                id: item.id as number,
+                nome: item.nome as string,
+                preco: Number(item.preco_sugerido ?? 0),
+                fator_proporcao: 1,
             });
         });
 
-        const gruposMap = new Map<number, any>();
-        gruposSlots.forEach((g: any) => {
+        // ── 6. Montar mapa de grupos ──────────────────────────────────────────
+        const gruposMap = new Map<number, PublicGroup>();
+        gruposSlots.forEach((g) => {
             const groupItems = g.itens
                 .map((itemId: number) => itensBaseMap.get(itemId))
-                .filter(Boolean)
-                .map((item: any) => ({
-                    id: item.id,
-                    nome: item.nome,
-                    preco: item.preco_sugerido,
-                    fator_proporcao: 1,
-                }));
+                .filter(Boolean) as PublicGroupItem[];
 
             gruposMap.set(g.id, {
                 id: g.id,
@@ -116,78 +270,124 @@ export async function getPublicMenu(slug: string) {
                 minimo: g.min_slots,
                 maximo: g.max_slots,
                 obrigatorio: false,
-                tipo_calculo: g.modo_preco === 'fixo' ? 'fixo' : (g.regra_preco === 'mais_caro' ? 'maior_valor' : g.regra_preco),
+                tipo_calculo:
+                    g.modo_preco === 'fixo'
+                        ? 'fixo'
+                        : g.regra_preco === 'mais_caro'
+                          ? 'maior_valor'
+                          : g.regra_preco,
                 cobrar_mais_caro: g.regra_preco === 'mais_caro',
                 total_slots: g.qtd_slots,
                 preco_fixo: g.modo_preco === 'fixo' ? g.preco_fixo : 0,
-                completamentos_ids: g.completamentos_ids || [],
+                completamentos_ids: g.completamentos_ids,
                 items: groupItems,
             });
         });
 
-        const productsWithGroups = products.map((p: any) => {
-            const gruposVinculados = parseJsonArray(p.grupos);
-            console.log(`[DEBUG] Produto: ${p.nome}, Grupos Vinculados:`, gruposVinculados);
+        // ── 7. Associar grupos aos produtos ──────────────────────────────────────────
+        // Nota: o campo 'grupos' pode não existir na tabela de produtos ainda.
+        // Quando existir, será um array JSON com IDs dos grupos vinculados.
+        const productsWithGroups: PublicProduct[] = products.map((p) => {
+            // Suporta campo 'grupos' (JSON array) ou 'grupos_ids' ou similar
+            const gruposRaw = p.grupos ?? p.grupos_ids ?? p.grupo_ids ?? null;
+            const gruposVinculados = parseJsonArray(gruposRaw);
 
-            const saborGroups: any[] = [];
-            const additionalGroups: any[] = [];
+            const saborGroups: PublicGroup[] = [];
+            const additionalGroups: PublicGroup[] = [];
 
             gruposVinculados.forEach((grupoId: number) => {
                 const g = gruposMap.get(grupoId);
-                if (g) {
-                    if (g.tipo === 'fracionado') {
-                        saborGroups.push(g);
-                    } else {
-                        if (!additionalGroups.find(ag => ag.id === g.id)) {
-                            additionalGroups.push(g);
-                        }
-                    }
+                if (!g) return;
 
-                    if (g.completamentos_ids && g.completamentos_ids.length > 0) {
-                        g.completamentos_ids.forEach((compId: number) => {
-                            const compGroup = gruposMap.get(compId);
-                            if (compGroup && !additionalGroups.find(ag => ag.id === compGroup.id)) {
-                                additionalGroups.push(compGroup);
-                            }
-                        });
-                    }
+                if (g.tipo === 'fracionado') {
+                    saborGroups.push(g);
                 } else {
-                    console.log(`[DEBUG] Grupo ID ${grupoId} não encontrado no gruposMap`);
+                    if (!additionalGroups.find((ag) => ag.id === g.id)) {
+                        additionalGroups.push(g);
+                    }
                 }
+
+                // Adicionar grupos de completamentos vinculados
+                g.completamentos_ids.forEach((compId: number) => {
+                    const compGroup = gruposMap.get(compId);
+                    if (compGroup && !additionalGroups.find((ag) => ag.id === compGroup.id)) {
+                        additionalGroups.push(compGroup);
+                    }
+                });
             });
 
+            // Normalizar imagem: preferir imagem_url, depois imagem, depois null
+            const imagemRaw = (p.imagem_url || p.imagem) as string | null | undefined;
+            const imagem =
+                imagemRaw && imagemRaw.startsWith('http') ? imagemRaw : null;
+
             return {
-                ...p,
-                id: p.id,
+                id: p.id as number,
+                nome: p.nome as string,
+                descricao: p.descricao as string | undefined,
+                preco: Number(p.preco ?? 0),
+                preco_original: p.preco_original ? Number(p.preco_original) : undefined,
+                imagem,
+                disponivel: p.disponivel !== false,
+                destaque: p.destaque === true || p.destaque === 1,
+                ordem: Number(p.ordem ?? 0),
                 saborGroups,
                 additionalGroups,
-                complementGroups: [...saborGroups, ...additionalGroups]
+                complementGroups: [...saborGroups, ...additionalGroups],
             };
         });
 
-        const grouped = categories
-            .map((cat: any) => ({
-                id: cat.id,
-                name: cat.nome,
-                products: productsWithGroups.filter((p: any) => String(p.categoria_id) === String(cat.id)),
-            }))
-            .filter((g: any) => g.products.length > 0);
+        // ── 8. Agrupar por categoria ──────────────────────────────────────────
+        const categories = categoriesData.list as Record<string, unknown>[];
 
-        const uncategorized = productsWithGroups.filter(
-            (p: any) => !categories.find((c: any) => String(c.id) === String(p.categoria_id))
+        const groupedFinal: PublicCategory[] = categories
+            .map((cat) => ({
+                id: cat.id as number,
+                name: cat.nome as string,
+                icone: cat.icone as string | null,
+                cor: cat.cor as string | null,
+                ordem: Number(cat.ordem ?? 0),
+                products: productsWithGroups.filter(
+                    (p) => {
+                        const raw = products.find((r) => r.id === p.id) as Record<string, unknown>;
+                        // O campo pode ser 'categorias' ou 'categoria_id' dependendo da versão
+                        const catId = raw?.categorias ?? raw?.categoria_id ?? '';
+                        return String(catId) === String(cat.id);
+                    }
+                ),
+            }))
+            .filter((g) => g.products.length > 0);
+
+        // Produtos sem categoria
+        const categorizedIds = new Set(
+            products
+                .filter((p) => {
+                    const catId = (p.categorias ?? p.categoria_id) as unknown;
+                    return categories.find((c) => String(c.id) === String(catId));
+                })
+                .map((p) => p.id as number)
         );
+        const uncategorized = productsWithGroups.filter((p) => !categorizedIds.has(p.id));
         if (uncategorized.length > 0) {
-            grouped.push({ id: 0, name: 'Outros', products: uncategorized });
+            groupedFinal.push({
+                id: 0,
+                name: 'Outros',
+                icone: null,
+                cor: null,
+                ordem: 9999,
+                products: uncategorized,
+            });
         }
 
-        const compositeProducts = gruposSlots
-            .filter((g: any) => g.tipo === 'fracionado' && g.itens && g.itens.length > 0)
-            .map((g: any) => {
-                const groupData = gruposMap.get(g.id);
+        // ── 9. Produtos compostos ─────────────────────────────────────────────
+        const compositeProducts: PublicCompositeProduct[] = gruposSlots
+            .filter((g) => g.tipo === 'fracionado' && g.itens.length > 0)
+            .map((g) => {
+                const groupData = gruposMap.get(g.id)!;
                 return {
                     id: `composite-${g.id}`,
                     _grupoId: g.id,
-                    _isComposite: true,
+                    _isComposite: true as const,
                     _tipo: g.tipo,
                     nome: g.nome,
                     descricao: g.descricao || '',
@@ -202,40 +402,50 @@ export async function getPublicMenu(slug: string) {
                 };
             });
 
-        const loyaltyData = await noco.list(LOYALTY_CONFIG_TABLE_ID, {
-            where: `(empresa_id,eq,${empresa.id})`,
-        });
-        const loyaltyConfig = loyaltyData?.list?.[0] || {
-            empresa_id: empresa.id,
+        // ── 10. Configuração de fidelidade ────────────────────────────────────
+        const loyaltyConfig = (loyaltyData.list[0] as Record<string, unknown>) ?? {
+            empresa_id: empresaId,
             pontos_por_real: 1,
-            valor_ponto: 0.10,
+            valor_ponto: 0.1,
             pontos_para_desconto: 100,
             desconto_tipo: 'valor_fixo',
             desconto_valor: 10,
             ativo: false,
         };
 
-        const upsellProducts = productsWithGroups.filter((p: any) => {
-            const nome = (p.nome || '').toLowerCase();
-            return nome.includes('coca') || nome.includes('suco') || nome.includes('agua') || nome.includes('sobremesa');
-        }).slice(0, 4);
+        // ── 11. Produtos em destaque (upsell) ─────────────────────────────────
+        // Usa o campo `destaque` do banco. Se não houver, pega os 4 primeiros.
+        const upsellProducts = productsWithGroups
+            .filter((p) => p.destaque)
+            .slice(0, 4);
 
+        // ── 12. Retornar dados estruturados ───────────────────────────────────
         return {
             empresa: {
-                id: empresa.id,
-                nome: empresa.nome_fantasia,
-                telefone: empresa.telefone,
-                nincho: empresa.nincho,
-                slug: empresa.slug,
+                id: empresaId,
+                nome: (empresa.nome_fantasia as string) || '',
+                telefone: (empresa.telefone_loja as string) || null,
+                nincho: (empresa.nincho as string) || null,
+                slug: (empresa.login as string) || null,
+                cidade: (empresa.cidade as string) || null,
+                endereco: (empresa.endereco as string) || null,
             },
-            grouped,
+            grouped: groupedFinal,
             compositeProducts,
             upsellProducts,
-            loyaltyConfig,
+            loyaltyConfig: {
+                empresa_id: loyaltyConfig.empresa_id as number,
+                pontos_por_real: Number(loyaltyConfig.pontos_por_real ?? 1),
+                valor_ponto: Number(loyaltyConfig.valor_ponto ?? 0.1),
+                pontos_para_desconto: Number(loyaltyConfig.pontos_para_desconto ?? 100),
+                desconto_tipo: (loyaltyConfig.desconto_tipo as string) || 'valor_fixo',
+                desconto_valor: Number(loyaltyConfig.desconto_valor ?? 10),
+                ativo: loyaltyConfig.ativo === true || loyaltyConfig.ativo === 1,
+            },
             allGroups: Array.from(gruposMap.values()),
         };
     } catch (error) {
-        console.error('>>> getPublicMenu ERROR:', error);
+        console.error('[getPublicMenu] Erro ao carregar cardápio:', error);
         return null;
     }
 }
