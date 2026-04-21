@@ -109,7 +109,7 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
 
             if (customer) {
                 setIsExistingCustomer(true);
-                setClienteNome(customer.nome || '');
+                setClienteNome(String(customer.nome || ''));
                 hasOpenedRegisterModalRef.current = false;
                 // Preencher outros dados se disponíveis
                 // Não vamos preencher endereço aqui, pois não temos campos no modal
