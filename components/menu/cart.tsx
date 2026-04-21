@@ -578,17 +578,17 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
     setCheckingCustomer(true);
     try {
       // Chamar server action para verificar cliente
-      const { checkCustomerByPhone } = await import('@/app/actions/public-orders');
+const { checkCustomerByPhone } = await import('@/app/actions/public-orders');
       const customer = await checkCustomerByPhone(empresaId || 0, cleanPhone);
 
       if (customer) {
         setIsExistingCustomer(true);
         setCustomerData(prev => ({
           ...prev,
-          nome: customer.nome || '',
-          endereco: customer.endereco || '',
-          bairro: customer.bairro_entrega || '',
-          cidade: customer.cidade || '',
+          nome: String(customer.nome || ''),
+          endereco: String(customer.endereco || ''),
+          bairro: String(customer.bairro_entrega || ''),
+          cidade: String(customer.cidade || ''),
         }));
       } else {
         setIsExistingCustomer(false);
@@ -601,7 +601,6 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
     } finally {
       setCheckingCustomer(false);
     }
-  };
 
   // Validação baseada no step atual
   const isCustomerValid = !phoneChecked
