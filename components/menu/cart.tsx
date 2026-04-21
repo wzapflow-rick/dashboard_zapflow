@@ -601,6 +601,7 @@ const { checkCustomerByPhone } = await import('@/app/actions/public-orders');
     } finally {
       setCheckingCustomer(false);
     }
+    };
 
   // Validação baseada no step atual
   const isCustomerValid = !phoneChecked
