@@ -153,7 +153,8 @@ export default function ProductFormModal({
             // vamos anexar os tamanhos ao final da descrição de forma oculta para persistência garantida.
             const currentDesc = formData.get('descricao') as string || '';
             const cleanDesc = currentDesc.split('[[SIZES:')[0].trim();
-            formData.set('descricao', `${cleanDesc}\n\n[[SIZES:${sizesJson}]]`);
+            const newDesc = cleanDesc ? `${cleanDesc}\n\n[[SIZES:${sizesJson}]]` : `[[SIZES:${sizesJson}]]`;
+            formData.set('descricao', newDesc);
         }
 
         try {

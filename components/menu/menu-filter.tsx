@@ -125,7 +125,7 @@ function ProductCard({ product, onClick }: { product: Product; onClick: () => vo
                 </h3>
                 {product.descricao && (
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed">
-                        {product.descricao}
+                        {product.descricao.split('[[SIZES:')[0].trim()}
                     </p>
                 )}
                 <div className="mt-auto pt-2 flex items-end justify-between gap-2">

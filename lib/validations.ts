@@ -64,7 +64,7 @@ export const ProductSchema = z.object({
     preco: z.coerce.number().min(0, 'Preço não pode ser negativo').default(0),
     categoria_id: z.any().optional().nullable(),
     categorias: z.any().optional().nullable(),
-    descricao: z.string().optional().transform(val => val ? sanitizeString(val) : val),
+    descricao: z.string().optional(),
     disponivel: z.boolean().default(true),
     imagem_url: z.string().url().optional().or(z.literal('')).optional(),
     imagem: z.string().optional().or(z.literal('')),
