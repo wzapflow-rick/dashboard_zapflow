@@ -30,7 +30,7 @@ import { TimeInput } from '@/components/ui/time-input';
 
 import { getMe } from '@/app/actions/auth';
 import { getCompanyDetails, updateCompany } from '@/app/actions/company';
-import { getDeliveryRates, upsertDeliveryRate, deleteDeliveryRate } from '@/app/actions/delivery';
+import { getDeliveryRates, upsertDeliveryRate, deleteDeliveryRate, saveDeliveryRatesBatch } from '@/app/actions/delivery';
 import { changePassword } from '@/app/actions/security';
 import { getHorariosFuncionamento, saveHorariosFuncionamento, HorarioItem } from '@/app/actions/horarios';
 import { toast } from 'sonner';
@@ -124,8 +124,8 @@ export default function SettingsPage() {
       }
 
       if (activeSection === 'delivery') {
-        // Salva todos os bairros em paralelo para ser mais rápido e estável
-        await Promise.all(neighborhoods.map(n => upsertDeliveryRate(n)));
+        // Salva todos os bairros em uma única chamada de lote para evitar erros de Server Component
+        await saveDeliveryRatesBatch(neighborhoods);
         
         const form = document.getElementById('delivery-form') as HTMLFormElement;
         const deliveryData = form ? Object.fromEntries(new FormData(form)) : {};

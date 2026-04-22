@@ -255,3 +255,30 @@ export async function geocodeAddress(endereco: string, cidade?: string, estado?:
         return null;
     }
 }
+
+export async function saveDeliveryRatesBatch(rates: any[]) {
+    try {
+        const user = await getMe();
+        if (!user?.empresaId) throw new Error('Não autorizado');
+
+        const results = [];
+        for (const data of rates) {
+            if (data.id) {
+                const { id, empresa_id, empresas, ...updatePayload } = data;
+                results.push(await noco.update(TAXAS_ENTREGA_TABLE_ID, { id, ...updatePayload }));
+            } else {
+                const { empresa_id, id, ...insertData } = data;
+                results.push(await noco.create(TAXAS_ENTREGA_TABLE_ID, {
+                    ...insertData,
+                    empresa_id: user.empresaId
+                }));
+            }
+        }
+
+        revalidatePath('/dashboard/settings');
+        return { success: true, results };
+    } catch (error: any) {
+        console.error('API Error (saveDeliveryRatesBatch):', error);
+        throw new Error(error.message || 'Failed to save delivery rates batch');
+    }
+}
