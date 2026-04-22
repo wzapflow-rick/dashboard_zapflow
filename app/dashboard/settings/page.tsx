@@ -38,9 +38,13 @@ import CouponsManagement from '@/components/management/coupons-management';
 import LoyaltyManagement from '@/components/management/loyalty-management';
 import DriversManagement from '@/components/management/drivers-management';
 import DeliveryHistory from '@/components/delivery/delivery-history';
+import MercadoPagoConnection from '@/components/management/mercadopago-connection';
+import { CreditCard as PaymentIcon } from 'lucide-react';
+
 const sections = [
   { id: 'general', name: 'Geral', icon: Store },
   { id: 'hours', name: 'Horários', icon: Clock },
+  { id: 'payments', name: 'Pagamentos', icon: PaymentIcon },
   { id: 'delivery', name: 'Entrega', icon: MapPin },
   { id: 'drivers', name: 'Entregadores', icon: Truck },
   { id: 'deliveryHistory', name: 'Histórico', icon: Package },
@@ -521,6 +525,10 @@ export default function SettingsPage() {
                     )}
                   </div>
                 </div>
+              )}
+
+              {activeSection === 'payments' && (
+                <MercadoPagoConnection />
               )}
 
               {activeSection === 'generalRules' && (

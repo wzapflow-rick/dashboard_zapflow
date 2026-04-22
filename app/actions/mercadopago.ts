@@ -239,3 +239,77 @@ export async function getPaymentStatus(paymentId: number): Promise<{
         return { success: false, error: error.message };
     }
 }
+
+/**
+ * Gera a URL de autorização do Mercado Pago para o lojista
+ */
+export async function getMPAuthorizationUrl() {
+    const { getMe } = await import('./auth');
+    const me = await getMe();
+    
+    if (!me || !me.empresaId) {
+        throw new Error('Não autorizado');
+    }
+
+    const clientId = process.env.MP_CLIENT_ID;
+    if (!clientId) {
+        throw new Error('MP_CLIENT_ID não configurado no servidor');
+    }
+
+    // Em produção, a Vercel fornece a URL base
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://zap-order-sooty.vercel.app';
+    const redirectUri = encodeURIComponent(`${baseUrl}/api/auth/mercadopago/callback`);
+    
+    // O 'state' pode ser usado para passar o empresaId e validar no retorno
+    const state = me.empresaId;
+
+    return `https://auth.mercadopago.com/authorization?client_id=${clientId}&response_type=code&platform_id=mp&state=${state}&redirect_uri=${redirectUri}`;
+}
+
+/**
+ * Verifica se a empresa atual tem o Mercado Pago conectado
+ */
+export async function getMPConnectionStatus() {
+    const { getMe } = await import('./auth');
+    const me = await getMe();
+    
+    if (!me || !me.empresaId) return { connected: false };
+
+    try {
+        const config = await noco.findOne(PAGAMENTOS_CONFIG_TABLE_ID, {
+            where: `(empresa_id,eq,${me.empresaId})`,
+        }) as any;
+
+        return { 
+            connected: !!config,
+            userId: config?.mp_user_id || null,
+            publicKey: config?.mp_public_key || null
+        };
+    } catch (error) {
+        return { connected: false };
+    }
+}
+
+/**
+ * Remove a conexão do Mercado Pago da empresa
+ */
+export async function disconnectMP() {
+    const { getMe } = await import('./auth');
+    const me = await getMe();
+    
+    if (!me || !me.empresaId) throw new Error('Não autorizado');
+
+    try {
+        const config = await noco.findOne(PAGAMENTOS_CONFIG_TABLE_ID, {
+            where: `(empresa_id,eq,${me.empresaId})`,
+        }) as any;
+
+        if (config) {
+            await noco.delete(PAGAMENTOS_CONFIG_TABLE_ID, config.id || config.Id);
+        }
+
+        return { success: true };
+    } catch (error) {
+        throw new Error('Erro ao desconectar Mercado Pago');
+    }
+}
