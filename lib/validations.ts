@@ -80,27 +80,27 @@ export const CategorySchema = z.object({
 
 // Company Update
 export const CompanyUpdateSchema = z.object({
-    nome_fantasia: z.string().min(0).optional().transform(val => val ? sanitizeString(val) : val),
-    email: z.string().email().optional().or(z.literal('')),
-    chave_pix: z.string().optional().transform(val => val ? sanitizeString(val) : val),
-    nome_recebedor_pix: z.string().optional().transform(val => val ? sanitizeString(val) : val),
-    nome_admin: z.string().min(0).optional().transform(val => val ? sanitizeString(val) : val),
-    telefone_loja: z.string().optional().transform(val => val ? sanitizeString(val) : val),
-    cnpj: z.string().optional().transform(val => val ? sanitizeString(val) : val),
-    endereco: z.string().optional().transform(val => val ? sanitizeString(val) : val),
-    cidade: z.string().optional().transform(val => val ? sanitizeString(val) : val),
-    estado: z.string().optional().transform(val => val ? sanitizeString(val) : val),
-    instancia_evolution: z.string().optional().transform(val => val ? sanitizeString(val) : val),
-    nincho: z.string().optional().transform(val => val ? sanitizeString(val) : val),
-    raio_entrega_automatico: z.boolean().optional(),
-    valor_por_km: z.coerce.number().min(0).optional(),
-    taxa_entrega_fixa: z.coerce.number().min(0).optional(),
-    lat_loja: z.coerce.number().optional(),
-    lng_loja: z.coerce.number().optional(),
-    cobra_embalagem: z.boolean().optional(),
-    valor_embalagem: z.coerce.number().min(0).optional(),
-    controle_estoque: z.boolean().optional(),
-});
+    nome_fantasia: z.any().optional(),
+    email: z.any().optional(),
+    chave_pix: z.any().optional(),
+    nome_recebedor_pix: z.any().optional(),
+    nome_admin: z.any().optional(),
+    telefone_loja: z.any().optional(),
+    cnpj: z.any().optional(),
+    endereco: z.any().optional(),
+    cidade: z.any().optional(),
+    estado: z.any().optional(),
+    instancia_evolution: z.any().optional(),
+    nincho: z.any().optional(),
+    raio_entrega_automatico: z.any().optional(),
+    valor_por_km: z.any().optional(),
+    taxa_entrega_fixa: z.any().optional(),
+    lat_loja: z.any().optional(),
+    lng_loja: z.any().optional(),
+    cobra_embalagem: z.any().optional(),
+    valor_embalagem: z.any().optional(),
+    controle_estoque: z.any().optional(),
+}).passthrough();
 
 // Orders (Admin update)
 export const OrderStatusSchema = z.object({

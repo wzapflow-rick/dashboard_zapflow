@@ -149,9 +149,7 @@ export default function SettingsPage() {
           valor_embalagem: valorEmbalagem,
           controle_estoque: inventoryControlEnabled
         });
-        // Força reload para que o sidebar re-leia a sessão atualizada
-        toast.success('Configurações salvas! Recarregando...');
-        setTimeout(() => { window.location.reload(); }, 1000);
+        toast.success('Regras gerais atualizadas com sucesso!');
         return;
       }
 
