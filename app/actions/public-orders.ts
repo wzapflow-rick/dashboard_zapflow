@@ -135,6 +135,11 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
         const itensFormatados = data.itens.map((item: any) => {
             let produtoNome = item.nome;
 
+            // Se o tamanho já não estiver no nome (fallback de segurança), adiciona
+            if (item.tamanho && !produtoNome.includes(item.tamanho)) {
+                produtoNome += ` - ${item.tamanho}`;
+            }
+
             if (item.complementos && item.complementos.length > 0) {
                 const complementosStr = item.complementos
                     .map((c: any) => c.items.map((i: any) => i.nome).join(', '))

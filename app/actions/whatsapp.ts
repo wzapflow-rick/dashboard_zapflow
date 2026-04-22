@@ -68,7 +68,7 @@ function formatItensForWhatsApp(itens: any[]): string {
         const nome = item.nome || item.produto || 'Produto';
         const qtd = item.quantidade || 1;
         const preco = Number(item.preco || 0);
-        const obs = item.observacoes ? ` (${item.observacoes})` : '';
+        const obs = (item.observacao || item.observacoes) ? ` (${item.observacao || item.observacoes})` : '';
         return `• ${nome} x${qtd}${obs} - R$ ${preco.toFixed(2).replace('.', ',')}`;
     }).join('\n');
 }

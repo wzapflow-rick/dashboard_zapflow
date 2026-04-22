@@ -64,13 +64,25 @@ export default function PrintModal({ isOpen, onClose, order }: PrintModalProps) 
         }, 250);
     };
 
-    const formattedItems = Array.isArray(order?.itens)
-        ? order.itens.map((item: any) => ({
-            nome: item.produto || item.nome || 'Item',
-            qtd: item.quantidade || 1,
-            preco: item.preco || 0
-        }))
-        : [];
+    const formattedItems = useMemo(() => {
+        let rawItens = order?.itens;
+        if (typeof rawItens === 'string') {
+            try {
+                rawItens = JSON.parse(rawItens);
+            } catch (e) {
+                console.error('Erro ao processar itens do pedido:', e);
+                rawItens = [];
+            }
+        }
+        
+        return Array.isArray(rawItens)
+            ? rawItens.map((item: any) => ({
+                nome: item.produto || item.nome || 'Item',
+                qtd: item.quantidade || 1,
+                preco: item.preco || 0
+            }))
+            : [];
+    }, [order?.itens]);
 
     const isDelivery = order?.tipo_entrega !== 'retirada' && order?.endereco_entrega;
 
