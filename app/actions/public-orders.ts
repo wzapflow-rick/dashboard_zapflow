@@ -133,11 +133,12 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
         );
 
         const itensFormatados = data.itens.map((item: any) => {
-            let produtoNome = item.nome;
+            let produtoNome = item.nome || 'Produto';
+            const tamanho = item.tamanho || '';
 
-            // Se o tamanho já não estiver no nome (fallback de segurança), adiciona
-            if (item.tamanho && !produtoNome.includes(item.tamanho)) {
-                produtoNome += ` - ${item.tamanho}`;
+            // FORÇAR: Se houver tamanho, garante que ele esteja no nome de forma clara
+            if (tamanho && !produtoNome.toLowerCase().includes(tamanho.toLowerCase())) {
+                produtoNome = `${produtoNome} (${tamanho})`;
             }
 
             if (item.complementos && item.complementos.length > 0) {

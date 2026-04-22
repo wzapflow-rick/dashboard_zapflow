@@ -275,12 +275,12 @@ export default function MenuProductSelectionModal({
 
         const itemData = {
             productId: product.id,
-            nome: selectedSize ? `${product.nome} - ${selectedSize.nome}` : product.nome,
+            nome: selectedSize ? `${product.nome} (${selectedSize.nome})` : product.nome,
             preco: finalPrice,
             quantidade: 1,
             imagem: product.imagem,
             observacao: observacao.trim() || undefined,
-            tamanho: selectedSize?.nome,
+            tamanho: selectedSize?.nome || '',
             complementos: complementos.length > 0 ? complementos : undefined
         };
 
