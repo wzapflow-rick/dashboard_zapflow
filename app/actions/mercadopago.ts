@@ -121,11 +121,14 @@ export async function createPayment(input: CreatePaymentInput): Promise<CreatePa
         const firstName = nomePartes[0] || 'Cliente';
         const lastName = nomePartes.slice(1).join(' ') || 'Cardapio';
 
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://zap-order-sooty.vercel.app';
+        const notificationUrl = `${baseUrl}/api/webhooks/mercadopago`;
+
         const paymentPayload: Record<string, unknown> = {
             transaction_amount: validAmount,
             description: `Pedido #${pedidoId} - ${pedido.cliente_nome || 'Cliente'}`,
             external_reference: String(pedidoId),
-            notification_url: `${process.env.NEXT_PUBLIC_API_URL || ''}/api/webhooks/mercadopago`,
+            notification_url: notificationUrl,
             payer: {
                 email: pedido.telefone_cliente
                     ? `${pedido.telefone_cliente.replace(/\D/g, '')}@cliente.zapflow.com`
