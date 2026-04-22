@@ -67,15 +67,31 @@ export async function getDashboardData(period: string = 'Hoje') {
             });
         });
 
+        // Buscar imagens reais dos produtos para o Top 5
+        const { PRODUTOS_TABLE_ID } = await import('@/lib/constants');
+        const productsData = await noco.list(PRODUTOS_TABLE_ID, {
+            where: `(empresa_id,eq,${user.empresaId})`,
+            limit: 100,
+        });
+        const realProducts = productsData.list || [];
+
         const topProducts = Array.from(productStats.values())
             .sort((a, b) => b.sales - a.sales)
             .slice(0, 5)
-            .map(p => ({
-                name: p.name,
-                sales: p.sales,
-                price: `R$ ${p.price.toFixed(2).replace('.', ',')}`,
-                image: `https://picsum.photos/seed/${encodeURIComponent(p.name)}/100/100`
-            }));
+            .map(p => {
+                // Tenta encontrar o produto real pelo nome (removendo o sufixo de tamanho se houver)
+                const baseName = p.name.split(' (')[0].split(' - ')[0];
+                const realProduct = realProducts.find((rp: any) => 
+                    rp.nome === p.name || rp.nome === baseName
+                );
+                
+                return {
+                    name: p.name,
+                    sales: p.sales,
+                    price: `R$ ${p.price.toFixed(2).replace('.', ',')}`,
+                    image: realProduct?.imagem || realProduct?.imagem_url || `https://picsum.photos/seed/${encodeURIComponent(p.name)}/100/100`
+                };
+            });
 
         // 3. Vendas por hora (UTC-3 Brasília)
         const salesByHour = new Array(24).fill(0);
