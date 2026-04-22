@@ -270,49 +270,45 @@ export async function saveDeliveryRatesBatch(rates: any[]) {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        console.log(`[saveDeliveryRatesBatch] Iniciando salvamento de ${rates.length} bairros para empresa ${user.empresaId}`);
+        console.log(`[saveDeliveryRatesBatch] Empresa: ${user.empresaId}, Bairros: ${rates.length}`);
 
         const results = [];
         for (const data of rates) {
-            // Ignorar itens vazios ou sem nome de bairro
             if (!data.bairro || data.bairro.trim() === '') continue;
 
-            // Sanitização robusta do valor da taxa
-            let valorTaxa = 0;
-            if (typeof data.valor_taxa === 'string') {
-                // Remove R$, espaços e converte vírgula em ponto
-                const cleanValue = data.valor_taxa
-                    .replace(/R\$\s?/g, '')
-                    .replace(/\./g, '')
-                    .replace(',', '.')
-                    .trim();
-                valorTaxa = parseFloat(cleanValue) || 0;
-            } else {
-                valorTaxa = Number(data.valor_taxa || 0);
-            }
+            // Limpeza extrema do valor
+            let valorStr = String(data.valor_taxa || '0');
+            valorStr = valorStr.replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.');
+            const valorTaxa = parseFloat(valorStr) || 0;
 
-            const payload: any = {
-                bairro: data.bairro,
+            const payload = {
+                bairro: data.bairro.trim(),
                 valor_taxa: valorTaxa,
-                tempo_estimado: data.tempo_estimado || '',
+                tempo_estimado: String(data.tempo_estimado || '').trim(),
                 empresa_id: Number(user.empresaId)
             };
 
-            if (data.id) {
-                payload.id = data.id;
-                console.log(`[saveDeliveryRatesBatch] Atualizando bairro ID ${data.id}:`, payload);
-                results.push(await noco.update(TAXAS_ENTREGA_TABLE_ID, payload));
-            } else {
-                console.log(`[saveDeliveryRatesBatch] Criando novo bairro:`, payload);
-                results.push(await noco.create(TAXAS_ENTREGA_TABLE_ID, payload));
+            console.log('[saveDeliveryRatesBatch] Enviando payload:', JSON.stringify(payload));
+
+            try {
+                if (data.id && !String(data.id).startsWith('temp-')) {
+                    const updatePayload = { ...payload, id: data.id };
+                    const res = await noco.update(TAXAS_ENTREGA_TABLE_ID, updatePayload);
+                    results.push(res);
+                } else {
+                    const res = await noco.create(TAXAS_ENTREGA_TABLE_ID, payload);
+                    results.push(res);
+                }
+            } catch (innerError: any) {
+                console.error('[saveDeliveryRatesBatch] Erro no item individual:', innerError.message);
+                // Continua para o próximo item para não quebrar o lote todo
             }
         }
 
         revalidatePath('/dashboard/settings');
         return { success: true, count: results.length };
     } catch (error: any) {
-        console.error('API Error (saveDeliveryRatesBatch):', error);
-        // Retorna o erro amigável para o frontend
-        throw new Error(error.message || 'Erro ao salvar bairros. Verifique a conexão com o banco.');
+        console.error('API Error (saveDeliveryRatesBatch) FATAL:', error);
+        throw new Error('Erro crítico ao salvar taxas de entrega. Verifique os logs do servidor.');
     }
 }
