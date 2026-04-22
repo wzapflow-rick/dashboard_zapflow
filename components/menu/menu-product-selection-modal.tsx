@@ -275,7 +275,7 @@ export default function MenuProductSelectionModal({
 
         const itemData = {
             productId: product.id,
-            nome: product.nome,
+            nome: selectedSize ? `${product.nome} - ${selectedSize.nome}` : product.nome,
             preco: finalPrice,
             quantidade: 1,
             imagem: product.imagem,
