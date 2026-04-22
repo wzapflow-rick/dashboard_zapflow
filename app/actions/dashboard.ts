@@ -39,11 +39,18 @@ export async function getDashboardData(period: string = 'Hoje') {
         // Filtrar por data em memória (evita problemas de parsing de datas no NocoDB)
         const orders = allOrders.filter((o: any) => o.criado_em && new Date(o.criado_em) >= startDate);
 
-        // 1. Calcular faturamento e contagem
-        const finalizedOrders = orders.filter((o: any) => o.status === 'finalizado');
+        // 1. Calcular faturamento e contagem (Excluindo cancelados)
+        const validOrders = orders.filter((o: any) => o.status !== 'cancelado');
+        const finalizedOrders = validOrders.filter((o: any) => o.status === 'finalizado');
+        
+        // Faturamento apenas de pedidos finalizados (que deram certo)
         const totalRevenue = finalizedOrders.reduce((sum: number, o: any) => sum + Number(o.valor_total || 0), 0);
-        const totalOrders = orders.length;
-        const averageTicket = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+        
+        // Total de pedidos válidos (exclui cancelados para o cálculo do ticket médio)
+        const totalValidOrdersCount = validOrders.length;
+        
+        // Ticket médio baseado no faturamento real dividido pelos pedidos que não foram cancelados
+        const averageTicket = totalValidOrdersCount > 0 ? totalRevenue / totalValidOrdersCount : 0;
 
         // 2. Top produtos
         const productStats = new Map();
@@ -104,7 +111,7 @@ export async function getDashboardData(period: string = 'Hoje') {
         return {
             stats: [
                 { label: 'Faturamento Bruto', value: `R$ ${totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, change: 'Real-time', trend: 'up', color: 'blue' },
-                { label: 'Total de Pedidos', value: totalOrders.toString(), change: 'Real-time', trend: 'up', color: 'indigo' },
+                { label: 'Total de Pedidos', value: totalValidOrdersCount.toString(), change: 'Real-time', trend: 'up', color: 'indigo' },
                 { label: 'Ticket Médio', value: `R$ ${averageTicket.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, change: 'Real-time', trend: 'neutral', color: 'slate' },
                 { label: 'Pedidos Pendentes', value: orders.filter((o: any) => o.status === 'pendente').length.toString(), change: 'Ação necessária', trend: 'special', color: 'primary' },
             ],
