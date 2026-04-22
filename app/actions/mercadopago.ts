@@ -1,10 +1,10 @@
 'use server';
 
 import { noco } from '@/lib/nocodb';
-import { PEDIDOS_TABLE_ID } from '@/lib/constants';
+import { PEDIDOS_TABLE_ID, PAGAMENTOS_CONFIG_TABLE_ID } from '@/lib/constants';
 
-const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN || '';
-const MP_PUBLIC_KEY = process.env.MP_PUBLIC_KEY || '';
+const MP_ACCESS_TOKEN_FALLBACK = process.env.MP_ACCESS_TOKEN || '';
+const MP_PUBLIC_KEY_FALLBACK = process.env.MP_PUBLIC_KEY || '';
 
 interface PedidoData {
     id: number;
@@ -31,8 +31,40 @@ interface MPPaymentResponse {
     };
 }
 
-export async function getMPPublicKey(): Promise<string> {
-    return MP_PUBLIC_KEY;
+/**
+ * Busca as credenciais do Mercado Pago para uma empresa específica.
+ * Se não encontrar, retorna as credenciais de fallback do ZapFlow.
+ */
+async function getCompanyMPCredentials(empresaId: number) {
+    try {
+        const config = await noco.findOne(PAGAMENTOS_CONFIG_TABLE_ID, {
+            where: `(empresa_id,eq,${empresaId})`
+        }) as any;
+
+        if (config && config.mp_access_token) {
+            console.log(`[MercadoPago] Usando credenciais próprias da empresa #${empresaId}`);
+            return {
+                accessToken: config.mp_access_token,
+                publicKey: config.mp_public_key || MP_PUBLIC_KEY_FALLBACK
+            };
+        }
+    } catch (error) {
+        console.error(`[MercadoPago] Erro ao buscar config para empresa #${empresaId}:`, error);
+    }
+
+    console.log(`[MercadoPago] Usando credenciais de fallback para empresa #${empresaId}`);
+    return {
+        accessToken: MP_ACCESS_TOKEN_FALLBACK,
+        publicKey: MP_PUBLIC_KEY_FALLBACK
+    };
+}
+
+export async function getMPPublicKey(empresaId?: number): Promise<string> {
+    if (empresaId) {
+        const creds = await getCompanyMPCredentials(empresaId);
+        return creds.publicKey;
+    }
+    return MP_PUBLIC_KEY_FALLBACK;
 }
 
 export async function getOrderPaymentId(orderId: number): Promise<string | null> {
@@ -74,10 +106,10 @@ export async function createPayment(input: CreatePaymentInput): Promise<CreatePa
             return { success: false, error: 'Pedido não encontrado' };
         }
 
-        const amount = Number(pedido.valor_total);
+        // Busca credenciais dinâmicas da empresa
+        const { accessToken } = await getCompanyMPCredentials(pedido.empresa_id);
 
-        console.log('[MercadoPago] valor_total do pedido:', pedido.valor_total);
-        console.log('[MercadoPago] amount convertido:', amount, 'tipo:', typeof amount);
+        const amount = Number(pedido.valor_total);
 
         if (!amount || amount <= 0 || isNaN(amount)) {
             return { success: false, error: 'Valor do pedido inválido' };
@@ -93,6 +125,7 @@ export async function createPayment(input: CreatePaymentInput): Promise<CreatePa
             transaction_amount: validAmount,
             description: `Pedido #${pedidoId} - ${pedido.cliente_nome || 'Cliente'}`,
             external_reference: String(pedidoId),
+            notification_url: `${process.env.NEXT_PUBLIC_API_URL || ''}/api/webhooks/mercadopago`,
             payer: {
                 email: pedido.telefone_cliente
                     ? `${pedido.telefone_cliente.replace(/\D/g, '')}@cliente.zapflow.com`
@@ -123,7 +156,7 @@ export async function createPayment(input: CreatePaymentInput): Promise<CreatePa
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${MP_ACCESS_TOKEN}`,
+                'Authorization': `Bearer ${accessToken}`,
                 'X-Idempotency-Key': idempotencyKey,
             },
             body: JSON.stringify(paymentPayload),
@@ -135,7 +168,7 @@ export async function createPayment(input: CreatePaymentInput): Promise<CreatePa
                 status: mpResponse.status,
                 error: errorData,
                 amount: amount,
-                paymentPayload: paymentPayload
+                empresaId: pedido.empresa_id
             }, null, 2));
             return {
                 success: false,
@@ -150,9 +183,6 @@ export async function createPayment(input: CreatePaymentInput): Promise<CreatePa
             payment_id: String(mpPayment.id),
             status_pagamento: mpPayment.status === 'approved' ? 'aprovado' : 'pendente',
         });
-
-        console.log(`[MercadoPago] Payment criado: ${mpPayment.id}, status: ${mpPayment.status}`);
-        console.log('[MercadoPago] Payment response:', JSON.stringify(mpPayment, null, 2));
 
         return {
             success: true,
@@ -176,9 +206,21 @@ export async function getPaymentStatus(paymentId: number): Promise<{
     error?: string;
 }> {
     try {
+        // Para o status, precisamos saber de qual empresa é o pagamento para usar o token correto
+        // Buscamos o pedido pelo payment_id
+        const order = await noco.findOne(PEDIDOS_TABLE_ID, {
+            where: `(payment_id,eq,${paymentId})`
+        }) as any;
+
+        let accessToken = MP_ACCESS_TOKEN_FALLBACK;
+        if (order?.empresa_id) {
+            const creds = await getCompanyMPCredentials(order.empresa_id);
+            accessToken = creds.accessToken;
+        }
+
         const mpResponse = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
             headers: {
-                'Authorization': `Bearer ${MP_ACCESS_TOKEN}`,
+                'Authorization': `Bearer ${accessToken}`,
             },
         });
 

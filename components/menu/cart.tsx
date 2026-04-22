@@ -33,7 +33,7 @@ import { validateCoupon } from '@/app/actions/coupons';
 import { createPublicOrder } from '@/app/actions/public-orders';
 import { getClientPoints, getLoyaltyConfig } from '@/app/actions/loyalty';
 import { calculateDeliveryFee, geocodeAddress, getDeliveryConfig } from '@/app/actions/delivery';
-import { createPayment, getMPPublicKey } from '@/app/actions/mercadopago';
+import { createPayment } from '@/app/actions/mercadopago';
 import { toast } from 'sonner';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
@@ -1207,12 +1207,13 @@ const { checkCustomerByPhone } = await import('@/app/actions/public-orders');
                           <ArrowLeft className="size-4" />
                           Voltar
                         </button>
-                        <PaymentForm
-                          pedidoId={orderId}
-                          total={totalFinal}
-                          onSuccess={handleCardPaymentSuccess}
-                          onError={handleCardPaymentError}
-                        />
+                         <PaymentForm
+                           pedidoId={orderId}
+                           total={totalFinal}
+                           empresaId={empresaId}
+                           onSuccess={handleCardPaymentSuccess}
+                           onError={handleCardPaymentError}
+                         />
                       </>
                     ) : (
                       <>

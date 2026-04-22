@@ -127,6 +127,10 @@ export const TAXAS_ENTREGA_TABLE_ID =
 export const HORARIOS_TABLE_ID =
   process.env.NOCODB_TABLE_HORARIOS || 'mpaclmaji3b6dla';
 
+/** Tabela de configurações de pagamento (Mercado Pago OAuth) */
+export const PAGAMENTOS_CONFIG_TABLE_ID =
+  process.env.NOCODB_TABLE_PAGAMENTOS_CONFIG || 'mlev3jx4tj2x74d';
+
 /** Tabela de avaliações de pedidos */
 export const AVALIACOES_TABLE_ID =
   process.env.NOCODB_TABLE_AVALIACOES || 'm3ebs9cm1yjgmo1';
