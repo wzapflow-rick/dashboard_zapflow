@@ -53,8 +53,8 @@ export default function DashboardOverview() {
               phone: o.telefone_cliente || '',
               time: o.criado_em ? new Date(o.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '...',
               value: `R$ ${Number(o.valor_total || 0).toFixed(2).replace('.', ',')}`,
-              status: o.status === 'pendente' ? 'Pendente' : o.status === 'preparando' ? 'Preparando' : 'Finalizado',
-              statusColor: o.status === 'pendente' ? 'amber' : o.status === 'preparando' ? 'blue' : 'emerald',
+              status: o.status === 'pendente' ? 'Pendente' : o.status === 'preparando' ? 'Preparando' : o.status === 'cancelado' ? 'Cancelado' : 'Finalizado',
+              statusColor: o.status === 'pendente' ? 'amber' : o.status === 'preparando' ? 'blue' : o.status === 'cancelado' ? 'red' : 'emerald',
               raw: o
             }));
             setOrders(formattedOrders);
