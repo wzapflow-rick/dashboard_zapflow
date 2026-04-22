@@ -254,6 +254,16 @@ export async function checkOrderStatus(orderId: number) {
     }
 }
 
+export async function getOrderStatus(orderId: number) {
+    try {
+        const order = await noco.findById(PEDIDOS_TABLE_ID, orderId) as any;
+        return order?.status || null;
+    } catch (error) {
+        console.error('Erro ao buscar status do pedido:', error);
+        return null;
+    }
+}
+
 export async function updateOrderStatusPublic(orderId: number, status: string) {
     try {
         await noco.update(PEDIDOS_TABLE_ID, { id: orderId, status });
