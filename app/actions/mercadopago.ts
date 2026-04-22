@@ -269,11 +269,11 @@ export async function getMPAuthorizationUrl() {
 /**
  * Verifica se a empresa atual tem o Mercado Pago conectado
  */
-export async function getMPConnectionStatus() {
+export async function getMPConnectionStatus(): Promise<{ connected: boolean; userId: string | null; publicKey: string | null }> {
     const { getMe } = await import('./auth');
     const me = await getMe();
     
-    if (!me || !me.empresaId) return { connected: false };
+    if (!me || !me.empresaId) return { connected: false, userId: null, publicKey: null };
 
     try {
         const config = await noco.findOne(PAGAMENTOS_CONFIG_TABLE_ID, {
@@ -282,11 +282,11 @@ export async function getMPConnectionStatus() {
 
         return { 
             connected: !!config,
-            userId: config?.mp_user_id || null,
-            publicKey: config?.mp_public_key || null
+            userId: config?.mp_user_id ? String(config.mp_user_id) : null,
+            publicKey: config?.mp_public_key ? String(config.mp_public_key) : null
         };
     } catch (error) {
-        return { connected: false };
+        return { connected: false, userId: null, publicKey: null };
     }
 }
 
