@@ -67,7 +67,28 @@ export async function getSalesReport(startDate: string, endDate: string) {
     const topProdutos = Object.entries(produtosCount)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 10)
-        .map(([nome, qtd]) => ({ nome, qtd }));
+        .map(([nome, qtd]) => {
+            // Encontrar o preço médio ou primeiro preço desse produto nos pedidos
+            let totalPreco = 0;
+            let countPreco = 0;
+            orders.forEach((o: any) => {
+                if (Array.isArray(o.itens)) {
+                    o.itens.forEach((item: any) => {
+                        const itemNome = (item.produto || item.nome || 'Item').split('(')[0].trim();
+                        if (itemNome === nome) {
+                            totalPreco += Number(item.preco || 0) * (item.quantidade || 1);
+                            countPreco += (item.quantidade || 1);
+                        }
+                    });
+                }
+            });
+
+            return { 
+                nome, 
+                qtd, 
+                precoMedio: countPreco > 0 ? totalPreco / countPreco : 0 
+            };
+        });
 
     const mediaPorPedido = orders.length > 0 ? totalVendas / orders.length : 0;
 

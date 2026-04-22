@@ -52,9 +52,9 @@ export async function getDashboardData(period: string = 'Hoje') {
         // Ticket médio baseado no faturamento real dividido pelos pedidos que não foram cancelados
         const averageTicket = totalValidOrdersCount > 0 ? totalRevenue / totalValidOrdersCount : 0;
 
-        // 2. Top produtos
+        // 2. Top produtos (Apenas de pedidos válidos/não cancelados)
         const productStats = new Map();
-        orders.forEach((order: any) => {
+        validOrders.forEach((order: any) => {
             let items = [];
             try {
                 if (typeof order.itens === 'string') {
@@ -67,10 +67,17 @@ export async function getDashboardData(period: string = 'Hoje') {
             }
 
             items.forEach((item: any) => {
-                const name = item.produto || 'Item';
-                const current = productStats.get(name) || { name, sales: 0, price: Number(item.preco || 0) };
+                const name = item.produto || item.nome || 'Item';
+                // Limpar o nome para agrupar (ex: "Pizza (Grande)" -> "Pizza")
+                const cleanName = name.split(' (')[0].trim();
+                
+                const current = productStats.get(cleanName) || { 
+                    name: cleanName, 
+                    sales: 0, 
+                    price: Number(item.preco || 0) 
+                };
                 current.sales += Number(item.quantidade || 1);
-                productStats.set(name, current);
+                productStats.set(cleanName, current);
             });
         });
 
