@@ -9,7 +9,7 @@ export async function getSalesReport(startDate: string, endDate: string) {
     if (!user?.empresaId) throw new Error('Não autorizado');
 
     const ordersData = await noco.list(PEDIDOS_TABLE_ID, {
-        where: `(empresa_id,eq,${user.empresaId})~and(status,eq,finalizado)`,
+        where: `(empresa_id,eq,${user.empresaId})`,
         limit: 10000,
     });
 
@@ -25,10 +25,13 @@ export async function getSalesReport(startDate: string, endDate: string) {
         return orderDate >= start && orderDate <= end;
     });
 
-    const totalVendas = orders.reduce((sum: number, o: any) => sum + Number(o.valor_total || 0), 0);
-    const totalDescontos = orders.reduce((sum: number, o: any) => sum + Number(o.desconto || 0), 0);
-    const totalTaxasEntrega = orders.reduce((sum: number, o: any) => sum + Number(o.taxa_entrega || 0), 0);
-    const pedidoMaisCaro = orders.reduce((max: any, o: any) => {
+    // Filtrar apenas pedidos finalizados para cálculos financeiros
+    const finalizedOrders = orders.filter((o: any) => o.status === 'finalizado');
+
+    const totalVendas = finalizedOrders.reduce((sum: number, o: any) => sum + Number(o.valor_total || 0), 0);
+    const totalDescontos = finalizedOrders.reduce((sum: number, o: any) => sum + Number(o.desconto || 0), 0);
+    const totalTaxasEntrega = finalizedOrders.reduce((sum: number, o: any) => sum + Number(o.taxa_entrega || 0), 0);
+    const pedidoMaisCaro = finalizedOrders.reduce((max: any, o: any) => {
         if (!max || Number(o.valor_total) > Number(max.valor_total)) return o;
         return max;
     }, null);
@@ -52,7 +55,7 @@ export async function getSalesReport(startDate: string, endDate: string) {
     });
 
     const vendasPorDia: Record<string, number> = {};
-    orders.forEach((o: any) => {
+    finalizedOrders.forEach((o: any) => {
         const dia = o.criado_em?.split(' ')[0] || 'unknown';
         vendasPorDia[dia] = (vendasPorDia[dia] || 0) + Number(o.valor_total || 0);
     });
@@ -94,7 +97,7 @@ export async function getSalesReport(startDate: string, endDate: string) {
             };
         });
 
-    const mediaPorPedido = orders.length > 0 ? totalVendas / orders.length : 0;
+    const mediaPorPedido = finalizedOrders.length > 0 ? totalVendas / finalizedOrders.length : 0;
 
     return {
         periodo: { inicio: startDate, fim: endDate },
@@ -122,7 +125,7 @@ export async function getMonthlyComparison() {
     if (!user?.empresaId) throw new Error('Não autorizado');
 
     const ordersData = await noco.list(PEDIDOS_TABLE_ID, {
-        where: `(empresa_id,eq,${user.empresaId})~and(status,eq,finalizado)`,
+        where: `(empresa_id,eq,${user.empresaId})`,
         limit: 10000,
     });
 
@@ -144,8 +147,9 @@ export async function getMonthlyComparison() {
             const orderDate = new Date(o.criado_em);
             return orderDate >= m.inicio && orderDate <= m.fim;
         });
-        const total = filtered.reduce((sum: number, o: any) => sum + Number(o.valor_total || 0), 0);
-        const qtd = filtered.length;
+        const finalizedFiltered = filtered.filter((o: any) => o.status === 'finalizado');
+        const total = finalizedFiltered.reduce((sum: number, o: any) => sum + Number(o.valor_total || 0), 0);
+        const qtd = finalizedFiltered.length;
         return { mes: m.nome, total, qtd };
     });
 }
