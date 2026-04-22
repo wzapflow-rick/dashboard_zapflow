@@ -39,7 +39,11 @@ export async function getSalesReport(startDate: string, endDate: string) {
 
     orders.forEach((o: any) => {
         statusCounts[o.status] = (statusCounts[o.status] || 0) + 1;
-        pagamentos[o.forma_pagamento] = (pagamentos[o.forma_pagamento] || 0) + Number(o.valor_total || 0);
+        
+        // Tenta pegar a forma de pagamento de múltiplos campos possíveis para evitar undefined
+        const forma = o.forma_pagamento || o.tipo_pagamento || 'Outro';
+        pagamentos[forma] = (pagamentos[forma] || 0) + Number(o.valor_total || 0);
+        
         if (o.tipo_entrega === 'retirada') {
             entregas.retirada++;
         } else {
