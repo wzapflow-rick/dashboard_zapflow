@@ -60,8 +60,8 @@ export async function updateCompany(data: any) {
         revalidatePath('/', 'layout');
         revalidatePath('/dashboard/settings');
         return updatedData;
-    } catch (error) {
-        console.error('API Error:', error);
-        throw new Error('Failed to update company');
+    } catch (error: any) {
+        console.error('API Error (updateCompany):', error);
+        throw new Error(error.message || 'Erro ao atualizar dados da empresa');
     }
 }

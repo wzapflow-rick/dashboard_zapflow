@@ -156,8 +156,9 @@ export default function SettingsPage() {
       }
 
       toast.success('Configurações salvas com sucesso!');
-    } catch (err) {
-      toast.error('Ocorreu um erro ao salvar.');
+    } catch (err: any) {
+      console.error('Erro ao salvar:', err);
+      toast.error(err.message || 'Ocorreu um erro ao salvar.');
     }
   };
 
