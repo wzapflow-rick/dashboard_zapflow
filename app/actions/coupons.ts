@@ -140,7 +140,19 @@ export async function validateCoupon(codigo: string, valorPedido: number) {
         }
 
         if (!dataFimValida) return { valid: false, error: 'Cupom expirado' };
-        if (!dataInicioValida) return { valid: false, error: 'Cupom ainda não está válido' };
+        if (!dataInicioValida) {
+            // Formata a data de início para feedback melhor ao usuário
+            if (cupom.data_inicio) {
+                const parts = cupom.data_inicio.split('T')[0].split('-');
+                if (parts.length === 3) {
+                    const dia = String(parseInt(parts[2])).padStart(2, '0');
+                    const mes = String(parseInt(parts[1])).padStart(2, '0');
+                    const ano = parts[0];
+                    return { valid: false, error: `Cupom válido a partir de ${dia}/${mes}/${ano}` };
+                }
+            }
+            return { valid: false, error: 'Cupom ainda não está válido' };
+        }
 
         if (cupom.valor_minimo_pedido && valorPedido < cupom.valor_minimo_pedido) {
             return {
