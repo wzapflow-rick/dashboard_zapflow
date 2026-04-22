@@ -110,8 +110,8 @@ export default function MenuManagement({ hideCategoryButton }: { hideCategoryBut
         toast.success('Produto criado com sucesso!');
       }
 
-      const categoriesData = await getTodasReceitas();
-      setCategories(categoriesData);
+      // Recarrega todos os dados para garantir sincronia (categorias, produtos, etc)
+      await fetchData();
 
       setIsModalOpen(false);
       setEditingProduct(null);

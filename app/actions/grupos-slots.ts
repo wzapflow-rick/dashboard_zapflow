@@ -79,7 +79,8 @@ export async function getGruposSlots(): Promise<GrupoSlot[]> {
 
         return (data.list || []).map((g: any) => ({
             ...g,
-            itens: parseJsonArray(g.itens)
+            itens: parseJsonArray(g.itens),
+            categoria_id: g.categoria_id || null
         }));
     } catch (e) {
         console.error('getGruposSlots error:', e);

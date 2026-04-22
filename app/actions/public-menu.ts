@@ -63,6 +63,7 @@ export interface PublicProduct {
     disponivel: boolean;
     destaque: boolean;
     ordem: number;
+    tamanhos?: string | null;
     saborGroups: PublicGroup[];
     additionalGroups: PublicGroup[];
     complementGroups: PublicGroup[];
@@ -314,6 +315,7 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
                 disponivel: p.disponivel !== false,
                 destaque: p.destaque === true || p.destaque === 1,
                 ordem: Number(p.ordem ?? 0),
+                tamanhos: p.tamanhos as string | null | undefined,
                 saborGroups,
                 additionalGroups,
                 complementGroups: [...saborGroups, ...additionalGroups],
@@ -355,17 +357,18 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
                 ordem: Number(cat.ordem ?? 0),
                 products: productsWithGroups.filter(
                     (p) => {
-                        const raw = products.find((r) => r.id === p.id) as Record<string, unknown>;
-                        const catId = raw?.categorias ?? raw?.categoria_id ?? '';
-                        return String(catId) === String(cat.id);
+                        const raw = products.find((r) => r.id === p.id) as Record<string, any>;
+                        const catId = raw?.categorias ?? raw?.categoria_id;
+                        const finalId = (typeof catId === 'object' && catId !== null) ? (catId.id || catId.Id) : catId;
+                        return String(finalId || '') === String(cat.id);
                     }
                 ),
                 compositeProducts: allCompositeProducts.filter(
                     (cp) => {
-                        if (!cp.categoria_id) return false;
-                        // O categoria_id pode vir como string, número ou objeto dependendo do NocoDB
-                        const cpCatId = typeof cp.categoria_id === 'object' ? (cp.categoria_id as any).id : cp.categoria_id;
-                        return String(cpCatId) === String(cat.id);
+                        const catId = cp.categoria_id;
+                        if (!catId) return false;
+                        const finalId = (typeof catId === 'object' && catId !== null) ? ((catId as any).id || (catId as any).Id) : catId;
+                        return String(finalId || '') === String(cat.id);
                     }
                 )
             }))
@@ -373,9 +376,15 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
 
         // Produtos compostos sem categoria (Vão para "Monte seu Pedido")
         const unassignedComposites = allCompositeProducts.filter(cp => {
-            if (!cp.categoria_id) return true;
-            const cpCatId = typeof cp.categoria_id === 'object' ? (cp.categoria_id as any).id : cp.categoria_id;
-            return !cpCatId;
+            const catId = cp.categoria_id;
+            if (!catId) return true;
+            
+            // Se for objeto (NocoDB Link), pega o id
+            const finalId = (typeof catId === 'object' && catId !== null) 
+                ? (catId as any).id || (catId as any).Id 
+                : catId;
+                
+            return !finalId;
         });
         
         // Produtos normais sem categoria

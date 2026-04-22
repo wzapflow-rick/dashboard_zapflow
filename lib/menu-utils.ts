@@ -27,7 +27,7 @@ export async function saveProduct(
   let finalCategoryId: string | number = formData.get('categoria_id') as string;
 
   if (isCreatingCategory) {
-    const novaCategoriaNome = formData.get('novaCategoria') as string;
+    const novaCategoriaNome = formData.get('new_category_name') as string;
     const novaCat = await upsertCategory({ nome: novaCategoriaNome });
     finalCategoryId = novaCat.id;
   } else {
@@ -52,7 +52,7 @@ export async function saveProduct(
     precoNumerico = 0;
   }
 
-  const productData: ProductData = {
+  const productData: any = {
     id: editingProduct?.id,
     nome: formData.get('nome') as string,
     categorias: finalCategoryId,
@@ -60,7 +60,8 @@ export async function saveProduct(
     preco: precoNumerico,
     descricao: formData.get('descricao') as string,
     disponivel: editingProduct ? editingProduct.disponivel : true,
-    imagem: editingProduct?.imagem || ''
+    imagem: editingProduct?.imagem || '',
+    tamanhos: formData.get('tamanhos') ? String(formData.get('tamanhos')) : null
   };
 
   // 1. Salva o produto primeiro. Isso garante a validação do DB. 
@@ -87,8 +88,6 @@ export async function saveProduct(
       toast.error('Produto salvo, mas sem imagem devido a falha no upload.');
     }
   }
-
-  return savedProduct;
 
   return savedProduct;
 }

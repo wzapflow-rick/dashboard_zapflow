@@ -34,13 +34,15 @@ export function CurrencyInput({ className, onValueChange, defaultValue, name, ..
         let value = e.target.value;
         value = value.replace(/\D/g, ''); // keep only digits
 
+        // Se o valor for vazio, define como 0
         if (!value) {
             setDisplayValue('');
             if (onValueChange) onValueChange(0);
             return;
         }
 
-        const numericValue = Number(value) / 100;
+        // Converte a string de dígitos para número considerando os centavos
+        const numericValue = parseInt(value, 10) / 100;
 
         if (onValueChange) {
             onValueChange(numericValue);

@@ -61,9 +61,13 @@ export default function ProductFormModal({
         setImagePreview(editingProduct?.imagem || null);
 
         // Load sizes if they exist
-        if (editingProduct?.tamanhos) {
+        const rawTamanhos = editingProduct?.tamanhos || editingProduct?.tamanhos_json;
+        if (rawTamanhos) {
             try {
-                const parsedSizes = JSON.parse(editingProduct.tamanhos);
+                const parsedSizes = typeof rawTamanhos === 'string' 
+                    ? JSON.parse(rawTamanhos) 
+                    : rawTamanhos;
+                    
                 if (Array.isArray(parsedSizes) && parsedSizes.length > 0) {
                     setSizes(parsedSizes);
                     setHasSizes(true);
@@ -338,7 +342,7 @@ export default function ProductFormModal({
                                                     />
                                                     <div className="w-32">
                                                         <CurrencyInput
-                                                            value={size.preco}
+                                                            defaultValue={size.preco}
                                                             onValueChange={(val) => updateSize(index, 'preco', val)}
                                                             className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
                                                             required
@@ -408,71 +412,45 @@ export default function ProductFormModal({
                                                     <button
                                                         type="button"
                                                         onClick={() => {
-                                                            const el = document.getElementById('insumoSelector') as HTMLSelectElement;
-                                                            if (el.value) {
-                                                                addInsumo(Number(el.value));
-                                                                el.value = "";
-                                                            }
+                                                            const select = document.getElementById('insumoSelector') as HTMLSelectElement;
+                                                            if (select.value) addInsumo(Number(select.value));
                                                         }}
-                                                        className="px-4 py-2 bg-slate-900 dark:bg-slate-600 text-white rounded-lg text-sm font-bold hover:bg-slate-800 dark:hover:bg-slate-500 transition-colors shrink-0 flex items-center gap-1"
+                                                        className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/90 transition-colors"
                                                     >
-                                                        <Plus className="size-4" /> Add
+                                                        Adicionar
                                                     </button>
                                                 </div>
 
-                                                {selectedInsumos.length > 0 && (
-                                                    <div className="space-y-2 mt-4">
-                                                        <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Ficha Técnica do Produto:</label>
-                                                        {selectedInsumos.map((selInsumo) => {
-                                                            const refInsumo = insumosList.find(i => i.id === selInsumo.insumo_id);
-                                                            if (!refInsumo) return null;
-
-                                                            return (
-                                                                <div key={selInsumo.insumo_id} className="flex gap-2 items-center bg-white dark:bg-slate-800 p-2 rounded-lg border border-slate-100 dark:border-slate-600 shadow-sm">
-                                                                    <div className="flex-1 text-sm font-semibold text-slate-800 dark:text-white pl-2">
-                                                                        {refInsumo.nome}
-                                                                    </div>
+                                                <div className="space-y-2">
+                                                    {selectedInsumos.map((item, idx) => {
+                                                        const insumo = insumosList.find(i => i.id === item.insumo_id);
+                                                        return (
+                                                            <div key={idx} className="flex items-center gap-3 bg-white dark:bg-slate-800 p-2 rounded-lg border border-slate-100 dark:border-slate-600">
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">{insumo?.nome}</div>
+                                                                    <div className="text-[10px] text-slate-500">Unidade: {insumo?.unidade_medida}</div>
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
                                                                     <input
                                                                         type="number"
                                                                         step="0.001"
-                                                                        required
-                                                                        value={selInsumo.quantidade_necessaria || ''}
-                                                                        onChange={(e) => updateInsumoQty(selInsumo.insumo_id, parseFloat(e.target.value.replace(',', '.')) || 0)}
-                                                                        className="w-24 px-2 py-1.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded text-sm text-center outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
-                                                                        placeholder="Qtd."
+                                                                        value={item.quantidade_necessaria}
+                                                                        onChange={(e) => updateInsumoQty(item.insumo_id, Number(e.target.value))}
+                                                                        className="w-20 px-2 py-1 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded text-xs outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
+                                                                        placeholder="Qtd"
                                                                     />
-                                                                    <div className="text-[11px] font-medium text-slate-400 dark:text-slate-500 w-10 uppercase">
-                                                                        {refInsumo.unidade_medida}
-                                                                    </div>
                                                                     <button
                                                                         type="button"
-                                                                        onClick={() => removeInsumo(selInsumo.insumo_id)}
-                                                                        className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
+                                                                        onClick={() => removeInsumo(item.insumo_id)}
+                                                                        className="p-1.5 text-slate-400 hover:text-red-500 transition-colors"
                                                                     >
-                                                                        <Trash2 className="size-4" />
+                                                                        <Trash2 className="size-3.5" />
                                                                     </button>
                                                                 </div>
-                                                            );
-                                                        })}
-
-                                                        <div className="mt-4 pt-3 border-t border-slate-200/60 dark:border-slate-600 flex items-end justify-between px-1">
-                                                            <div>
-                                                                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-0.5">Custo de Produção (Estimado)</p>
-                                                                <h3 className="text-lg font-black text-slate-800 dark:text-white">
-                                                                    {selectedInsumos.reduce((total, s) => {
-                                                                        const i = insumosList.find(x => x.id === s.insumo_id);
-                                                                        return total + ((i?.custo_por_unidade || 0) * (s.quantidade_necessaria || 0));
-                                                                    }, 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                                                                </h3>
                                                             </div>
-                                                            <div className="text-right">
-                                                                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded-md mb-1 inline-flex items-center gap-1">
-                                                                    <PackageOpen className="size-3" /> Ficha Ativa
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
+                                                        );
+                                                    })}
+                                                </div>
                                             </div>
                                         </motion.div>
                                     )}
@@ -480,22 +458,30 @@ export default function ProductFormModal({
                             </div>
                         )}
 
-                        <div className="pt-2 sm:pt-4 flex flex-col sm:flex-row gap-3">
+                        <div className="flex gap-3 pt-4 shrink-0">
                             <button
                                 type="button"
                                 onClick={onClose}
-                                disabled={isSubmitting}
-                                className="order-2 sm:order-1 flex-1 px-6 py-2.5 sm:py-3 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all text-sm disabled:opacity-50"
+                                className="flex-1 px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
                             >
                                 Cancelar
                             </button>
                             <button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="order-1 sm:order-2 flex-1 px-6 py-2.5 sm:py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+                                className="flex-1 px-4 py-3 bg-primary text-white rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <Check className="size-4" />
-                                {isSubmitting ? 'Salvando...' : 'Salvar Produto'}
+                                {isSubmitting ? (
+                                    <>
+                                        <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        Salvando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Check className="size-4" />
+                                        Salvar Produto
+                                    </>
+                                )}
                             </button>
                         </div>
                     </form>

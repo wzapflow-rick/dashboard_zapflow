@@ -292,7 +292,7 @@ export default function MenuFilter({
     // ── Chips de categoria ─────────────────────
     const categories = useMemo(() => {
         return grouped.map((g) => {
-            const firstProductWithImage = g.products.find(
+            const firstProductWithImage = (g.products || []).find(
                 (p) => p.imagem && p.imagem.startsWith('http')
             );
             return {
@@ -325,7 +325,7 @@ export default function MenuFilter({
         }
 
         if (selectedCategory !== 'all') {
-            results = results.filter((g) => g.id === selectedCategory);
+            results = results.filter((g) => String(g.id) === String(selectedCategory));
         }
 
         return results;
@@ -441,7 +441,7 @@ export default function MenuFilter({
                         <CategoryChip
                             key={cat.id}
                             label={cat.name}
-                            isActive={selectedCategory === cat.id}
+                            isActive={String(selectedCategory) === String(cat.id)}
                             onClick={() => setSelectedCategory(cat.id)}
                             imageUrl={cat.imageUrl}
                         />
