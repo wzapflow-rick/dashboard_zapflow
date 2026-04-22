@@ -72,8 +72,15 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
     // Formatar itens do JSON do NocoDB
     const formattedItems = Array.isArray(order.itens)
         ? order.itens.map((item: any) => {
-            const nome = item.produto || item.nome || 'Item';
+            let nome = item.produto || item.nome || 'Item';
             const qtd = item.quantidade || 1;
+            const tamanho = item.tamanho || '';
+            
+            // Se o tamanho existir e não estiver no nome, adiciona
+            if (tamanho && !nome.toLowerCase().includes(tamanho.toLowerCase())) {
+                nome = `${nome} (${tamanho})`;
+            }
+            
             return `${qtd}x ${nome}`;
         })
         : [];
