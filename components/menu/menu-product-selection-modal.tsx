@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
-import { X, ShoppingCart, Check, ChevronRight, ChevronLeft, MessageSquare } from 'lucide-react';
+import { X, ShoppingCart, Check, ChevronRight, ChevronLeft, MessageSquare, Ruler } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useCart } from './cart-context';
 import { toast } from 'sonner';
@@ -35,6 +35,11 @@ interface UpsellProduct {
     descricao?: string;
 }
 
+interface SizeOption {
+    nome: string;
+    preco: number;
+}
+
 interface MenuProductSelectionModalProps {
     product: any;
     whatsappNumber: string;
@@ -58,7 +63,7 @@ interface SelectedItem extends ComplementItem {
     grupo_id: number;
 }
 
-type Step = 'flavors' | 'additions' | 'observation';
+type Step = 'size' | 'flavors' | 'additions' | 'observation';
 
 export default function MenuProductSelectionModal({
     product,
@@ -69,6 +74,27 @@ export default function MenuProductSelectionModal({
     editingItemId,
 }: MenuProductSelectionModalProps) {
     const { addItem, updateItem } = useCart();
+    
+    // Parse sizes
+    const availableSizes = useMemo<SizeOption[]>(() => {
+        if (!product.tamanhos) return [];
+        try {
+            const parsed = JSON.parse(product.tamanhos);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch {
+            return [];
+        }
+    }, [product.tamanhos]);
+
+    const hasSizes = availableSizes.length > 0;
+
+    const [selectedSize, setSelectedSize] = useState<SizeOption | null>(() => {
+        if (product._editingData?.tamanho) {
+            return availableSizes.find(s => s.nome === product._editingData.tamanho) || availableSizes[0] || null;
+        }
+        return availableSizes[0] || null;
+    });
+
     const [selections, setSelections] = useState<Record<number, SelectedItem[]>>(() => {
         if (product._editingData?.complementos) {
             const initial: Record<number, SelectedItem[]> = {};
@@ -79,8 +105,9 @@ export default function MenuProductSelectionModal({
         }
         return {};
     });
+    
     const [observacao, setObservacao] = useState(product._editingData?.observacao || '');
-    const [step, setStep] = useState<Step>('flavors');
+    const [step, setStep] = useState<Step>(hasSizes ? 'size' : 'flavors');
 
     const saborGroups = product.saborGroups || [];
     const additionalGroups = product.additionalGroups || [];
@@ -125,7 +152,7 @@ export default function MenuProductSelectionModal({
     };
 
     const finalPrice = useMemo(() => {
-        let price = Number(product.preco || 0);
+        let price = selectedSize ? selectedSize.preco : Number(product.preco || 0);
         const allGroups = [...saborGroups, ...additionalGroups];
 
         allGroups.forEach((grupo: ComplementGroup) => {
@@ -153,9 +180,12 @@ export default function MenuProductSelectionModal({
         });
 
         return price;
-    }, [product, selections, saborGroups, additionalGroups]);
+    }, [product, selections, saborGroups, additionalGroups, selectedSize]);
 
     const isStepValid = (currentStep: Step) => {
+        if (currentStep === 'size') {
+            return !!selectedSize;
+        }
         if (currentStep === 'flavors') {
             return saborGroups.every((grupo: ComplementGroup) => {
                 const sel = selections[grupo.id] || [];
@@ -180,7 +210,7 @@ export default function MenuProductSelectionModal({
     const handleClose = () => {
         setSelections({});
         setObservacao('');
-        setStep('flavors');
+        setStep(hasSizes ? 'size' : 'flavors');
         onClose();
     };
 
@@ -190,12 +220,13 @@ export default function MenuProductSelectionModal({
             return;
         }
 
-        if (step === 'flavors') {
-            if (hasAdditions) {
-                setStep('additions');
-            } else {
-                setStep('observation');
-            }
+        if (step === 'size') {
+            if (hasFlavors) setStep('flavors');
+            else if (hasAdditions) setStep('additions');
+            else setStep('observation');
+        } else if (step === 'flavors') {
+            if (hasAdditions) setStep('additions');
+            else setStep('observation');
         } else if (step === 'additions') {
             setStep('observation');
         } else {
@@ -207,8 +238,12 @@ export default function MenuProductSelectionModal({
         if (step === 'observation') {
             if (hasAdditions) setStep('additions');
             else if (hasFlavors) setStep('flavors');
+            else if (hasSizes) setStep('size');
         } else if (step === 'additions') {
-            setStep('flavors');
+            if (hasFlavors) setStep('flavors');
+            else if (hasSizes) setStep('size');
+        } else if (step === 'flavors') {
+            if (hasSizes) setStep('size');
         }
     };
 
@@ -228,23 +263,22 @@ export default function MenuProductSelectionModal({
             };
         });
 
+        const itemData = {
+            productId: product.id,
+            nome: product.nome,
+            preco: finalPrice,
+            quantidade: 1,
+            imagem: product.imagem,
+            observacao: observacao.trim() || undefined,
+            tamanho: selectedSize?.nome,
+            complementos: complementos.length > 0 ? complementos : undefined
+        };
+
         if (editingItemId) {
-            updateItem(editingItemId, {
-                preco: finalPrice,
-                observacao: observacao.trim() || undefined,
-                complementos: complementos.length > 0 ? complementos : undefined
-            });
+            updateItem(editingItemId, itemData);
             toast.success(`${product.nome} atualizado!`);
         } else {
-            addItem({
-                productId: product.id,
-                nome: product.nome,
-                preco: finalPrice,
-                quantidade: 1,
-                imagem: product.imagem,
-                observacao: observacao.trim() || undefined,
-                complementos: complementos.length > 0 ? complementos : undefined
-            });
+            addItem(itemData);
             toast.success(`${product.nome} adicionado ao carrinho!`);
         }
 
@@ -289,7 +323,7 @@ export default function MenuProductSelectionModal({
                             <h2 className="text-xl font-bold text-white">{product.nome}</h2>
                             <div className="flex items-center gap-2 mt-1">
                                 <span className="px-2 py-0.5 bg-white/20 backdrop-blur-md rounded text-[10px] font-bold text-white uppercase tracking-wider">
-                                    {step === 'flavors' ? 'Passo 1: Sabores' : step === 'additions' ? 'Passo 2: Adicionais' : 'Passo 3: Observação'}
+                                    {step === 'size' ? 'Tamanho' : step === 'flavors' ? 'Sabores' : step === 'additions' ? 'Adicionais' : 'Observação'}
                                 </span>
                             </div>
                         </div>
@@ -297,11 +331,48 @@ export default function MenuProductSelectionModal({
 
                     {/* Progress Bar */}
                     <div className="h-1 w-full bg-slate-100 flex">
-                        <div className={`h-full bg-violet-500 transition-all duration-300 ${step === 'flavors' ? 'w-1/3' : step === 'additions' ? 'w-2/3' : 'w-full'}`} />
+                        <div 
+                            className="h-full bg-violet-500 transition-all duration-300" 
+                            style={{ 
+                                width: step === 'size' ? '25%' : step === 'flavors' ? '50%' : step === 'additions' ? '75%' : '100%' 
+                            }} 
+                        />
                     </div>
 
                     {/* Content */}
                     <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+                        {step === 'size' && (
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2 text-slate-900 dark:text-white mb-2">
+                                    <Ruler className="size-5 text-violet-500" />
+                                    <h3 className="font-bold">Escolha o tamanho</h3>
+                                </div>
+                                <div className="grid grid-cols-1 gap-2">
+                                    {availableSizes.map((size, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => setSelectedSize(size)}
+                                            className={`w-full p-4 rounded-xl border flex items-center justify-between transition-all ${
+                                                selectedSize?.nome === size.nome
+                                                    ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/30'
+                                                    : 'border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 bg-white dark:bg-slate-800'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className={`size-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                                                    selectedSize?.nome === size.nome ? 'bg-violet-500 border-violet-500 text-white' : 'border-slate-300 dark:border-slate-600'
+                                                }`}>
+                                                    {selectedSize?.nome === size.nome && <div className="size-2 bg-white rounded-full" />}
+                                                </div>
+                                                <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{size.nome}</span>
+                                            </div>
+                                            <span className="text-sm font-black text-violet-600">{fmt(size.preco)}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         {step === 'observation' ? (
                             <div className="space-y-4">
                                 <div className="flex items-center gap-2 text-slate-900 dark:text-white mb-2">
@@ -316,7 +387,7 @@ export default function MenuProductSelectionModal({
                                 />
                             </div>
                         ) : (
-                            currentGroups.map((grupo: ComplementGroup) => (
+                            step !== 'size' && currentGroups.map((grupo: ComplementGroup) => (
                                 <div key={grupo.id} className="space-y-3">
                                     <div className="flex items-center justify-between">
                                         <div>
@@ -372,7 +443,7 @@ export default function MenuProductSelectionModal({
                                 <p className="text-2xl font-black text-slate-900 dark:text-white">{fmt(finalPrice)}</p>
                             </div>
                             <div className="flex gap-2">
-                                {step !== 'flavors' && (
+                                {step !== (hasSizes ? 'size' : 'flavors') && (
                                     <button
                                         onClick={prevStep}
                                         className="p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"

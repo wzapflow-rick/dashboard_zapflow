@@ -2,13 +2,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Image as ImageIcon, Plus, Check, PackageOpen, Trash2 } from 'lucide-react';
+import { X, Image as ImageIcon, Plus, Check, PackageOpen, Trash2, Ruler } from 'lucide-react';
 import Image from 'next/image';
 import { type Category } from '@/app/actions/products';
 import { type Insumo } from '@/app/actions/insumos';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { toast } from 'sonner';
 import { parseCurrency } from '@/lib/utils';
+
+interface SizeOption {
+    nome: string;
+    preco: number;
+}
 
 interface ProductFormModalProps {
     isOpen: boolean;
@@ -34,6 +39,10 @@ export default function ProductFormModal({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
 
+    // Sizes State
+    const [hasSizes, setHasSizes] = useState(false);
+    const [sizes, setSizes] = useState<SizeOption[]>([]);
+
     // Insumos State
     const [usaInsumos, setUsaInsumos] = useState(false);
     const [selectedInsumos, setSelectedInsumos] = useState<{ insumo_id: number, quantidade_necessaria: number }[]>([]);
@@ -45,12 +54,31 @@ export default function ProductFormModal({
     }, []);
 
     useEffect(() => {
-        // Limpar possíveis mensagens de erro (toasts) que ficaram presas na tela
         toast.dismiss();
 
         setIsCreatingCategory(false);
         setIsSubmitting(false);
         setImagePreview(editingProduct?.imagem || null);
+
+        // Load sizes if they exist
+        if (editingProduct?.tamanhos) {
+            try {
+                const parsedSizes = JSON.parse(editingProduct.tamanhos);
+                if (Array.isArray(parsedSizes) && parsedSizes.length > 0) {
+                    setSizes(parsedSizes);
+                    setHasSizes(true);
+                } else {
+                    setSizes([]);
+                    setHasSizes(false);
+                }
+            } catch {
+                setSizes([]);
+                setHasSizes(false);
+            }
+        } else {
+            setSizes([]);
+            setHasSizes(false);
+        }
 
         if (productInsumos && productInsumos.length > 0) {
             setUsaInsumos(true);
@@ -60,7 +88,6 @@ export default function ProductFormModal({
             setSelectedInsumos([]);
         }
 
-        // Limpar mensagens ao desmontar
         return () => {
             toast.dismiss();
         };
@@ -73,18 +100,33 @@ export default function ProductFormModal({
         setIsSubmitting(true);
         const formData = new FormData(e.currentTarget);
 
-        // Validar preço - garantir que não é NaN
-        const precoValue = formData.get('preco');
-        const precoNumerico = parseCurrency(precoValue as string);
+        // Validar preço base se não houver tamanhos
+        if (!hasSizes) {
+            const precoValue = formData.get('preco');
+            const precoNumerico = parseCurrency(precoValue as string);
 
-        if (precoNumerico <= 0) {
-            toast.error('Por favor, informe um preço válido maior que zero');
-            setIsSubmitting(false);
-            return;
+            if (precoNumerico <= 0) {
+                toast.error('Por favor, informe um preço válido maior que zero');
+                setIsSubmitting(false);
+                return;
+            }
+            formData.set('preco', String(precoNumerico));
+            formData.set('tamanhos', '');
+        } else {
+            if (sizes.length === 0) {
+                toast.error('Adicione pelo menos um tamanho ou desative a opção de tamanhos');
+                setIsSubmitting(false);
+                return;
+            }
+            // Garantir que todos os tamanhos tenham preço
+            if (sizes.some(s => s.preco <= 0)) {
+                toast.error('Todos os tamanhos devem ter um preço maior que zero');
+                setIsSubmitting(false);
+                return;
+            }
+            formData.set('preco', String(sizes[0].preco)); // Preço base é o do primeiro tamanho
+            formData.set('tamanhos', JSON.stringify(sizes));
         }
-
-        // Substituir o valor do preço com o valor numérico limpo
-        formData.set('preco', String(precoNumerico));
 
         try {
             await onSubmit(
@@ -95,6 +137,20 @@ export default function ProductFormModal({
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const addSize = () => {
+        setSizes([...sizes, { nome: '', preco: 0 }]);
+    };
+
+    const updateSize = (index: number, field: keyof SizeOption, value: string | number) => {
+        const newSizes = [...sizes];
+        newSizes[index] = { ...newSizes[index], [field]: value };
+        setSizes(newSizes);
+    };
+
+    const removeSize = (index: number) => {
+        setSizes(sizes.filter((_, i) => i !== index));
     };
 
     const addInsumo = (insumoId: number) => {
@@ -218,7 +274,7 @@ export default function ProductFormModal({
                                     {isCreatingCategory && (
                                         <div className="pt-2">
                                             <input
-                                                name="novaCategoria"
+                                                name="new_category_name"
                                                 required={isCreatingCategory}
                                                 className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                                 placeholder="Nome da Nova Categoria"
@@ -227,16 +283,87 @@ export default function ProductFormModal({
                                         </div>
                                     )}
                                 </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Preço (R$)</label>
-                                    <CurrencyInput
-                                        name="preco"
-                                        required
-                                        defaultValue={editingProduct?.preco}
-                                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                                {!hasSizes && (
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Preço (R$)</label>
+                                        <CurrencyInput
+                                            name="preco"
+                                            required={!hasSizes}
+                                            defaultValue={editingProduct?.preco}
+                                            className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Sizes Section */}
+                        <div className="pt-4 border-t border-slate-100 dark:border-slate-700">
+                            <label className="flex items-center gap-3 cursor-pointer group mb-4">
+                                <div className={`relative w-10 h-6 rounded-full transition-colors ${hasSizes ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-600'}`}>
+                                    <div className={`absolute left-1 top-1 w-4 h-4 rounded-full bg-white transition-transform ${hasSizes ? 'translate-x-4' : 'translate-x-0'}`} />
+                                    <input
+                                        type="checkbox"
+                                        className="hidden"
+                                        checked={hasSizes}
+                                        onChange={(e) => setHasSizes(e.target.checked)}
                                     />
                                 </div>
-                            </div>
+                                <div>
+                                    <div className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-primary transition-colors flex items-center gap-1.5">
+                                        <Ruler className="size-4" /> Este produto tem tamanhos diferentes?
+                                    </div>
+                                    <div className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">Ex: Broto, Média, Grande, 1 Litro, 500ml...</div>
+                                </div>
+                            </label>
+
+                            <AnimatePresence>
+                                {hasSizes && (
+                                    <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: 'auto', opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        className="overflow-hidden"
+                                    >
+                                        <div className="bg-slate-50 dark:bg-slate-700 rounded-xl p-4 border border-slate-100 dark:border-slate-600 space-y-3">
+                                            {sizes.map((size, index) => (
+                                                <div key={index} className="flex gap-2 items-center">
+                                                    <input
+                                                        type="text"
+                                                        value={size.nome}
+                                                        onChange={(e) => updateSize(index, 'nome', e.target.value)}
+                                                        placeholder="Ex: Grande"
+                                                        className="flex-1 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
+                                                        required
+                                                    />
+                                                    <div className="w-32">
+                                                        <CurrencyInput
+                                                            value={size.preco}
+                                                            onChange={(val) => updateSize(index, 'preco', parseCurrency(val))}
+                                                            className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeSize(index)}
+                                                        className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                                                    >
+                                                        <Trash2 className="size-4" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            <button
+                                                type="button"
+                                                onClick={addSize}
+                                                className="w-full py-2 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg text-xs font-bold text-slate-500 dark:text-slate-400 hover:border-primary hover:text-primary transition-all flex items-center justify-center gap-1.5"
+                                            >
+                                                <Plus className="size-3" /> Adicionar Tamanho
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
 
                         {/* Insumos Section */}
@@ -296,7 +423,7 @@ export default function ProductFormModal({
                                                 {selectedInsumos.length > 0 && (
                                                     <div className="space-y-2 mt-4">
                                                         <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Ficha Técnica do Produto:</label>
-                                                        {selectedInsumos.map((selInsumo, idx) => {
+                                                        {selectedInsumos.map((selInsumo) => {
                                                             const refInsumo = insumosList.find(i => i.id === selInsumo.insumo_id);
                                                             if (!refInsumo) return null;
 

@@ -37,7 +37,7 @@ const CategoryModal = dynamic(() => import('@/components/menu/category-modal'), 
   ssr: false,
 });
 
-export default function MenuManagement() {
+export default function MenuManagement({ hideCategoryButton }: { hideCategoryButton?: boolean }) {
   const {
     products,
     setProducts,
@@ -139,13 +139,15 @@ export default function MenuManagement() {
           <p className="text-slate-500 text-sm mt-1 font-medium">Gerencie seus produtos industrializados (bebidas, royalties, etc).</p>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => { setEditingCategory(null); setIsCategoryModalOpen(true); }}
-            className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2.5 rounded-lg text-sm font-semibold shadow-sm flex items-center gap-2 transition-all active:scale-95 dark:bg-slate-800/75 dark:text-zinc-200 dark:border-slate-700"
-          >
-            <Folder className="size-4 text-amber-500" />
-            Gerenciar Categorias
-          </button>
+          {!hideCategoryButton && (
+            <button
+              onClick={() => { setEditingCategory(null); setIsCategoryModalOpen(true); }}
+              className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2.5 rounded-lg text-sm font-semibold shadow-sm flex items-center gap-2 transition-all active:scale-95 dark:bg-slate-800/75 dark:text-zinc-200 dark:border-slate-700"
+            >
+              <Folder className="size-4 text-amber-500" />
+              Gerenciar Categorias
+            </button>
+          )}
           <button
             onClick={startTour}
             className="bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2 dark:bg-amber-900 dark:border-amber-800 dark:text-amber-200 dark:hover:bg-amber-800"

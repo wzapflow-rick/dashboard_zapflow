@@ -68,6 +68,7 @@ export const ProductSchema = z.object({
     disponivel: z.boolean().default(true),
     imagem_url: z.string().url().optional().or(z.literal('')).optional(),
     imagem: z.string().optional().or(z.literal('')),
+    tamanhos: z.string().optional().nullable(),
 }).passthrough();
 
 // Categories
