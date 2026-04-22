@@ -36,7 +36,7 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved, availab
     const [modoPreco, setModoPreco] = useState<ModoPreco>(editingGrupo?.modo_preco || 'por_item');
     const [precoFixo, setPrecoFixo] = useState<number>(editingGrupo?.preco_fixo ?? 0);
     const [completamentos, setCompletamentos] = useState<number[]>(editingGrupo?.completamentos_ids || []);
-    const [categoriaId, setCategoriaId] = useState<number | string | null>(editingGrupo?.categoria_id || null);
+    const [categoriaId, setCategoriaId] = useState<number | string | null>(null);
     const [categories, setCategories] = useState<any[]>([]);
     const [saving, setSaving] = useState(false);
 
@@ -59,7 +59,10 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved, availab
         setModoPreco(editingGrupo?.modo_preco || 'por_item');
         setPrecoFixo(Number(editingGrupo?.preco_fixo) || 0);
         setCompletamentos(Array.isArray(editingGrupo?.completamentos_ids) ? editingGrupo.completamentos_ids : []);
-        setCategoriaId(editingGrupo?.categoria_id || null);
+        
+        // Garantir que categoria_id seja tratado como string ou number para o select
+        const catId = editingGrupo?.categoria_id;
+        setCategoriaId(catId ? String(catId) : null);
     }, [editingGrupo]);
 
     // Quando qtdSlots mudar, ajusta max_slots para não ultrapassar
@@ -149,12 +152,15 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved, availab
                                     <div className="relative">
                                         <select
                                             value={categoriaId || ''}
-                                            onChange={e => setCategoriaId(e.target.value || null)}
+                                            onChange={e => {
+                                                const val = e.target.value;
+                                                setCategoriaId(val === '' ? null : val);
+                                            }}
                                             className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700 appearance-none"
                                         >
                                             <option value="">Nenhuma (Ficará em "Monte seu Pedido")</option>
                                             {categories.map(cat => (
-                                                <option key={cat.id} value={cat.id}>{cat.nome}</option>
+                                                <option key={String(cat.id)} value={String(cat.id)}>{cat.nome}</option>
                                             ))}
                                         </select>
                                         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none" />

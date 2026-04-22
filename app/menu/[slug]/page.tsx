@@ -4,9 +4,8 @@ import MenuClientWrapper from '@/components/menu/menu-client-wrapper';
 import MenuFilter from '@/components/menu/menu-filter';
 import type { Metadata } from 'next';
 
-// ISR: revalida a cada 60 segundos em vez de force-dynamic
-// Isso reduz drasticamente a carga no NocoDB para cardápios populares
-export const revalidate = 60;
+// Forçar renderização dinâmica para refletir mudanças instantâneas no cardápio
+export const dynamic = 'force-dynamic';
 
 // Gerar metadata dinâmico para SEO
 export async function generateMetadata({
@@ -74,8 +73,8 @@ export default async function PublicMenuPage({
     // Inicial do nome para o avatar
     const inicial = empresa.nome?.charAt(0)?.toUpperCase() ?? '?';
 
-    // Total de produtos disponíveis
-    const totalProdutos = grouped.reduce((acc, cat) => acc + cat.products.length, 0) + compositeProducts.length;
+    // Total de produtos disponíveis (agora os compostos estão dentro das categorias em grouped)
+    const totalProdutos = grouped.reduce((acc, cat) => acc + cat.products.length + cat.compositeProducts.length, 0);
 
     return (
         <MenuClientWrapper
