@@ -61,7 +61,16 @@ export default function ProductFormModal({
         setImagePreview(editingProduct?.imagem || null);
 
         // Load sizes if they exist
-        const rawTamanhos = editingProduct?.tamanhos || editingProduct?.tamanhos_json;
+        let rawTamanhos = editingProduct?.tamanhos || editingProduct?.tamanhos_json;
+        
+        // FALLBACK: Se não encontrou na coluna 'tamanhos', tenta extrair da descrição
+        if (!rawTamanhos && editingProduct?.descricao?.includes('[[SIZES:')) {
+            const match = editingProduct.descricao.match(/\[\[SIZES:(.*)\]\]/);
+            if (match && match[1]) {
+                rawTamanhos = match[1];
+            }
+        }
+
         if (rawTamanhos) {
             try {
                 const parsedSizes = typeof rawTamanhos === 'string' 
@@ -132,7 +141,20 @@ export default function ProductFormModal({
             // Se tem tamanhos, o preço base no DB deve ser o menor preço entre os tamanhos para exibição correta no cardápio
             const menorPreco = Math.min(...sizes.map(s => s.preco));
             formData.set('preco', String(menorPreco));
-            formData.set('tamanhos', JSON.stringify(sizes));
+            const sizesJson = JSON.stringify(sizes);
+            formData.set('tamanhos', sizesJson);
+            
+            // FALLBACK: Como a coluna 'tamanhos' pode não existir no NocoDB, 
+            // vamos anexar os tamanhos ao final da descrição de forma oculta para persistência garantida.
+            const currentDesc = formData.get('descricao') as string || '';
+            const cleanDesc = currentDesc.split('[[SIZES:')[0].trim();
+            formData.set('descricao', `${cleanDesc}\n\n[[SIZES:${sizesJson}]]`);
+        } else {
+            // Se desativou tamanhos, limpa o marcador da descrição
+            const currentDesc = formData.get('descricao') as string || '';
+            const cleanDesc = currentDesc.split('[[SIZES:')[0].trim();
+            formData.set('descricao', cleanDesc);
+            formData.set('tamanhos', '');
         }
 
         try {

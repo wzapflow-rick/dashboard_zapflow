@@ -77,14 +77,24 @@ export default function MenuProductSelectionModal({
     
     // Parse sizes
     const availableSizes = useMemo<SizeOption[]>(() => {
-        if (!product.tamanhos) return [];
+        let rawTamanhos = product.tamanhos;
+        
+        // FALLBACK: Se não encontrou na coluna 'tamanhos', tenta extrair da descrição
+        if (!rawTamanhos && product.descricao?.includes('[[SIZES:')) {
+            const match = product.descricao.match(/\[\[SIZES:(.*)\]\]/);
+            if (match && match[1]) {
+                rawTamanhos = match[1];
+            }
+        }
+
+        if (!rawTamanhos) return [];
         try {
-            const parsed = JSON.parse(product.tamanhos);
+            const parsed = JSON.parse(rawTamanhos);
             return Array.isArray(parsed) ? parsed : [];
         } catch {
             return [];
         }
-    }, [product.tamanhos]);
+    }, [product.tamanhos, product.descricao]);
 
     const hasSizes = availableSizes.length > 0;
 
