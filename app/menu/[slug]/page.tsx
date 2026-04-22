@@ -73,7 +73,7 @@ export default async function PublicMenuPage({
     // Inicial do nome para o avatar
     const inicial = empresa.nome?.charAt(0)?.toUpperCase() ?? '?';
 
-    // Total de produtos disponíveis (agora os compostos estão dentro das categorias em grouped)
+    // Total de produtos disponíveis
     const totalProdutos = grouped.reduce((acc, cat) => acc + cat.products.length + cat.compositeProducts.length, 0);
 
     return (
@@ -84,14 +84,14 @@ export default async function PublicMenuPage({
             pontosPorReal={pontosPorReal}
             upsellProducts={upsellProducts}
         >
-            <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors">
+            <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors pb-24">
 
                 {/* ── Header fixo ──────────────────────────────────────────── */}
                 <header className="sticky top-0 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm">
-                    <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
+                    <div className="max-w-2xl mx-auto px-4 py-2 sm:py-3 flex items-center gap-3">
                         {/* Avatar com inicial */}
                         <div
-                            className="size-11 rounded-xl flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-sm"
+                            className="size-10 sm:size-11 rounded-xl flex items-center justify-center text-white font-bold text-base sm:text-lg shrink-0 shadow-sm"
                             style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
                             aria-hidden="true"
                         >
@@ -100,54 +100,54 @@ export default async function PublicMenuPage({
 
                         {/* Info da empresa */}
                         <div className="flex-1 min-w-0">
-                            <h1 className="font-bold text-slate-900 dark:text-white text-base leading-tight truncate">
+                            <h1 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base leading-tight truncate">
                                 {empresa.nome}
                             </h1>
-                            <div className="flex items-center gap-3 mt-0.5">
+                            <div className="flex items-center gap-2 sm:gap-3 mt-0.5">
                                 {empresa.nincho && (
-                                    <span className="text-xs text-slate-500 dark:text-slate-400 capitalize">
+                                    <span className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 capitalize truncate max-w-[80px] sm:max-w-none">
                                         {empresa.nincho}
                                     </span>
                                 )}
                                 {empresa.cidade && (
-                                    <span className="flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500">
-                                        <MapPin className="size-3" />
+                                    <span className="flex items-center gap-1 text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 truncate">
+                                        <MapPin className="size-2.5 sm:size-3" />
                                         {empresa.cidade}
                                     </span>
                                 )}
                                 {totalProdutos > 0 && (
-                                    <span className="text-xs text-slate-400 dark:text-slate-500">
-                                        {totalProdutos} {totalProdutos === 1 ? 'item' : 'itens'}
+                                    <span className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 shrink-0">
+                                        • {totalProdutos} {totalProdutos === 1 ? 'item' : 'itens'}
                                     </span>
                                 )}
                             </div>
                         </div>
 
-                        {/* Badge de fidelidade se ativo */}
+                        {/* Badge de fidelidade se ativo - Escondido em telas muito pequenas */}
                         {loyaltyConfig?.ativo && (
-                            <div className="shrink-0 bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 text-xs font-semibold px-2.5 py-1 rounded-full border border-violet-200 dark:border-violet-800">
-                                🌟 Fidelidade
+                            <div className="hidden xs:flex shrink-0 bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 text-[10px] sm:text-xs font-semibold px-2 sm:px-2.5 py-1 rounded-full border border-violet-200 dark:border-violet-800">
+                                🌟 <span className="hidden sm:inline ml-1">Fidelidade</span>
                             </div>
                         )}
                     </div>
                 </header>
 
                 {/* ── Conteúdo principal ───────────────────────────────────── */}
-                <main className="max-w-2xl mx-auto px-4 py-6">
+                <main className="max-w-2xl mx-auto px-4 py-4 sm:py-6">
                     {grouped.length === 0 && compositeProducts.length === 0 ? (
                         /* Estado vazio */
-                        <div className="text-center py-24">
-                            <div className="size-20 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-5">
-                                <UtensilsCrossed className="size-10 text-slate-300 dark:text-slate-600" />
+                        <div className="text-center py-20 sm:py-24">
+                            <div className="size-16 sm:size-20 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-5">
+                                <UtensilsCrossed className="size-8 sm:size-10 text-slate-300 dark:text-slate-600" />
                             </div>
-                            <h2 className="text-lg font-bold text-slate-700 dark:text-white mb-2">
+                            <h2 className="text-base sm:text-lg font-bold text-slate-700 dark:text-white mb-2">
                                 Nenhum produto disponível
                             </h2>
-                            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
+                            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
                                 O cardápio está sendo atualizado. Volte em breve!
                             </p>
-                            <div className="flex items-center justify-center gap-1.5 mt-4 text-xs text-slate-400 dark:text-slate-500">
-                                <Clock className="size-3.5" />
+                            <div className="flex items-center justify-center gap-1.5 mt-4 text-[10px] sm:text-xs text-slate-400 dark:text-slate-500">
+                                <Clock className="size-3 sm:size-3.5" />
                                 <span>Atualizado automaticamente</span>
                             </div>
                         </div>
@@ -164,10 +164,10 @@ export default async function PublicMenuPage({
                     )}
 
                     {/* Footer */}
-                    <footer className="text-center pt-10 pb-8 mt-4 border-t border-slate-100 dark:border-slate-800">
-                        <p className="text-xs text-slate-400 dark:text-slate-500">
+                    <footer className="text-center pt-8 pb-4 mt-4 border-t border-slate-100 dark:border-slate-800">
+                        <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500">
                             Cardápio digital por{' '}
-                            <span className="font-bold text-violet-500 hover:text-violet-400 transition-colors">
+                            <span className="font-bold text-violet-500">
                                 ZapFlow
                             </span>
                         </p>
