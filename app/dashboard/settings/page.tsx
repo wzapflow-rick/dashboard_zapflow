@@ -59,7 +59,9 @@ const sections = [
 const DIAS_SEMANA = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
 export default function SettingsPage() {
-  const [activeSection, setActiveSection] = React.useState('general');
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const initialSection = searchParams?.get('section') || 'general';
+  const [activeSection, setActiveSection] = React.useState(initialSection);
   const [autoRadius, setAutoRadius] = React.useState(false);
   const [valorPorKm, setValorPorKm] = React.useState<number>(0);
   const [taxaEntregaFixa, setTaxaEntregaFixa] = React.useState<number>(0);
