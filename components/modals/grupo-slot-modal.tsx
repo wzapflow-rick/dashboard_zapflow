@@ -5,6 +5,7 @@ import { X, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { upsertGrupoSlot, type GrupoSlot, type TipoGrupo, type RegraPreco, type ModoPreco } from '@/app/actions/grupos-slots';
+import { getCategories } from '@/app/actions/products';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface GrupoSlotModalProps {
@@ -35,7 +36,16 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved, availab
     const [modoPreco, setModoPreco] = useState<ModoPreco>(editingGrupo?.modo_preco || 'por_item');
     const [precoFixo, setPrecoFixo] = useState<number>(editingGrupo?.preco_fixo ?? 0);
     const [completamentos, setCompletamentos] = useState<number[]>(editingGrupo?.completamentos_ids || []);
+    const [categoriaId, setCategoriaId] = useState<number | string | null>(editingGrupo?.categoria_id || null);
+    const [categories, setCategories] = useState<any[]>([]);
     const [saving, setSaving] = useState(false);
+
+    // Carregar categorias
+    useEffect(() => {
+        if (isOpen) {
+            getCategories().then(setCategories).catch(console.error);
+        }
+    }, [isOpen]);
 
     // Sync form when editingGrupo changes
     React.useEffect(() => {
@@ -49,6 +59,7 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved, availab
         setModoPreco(editingGrupo?.modo_preco || 'por_item');
         setPrecoFixo(Number(editingGrupo?.preco_fixo) || 0);
         setCompletamentos(Array.isArray(editingGrupo?.completamentos_ids) ? editingGrupo.completamentos_ids : []);
+        setCategoriaId(editingGrupo?.categoria_id || null);
     }, [editingGrupo]);
 
     // Quando qtdSlots mudar, ajusta max_slots para não ultrapassar
@@ -77,6 +88,7 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved, availab
                 modo_preco: modoPreco,
                 preco_fixo: modoPreco === 'fixo' ? precoFixo : 0,
                 completamentos_ids: completamentos,
+                categoria_id: categoriaId,
             });
             toast.success(editingGrupo?.id ? 'Grupo atualizado!' : 'Grupo criado!');
             onSaved(saved as GrupoSlot);
@@ -129,6 +141,26 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved, availab
                                     className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700"
                                 />
                             </div>
+
+                            {/* Categoria */}
+                            {tipo === 'fracionado' && (
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1.5 dark:text-zinc-200">Categoria no Cardápio</label>
+                                    <div className="relative">
+                                        <select
+                                            value={categoriaId || ''}
+                                            onChange={e => setCategoriaId(e.target.value || null)}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700 appearance-none"
+                                        >
+                                            <option value="">Nenhuma (Ficará em "Monte seu Pedido")</option>
+                                            {categories.map(cat => (
+                                                <option key={cat.id} value={cat.id}>{cat.nome}</option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none" />
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Descrição */}
                             <div>

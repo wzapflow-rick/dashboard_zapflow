@@ -159,6 +159,7 @@ export const GrupoSlotSchema = z.object({
     modo_preco: z.enum(['por_item', 'fixo']).default('por_item'),
     preco_fixo: z.coerce.number().min(0).default(0),
     completamentos_ids: z.array(z.number()).default([]),
+    categoria_id: z.any().optional().nullable(),
 });
 
 // Itens Base (sabores para slots)

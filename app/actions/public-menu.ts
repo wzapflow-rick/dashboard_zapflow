@@ -97,6 +97,7 @@ export interface PublicCategory {
     cor?: string | null;
     ordem: number;
     products: PublicProduct[];
+    compositeProducts: PublicCompositeProduct[];
 }
 
 export interface PublicCompositeProduct {
@@ -113,6 +114,7 @@ export interface PublicCompositeProduct {
     maximo: number;
     preco_fixo: number;
     completamentos_ids: number[];
+    categoria_id?: number | string | null;
     items: PublicGroupItem[];
 }
 
@@ -229,6 +231,7 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
             modo_preco: (g.modo_preco as string) || 'por_item',
             preco_fixo: Number(g.preco_fixo ?? 0),
             completamentos_ids: parseJsonArray(g.completamentos_ids),
+            categoria_id: g.categoria_id || null,
         }));
 
         // ── 5. Mapear itens base ──────────────────────────────────────────────
@@ -317,48 +320,8 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
             };
         });
 
-        // ── 8. Agrupar por categoria ──────────────────────────────────────────
-        const categories = categoriesData.list as Record<string, unknown>[];
-        const groupedFinal: PublicCategory[] = categories
-            .map((cat) => ({
-                id: cat.id as number,
-                name: cat.nome as string,
-                icone: cat.icone as string | null,
-                cor: cat.cor as string | null,
-                ordem: Number(cat.ordem ?? 0),
-                products: productsWithGroups.filter(
-                    (p) => {
-                        const raw = products.find((r) => r.id === p.id) as Record<string, unknown>;
-                        const catId = raw?.categorias ?? raw?.categoria_id ?? '';
-                        return String(catId) === String(cat.id);
-                    }
-                ),
-            }))
-            .filter((g) => g.products.length > 0);
-
-        // Produtos sem categoria
-        const categorizedIds = new Set(
-            products
-                .filter((p) => {
-                    const catId = (p.categorias ?? p.categoria_id) as unknown;
-                    return categories.find((c) => String(c.id) === String(catId));
-                })
-                .map((p) => p.id as number)
-        );
-        const uncategorized = productsWithGroups.filter((p) => !categorizedIds.has(p.id));
-        if (uncategorized.length > 0) {
-            groupedFinal.push({
-                id: 0,
-                name: 'Outros',
-                icone: null,
-                cor: null,
-                ordem: 9999,
-                products: uncategorized,
-            });
-        }
-
-        // ── 9. Produtos compostos ─────────────────────────────────────────────
-        const compositeProducts: PublicCompositeProduct[] = gruposSlots
+        // ── 8. Processar produtos compostos ─────────────────────────────────────
+        const allCompositeProducts: PublicCompositeProduct[] = gruposSlots
             .filter((g) => g.tipo === 'fracionado' && g.itens.length > 0)
             .map((g) => {
                 const groupData = gruposMap.get(g.id)!;
@@ -376,9 +339,72 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
                     maximo: groupData.maximo,
                     preco_fixo: groupData.preco_fixo,
                     completamentos_ids: groupData.completamentos_ids,
+                    categoria_id: g.categoria_id,
                     items: groupData.items,
                 };
             });
+
+        // ── 9. Agrupar por categoria ──────────────────────────────────────────
+        const categories = categoriesData.list as Record<string, unknown>[];
+        const groupedFinal: PublicCategory[] = categories
+            .map((cat) => ({
+                id: cat.id as number,
+                name: cat.nome as string,
+                icone: cat.icone as string | null,
+                cor: cat.cor as string | null,
+                ordem: Number(cat.ordem ?? 0),
+                products: productsWithGroups.filter(
+                    (p) => {
+                        const raw = products.find((r) => r.id === p.id) as Record<string, unknown>;
+                        const catId = raw?.categorias ?? raw?.categoria_id ?? '';
+                        return String(catId) === String(cat.id);
+                    }
+                ),
+                compositeProducts: allCompositeProducts.filter(
+                    (cp) => String(cp.categoria_id) === String(cat.id)
+                )
+            }))
+            .filter((g) => g.products.length > 0 || g.compositeProducts.length > 0);
+
+        // Produtos compostos sem categoria (Vão para "Monte seu Pedido")
+        const unassignedComposites = allCompositeProducts.filter(cp => !cp.categoria_id);
+        
+        // Produtos normais sem categoria
+        const categorizedIds = new Set(
+            products
+                .filter((p) => {
+                    const catId = (p.categorias ?? p.categoria_id) as unknown;
+                    return categories.find((c) => String(c.id) === String(catId));
+                })
+                .map((p) => p.id as number)
+        );
+        const uncategorized = productsWithGroups.filter((p) => !categorizedIds.has(p.id));
+
+        // Adicionar seção "Monte seu Pedido" se houver compostos não atribuídos
+        if (unassignedComposites.length > 0) {
+            groupedFinal.unshift({
+                id: 'composites-default',
+                name: 'Monte seu Pedido',
+                icone: '🍕',
+                cor: null,
+                ordem: -10,
+                products: [],
+                compositeProducts: unassignedComposites
+            });
+        }
+
+        // Adicionar "Outros" se houver produtos normais não atribuídos
+        if (uncategorized.length > 0) {
+            groupedFinal.push({
+                id: 0,
+                name: 'Outros',
+                icone: null,
+                cor: null,
+                ordem: 9999,
+                products: uncategorized,
+                compositeProducts: []
+            });
+        }
 
         // ── 10. Configuração de fidelidade ────────────────────────────────────
         const loyaltyConfig = (loyaltyData.list[0] as Record<string, unknown>) ?? {
@@ -408,7 +434,7 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
                 endereco: (empresa.endereco as string) || null,
             },
             grouped: groupedFinal,
-            compositeProducts,
+            compositeProducts: allCompositeProducts,
             upsellProducts,
             loyaltyConfig: {
                 empresa_id: loyaltyConfig.empresa_id as number,

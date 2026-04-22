@@ -49,6 +49,7 @@ interface CategoryGroup {
     cor?: string | null;
     ordem?: number;
     products: Product[];
+    compositeProducts?: CompositeProduct[];
 }
 
 interface MenuFilterProps {
@@ -255,7 +256,7 @@ export default function MenuFilter({
     allGroups = [],
 }: MenuFilterProps) {
     const [search, setSearch] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState<number | 'all' | 'composites'>('all');
+    const [selectedCategory, setSelectedCategory] = useState<number | string | 'all'>('all');
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [selectedComposite, setSelectedComposite] = useState<CompositeProduct | null>(null);
     const [editingItemId, setEditingItemId] = useState<string | null>(null);
@@ -290,62 +291,49 @@ export default function MenuFilter({
 
     // ── Chips de categoria ─────────────────────
     const categories = useMemo(() => {
-        const cats: { id: number | 'composites'; name: string; imageUrl?: string | null }[] = [];
-
-        if (compositeProducts.length > 0) {
-            cats.push({ id: 'composites', name: '🍕 Montar' });
-        }
-
-        grouped.forEach((g) => {
+        return grouped.map((g) => {
             const firstProductWithImage = g.products.find(
                 (p) => p.imagem && p.imagem.startsWith('http')
             );
-            cats.push({
-                id: g.id as number,
+            return {
+                id: g.id,
                 name: g.name,
                 imageUrl: firstProductWithImage?.imagem ?? null,
-            });
+            };
         });
-
-        return cats;
-    }, [grouped, compositeProducts]);
+    }, [grouped]);
 
     // ── Filtro de dados ───────────────────────────────────────────────────────
-    const filteredData = useMemo(() => {
-        let filteredComposites = compositeProducts;
-        let filteredGroups = grouped;
+    const filteredGroups = useMemo(() => {
+        let results = grouped;
 
         if (search.trim()) {
             const q = search.toLowerCase().trim();
-            filteredComposites = compositeProducts.filter((p) =>
-                p.nome.toLowerCase().includes(q) || (p.descricao && p.descricao.toLowerCase().includes(q))
-            );
-            filteredGroups = grouped
-                .map((g) => ({
-                    ...g,
-                    products: g.products.filter(
-                        (p) =>
-                            p.nome.toLowerCase().includes(q) ||
-                            (p.descricao && p.descricao.toLowerCase().includes(q))
-                    ),
-                }))
-                .filter((g) => g.products.length > 0);
+            results = grouped.map((g) => ({
+                ...g,
+                products: g.products.filter(
+                    (p) =>
+                        p.nome.toLowerCase().includes(q) ||
+                        (p.descricao && p.descricao.toLowerCase().includes(q))
+                ),
+                compositeProducts: (g.compositeProducts || []).filter(
+                    (cp) =>
+                        cp.nome.toLowerCase().includes(q) ||
+                        (cp.descricao && cp.descricao.toLowerCase().includes(q))
+                )
+            })).filter(g => g.products.length > 0 || (g.compositeProducts && g.compositeProducts.length > 0));
         }
 
         if (selectedCategory !== 'all') {
-            if (selectedCategory === 'composites') {
-                return { composites: filteredComposites, groups: [] };
-            }
-            filteredGroups = filteredGroups.filter((g) => g.id === selectedCategory);
-            filteredComposites = [];
+            results = results.filter((g) => g.id === selectedCategory);
         }
 
-        return { composites: filteredComposites, groups: filteredGroups };
-    }, [grouped, compositeProducts, search, selectedCategory]);
+        return results;
+    }, [grouped, search, selectedCategory]);
 
-    const totalResults =
-        filteredData.groups.reduce((acc, g) => acc + g.products.length, 0) +
-        filteredData.composites.length;
+    const totalResults = useMemo(() => {
+        return filteredGroups.reduce((acc, g) => acc + g.products.length + (g.compositeProducts?.length || 0), 0);
+    }, [filteredGroups]);
 
     const hasResults = totalResults > 0;
 
@@ -476,40 +464,28 @@ export default function MenuFilter({
                 </p>
             )}
 
-            {/* Produtos Compostos - AGRUPADOS SOB UMA ÚNICA TARJETA */}
-            {filteredData.composites.length > 0 && (
-                <section>
+            {/* Categorias e seus produtos (Normais e Compostos) */}
+            {filteredGroups.map((group) => (
+                <section key={group.id}>
                     <div className="flex items-center gap-2 mb-3">
-                        <span className="h-1 w-6 rounded-full bg-amber-400 shrink-0" />
-                        <h2 className="text-base font-black text-slate-800 dark:text-white uppercase tracking-wide">
-                            MONTE SEU PEDIDO
+                        <span className={`h-1 w-6 rounded-full shrink-0 ${group.id === 'composites-default' ? 'bg-amber-400' : 'bg-violet-500'}`} />
+                        <h2 className="text-base font-black text-slate-800 dark:text-white uppercase tracking-wide flex-1">
+                            {group.name}
                         </h2>
+                        <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                            {(group.products.length + (group.compositeProducts?.length || 0))} { (group.products.length + (group.compositeProducts?.length || 0)) === 1 ? 'item' : 'itens'}
+                        </span>
                     </div>
                     <div className="space-y-3">
-                        {filteredData.composites.map((composite) => (
+                        {/* Renderizar Compostos primeiro se houver */}
+                        {group.compositeProducts?.map((composite) => (
                             <CompositeCard
                                 key={composite.id}
                                 product={composite}
                                 onClick={() => handleCompositeClick(composite)}
                             />
                         ))}
-                    </div>
-                </section>
-            )}
-
-            {/* Produtos por Categoria (Normais) */}
-            {filteredData.groups.map((group) => (
-                <section key={group.id}>
-                    <div className="flex items-center gap-2 mb-3">
-                        <span className="h-1 w-6 rounded-full bg-violet-500 shrink-0" />
-                        <h2 className="text-base font-black text-slate-800 dark:text-white uppercase tracking-wide flex-1">
-                            {group.name}
-                        </h2>
-                        <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                            {group.products.length} {group.products.length === 1 ? 'item' : 'itens'}
-                        </span>
-                    </div>
-                    <div className="space-y-3">
+                        {/* Renderizar Produtos Normais */}
                         {group.products.map((product) => (
                             <ProductCard
                                 key={product.id}

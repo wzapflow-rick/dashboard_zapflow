@@ -25,6 +25,7 @@ export interface GrupoSlot {
     modo_preco?: ModoPreco;
     preco_fixo?: number;
     completamentos_ids?: number[];
+    categoria_id?: number | string | null;
 }
 
 export interface CompositeProduct {
@@ -101,6 +102,7 @@ export async function upsertGrupoSlot(grupoData: Partial<GrupoSlot>) {
             max_slots: grupoData.max_slots ?? (grupoData.qtd_slots ?? 2),
             modo_preco: grupoData.modo_preco || 'por_item',
             preco_fixo: grupoData.modo_preco === 'fixo' ? (grupoData.preco_fixo || 0) : 0,
+            categoria_id: grupoData.categoria_id || null,
         };
 
         if (grupoData.descricao) payload.descricao = grupoData.descricao;
@@ -295,6 +297,7 @@ export async function getCompositeProducts(): Promise<CompositeProduct[]> {
                 completamentos_ids: parseJsonArray(g.completamentos_ids),
                 minimo: g.min_slots,
                 maximo: g.max_slots,
+                categoria_id: g.categoria_id || null,
                 items: items as any[],
             };
         });
