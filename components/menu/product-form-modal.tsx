@@ -126,6 +126,11 @@ export default function ProductFormModal({
             }
             formData.set('preco', String(precoNumerico));
             formData.set('tamanhos', '');
+
+            // Se desativou tamanhos, limpa o marcador da descrição
+            const currentDesc = formData.get('descricao') as string || '';
+            const cleanDesc = currentDesc.split('[[SIZES:')[0].trim();
+            formData.set('descricao', cleanDesc);
         } else {
             if (sizes.length === 0) {
                 toast.error('Adicione pelo menos um tamanho ou desative a opção de tamanhos');
@@ -149,12 +154,6 @@ export default function ProductFormModal({
             const currentDesc = formData.get('descricao') as string || '';
             const cleanDesc = currentDesc.split('[[SIZES:')[0].trim();
             formData.set('descricao', `${cleanDesc}\n\n[[SIZES:${sizesJson}]]`);
-        } else {
-            // Se desativou tamanhos, limpa o marcador da descrição
-            const currentDesc = formData.get('descricao') as string || '';
-            const cleanDesc = currentDesc.split('[[SIZES:')[0].trim();
-            formData.set('descricao', cleanDesc);
-            formData.set('tamanhos', '');
         }
 
         try {
