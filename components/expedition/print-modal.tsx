@@ -116,24 +116,24 @@ export default function PrintModal({ isOpen, onClose, order }: PrintModalProps) 
 
                     {/* Ticket Preview */}
                     <div className="p-4">
-                        <div 
-                            ref={printRef}
-                            className="bg-white border-2 border-dashed border-slate-300 rounded-lg p-4 text-sm font-mono"
-                        >
-                            <div className="text-center mb-4">
-                                <h1 className="text-lg font-bold">PEDIDO #{order?.id}</h1>
-                                <p className="text-xs">{new Date().toLocaleString('pt-BR')}</p>
-                            </div>
-                            
-                            <div className="border-t border-b border-dashed border-slate-300 py-2 mb-2">
-                                <p><strong>Cliente:</strong> {order?.nome_cliente || order?.cliente_nome || 'Cliente'}</p>
-                                <p><strong>Tel:</strong> {order?.telefone_cliente || '-'}</p>
-                                {isDelivery ? (
-                                    <p><strong>End:</strong> {order?.endereco_entrega} {order?.bairro_entrega && `- ${order.bairro_entrega}`}</p>
-                                ) : (
-                                    <p><strong>Retirada no balcão</strong></p>
-                                )}
-                            </div>
+	                        <div 
+	                            ref={printRef}
+	                            className="bg-white border-2 border-dashed border-slate-300 rounded-lg p-4 text-sm font-mono text-slate-900"
+	                        >
+	                            <div className="text-center mb-4">
+	                                <h1 className="text-lg font-bold text-slate-900">PEDIDO #{order?.id}</h1>
+	                                <p className="text-xs text-slate-600">{new Date().toLocaleString('pt-BR')}</p>
+	                            </div>
+	                            
+	                            <div className="border-t border-b border-dashed border-slate-300 py-2 mb-2 text-slate-900">
+	                                <p><strong className="text-slate-900">Cliente:</strong> {order?.nome_cliente || order?.cliente_nome || 'Cliente'}</p>
+	                                <p><strong className="text-slate-900">Tel:</strong> {order?.telefone_cliente || '-'}</p>
+	                                {isDelivery ? (
+	                                    <p><strong className="text-slate-900">End:</strong> {order?.endereco_entrega} {order?.bairro_entrega && `- ${order.bairro_entrega}`}</p>
+	                                ) : (
+	                                    <p><strong className="text-slate-900">Retirada no balcão</strong></p>
+	                                )}
+	                            </div>
 
                             <div className="mb-2">
                                 {formattedItems.map((item: any, idx: number) => (
@@ -144,42 +144,42 @@ export default function PrintModal({ isOpen, onClose, order }: PrintModalProps) 
                                 ))}
                             </div>
 
-                            {order?.observacoes && (
-                                <div className="border-t border-dashed border-slate-300 py-2 my-2">
-                                    <p className="text-xs"><strong>OBS:</strong> {order.observacoes}</p>
-                                </div>
-                            )}
+	                            {order?.observacoes && (
+	                                <div className="border-t border-dashed border-slate-300 py-2 my-2 text-slate-900">
+	                                    <p className="text-xs"><strong className="text-slate-900">OBS:</strong> {order.observacoes}</p>
+	                                </div>
+	                            )}
 
-                            <div className="border-t border-dashed border-slate-300 py-2 mt-2">
-                                <div className="flex justify-between">
-                                    <span>Subtotal:</span>
-                                    <span>{formatPrice(order?.valor_total || order?.total || 0)}</span>
-                                </div>
-                                {order?.taxa_entrega > 0 && (
-                                    <div className="flex justify-between">
-                                        <span>Entrega:</span>
-                                        <span>{formatPrice(order.taxa_entrega)}</span>
-                                    </div>
-                                )}
-                                {order?.desconto > 0 && (
-                                    <div className="flex justify-between text-green-600">
-                                        <span>Desconto:</span>
-                                        <span>-{formatPrice(order.desconto)}</span>
-                                    </div>
-                                )}
-                                <div className="flex justify-between font-bold text-lg mt-1">
-                                    <span>TOTAL:</span>
-                                    <span>{formatPrice(order?.valor_total || order?.total || 0)}</span>
-                                </div>
-                            </div>
+	                            <div className="border-t border-dashed border-slate-300 py-2 mt-2 text-slate-900">
+	                                <div className="flex justify-between">
+	                                    <span>Subtotal:</span>
+	                                    <span>{formatPrice(order?.valor_total || order?.total || 0)}</span>
+	                                </div>
+	                                {order?.taxa_entrega > 0 && (
+	                                    <div className="flex justify-between">
+	                                        <span>Entrega:</span>
+	                                        <span>{formatPrice(order.taxa_entrega)}</span>
+	                                    </div>
+	                                )}
+	                                {order?.desconto > 0 && (
+	                                    <div className="flex justify-between text-green-700">
+	                                        <span>Desconto:</span>
+	                                        <span>-{formatPrice(order.desconto)}</span>
+	                                    </div>
+	                                )}
+	                                <div className="flex justify-between font-bold text-lg mt-1 text-slate-900">
+	                                    <span>TOTAL:</span>
+	                                    <span>{formatPrice(order?.valor_total || order?.total || 0)}</span>
+	                                </div>
+	                            </div>
 
-                            <div className="text-center mt-4 text-xs">
-                                <p>Pagamento: {order?.forma_pagamento || 'Não informado'}</p>
-                                {order?.forma_pagamento === 'dinheiro' && order?.troco && (
-                                    <p>Troco para: {formatPrice(order.troco)}</p>
-                                )}
-                                <p className="mt-2">Obrigado pela preferência!</p>
-                            </div>
+	                            <div className="text-center mt-4 text-xs text-slate-600">
+	                                <p>Pagamento: {order?.forma_pagamento || 'Não informado'}</p>
+	                                {order?.forma_pagamento === 'dinheiro' && order?.troco && (
+	                                    <p>Troco para: {formatPrice(order.troco)}</p>
+	                                )}
+	                                <p className="mt-2">Obrigado pela preferência!</p>
+	                            </div>
                         </div>
                     </div>
 
