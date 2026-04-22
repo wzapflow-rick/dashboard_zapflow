@@ -40,7 +40,7 @@ export async function upsertDeliveryRate(data: any) {
             });
         }
 
-        revalidatePath('/dashboard/settings');
+        // Removido revalidatePath daqui para evitar erros de Server Component em salvamentos em lote
         return result;
     } catch (error) {
         console.error('API Error:', error);

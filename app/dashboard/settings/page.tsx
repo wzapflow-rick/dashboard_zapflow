@@ -124,9 +124,9 @@ export default function SettingsPage() {
       }
 
       if (activeSection === 'delivery') {
-        for (const n of neighborhoods) {
-          await upsertDeliveryRate(n);
-        }
+        // Salva todos os bairros em paralelo para ser mais rápido e estável
+        await Promise.all(neighborhoods.map(n => upsertDeliveryRate(n)));
+        
         const form = document.getElementById('delivery-form') as HTMLFormElement;
         const deliveryData = form ? Object.fromEntries(new FormData(form)) : {};
 
