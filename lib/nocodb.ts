@@ -127,7 +127,13 @@ async function nocoRequest<T = unknown>(
     }
 
     const errorMessage = `NocoDB API Error [${tableId}] ${res.status}: ${errorBody}`;
-    console.error(errorMessage);
+    console.error('--- NOCODB ERROR LOG ---');
+    console.error('Table ID:', tableId);
+    console.error('Endpoint:', endpoint);
+    console.error('Status:', res.status);
+    console.error('Error Body:', errorBody);
+    console.error('Payload Sent:', options.body);
+    console.error('------------------------');
 
     throw new NocoDBError(errorMessage, res.status, tableId);
   }

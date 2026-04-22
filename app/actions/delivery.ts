@@ -261,24 +261,35 @@ export async function saveDeliveryRatesBatch(rates: any[]) {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
+        console.log(`[saveDeliveryRatesBatch] Iniciando salvamento de ${rates.length} bairros para empresa ${user.empresaId}`);
+
         const results = [];
         for (const data of rates) {
+            // Ignorar itens vazios ou sem nome de bairro
+            if (!data.bairro || data.bairro.trim() === '') continue;
+
+            const payload: any = {
+                bairro: data.bairro,
+                valor_taxa: Number(data.valor_taxa || 0),
+                tempo_estimado: data.tempo_estimado || '',
+                empresa_id: user.empresaId
+            };
+
             if (data.id) {
-                const { id, empresa_id, empresas, ...updatePayload } = data;
-                results.push(await noco.update(TAXAS_ENTREGA_TABLE_ID, { id, ...updatePayload }));
+                payload.id = data.id;
+                console.log(`[saveDeliveryRatesBatch] Atualizando bairro ID ${data.id}:`, payload);
+                results.push(await noco.update(TAXAS_ENTREGA_TABLE_ID, payload));
             } else {
-                const { empresa_id, id, ...insertData } = data;
-                results.push(await noco.create(TAXAS_ENTREGA_TABLE_ID, {
-                    ...insertData,
-                    empresa_id: user.empresaId
-                }));
+                console.log(`[saveDeliveryRatesBatch] Criando novo bairro:`, payload);
+                results.push(await noco.create(TAXAS_ENTREGA_TABLE_ID, payload));
             }
         }
 
         revalidatePath('/dashboard/settings');
-        return { success: true, results };
+        return { success: true, count: results.length };
     } catch (error: any) {
         console.error('API Error (saveDeliveryRatesBatch):', error);
-        throw new Error(error.message || 'Failed to save delivery rates batch');
+        // Retorna o erro amigável para o frontend
+        throw new Error(error.message || 'Erro ao salvar bairros. Verifique a conexão com o banco.');
     }
 }

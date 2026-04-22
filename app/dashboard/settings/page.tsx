@@ -125,7 +125,10 @@ export default function SettingsPage() {
 
       if (activeSection === 'delivery') {
         // Salva todos os bairros em uma única chamada de lote para evitar erros de Server Component
-        await saveDeliveryRatesBatch(neighborhoods);
+        const res = await saveDeliveryRatesBatch(neighborhoods);
+        if (!res.success) {
+           throw new Error('Falha ao salvar os bairros.');
+        }
         
         const form = document.getElementById('delivery-form') as HTMLFormElement;
         const deliveryData = form ? Object.fromEntries(new FormData(form)) : {};
