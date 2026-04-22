@@ -339,7 +339,7 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
                     maximo: groupData.maximo,
                     preco_fixo: groupData.preco_fixo,
                     completamentos_ids: groupData.completamentos_ids,
-                    categoria_id: g.categoria_id,
+                    categoria_id: g.categoria_id as string | number | null,
                     items: groupData.items,
                 };
             });
@@ -361,13 +361,13 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
                     }
                 ),
                 compositeProducts: allCompositeProducts.filter(
-                    (cp) => String(cp.categoria_id) === String(cat.id)
+                    (cp) => cp.categoria_id !== null && cp.categoria_id !== undefined && String(cp.categoria_id) === String(cat.id)
                 )
             }))
             .filter((g) => g.products.length > 0 || g.compositeProducts.length > 0);
 
         // Produtos compostos sem categoria (Vão para "Monte seu Pedido")
-        const unassignedComposites = allCompositeProducts.filter(cp => !cp.categoria_id);
+        const unassignedComposites = allCompositeProducts.filter(cp => cp.categoria_id === null || cp.categoria_id === undefined);
         
         // Produtos normais sem categoria
         const categorizedIds = new Set(
