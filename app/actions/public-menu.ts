@@ -91,12 +91,13 @@ export interface PublicGroupItem {
 }
 
 export interface PublicCategory {
-    id: number;
+    id: number | string;
     name: string;
     icone?: string | null;
     cor?: string | null;
     ordem: number;
-    products: PublicProduct[];
+    products: (PublicProduct | PublicCompositeProduct)[];
+    isComposite?: boolean;
 }
 
 export interface PublicCompositeProduct {
@@ -139,39 +140,20 @@ export interface PublicMenuData {
 
 /**
  * Busca todos os dados necessários para renderizar o cardápio público de uma empresa.
- *
- * Estratégia de busca da empresa:
- * 1. Tenta buscar pelo campo `login` (usado como slug único)
- * 2. Tenta buscar pelo campo `nome_fantasia` (match exato)
- * 3. Tenta buscar pelo campo `nincho`
- * 4. Tenta match de slug gerado a partir do `nome_fantasia`
- *
- * Performance: todas as queries paralelas após encontrar a empresa.
  */
 export async function getPublicMenu(slug: string): Promise<PublicMenuData | null> {
     try {
-        // ── 1. Buscar empresa de forma eficiente ──────────────────────────────────────────
-        // Estratégia de busca (do mais específico para o mais genérico):
-        // 1. Campo 'slug' dedicado (se existir no futuro)
-        // 2. Campo 'login' que é único por empresa
-        // 3. Campo 'nome_fantasia' com match exato (case-insensitive via slug)
-        // IMPORTANTE: Não buscamos por 'nincho' pois não é único (várias empresas
-        //             podem ter o mesmo niço como 'pizzaria') e causaria retorno errado.
-
-        // Primeiro: busca por login exato (campo único)
+        // ── 1. Buscar empresa ──────────────────────────────────────────────────────────
         let empresa: Record<string, unknown> | null = await noco.findOne(EMPRESAS_TABLE_ID, {
             where: `(login,eq,${slug})`,
         });
 
-        // Segundo: busca por nome_fantasia exato
         if (!empresa) {
             empresa = await noco.findOne(EMPRESAS_TABLE_ID, {
                 where: `(nome_fantasia,eq,${slug})`,
             });
         }
 
-        // Terceiro: busca por slug gerado a partir do nome_fantasia
-        // (ex: "VR Pizza Show" -> "vr-pizza-show")
         if (!empresa) {
             const allEmpresas = await noco.list(EMPRESAS_TABLE_ID, {
                 limit: 500,
@@ -192,7 +174,7 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
             empresa.controle_estoque === 1 ||
             empresa.controle_estoque === '1';
 
-        // ── 2. Buscar todos os dados em paralelo (filtrados por empresa_id) ──
+        // ── 2. Buscar todos os dados em paralelo ──
         const [
             productsData,
             categoriesData,
@@ -226,8 +208,6 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
 
         // ── 3. Processar produtos ─────────────────────────────────────────────
         const rawProducts = productsData.list as Record<string, unknown>[];
-
-        // Filtrar por estoque se necessário (já filtramos disponivel=true na query)
         const products = controleEstoque
             ? rawProducts.filter((p) => {
                   const controlaProd = p.controla_estoque === true || p.controla_estoque === 1;
@@ -292,13 +272,10 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
         });
 
         // ── 7. Associar grupos aos produtos ──────────────────────────────────────────
-        // Nota: o campo 'grupos' pode não existir na tabela de produtos ainda.
-        // Quando existir, será um array JSON com IDs dos grupos vinculados.
         const productsWithGroups: PublicProduct[] = products.map((p) => {
-            // Suporta campo 'grupos' (JSON array) ou 'grupos_ids' ou similar
             const gruposRaw = p.grupos ?? p.grupos_ids ?? p.grupo_ids ?? null;
             const gruposVinculados = parseJsonArray(gruposRaw);
-
+            
             const saborGroups: PublicGroup[] = [];
             const additionalGroups: PublicGroup[] = [];
 
@@ -314,7 +291,6 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
                     }
                 }
 
-                // Adicionar grupos de completamentos vinculados
                 g.completamentos_ids.forEach((compId: number) => {
                     const compGroup = gruposMap.get(compId);
                     if (compGroup && !additionalGroups.find((ag) => ag.id === compGroup.id)) {
@@ -323,10 +299,8 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
                 });
             });
 
-            // Normalizar imagem: preferir imagem_url, depois imagem, depois null
             const imagemRaw = (p.imagem_url || p.imagem) as string | null | undefined;
-            const imagem =
-                imagemRaw && imagemRaw.startsWith('http') ? imagemRaw : null;
+            const imagem = imagemRaw && imagemRaw.startsWith('http') ? imagemRaw : null;
 
             return {
                 id: p.id as number,
@@ -346,7 +320,6 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
 
         // ── 8. Agrupar por categoria ──────────────────────────────────────────
         const categories = categoriesData.list as Record<string, unknown>[];
-
         const groupedFinal: PublicCategory[] = categories
             .map((cat) => ({
                 id: cat.id as number,
@@ -357,7 +330,6 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
                 products: productsWithGroups.filter(
                     (p) => {
                         const raw = products.find((r) => r.id === p.id) as Record<string, unknown>;
-                        // O campo pode ser 'categorias' ou 'categoria_id' dependendo da versão
                         const catId = raw?.categorias ?? raw?.categoria_id ?? '';
                         return String(catId) === String(cat.id);
                     }
@@ -409,6 +381,20 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
                 };
             });
 
+        // ADICIONAR PRODUTOS COMPOSTOS COMO CATEGORIAS INDIVIDUAIS NO INÍCIO
+        const compositeCategories: PublicCategory[] = compositeProducts.map((cp, index) => ({
+            id: cp.id,
+            name: cp.nome,
+            icone: '🍕',
+            cor: null,
+            ordem: -100 + index, // Coloca no topo
+            products: [cp],
+            isComposite: true
+        }));
+
+        // Combinar categorias (compostos primeiro, depois normais)
+        const allGrouped = [...compositeCategories, ...groupedFinal];
+
         // ── 10. Configuração de fidelidade ────────────────────────────────────
         const loyaltyConfig = (loyaltyData.list[0] as Record<string, unknown>) ?? {
             empresa_id: empresaId,
@@ -421,7 +407,6 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
         };
 
         // ── 11. Produtos em destaque (upsell) ─────────────────────────────────
-        // Usa o campo `destaque` do banco. Se não houver, pega os 4 primeiros.
         const upsellProducts = productsWithGroups
             .filter((p) => p.destaque)
             .slice(0, 4);
@@ -437,7 +422,7 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
                 cidade: (empresa.cidade as string) || null,
                 endereco: (empresa.endereco as string) || null,
             },
-            grouped: groupedFinal,
+            grouped: allGrouped,
             compositeProducts,
             upsellProducts,
             loyaltyConfig: {

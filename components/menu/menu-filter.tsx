@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Search, X, Star, ChevronDown } from 'lucide-react';
+import { Search, X, Star } from 'lucide-react';
 import Image from 'next/image';
 import { useCart } from './cart-context';
 import { toast } from 'sonner';
@@ -25,15 +25,6 @@ interface Product {
     _editingData?: any;
 }
 
-interface CategoryGroup {
-    id: number;
-    name: string;
-    icone?: string | null;
-    cor?: string | null;
-    ordem?: number;
-    products: Product[];
-}
-
 interface CompositeProduct {
     id: string;
     _grupoId: number;
@@ -49,6 +40,16 @@ interface CompositeProduct {
     maximo: number;
     items: any[];
     _editingData?: any;
+}
+
+interface CategoryGroup {
+    id: number | string;
+    name: string;
+    icone?: string | null;
+    cor?: string | null;
+    ordem?: number;
+    products: (Product | CompositeProduct)[];
+    isComposite?: boolean;
 }
 
 interface MenuFilterProps {
@@ -255,11 +256,11 @@ export default function MenuFilter({
     allGroups = [],
 }: MenuFilterProps) {
     const [search, setSearch] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState<number | 'all' | 'composites'>('all');
+    const [selectedCategory, setSelectedCategory] = useState<number | string | 'all'>('all');
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [selectedComposite, setSelectedComposite] = useState<CompositeProduct | null>(null);
     const [editingItemId, setEditingItemId] = useState<string | null>(null);
-    const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set());
+    const [expandedCategories, setExpandedCategories] = useState<Set<number | string>>(new Set());
 
     const { addItem, items } = useCart();
 
@@ -278,7 +279,7 @@ export default function MenuFilter({
                     setSelectedComposite({ ...composite, _editingData: item });
                 }
             } else {
-                const product = grouped.flatMap((g) => g.products).find((p) => p.id === item.productId);
+                const product = (grouped.flatMap((g) => g.products) as Product[]).find((p) => p.id === item.productId);
                 if (product) {
                     setSelectedProduct({ ...product, _editingData: item });
                 }
@@ -289,66 +290,52 @@ export default function MenuFilter({
         return () => window.removeEventListener('edit-cart-item', handleEdit as EventListener);
     }, [items, allComposites, grouped]);
 
-    // ── Chips de categoria com imagem do primeiro produto ─────────────────────
+    // ── Chips de categoria ─────────────────────
     const categories = useMemo(() => {
-        const cats: { id: number | 'composites'; name: string; imageUrl?: string | null }[] = [];
+        return grouped.map((g) => {
+            // Usa a imagem do primeiro produto da categoria como ícone se for produto normal
+            let imageUrl = null;
+            if (!g.isComposite) {
+                const firstProductWithImage = (g.products as Product[]).find(
+                    (p) => p.imagem && p.imagem.startsWith('http')
+                );
+                imageUrl = firstProductWithImage?.imagem ?? null;
+            }
 
-        if (compositeProducts.length > 0) {
-            cats.push({ id: 'composites', name: '🍕 Montar' });
-        }
-
-        grouped.forEach((g) => {
-            // Usa a imagem do primeiro produto da categoria como ícone
-            const firstProductWithImage = g.products.find(
-                (p) => p.imagem && p.imagem.startsWith('http')
-            );
-            cats.push({
+            return {
                 id: g.id,
                 name: g.name,
-                imageUrl: firstProductWithImage?.imagem ?? null,
-            });
+                imageUrl: imageUrl,
+            };
         });
-
-        return cats;
-    }, [grouped, compositeProducts]);
+    }, [grouped]);
 
     // ── Filtro de dados ───────────────────────────────────────────────────────
-    const filteredData = useMemo(() => {
-        let filteredComposites = compositeProducts;
-        let filteredGroups = grouped;
+    const filteredGroups = useMemo(() => {
+        let result = grouped;
 
         if (search.trim()) {
             const q = search.toLowerCase().trim();
-            filteredComposites = compositeProducts.filter((p) =>
-                p.nome.toLowerCase().includes(q) || p.descricao?.toLowerCase().includes(q)
-            );
-            filteredGroups = grouped
+            result = grouped
                 .map((g) => ({
                     ...g,
                     products: g.products.filter(
                         (p) =>
                             p.nome.toLowerCase().includes(q) ||
-                            p.descricao?.toLowerCase().includes(q)
+                            (p.descricao && p.descricao.toLowerCase().includes(q))
                     ),
                 }))
                 .filter((g) => g.products.length > 0);
         }
 
         if (selectedCategory !== 'all') {
-            if (selectedCategory === 'composites') {
-                return { composites: filteredComposites, groups: [] };
-            }
-            filteredGroups = filteredGroups.filter((g) => g.id === selectedCategory);
-            filteredComposites = [];
+            result = result.filter((g) => g.id === selectedCategory);
         }
 
-        return { composites: filteredComposites, groups: filteredGroups };
-    }, [grouped, compositeProducts, search, selectedCategory]);
+        return result;
+    }, [grouped, search, selectedCategory]);
 
-    const totalResults =
-        filteredData.groups.reduce((acc, g) => acc + g.products.length, 0) +
-        filteredData.composites.length;
-
+    const totalResults = filteredGroups.reduce((acc, g) => acc + g.products.length, 0);
     const hasResults = totalResults > 0;
 
     // ── Handlers ──────────────────────────────────────────────────────────────
@@ -387,18 +374,6 @@ export default function MenuFilter({
         setEditingItemId(null);
     }, []);
 
-    const toggleCategory = useCallback((catId: number) => {
-        setExpandedCategories((prev) => {
-            const next = new Set(prev);
-            if (next.has(catId)) {
-                next.delete(catId);
-            } else {
-                next.add(catId);
-            }
-            return next;
-        });
-    }, []);
-
     // ── Render ────────────────────────────────────────────────────────────────
     return (
         <div className="space-y-5">
@@ -422,12 +397,15 @@ export default function MenuFilter({
                     allGroups={
                         allGroups.length > 0
                             ? allGroups
-                            : grouped.flatMap((g) =>
-                                  g.products.flatMap((p) => [
-                                      ...(p.saborGroups || []),
-                                      ...(p.additionalGroups || []),
-                                  ])
-                              )
+                            : (grouped.flatMap((g) =>
+                                  g.products.flatMap((p) => {
+                                      if ('_isComposite' in p) return [];
+                                      return [
+                                          ...(p.saborGroups || []),
+                                          ...(p.additionalGroups || []),
+                                      ];
+                                  })
+                              ) as any[])
                     }
                     onClose={closeCompositeModal}
                     editingItemId={editingItemId || undefined}
@@ -490,101 +468,41 @@ export default function MenuFilter({
                 </p>
             )}
 
-            {/* Produtos Compostos */}
-            {filteredData.composites.length > 0 && (
-                <section>
+            {/* Renderização Dinâmica por Categoria */}
+            {filteredGroups.map((group) => (
+                <section key={group.id} className="space-y-3">
                     <div className="flex items-center gap-2 mb-3">
-                        <span className="h-1 w-6 rounded-full bg-amber-400 shrink-0" />
-                        <h2 className="text-base font-black text-slate-800 dark:text-white uppercase tracking-wide">
-                            Monte seu Pedido
+                        <span className={`h-1 w-6 rounded-full shrink-0 ${group.isComposite ? 'bg-amber-400' : 'bg-violet-500'}`} />
+                        <h2 className="text-base font-black text-slate-800 dark:text-white uppercase tracking-wide flex-1">
+                            {group.name}
                         </h2>
+                        <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                            {group.products.length} {group.products.length === 1 ? 'item' : 'itens'}
+                        </span>
                     </div>
+                    
                     <div className="space-y-3">
-                        {filteredData.composites.map((composite) => (
-                            <CompositeCard
-                                key={composite.id}
-                                product={composite}
-                                onClick={() => handleCompositeClick(composite)}
-                            />
-                        ))}
+                        {group.products.map((p) => {
+                            if ('_isComposite' in p) {
+                                return (
+                                    <CompositeCard
+                                        key={p.id}
+                                        product={p as CompositeProduct}
+                                        onClick={() => handleCompositeClick(p as CompositeProduct)}
+                                    />
+                                );
+                            }
+                            return (
+                                <ProductCard
+                                    key={p.id}
+                                    product={p as Product}
+                                    onClick={() => handleProductClick(p as Product)}
+                                />
+                            );
+                        })}
                     </div>
                 </section>
-            )}
-
-            {/* Produtos por Categoria */}
-            {filteredData.groups.map((group) => {
-                const isExpanded = expandedCategories.has(group.id) || search.trim() !== '';
-                const PREVIEW_COUNT = 4;
-                const showToggle = !search.trim() && group.products.length > PREVIEW_COUNT;
-                const displayedProducts =
-                    showToggle && !isExpanded
-                        ? group.products.slice(0, PREVIEW_COUNT)
-                        : group.products;
-
-                return (
-                    <section key={group.id}>
-                        <div className="flex items-center gap-2 mb-3">
-                            <span className="h-1 w-6 rounded-full bg-violet-500 shrink-0" />
-                            <h2 className="text-base font-black text-slate-800 dark:text-white uppercase tracking-wide flex-1">
-                                {group.name}
-                            </h2>
-                            <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                                {group.products.length} {group.products.length === 1 ? 'item' : 'itens'}
-                            </span>
-                        </div>
-                        <div className="space-y-3">
-                            {displayedProducts.map((product) => (
-                                <ProductCard
-                                    key={product.id}
-                                    product={product}
-                                    onClick={() => handleProductClick(product)}
-                                />
-                            ))}
-                        </div>
-
-                        {/* Botão "Ver mais / Ver menos" */}
-                        {showToggle && (
-                            <button
-                                onClick={() => toggleCategory(group.id)}
-                                className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 text-sm font-semibold text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/10 rounded-xl transition-colors"
-                            >
-                                {isExpanded ? (
-                                    <>
-                                        <ChevronDown className="size-4 rotate-180 transition-transform" />
-                                        Ver menos
-                                    </>
-                                ) : (
-                                    <>
-                                        <ChevronDown className="size-4 transition-transform" />
-                                        Ver mais {group.products.length - PREVIEW_COUNT} itens
-                                    </>
-                                )}
-                            </button>
-                        )}
-                    </section>
-                );
-            })}
-
-            {/* Estado vazio na busca */}
-            {!hasResults && search.trim() && (
-                <div className="text-center py-16">
-                    <div className="size-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
-                        <Search className="size-8 text-slate-300 dark:text-slate-600" />
-                    </div>
-                    <p className="font-semibold text-slate-700 dark:text-white mb-1">
-                        Nenhum resultado
-                    </p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                        Tente buscar por outro nome ou categoria
-                    </p>
-                    <button
-                        onClick={() => setSearch('')}
-                        className="mt-4 text-sm font-semibold text-violet-600 hover:text-violet-700 transition-colors"
-                    >
-                        Limpar busca
-                    </button>
-                </div>
-            )}
+            ))}
         </div>
     );
 }
