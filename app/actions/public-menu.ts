@@ -361,13 +361,22 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
                     }
                 ),
                 compositeProducts: allCompositeProducts.filter(
-                    (cp) => cp.categoria_id !== null && cp.categoria_id !== undefined && String(cp.categoria_id) === String(cat.id)
+                    (cp) => {
+                        if (!cp.categoria_id) return false;
+                        // O categoria_id pode vir como string, número ou objeto dependendo do NocoDB
+                        const cpCatId = typeof cp.categoria_id === 'object' ? (cp.categoria_id as any).id : cp.categoria_id;
+                        return String(cpCatId) === String(cat.id);
+                    }
                 )
             }))
             .filter((g) => g.products.length > 0 || g.compositeProducts.length > 0);
 
         // Produtos compostos sem categoria (Vão para "Monte seu Pedido")
-        const unassignedComposites = allCompositeProducts.filter(cp => cp.categoria_id === null || cp.categoria_id === undefined);
+        const unassignedComposites = allCompositeProducts.filter(cp => {
+            if (!cp.categoria_id) return true;
+            const cpCatId = typeof cp.categoria_id === 'object' ? (cp.categoria_id as any).id : cp.categoria_id;
+            return !cpCatId;
+        });
         
         // Produtos normais sem categoria
         const categorizedIds = new Set(
