@@ -76,11 +76,18 @@ _Qualquer dúvida, é só chamar! 😊_
       ]
     },
 
-    entrega: [
-      'Prepare a mesa! 🛵💨 Seu pedido acabou de sair e o entregador já está a caminho do seu endereço. Fique de olho!',
-      'Saiu para entrega! 📍 Nosso entregador já está com seu pedido em mãos e seguindo a rota. Acompanhe pelo link abaixo!',
-      'A caminho! 🗺️ Seu pedido já está na rua e chegando até você. Já pode começar a contagem regressiva para saborear! 😄✨'
-    ],
+    entrega: {
+      delivery: [
+        'Prepare a mesa! 🛵💨 Seu pedido acabou de sair e o entregador já está a caminho do seu endereço. Fique de olho!',
+        'Saiu para entrega! 📍 Nosso entregador já está com seu pedido em mãos e seguindo a rota. Acompanhe pelo link abaixo!',
+        'A caminho! 🗺️ Seu pedido já está na rua e chegando até você. Já pode começar a contagem regressiva para saborear! 😄✨'
+      ],
+      retirada: [
+        'Tudo pronto! 🛍️✨ Seu pedido já foi finalizado e está te esperando no balcão. Pode vir buscar quando quiser!',
+        'Prontinho para retirada! 🏪 Seu pedido acabou de sair da cozinha e já está disponível para você vir retirar. Te aguardamos!',
+        'Vem que está quentinho! 🔥 Seu pedido já está pronto no nosso balcão. Pode passar aqui para retirar agora mesmo!'
+      ]
+    },
 
     finalizado: {
       delivery: [
@@ -151,8 +158,11 @@ export function getStatusMessage(
     'pagamento_pendente': { emoji: '⏳', title: 'Aguardando Pagamento' },
     'pendente': { emoji: '✅', title: 'Pedido Confirmado!' },
     'preparando': { emoji: '👨‍🍳', title: 'Em Preparo' },
-    'entrega': { emoji: '🛵', title: 'Saiu para Entrega!' },
-    'finalizado': { emoji: '🎉', title: isDelivery ? 'Pedido Entregue!' : 'Pronto para Retirada!' },
+    'entrega': { 
+      emoji: isDelivery ? '🛵' : '🛍️', 
+      title: isDelivery ? 'Saiu para Entrega!' : 'Pronto para Retirada!' 
+    },
+    'finalizado': { emoji: '🎉', title: isDelivery ? 'Pedido Entregue!' : 'Pedido Finalizado!' },
     'cancelado': { emoji: '❌', title: 'Pedido Cancelado' }
   };
 
