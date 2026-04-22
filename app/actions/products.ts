@@ -240,7 +240,7 @@ export async function upsertProduct(productData: any, selectedInsumos?: { insumo
         ...productData, 
         ...data, 
         categoria_id: productData.categoria_id || data.categoria_id,
-        tamanhos: productData.tamanhos || data.tamanhos
+        tamanhos: productData.tamanhos || data.tamanhos || (data as any).tamanhos
       };
     } else {
       const data = await noco.create(PRODUTOS_TABLE_ID, payload);
@@ -248,7 +248,7 @@ export async function upsertProduct(productData: any, selectedInsumos?: { insumo
         ...productData, 
         ...data,
         categoria_id: productData.categoria_id || data.categoria_id,
-        tamanhos: productData.tamanhos || data.tamanhos
+        tamanhos: productData.tamanhos || data.tamanhos || (data as any).tamanhos
       };
     }
 

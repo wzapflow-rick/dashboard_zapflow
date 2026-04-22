@@ -22,6 +22,7 @@ interface Product {
     complementGroups?: any[];
     saborGroups?: any[];
     additionalGroups?: any[];
+    tamanhos?: string | null;
     _editingData?: any;
 }
 
@@ -81,7 +82,8 @@ function ProductCard({ product, onClick }: { product: Product; onClick: () => vo
     const hasComplements =
         (product.complementGroups && product.complementGroups.length > 0) ||
         (product.saborGroups && product.saborGroups.length > 0) ||
-        (product.additionalGroups && product.additionalGroups.length > 0);
+        (product.additionalGroups && product.additionalGroups.length > 0) ||
+        (!!product.tamanhos && product.tamanhos !== '[]');
 
     const hasDiscount = product.preco_original && product.preco_original > product.preco;
     const imgSrc = getProductImage(product);
@@ -342,8 +344,9 @@ export default function MenuFilter({
         (product: Product) => {
             const hasSaborGroups = product.saborGroups && product.saborGroups.length > 0;
             const hasAdditionalGroups = product.additionalGroups && product.additionalGroups.length > 0;
+            const hasSizes = !!product.tamanhos && product.tamanhos !== '[]';
 
-            if (hasSaborGroups || hasAdditionalGroups) {
+            if (hasSaborGroups || hasAdditionalGroups || hasSizes) {
                 setSelectedProduct(product);
             } else {
                 addItem({

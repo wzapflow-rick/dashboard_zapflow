@@ -75,7 +75,8 @@ export default function ProductFormModal({
                     setSizes([]);
                     setHasSizes(false);
                 }
-            } catch {
+            } catch (e) {
+                console.error('Error parsing sizes:', e);
                 setSizes([]);
                 setHasSizes(false);
             }
@@ -128,7 +129,9 @@ export default function ProductFormModal({
                 setIsSubmitting(false);
                 return;
             }
-            formData.set('preco', String(sizes[0].preco)); // Preço base é o do primeiro tamanho
+            // Se tem tamanhos, o preço base no DB deve ser o menor preço entre os tamanhos para exibição correta no cardápio
+            const menorPreco = Math.min(...sizes.map(s => s.preco));
+            formData.set('preco', String(menorPreco));
             formData.set('tamanhos', JSON.stringify(sizes));
         }
 
