@@ -48,8 +48,7 @@ interface CategoryGroup {
     icone?: string | null;
     cor?: string | null;
     ordem?: number;
-    products: (Product | CompositeProduct)[];
-    isComposite?: boolean;
+    products: Product[];
 }
 
 interface MenuFilterProps {
@@ -256,11 +255,10 @@ export default function MenuFilter({
     allGroups = [],
 }: MenuFilterProps) {
     const [search, setSearch] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState<number | string | 'all'>('all');
+    const [selectedCategory, setSelectedCategory] = useState<number | 'all' | 'composites'>('all');
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [selectedComposite, setSelectedComposite] = useState<CompositeProduct | null>(null);
     const [editingItemId, setEditingItemId] = useState<string | null>(null);
-    const [expandedCategories, setExpandedCategories] = useState<Set<number | string>>(new Set());
 
     const { addItem, items } = useCart();
 
@@ -279,7 +277,7 @@ export default function MenuFilter({
                     setSelectedComposite({ ...composite, _editingData: item });
                 }
             } else {
-                const product = (grouped.flatMap((g) => g.products) as Product[]).find((p) => p.id === item.productId);
+                const product = grouped.flatMap((g) => g.products).find((p) => p.id === item.productId);
                 if (product) {
                     setSelectedProduct({ ...product, _editingData: item });
                 }
@@ -292,31 +290,37 @@ export default function MenuFilter({
 
     // ── Chips de categoria ─────────────────────
     const categories = useMemo(() => {
-        return grouped.map((g) => {
-            // Usa a imagem do primeiro produto da categoria como ícone se for produto normal
-            let imageUrl = null;
-            if (!g.isComposite) {
-                const firstProductWithImage = (g.products as Product[]).find(
-                    (p) => p.imagem && p.imagem.startsWith('http')
-                );
-                imageUrl = firstProductWithImage?.imagem ?? null;
-            }
+        const cats: { id: number | 'composites'; name: string; imageUrl?: string | null }[] = [];
 
-            return {
-                id: g.id,
+        if (compositeProducts.length > 0) {
+            cats.push({ id: 'composites', name: '🍕 Montar' });
+        }
+
+        grouped.forEach((g) => {
+            const firstProductWithImage = g.products.find(
+                (p) => p.imagem && p.imagem.startsWith('http')
+            );
+            cats.push({
+                id: g.id as number,
                 name: g.name,
-                imageUrl: imageUrl,
-            };
+                imageUrl: firstProductWithImage?.imagem ?? null,
+            });
         });
-    }, [grouped]);
+
+        return cats;
+    }, [grouped, compositeProducts]);
 
     // ── Filtro de dados ───────────────────────────────────────────────────────
-    const filteredGroups = useMemo(() => {
-        let result = grouped;
+    const filteredData = useMemo(() => {
+        let filteredComposites = compositeProducts;
+        let filteredGroups = grouped;
 
         if (search.trim()) {
             const q = search.toLowerCase().trim();
-            result = grouped
+            filteredComposites = compositeProducts.filter((p) =>
+                p.nome.toLowerCase().includes(q) || (p.descricao && p.descricao.toLowerCase().includes(q))
+            );
+            filteredGroups = grouped
                 .map((g) => ({
                     ...g,
                     products: g.products.filter(
@@ -329,13 +333,20 @@ export default function MenuFilter({
         }
 
         if (selectedCategory !== 'all') {
-            result = result.filter((g) => g.id === selectedCategory);
+            if (selectedCategory === 'composites') {
+                return { composites: filteredComposites, groups: [] };
+            }
+            filteredGroups = filteredGroups.filter((g) => g.id === selectedCategory);
+            filteredComposites = [];
         }
 
-        return result;
-    }, [grouped, search, selectedCategory]);
+        return { composites: filteredComposites, groups: filteredGroups };
+    }, [grouped, compositeProducts, search, selectedCategory]);
 
-    const totalResults = filteredGroups.reduce((acc, g) => acc + g.products.length, 0);
+    const totalResults =
+        filteredData.groups.reduce((acc, g) => acc + g.products.length, 0) +
+        filteredData.composites.length;
+
     const hasResults = totalResults > 0;
 
     // ── Handlers ──────────────────────────────────────────────────────────────
@@ -397,15 +408,12 @@ export default function MenuFilter({
                     allGroups={
                         allGroups.length > 0
                             ? allGroups
-                            : (grouped.flatMap((g) =>
-                                  g.products.flatMap((p) => {
-                                      if ('_isComposite' in p) return [];
-                                      return [
-                                          ...(p.saborGroups || []),
-                                          ...(p.additionalGroups || []),
-                                      ];
-                                  })
-                              ) as any[])
+                            : grouped.flatMap((g) =>
+                                  g.products.flatMap((p) => [
+                                      ...(p.saborGroups || []),
+                                      ...(p.additionalGroups || []),
+                                  ])
+                              )
                     }
                     onClose={closeCompositeModal}
                     editingItemId={editingItemId || undefined}
@@ -468,11 +476,32 @@ export default function MenuFilter({
                 </p>
             )}
 
-            {/* Renderização Dinâmica por Categoria */}
-            {filteredGroups.map((group) => (
-                <section key={group.id} className="space-y-3">
+            {/* Produtos Compostos - AGRUPADOS SOB UMA ÚNICA TARJETA */}
+            {filteredData.composites.length > 0 && (
+                <section>
                     <div className="flex items-center gap-2 mb-3">
-                        <span className={`h-1 w-6 rounded-full shrink-0 ${group.isComposite ? 'bg-amber-400' : 'bg-violet-500'}`} />
+                        <span className="h-1 w-6 rounded-full bg-amber-400 shrink-0" />
+                        <h2 className="text-base font-black text-slate-800 dark:text-white uppercase tracking-wide">
+                            MONTE SEU PEDIDO
+                        </h2>
+                    </div>
+                    <div className="space-y-3">
+                        {filteredData.composites.map((composite) => (
+                            <CompositeCard
+                                key={composite.id}
+                                product={composite}
+                                onClick={() => handleCompositeClick(composite)}
+                            />
+                        ))}
+                    </div>
+                </section>
+            )}
+
+            {/* Produtos por Categoria (Normais) */}
+            {filteredData.groups.map((group) => (
+                <section key={group.id}>
+                    <div className="flex items-center gap-2 mb-3">
+                        <span className="h-1 w-6 rounded-full bg-violet-500 shrink-0" />
                         <h2 className="text-base font-black text-slate-800 dark:text-white uppercase tracking-wide flex-1">
                             {group.name}
                         </h2>
@@ -480,26 +509,14 @@ export default function MenuFilter({
                             {group.products.length} {group.products.length === 1 ? 'item' : 'itens'}
                         </span>
                     </div>
-                    
                     <div className="space-y-3">
-                        {group.products.map((p) => {
-                            if ('_isComposite' in p) {
-                                return (
-                                    <CompositeCard
-                                        key={p.id}
-                                        product={p as CompositeProduct}
-                                        onClick={() => handleCompositeClick(p as CompositeProduct)}
-                                    />
-                                );
-                            }
-                            return (
-                                <ProductCard
-                                    key={p.id}
-                                    product={p as Product}
-                                    onClick={() => handleProductClick(p as Product)}
-                                />
-                            );
-                        })}
+                        {group.products.map((product) => (
+                            <ProductCard
+                                key={product.id}
+                                product={product}
+                                onClick={() => handleProductClick(product)}
+                            />
+                        ))}
                     </div>
                 </section>
             ))}

@@ -96,8 +96,7 @@ export interface PublicCategory {
     icone?: string | null;
     cor?: string | null;
     ordem: number;
-    products: (PublicProduct | PublicCompositeProduct)[];
-    isComposite?: boolean;
+    products: PublicProduct[];
 }
 
 export interface PublicCompositeProduct {
@@ -381,20 +380,6 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
                 };
             });
 
-        // ADICIONAR PRODUTOS COMPOSTOS COMO CATEGORIAS INDIVIDUAIS NO INÍCIO
-        const compositeCategories: PublicCategory[] = compositeProducts.map((cp, index) => ({
-            id: cp.id,
-            name: cp.nome,
-            icone: '🍕',
-            cor: null,
-            ordem: -100 + index, // Coloca no topo
-            products: [cp],
-            isComposite: true
-        }));
-
-        // Combinar categorias (compostos primeiro, depois normais)
-        const allGrouped = [...compositeCategories, ...groupedFinal];
-
         // ── 10. Configuração de fidelidade ────────────────────────────────────
         const loyaltyConfig = (loyaltyData.list[0] as Record<string, unknown>) ?? {
             empresa_id: empresaId,
@@ -422,7 +407,7 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
                 cidade: (empresa.cidade as string) || null,
                 endereco: (empresa.endereco as string) || null,
             },
-            grouped: allGrouped,
+            grouped: groupedFinal,
             compositeProducts,
             upsellProducts,
             loyaltyConfig: {
