@@ -339,7 +339,7 @@ export default function ProductFormModal({
                                                     <div className="w-32">
                                                         <CurrencyInput
                                                             value={size.preco}
-                                                            onChange={(val) => updateSize(index, 'preco', parseCurrency(val))}
+                                                            onValueChange={(val) => updateSize(index, 'preco', val)}
                                                             className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
                                                             required
                                                         />
