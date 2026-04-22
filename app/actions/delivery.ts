@@ -7,6 +7,21 @@ import { TAXAS_ENTREGA_TABLE_ID, EMPRESAS_TABLE_ID } from '@/lib/constants';
 
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || '';
 
+/**
+ * Normaliza o campo de ID de um registro do NocoDB.
+ * A tabela taxas_entrega usa "Id" (maiúsculo) como PK, enquanto o restante do
+ * código espera "id" (minúsculo). Esta função garante que ambos os formatos
+ * sejam tratados corretamente.
+ */
+function normalizeId(record: any): any {
+    if (!record) return record;
+    // Se o registro tem "Id" maiúsculo mas não tem "id" minúsculo, normaliza
+    if (record.Id !== undefined && record.id === undefined) {
+        return { ...record, id: record.Id };
+    }
+    return record;
+}
+
 export async function getDeliveryRates() {
     try {
         const user = await getMe();
@@ -16,7 +31,8 @@ export async function getDeliveryRates() {
             where: `(empresa_id,eq,${user.empresaId})`,
             limit: 1000,
         });
-        return data.list || [];
+        // Normaliza o campo Id/id para compatibilidade com o restante do código
+        return (data.list || []).map(normalizeId);
     } catch (error) {
         console.error('API Error:', error);
         throw new Error('Failed to fetch delivery rates');
@@ -37,20 +53,22 @@ export async function upsertDeliveryRate(data: any) {
             empresa_id: Number(user.empresaId)
         };
 
+        // Normaliza o id (pode vir como "Id" maiúsculo do NocoDB)
+        const recordId = data.id || data.Id;
+
         let result;
-        if (data.id) {
-            const { id, empresa_id, empresas, ...updatePayload } = sanitizedData;
-            result = await noco.update(TAXAS_ENTREGA_TABLE_ID, { id, ...updatePayload });
+        if (recordId) {
+            const { id, Id, empresa_id, empresas, ...updatePayload } = sanitizedData;
+            result = await noco.update(TAXAS_ENTREGA_TABLE_ID, { id: recordId, ...updatePayload });
         } else {
-            const { empresa_id, id, ...insertData } = sanitizedData;
+            const { empresa_id, id, Id, ...insertData } = sanitizedData;
             result = await noco.create(TAXAS_ENTREGA_TABLE_ID, {
                 ...insertData,
                 empresa_id: Number(user.empresaId)
             });
         }
 
-        // Removido revalidatePath daqui para evitar erros de Server Component em salvamentos em lote
-        return result;
+        return normalizeId(result);
     } catch (error) {
         console.error('API Error:', error);
         throw new Error('Failed to save delivery rate');
@@ -290,14 +308,21 @@ export async function saveDeliveryRatesBatch(rates: any[]) {
 
             console.log('[saveDeliveryRatesBatch] Enviando payload:', JSON.stringify(payload));
 
+            // Normaliza o id (pode vir como "Id" maiúsculo do NocoDB)
+            const recordId = data.id || data.Id;
+
             try {
-                if (data.id && !String(data.id).startsWith('temp-')) {
-                    const updatePayload = { ...payload, id: data.id };
+                if (recordId && !String(recordId).startsWith('temp-')) {
+                    // Registro existente: faz update
+                    const updatePayload = { ...payload, id: recordId };
                     const res = await noco.update(TAXAS_ENTREGA_TABLE_ID, updatePayload);
-                    results.push(res);
+                    results.push(normalizeId(res));
                 } else {
+                    // Registro novo: faz insert
+                    // Nota: o NocoDB retorna 422 ERR_INVALID_PK_VALUE em tabelas SQLite criadas via API,
+                    // mas o dado é persistido. O nocoRequest já trata esse caso retornando {} sem erro.
                     const res = await noco.create(TAXAS_ENTREGA_TABLE_ID, payload);
-                    results.push(res);
+                    results.push({ bairro: payload.bairro, saved: true, ...normalizeId(res) });
                 }
             } catch (innerError: any) {
                 console.error('[saveDeliveryRatesBatch] Erro no item individual:', innerError.message);

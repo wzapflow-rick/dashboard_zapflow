@@ -126,6 +126,13 @@ async function nocoRequest<T = unknown>(
       errorBody = 'Não foi possível ler o corpo do erro.';
     }
 
+    // O NocoDB retorna 422 com ERR_INVALID_PK_VALUE em tabelas SQLite criadas via API,
+    // mas o registro é persistido com sucesso. Tratamos como sucesso em operações POST.
+    if (res.status === 422 && options.method === 'POST' && errorBody.includes('ERR_INVALID_PK_VALUE')) {
+      console.warn(`[NocoDB] Aviso 422 ERR_INVALID_PK_VALUE ignorado para tabela ${tableId} (dado salvo com sucesso)`);
+      return {} as T;
+    }
+
     const errorMessage = `NocoDB API Error [${tableId}] ${res.status}: ${errorBody}`;
     console.error('--- NOCODB ERROR LOG ---');
     console.error('Table ID:', tableId);

@@ -6,7 +6,7 @@ import { noco } from '@/lib/nocodb';
 import {
   GRUPOS_COMPLEMENTOS_TABLE_ID,
   COMPLEMENTOS_TABLE_ID,
-  TAXAS_ENTREGA_TABLE_ID,
+  PRODUTO_GRUPOS_COMPLEMENTOS_TABLE_ID,
   PRODUTO_INSUMOS_TABLE_ID,
 } from '@/lib/constants';
 
@@ -114,7 +114,7 @@ export async function deleteItemComplemento(id: number) {
 
 export async function getGruposDoProduto(produtoId: number) {
     try {
-        const data = await noco.list(TAXAS_ENTREGA_TABLE_ID, {
+        const data = await noco.list(PRODUTO_GRUPOS_COMPLEMENTOS_TABLE_ID, {
             where: `(produto_id,eq,${produtoId})`,
         });
         return (data.list || []).map((i: any) => ({ ...i, id: i.Id || i.id }));
@@ -126,7 +126,7 @@ export async function getGruposDoProduto(produtoId: number) {
 
 export async function updateGruposDoProduto(produtoId: number, grupoIds: number[]) {
     try {
-        const atuaisData = await noco.list(TAXAS_ENTREGA_TABLE_ID, {
+        const atuaisData = await noco.list(PRODUTO_GRUPOS_COMPLEMENTOS_TABLE_ID, {
             where: `(produto_id,eq,${produtoId})`,
         });
         const atuaisList = atuaisData.list || [];
@@ -138,13 +138,13 @@ export async function updateGruposDoProduto(produtoId: number, grupoIds: number[
 
         for (const [grupo_id, recordId] of atuaisMap.entries()) {
             if (!setNovos.has(grupo_id)) {
-                await noco.delete(TAXAS_ENTREGA_TABLE_ID, recordId);
+                await noco.delete(PRODUTO_GRUPOS_COMPLEMENTOS_TABLE_ID, recordId);
             }
         }
 
         for (const grupo_id of grupoIds) {
             if (!atuaisMap.has(grupo_id)) {
-                await noco.create(TAXAS_ENTREGA_TABLE_ID, { produto_id: produtoId, grupo_id });
+                await noco.create(PRODUTO_GRUPOS_COMPLEMENTOS_TABLE_ID, { produto_id: produtoId, grupo_id });
             }
         }
 

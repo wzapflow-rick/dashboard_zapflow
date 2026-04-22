@@ -47,6 +47,10 @@ export const GRUPOS_COMPLEMENTOS_TABLE_ID =
 export const COMPLEMENTOS_TABLE_ID =
   process.env.NOCODB_TABLE_COMPLEMENTOS || 'mj3ut032mx8zi72';
 
+/** Tabela de vínculo entre produto e grupos de complementos */
+export const PRODUTO_GRUPOS_COMPLEMENTOS_TABLE_ID =
+  process.env.NOCODB_TABLE_PRODUTO_GRUPOS_COMPLEMENTOS || 'm6muivyaadyh38c';
+
 /** Tabela de grupos de slots para produtos compostos */
 export const GRUPOS_SLOTS_TABLE_ID =
   process.env.NOCODB_TABLE_GRUPOS_SLOTS || 'm1h9jeye8hcd4k6';
@@ -117,7 +121,7 @@ export const DISPAROS_TABLE_ID =
 
 /** Tabela de taxas de entrega por bairro/distância */
 export const TAXAS_ENTREGA_TABLE_ID =
-  process.env.NOCODB_TABLE_TAXAS_ENTREGA || 'mmzk2podf4zqps6';
+  process.env.NOCODB_TABLE_TAXAS_ENTREGA || 'm9yccghg9s23utv';
 
 /** Tabela de horários de funcionamento */
 export const HORARIOS_TABLE_ID =
