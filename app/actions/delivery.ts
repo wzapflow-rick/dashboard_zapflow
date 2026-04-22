@@ -28,15 +28,24 @@ export async function upsertDeliveryRate(data: any) {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
+        // Sanitização de valores para evitar erros de tipo no NocoDB
+        const sanitizedData = {
+            ...data,
+            valor_taxa: typeof data.valor_taxa === 'string' 
+                ? (parseFloat(data.valor_taxa.replace(/R\$\s?/g, '').replace(/\./g, '').replace(',', '.').trim()) || 0)
+                : Number(data.valor_taxa || 0),
+            empresa_id: Number(user.empresaId)
+        };
+
         let result;
         if (data.id) {
-            const { id, empresa_id, empresas, ...updatePayload } = data;
+            const { id, empresa_id, empresas, ...updatePayload } = sanitizedData;
             result = await noco.update(TAXAS_ENTREGA_TABLE_ID, { id, ...updatePayload });
         } else {
-            const { empresa_id, id, ...insertData } = data;
+            const { empresa_id, id, ...insertData } = sanitizedData;
             result = await noco.create(TAXAS_ENTREGA_TABLE_ID, {
                 ...insertData,
-                empresa_id: user.empresaId
+                empresa_id: Number(user.empresaId)
             });
         }
 
@@ -268,11 +277,25 @@ export async function saveDeliveryRatesBatch(rates: any[]) {
             // Ignorar itens vazios ou sem nome de bairro
             if (!data.bairro || data.bairro.trim() === '') continue;
 
+            // Sanitização robusta do valor da taxa
+            let valorTaxa = 0;
+            if (typeof data.valor_taxa === 'string') {
+                // Remove R$, espaços e converte vírgula em ponto
+                const cleanValue = data.valor_taxa
+                    .replace(/R\$\s?/g, '')
+                    .replace(/\./g, '')
+                    .replace(',', '.')
+                    .trim();
+                valorTaxa = parseFloat(cleanValue) || 0;
+            } else {
+                valorTaxa = Number(data.valor_taxa || 0);
+            }
+
             const payload: any = {
                 bairro: data.bairro,
-                valor_taxa: Number(data.valor_taxa || 0),
+                valor_taxa: valorTaxa,
                 tempo_estimado: data.tempo_estimado || '',
-                empresa_id: user.empresaId
+                empresa_id: Number(user.empresaId)
             };
 
             if (data.id) {
