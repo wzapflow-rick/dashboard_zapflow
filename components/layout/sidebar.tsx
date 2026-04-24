@@ -80,11 +80,11 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen }: Sideb
 
             <aside
                 className={cn(
-                    "fixed left-0 top-0 h-full bg-white border-r border-slate-200 transition-all duration-300 z-[70] flex flex-col",
+                    "fixed left-0 top-0 h-full bg-gradient-to-b from-white to-slate-50 border-r border-slate-200/50 transition-all duration-300 z-[70] flex flex-col shadow-lg",
                     isOpen ? "w-64" : "w-20",
                     "lg:translate-x-0",
                     isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
-                    "dark:bg-slate-900 dark:border-slate-700"
+                    "dark:bg-gradient-to-b dark:from-slate-900 dark:to-slate-800 dark:border-slate-700/50"
                 )}
             >
                 <div className="p-6 flex items-center justify-between gap-3">

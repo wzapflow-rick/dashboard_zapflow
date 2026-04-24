@@ -164,7 +164,7 @@ export function Header({ isOpen, setIsOpen, setIsMobileMenuOpen }: HeaderProps) 
     const isDark = theme === 'dark';
 
     return (
-        <header className="h-16 bg-white border-b border-slate-200 px-4 lg:px-8 flex items-center justify-between sticky top-0 z-40 dark:bg-slate-900 dark:border-slate-700">
+        <header className="h-16 bg-gradient-to-r from-white to-slate-50 border-b border-slate-200/50 px-4 lg:px-8 flex items-center justify-between sticky top-0 z-40 dark:bg-gradient-to-r dark:from-slate-900 dark:to-slate-800 dark:border-slate-700/50 shadow-sm">
             <div className="flex items-center gap-4">
                 <button
                     onClick={() => setIsMobileMenuOpen(true)}
