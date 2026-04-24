@@ -289,6 +289,7 @@ export default function MenuManagement({ hideCategoryButton }: { hideCategoryBut
 
       {isModalOpen && (
         <ProductFormModal
+          key={`product-modal-${categories.length}-${categories.map(c => c.id).join(',')}`}
           isOpen={isModalOpen}
           onClose={() => { setIsModalOpen(false); setEditingProduct(null); setEditingProductInsumos([]); }}
           editingProduct={editingProduct}
