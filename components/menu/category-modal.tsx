@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { X, Edit3, Trash2, Check } from 'lucide-react';
+import { MobileDrawer } from '@/components/ui/mobile-drawer';
 import { type Category } from '@/app/actions/products';
 
 interface CategoryModalProps {
@@ -44,47 +45,36 @@ export default function CategoryModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      <div className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-slate-200 dark:border-slate-700">
-        <div className="p-4 sm:p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-700/50">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white">{editingCategory ? 'Editar' : 'Nova'} Categoria</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-full transition-colors"
-          >
-            <X className="size-5 text-slate-500 dark:text-slate-400" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
-          <div className="space-y-1.5">
-            <label className="text-[10px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Nome</label>
+    <MobileDrawer
+      isOpen={isOpen}
+      onClose={onClose}
+      title={editingCategory ? 'Editar Categoria' : 'Nova Categoria'}
+      size="md"
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Nome da Categoria</label>
             <input
               name="nome"
               defaultValue={editingCategory?.nome}
               required
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
+              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
               placeholder="Ex: Pizzas Salgadas"
               autoFocus
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-[10px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Ordem de Exibição</label>
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Ordem de Exibição</label>
             <input
               name="ordem"
               type="number"
               defaultValue={editingCategory?.ordem || 0}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all"
             />
           </div>
 
-          <div className="pt-2">
+          <div className="pt-4">
             <button
               type="submit"
               className="w-full px-6 py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 text-sm"
@@ -96,9 +86,9 @@ export default function CategoryModal({
         </form>
 
         {categories.length > 0 && (
-          <div className="p-4 sm:p-6 border-t border-slate-100 dark:border-slate-700 overflow-y-auto">
-            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-3">Categorias Existentes</h3>
-            <div className="space-y-2">
+          <div className="pt-6 border-t border-slate-200 dark:border-slate-700 overflow-y-auto">
+            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4 uppercase tracking-wider">Categorias Existentes</h3>
+            <div className="space-y-3">
               {categories.map(cat => (
                 <div key={cat.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
                   <div>
@@ -126,7 +116,7 @@ export default function CategoryModal({
             </div>
           </div>
         )}
-      </div>
-    </div>
+      </form>
+    </MobileDrawer>
   );
 }
