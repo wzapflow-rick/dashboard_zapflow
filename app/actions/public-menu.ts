@@ -451,7 +451,7 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
                 slug: (empresa.login as string) || null,
                 cidade: (empresa.cidade as string) || null,
                 endereco: (empresa.endereco as string) || null,
-                logo: (empresa.logo as string) || null,
+                logo: (empresa.logo || empresa.instancia_evolution) as string || null,
             },
             grouped: groupedFinal,
             compositeProducts: allCompositeProducts,

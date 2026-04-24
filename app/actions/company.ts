@@ -13,7 +13,11 @@ export async function getCompanyDetails() {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        return await noco.findById(EMPRESAS_TABLE_ID, user.empresaId);
+        const company = await noco.findById(EMPRESAS_TABLE_ID, user.empresaId) as any;
+        if (company && !company.logo && company.instancia_evolution) {
+            company.logo = company.instancia_evolution;
+        }
+        return company;
     } catch (error) {
         console.error('API Error:', error);
         return null;
@@ -29,6 +33,11 @@ export async function updateCompany(data: any) {
             id: user.empresaId,
             ...data
         };
+
+        // Fallback: se 'logo' for enviado mas não houver coluna 'logo', salva em 'instancia_evolution'
+        if (data.logo) {
+            payload.instancia_evolution = data.logo;
+        }
 
         const updatedData = await noco.update(EMPRESAS_TABLE_ID, payload) as any;
 
