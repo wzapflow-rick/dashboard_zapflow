@@ -129,12 +129,12 @@ function ProductCard({ product, onClick }: { product: Product; onClick: () => vo
                     </p>
                 )}
                 <div className="mt-auto pt-1 sm:pt-2 flex items-end justify-between gap-2">
-                    <div className="shrink-0">
-                        {hasDiscount && (
-                            <p className="text-[10px] text-slate-400 line-through leading-none mb-0.5">
+                    <div className="flex flex-col">
+                        {hasDiscount ? (
+                            <p className="text-[10px] sm:text-xs text-slate-400 line-through leading-none mb-0.5">
                                 {fmt(product.preco_original!)}
                             </p>
-                        )}
+                        ) : null}
                         <span className="text-sm sm:text-base font-black text-violet-600 dark:text-violet-400 leading-none">
                             {fmt(product.preco)}
                         </span>
@@ -204,6 +204,47 @@ function CompositeCard({ product, onClick }: { product: CompositeProduct; onClic
     );
 }
 
+// ── Componente: Chip de Categoria ─────────────────────────────────────────────
+
+function CategoryChip({
+    label,
+    isActive,
+    onClick,
+    imageUrl,
+}: {
+    label: string;
+    isActive: boolean;
+    onClick: () => void;
+    imageUrl?: string | null;
+}) {
+    return (
+        <button
+            onClick={onClick}
+            className={`shrink-0 flex items-center gap-2 px-3 py-2 rounded-full text-sm font-semibold transition-all ${
+                isActive
+                    ? 'bg-violet-500 text-white shadow-md shadow-violet-200 dark:shadow-violet-900/30'
+                    : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+            }`}
+        >
+            {imageUrl && (
+                <div className="relative size-5 rounded-full overflow-hidden shrink-0">
+                    <Image
+                        src={imageUrl}
+                        alt={label}
+                        fill
+                        sizes="20px"
+                        className="object-cover"
+                        onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).style.display = 'none';
+                        }}
+                    />
+                </div>
+            )}
+            {label}
+        </button>
+    );
+}
+
 // ── Componente Principal ───────────────────────────────────────────────────────
 
 export default function MenuFilter({
@@ -219,159 +260,244 @@ export default function MenuFilter({
     const [selectedCategory, setSelectedCategory] = useState<number | string | 'all'>('all');
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [selectedComposite, setSelectedComposite] = useState<CompositeProduct | null>(null);
+    const [editingItemId, setEditingItemId] = useState<string | null>(null);
 
-    // Filtragem de produtos
-    const filteredGroups = useMemo(() => {
-        return grouped.map(group => {
-            const filteredProducts = group.products.filter(p => 
-                p.nome.toLowerCase().includes(search.toLowerCase()) || 
-                p.descricao?.toLowerCase().includes(search.toLowerCase())
-            );
-            const filteredComposites = (group.compositeProducts || []).filter(p => 
-                p.nome.toLowerCase().includes(search.toLowerCase()) || 
-                p.descricao?.toLowerCase().includes(search.toLowerCase())
-            );
+    const { addItem, items } = useCart();
 
-            if (selectedCategory !== 'all' && group.id !== selectedCategory) {
-                return { ...group, products: [], compositeProducts: [] };
+    // ── Escutar evento de edição do carrinho ──────────────────────────────────
+    useEffect(() => {
+        const handleEdit = (e: CustomEvent) => {
+            const { itemId } = e.detail;
+            const item = items.find((i) => i.id === itemId);
+            if (!item) return;
+
+            setEditingItemId(itemId);
+
+            if (item.isComposite) {
+                const composite = allComposites.find((c: any) => c._grupoId === item.grupoId);
+                if (composite) {
+                    setSelectedComposite({ ...composite, _editingData: item });
+                }
+            } else {
+                const product = grouped.flatMap((g) => g.products).find((p) => p.id === item.productId);
+                if (product) {
+                    setSelectedProduct({ ...product, _editingData: item });
+                }
             }
+        };
 
-            return { ...group, products: filteredProducts, compositeProducts: filteredComposites };
-        }).filter(group => group.products.length > 0 || (group.compositeProducts && group.compositeProducts.length > 0));
+        window.addEventListener('edit-cart-item', handleEdit as EventListener);
+        return () => window.removeEventListener('edit-cart-item', handleEdit as EventListener);
+    }, [items, allComposites, grouped]);
+
+    // ── Chips de categoria ─────────────────────
+    const categories = useMemo(() => {
+        return grouped.map((g) => {
+            const firstProductWithImage = (g.products || []).find(
+                (p) => p.imagem && p.imagem.startsWith('http')
+            );
+            return {
+                id: g.id,
+                name: g.name,
+                imageUrl: firstProductWithImage?.imagem ?? null,
+            };
+        });
+    }, [grouped]);
+
+    // ── Filtro de dados ───────────────────────────────────────────────────────
+    const filteredGroups = useMemo(() => {
+        let results = grouped;
+
+        if (search.trim()) {
+            const q = search.toLowerCase().trim();
+            results = grouped.map((g) => ({
+                ...g,
+                products: g.products.filter(
+                    (p) =>
+                        p.nome.toLowerCase().includes(q) ||
+                        (p.descricao && p.descricao.toLowerCase().includes(q))
+                ),
+                compositeProducts: (g.compositeProducts || []).filter(
+                    (cp) =>
+                        cp.nome.toLowerCase().includes(q) ||
+                        (cp.descricao && cp.descricao.toLowerCase().includes(q))
+                )
+            })).filter(g => g.products.length > 0 || (g.compositeProducts && g.compositeProducts.length > 0));
+        }
+
+        if (selectedCategory !== 'all') {
+            results = results.filter((g) => String(g.id) === String(selectedCategory));
+        }
+
+        return results;
     }, [grouped, search, selectedCategory]);
 
-    // Rolar para a categoria ao clicar no chip
-    const scrollToCategory = (id: number | string) => {
-        setSelectedCategory(id);
-        if (id === 'all') {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            return;
-        }
-        const element = document.getElementById(`category-${id}`);
-        if (element) {
-            const offset = 140; // Header + Chips height
-            const bodyRect = document.body.getBoundingClientRect().top;
-            const elementRect = element.getBoundingClientRect().top;
-            const elementPosition = elementRect - bodyRect;
-            const offsetPosition = elementPosition - offset;
+    const totalResults = useMemo(() => {
+        return filteredGroups.reduce((acc, g) => acc + g.products.length + (g.compositeProducts?.length || 0), 0);
+    }, [filteredGroups]);
 
-            window.scrollTo({
-                top: offsetPosition,
-                behavior: 'smooth'
-            });
-        }
-    };
+    const hasResults = totalResults > 0;
 
+    // ── Handlers ──────────────────────────────────────────────────────────────
+    const handleProductClick = useCallback(
+        (product: Product) => {
+            const hasSaborGroups = product.saborGroups && product.saborGroups.length > 0;
+            const hasAdditionalGroups = product.additionalGroups && product.additionalGroups.length > 0;
+            const hasSizes = (!!product.tamanhos && product.tamanhos !== '[]') || product.descricao?.includes('[[SIZES:');
+
+            if (hasSaborGroups || hasAdditionalGroups || hasSizes) {
+                setSelectedProduct(product);
+            } else {
+                addItem({
+                    productId: product.id,
+                    nome: product.nome,
+                    preco: Number(product.preco || 0),
+                    quantidade: 1,
+                    imagem: product.imagem || undefined,
+                });
+                toast.success(`${product.nome} adicionado!`, { duration: 1500 });
+            }
+        },
+        [addItem]
+    );
+
+    const handleCompositeClick = useCallback((composite: CompositeProduct) => {
+        setSelectedComposite(composite);
+    }, []);
+
+    const closeProductModal = useCallback(() => {
+        setSelectedProduct(null);
+        setEditingItemId(null);
+    }, []);
+
+    const closeCompositeModal = useCallback(() => {
+        setSelectedComposite(null);
+        setEditingItemId(null);
+    }, []);
+
+    // ── Render ────────────────────────────────────────────────────────────────
     return (
-        <div className="space-y-6">
-            {/* ── Barra de Busca e Categorias Fixas ─────────────────────────── */}
-            <div className="sticky top-[60px] sm:top-[68px] z-40 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-md -mx-4 px-4 py-3 space-y-3 border-b border-slate-200 dark:border-slate-800">
-                {/* Busca */}
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                    <input
-                        type="text"
-                        placeholder="O que você quer comer hoje?"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all dark:text-white"
-                    />
-                    {search && (
-                        <button 
-                            onClick={() => setSearch('')}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full"
-                        >
-                            <X className="size-3 text-slate-400" />
-                        </button>
-                    )}
-                </div>
-
-                {/* Chips de Categoria */}
-                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-                    <button
-                        onClick={() => scrollToCategory('all')}
-                        className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all border ${
-                            selectedCategory === 'all'
-                                ? 'bg-violet-500 border-violet-500 text-white shadow-md'
-                                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
-                        }`}
-                    >
-                        Tudo
-                    </button>
-                    {grouped.map((group) => (
-                        <button
-                            key={group.id}
-                            onClick={() => scrollToCategory(group.id)}
-                            className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all border ${
-                                selectedCategory === group.id
-                                    ? 'bg-violet-500 border-violet-500 text-white shadow-md'
-                                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
-                            }`}
-                        >
-                            {group.name}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {/* ── Listagem de Produtos ─────────────────────────────────────── */}
-            <div className="space-y-10">
-                {filteredGroups.length === 0 ? (
-                    <div className="text-center py-12">
-                        <p className="text-slate-500 dark:text-slate-400">Nenhum produto encontrado para sua busca.</p>
-                    </div>
-                ) : (
-                    filteredGroups.map((group) => (
-                        <section key={group.id} id={`category-${group.id}`} className="scroll-mt-32">
-                            <div className="flex items-center gap-3 mb-4">
-                                <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">
-                                    {group.name}
-                                </h2>
-                                <div className="h-px flex-1 bg-slate-100 dark:bg-slate-800" />
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-3 sm:gap-4">
-                                {group.compositeProducts?.map((p) => (
-                                    <CompositeCard
-                                        key={p.id}
-                                        product={p}
-                                        onClick={() => setSelectedComposite(p)}
-                                    />
-                                ))}
-                                {group.products.map((p) => (
-                                    <ProductCard
-                                        key={p.id}
-                                        product={p}
-                                        onClick={() => setSelectedProduct(p)}
-                                    />
-                                ))}
-                            </div>
-                        </section>
-                    ))
-                )}
-            </div>
-
-            {/* ── Modais ────────────────────────────────────────────────────── */}
+        <div className="space-y-5">
+            {/* Modais */}
             {selectedProduct && (
                 <MenuProductSelectionModal
                     product={selectedProduct}
                     whatsappNumber={whatsappNumber}
                     empresaNome={empresaNome}
                     upsellProducts={upsellProducts}
-                    onClose={() => setSelectedProduct(null)}
+                    onClose={closeProductModal}
+                    editingItemId={editingItemId || undefined}
                 />
             )}
-
             {selectedComposite && (
                 <CompositeProductModal
                     product={selectedComposite}
                     whatsappNumber={whatsappNumber}
                     empresaNome={empresaNome}
                     allComposites={allComposites}
-                    allGroups={allGroups}
-                    onClose={() => setSelectedComposite(null)}
+                    allGroups={
+                        allGroups.length > 0
+                            ? allGroups
+                            : grouped.flatMap((g) =>
+                                  g.products.flatMap((p) => [
+                                      ...(p.saborGroups || []),
+                                      ...(p.additionalGroups || []),
+                                  ])
+                              )
+                    }
+                    onClose={closeCompositeModal}
+                    editingItemId={editingItemId || undefined}
                 />
             )}
+
+            {/* Barra de Busca */}
+            <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4.5 text-slate-400 pointer-events-none" />
+                <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Buscar no cardápio..."
+                    className="w-full pl-11 pr-10 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent transition-all placeholder:text-slate-400 dark:text-white"
+                />
+                {search && (
+                    <button
+                        onClick={() => setSearch('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                        aria-label="Limpar busca"
+                    >
+                        <X className="size-4" />
+                    </button>
+                )}
+            </div>
+
+            {/* Chips de Categoria */}
+            {categories.length > 1 && (
+                <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 custom-scrollbar">
+                    <CategoryChip
+                        label="Todos"
+                        isActive={selectedCategory === 'all'}
+                        onClick={() => setSelectedCategory('all')}
+                    />
+                    {categories.map((cat) => (
+                        <CategoryChip
+                            key={cat.id}
+                            label={cat.name}
+                            isActive={String(selectedCategory) === String(cat.id)}
+                            onClick={() => setSelectedCategory(cat.id)}
+                            imageUrl={cat.imageUrl}
+                        />
+                    ))}
+                </div>
+            )}
+
+            {/* Contador de resultados na busca */}
+            {search.trim() && (
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                    {hasResults ? (
+                        <>
+                            <span className="font-semibold text-slate-700 dark:text-slate-200">{totalResults}</span>{' '}
+                            {totalResults === 1 ? 'resultado' : 'resultados'} para{' '}
+                            <span className="font-semibold text-violet-600">"{search}"</span>
+                        </>
+                    ) : (
+                        <>Nenhum resultado para <span className="font-semibold">"{search}"</span></>
+                    )}
+                </p>
+            )}
+
+            {/* Categorias e seus produtos (Normais e Compostos) */}
+            {filteredGroups.map((group) => (
+                <section key={group.id}>
+                    <div className="flex items-center gap-2 mb-3">
+                        <span className={`h-1 w-6 rounded-full shrink-0 ${group.id === 'composites-default' ? 'bg-amber-400' : 'bg-violet-500'}`} />
+                        <h2 className="text-base font-black text-slate-800 dark:text-white uppercase tracking-wide flex-1">
+                            {group.name}
+                        </h2>
+                        <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                            {(group.products.length + (group.compositeProducts?.length || 0))} { (group.products.length + (group.compositeProducts?.length || 0)) === 1 ? 'item' : 'itens'}
+                        </span>
+                    </div>
+                    <div className="space-y-3">
+                        {/* Renderizar Compostos primeiro se houver */}
+                        {group.compositeProducts?.map((composite) => (
+                            <CompositeCard
+                                key={composite.id}
+                                product={composite}
+                                onClick={() => handleCompositeClick(composite)}
+                            />
+                        ))}
+                        {/* Renderizar Produtos Normais */}
+                        {group.products.map((product) => (
+                            <ProductCard
+                                key={product.id}
+                                product={product}
+                                onClick={() => handleProductClick(product)}
+                            />
+                        ))}
+                    </div>
+                </section>
+            ))}
         </div>
     );
 }
