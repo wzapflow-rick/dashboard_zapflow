@@ -57,6 +57,10 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen }: Sideb
         });
     }, []);
 
+    if (user?.role === 'cozinheiro') {
+        return null;
+    }
+
     const closeMobileMenu = () => {
         if (isMobileMenuOpen) {
             setIsMobileMenuOpen(false);

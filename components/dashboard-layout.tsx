@@ -30,19 +30,30 @@ export function useSidebar() {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { isOpen, setIsOpen } = useSidebar();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  React.useEffect(() => {
+    import('@/app/actions/auth').then(({ getMe }) => {
+      getMe().then(setUser);
+    });
+  }, []);
+
+  const isCozinheiro = user?.role === 'cozinheiro';
 
   return (
     <div className="flex min-h-screen bg-background-light dark:bg-slate-900">
-      <Sidebar
-        isOpen={isOpen}
-        isMobileMenuOpen={isMobileMenuOpen}
-        setIsMobileMenuOpen={setIsMobileMenuOpen}
-      />
+      {!isCozinheiro && (
+        <Sidebar
+          isOpen={isOpen}
+          isMobileMenuOpen={isMobileMenuOpen}
+          setIsMobileMenuOpen={setIsMobileMenuOpen}
+        />
+      )}
 
       {/* Main Content */}
       <main className={cn(
         "flex-1 transition-all duration-300 min-w-0 flex flex-col min-h-screen",
-        isOpen ? "lg:ml-64" : "lg:ml-20",
+        isCozinheiro ? "ml-0" : (isOpen ? "lg:ml-64" : "lg:ml-20"),
         "ml-0"
       )}>
         <Header

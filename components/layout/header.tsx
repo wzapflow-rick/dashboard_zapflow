@@ -163,21 +163,35 @@ export function Header({ isOpen, setIsOpen, setIsMobileMenuOpen }: HeaderProps) 
 
     const isDark = theme === 'dark';
 
+    const isCozinheiro = user?.role === 'cozinheiro';
+
     return (
         <header className="h-16 bg-gradient-to-r from-white to-slate-50 border-b border-slate-200/50 px-4 lg:px-8 flex items-center justify-between sticky top-0 z-40 dark:bg-gradient-to-r dark:from-slate-900 dark:to-slate-800 dark:border-slate-700/50 shadow-sm">
             <div className="flex items-center gap-4">
-                <button
-                    onClick={() => setIsMobileMenuOpen(true)}
-                    className="lg:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-lg dark:text-slate-400 dark:hover:bg-slate-800"
-                >
-                    <LayoutDashboard className="size-6" />
-                </button>
-                <button
-                    onClick={() => setIsOpen(!isOpen)}
-                    className="hidden lg:flex p-2 text-slate-500 hover:bg-slate-100 rounded-lg dark:text-slate-400 dark:hover:bg-slate-800"
-                >
-                    <LayoutDashboard className="size-6" />
-                </button>
+                {!isCozinheiro && (
+                    <>
+                        <button
+                            onClick={() => setIsMobileMenuOpen(true)}
+                            className="lg:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-lg dark:text-slate-400 dark:hover:bg-slate-800"
+                        >
+                            <LayoutDashboard className="size-6" />
+                        </button>
+                        <button
+                            onClick={() => setIsOpen(!isOpen)}
+                            className="hidden lg:flex p-2 text-slate-500 hover:bg-slate-100 rounded-lg dark:text-slate-400 dark:hover:bg-slate-800"
+                        >
+                            <LayoutDashboard className="size-6" />
+                        </button>
+                    </>
+                )}
+                {isCozinheiro && (
+                    <div className="flex items-center gap-3">
+                        <div className="size-10 bg-primary rounded-lg flex items-center justify-center text-white shrink-0">
+                            <Truck className="size-6" />
+                        </div>
+                        <h1 className="font-bold text-slate-900 dark:text-white uppercase tracking-tight">Expedição</h1>
+                    </div>
+                )}
             </div>
 
             <div className="flex items-center gap-4">
