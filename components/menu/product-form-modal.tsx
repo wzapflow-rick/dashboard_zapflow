@@ -494,7 +494,6 @@ export default function ProductFormModal({
                             </button>
                         </div>
                     </form>
-            </form>
         </MobileDrawer>
     );
 }

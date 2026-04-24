@@ -52,7 +52,7 @@ export default function CategoryModal({
       size="md"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
+        <div className="space-y-2">
             <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Nome da Categoria</label>
             <input
               name="nome"
@@ -62,9 +62,9 @@ export default function CategoryModal({
               placeholder="Ex: Pizzas Salgadas"
               autoFocus
             />
-          </div>
+        </div>
 
-          <div className="space-y-2">
+        <div className="space-y-2">
             <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Ordem de Exibição</label>
             <input
               name="ordem"
@@ -72,9 +72,9 @@ export default function CategoryModal({
               defaultValue={editingCategory?.ordem || 0}
               className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all"
             />
-          </div>
+        </div>
 
-          <div className="pt-4">
+        <div className="pt-4">
             <button
               type="submit"
               className="w-full px-6 py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 text-sm"
@@ -82,8 +82,7 @@ export default function CategoryModal({
               <Check className="size-4" />
               Salvar Categoria
             </button>
-          </div>
-        </form>
+        </div>
 
         {categories.length > 0 && (
           <div className="pt-6 border-t border-slate-200 dark:border-slate-700 overflow-y-auto">
