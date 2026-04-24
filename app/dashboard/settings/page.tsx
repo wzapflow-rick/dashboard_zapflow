@@ -118,15 +118,33 @@ export default function SettingsPage() {
 
     try {
       setUploadingLogo(true);
+      
+      const { processImage, isValidImageFile, formatFileSize } = await import('@/lib/image-utils');
+      
+      if (!isValidImageFile(file)) {
+        toast.error('Arquivo inválido. Use PNG, JPG, WebP ou GIF com até 10MB.');
+        setUploadingLogo(false);
+        return;
+      }
+      
+      const processedFile = await processImage(file, {
+        maxWidth: 512,
+        maxHeight: 512,
+        quality: 0.85,
+        format: 'jpeg'
+      });
+      
       const formData = new FormData();
-      formData.append('image', file);
+      formData.append('image', processedFile);
       const url = await uploadImageAction(formData);
+      
       if (url) {
         setLogoUrl(url);
-        toast.success('Logo carregada com sucesso! Salve as alterações para confirmar.');
+        toast.success(`Logo carregada com sucesso! (${formatFileSize(processedFile.size)})`);
       }
-    } catch (error) {
-      toast.error('Erro ao carregar logo.');
+    } catch (error: any) {
+      console.error('Erro ao processar logo:', error);
+      toast.error(error.message || 'Erro ao carregar logo. Tente novamente.');
     } finally {
       setUploadingLogo(false);
     }
@@ -288,7 +306,8 @@ export default function SettingsPage() {
                     </div>
                     <div className="text-center sm:text-left">
                       <h4 className="font-bold text-slate-900 dark:text-white">Logo da Loja</h4>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Recomendado: 512x512px (PNG ou JPG)</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Qualquer tamanho ou formato (PNG, JPG, WebP, GIF)</p>
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Redimensionada automaticamente para 512x512px</p>
                       {logoUrl && (
                         <button onClick={() => setLogoUrl(null)} className="text-xs text-red-500 font-bold mt-2 hover:underline">Remover Logo</button>
                       )}
