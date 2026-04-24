@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Check, PackageOpen } from 'lucide-react';
 import { CurrencyInput } from '@/components/ui/currency-input';
+import { MobileDrawer } from '@/components/ui/mobile-drawer';
 import { Insumo } from '@/app/actions/insumos';
 
 interface InsumoFormModalProps {
@@ -61,37 +62,13 @@ export default function InsumoFormModal({ isOpen, onClose, editingInsumo, onSubm
     };
 
     return (
-        <AnimatePresence>
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    onClick={onClose}
-                    className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-                />
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="relative w-full max-w-lg bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col border border-slate-200 dark:border-slate-700"
-                >
-                    <div className="p-4 sm:p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-700/50 shrink-0">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-primary/10 rounded-lg text-primary">
-                                <PackageOpen className="size-5" />
-                            </div>
-                            <div>
-                                <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">{editingInsumo ? 'Editar Insumo' : 'Novo Insumo'}</h2>
-                                <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">Gerencie seu estoque e custos.</p>
-                            </div>
-                        </div>
-                        <button onClick={onClose} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-full transition-colors">
-                            <X className="size-5 text-slate-500 dark:text-slate-400" />
-                        </button>
-                    </div>
-
-                    <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-6 overflow-y-auto custom-scrollbar">
+        <MobileDrawer
+            isOpen={isOpen}
+            onClose={onClose}
+            title={editingInsumo ? 'Editar Insumo' : 'Novo Insumo'}
+            size="lg"
+        >
+            <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="space-y-1.5">
                             <label className="text-[10px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Nome do Insumo</label>
                             <input
@@ -239,8 +216,6 @@ export default function InsumoFormModal({ isOpen, onClose, editingInsumo, onSubm
                             </button>
                         </div>
                     </form>
-                </motion.div>
-            </div>
-        </AnimatePresence>
+        </MobileDrawer>
     );
 }
