@@ -3,6 +3,7 @@ import { UtensilsCrossed, MapPin, Clock } from 'lucide-react';
 import MenuClientWrapper from '@/components/menu/menu-client-wrapper';
 import MenuFilter from '@/components/menu/menu-filter';
 import type { Metadata } from 'next';
+import Image from 'next/image';
 
 // Forçar renderização dinâmica para refletir mudanças instantâneas no cardápio
 export const dynamic = 'force-dynamic';
@@ -31,6 +32,7 @@ export async function generateMetadata({
             title: `Cardápio — ${empresa.nome}`,
             description: `Peça agora pelo WhatsApp!`,
             type: 'website',
+            images: empresa.logo ? [empresa.logo] : [],
         },
     };
 }
@@ -70,7 +72,7 @@ export default async function PublicMenuPage({
     const whatsappNumber = empresa.telefone?.replace(/\D/g, '') ?? '';
     const pontosPorReal = loyaltyConfig?.ativo ? Number(loyaltyConfig.pontos_por_real || 1) : 0;
 
-    // Inicial do nome para o avatar
+    // Inicial do nome para o avatar (fallback se não tiver logo)
     const inicial = empresa.nome?.charAt(0)?.toUpperCase() ?? '?';
 
     // Total de produtos disponíveis
@@ -89,13 +91,23 @@ export default async function PublicMenuPage({
                 {/* ── Header fixo ──────────────────────────────────────────── */}
                 <header className="sticky top-0 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm">
                     <div className="max-w-2xl mx-auto px-4 py-2 sm:py-3 flex items-center gap-3">
-                        {/* Avatar com inicial */}
+                        {/* Logo ou Avatar com inicial */}
                         <div
-                            className="size-10 sm:size-11 rounded-xl flex items-center justify-center text-white font-bold text-base sm:text-lg shrink-0 shadow-sm"
-                            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
+                            className="size-10 sm:size-11 rounded-xl flex items-center justify-center text-white font-bold text-base sm:text-lg shrink-0 shadow-sm overflow-hidden"
+                            style={!empresa.logo ? { background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' } : {}}
                             aria-hidden="true"
                         >
-                            {inicial}
+                            {empresa.logo ? (
+                                <Image 
+                                    src={empresa.logo} 
+                                    alt={empresa.nome} 
+                                    width={44} 
+                                    height={44} 
+                                    className="size-full object-cover"
+                                />
+                            ) : (
+                                inicial
+                            )}
                         </div>
 
                         {/* Info da empresa */}

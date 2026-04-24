@@ -83,14 +83,19 @@ export default function MenuManagement({ hideCategoryButton }: { hideCategoryBut
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
   const handleEditInit = async (product: any) => {
+    // Abrir o modal IMEDIATAMENTE com os dados básicos do produto
     setEditingProduct(product);
+    setEditingProductInsumos([]); // Limpa receita anterior
+    setIsModalOpen(true);
+    
+    // Carregar a receita em segundo plano
     try {
       const receita = await getReceitaDoProduto(product.id);
-      setEditingProductInsumos(receita);
-    } catch {
-      setEditingProductInsumos([]);
+      setEditingProductInsumos(receita || []);
+    } catch (error) {
+      console.error('Erro ao carregar receita:', error);
+      // Não bloqueia o usuário
     }
-    setIsModalOpen(true);
   };
 
   const handleSaveProduct = async (formData: FormData, isCreatingCategory: boolean, selectedInsumos?: { insumo_id: string | number; quantidade_necessaria: number }[]) => {

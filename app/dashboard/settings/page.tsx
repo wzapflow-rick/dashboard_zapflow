@@ -20,7 +20,9 @@ import {
   Ticket,
   Award,
   Truck,
-  Sparkles
+  Sparkles,
+  Upload,
+  Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -33,6 +35,7 @@ import { getCompanyDetails, updateCompany } from '@/app/actions/company';
 import { getDeliveryRates, upsertDeliveryRate, deleteDeliveryRate, saveDeliveryRatesBatch } from '@/app/actions/delivery';
 import { changePassword } from '@/app/actions/security';
 import { getHorariosFuncionamento, saveHorariosFuncionamento, HorarioItem } from '@/app/actions/horarios';
+import { uploadImageAction } from '@/app/actions/products';
 import { toast } from 'sonner';
 import CouponsManagement from '@/components/management/coupons-management';
 import LoyaltyManagement from '@/components/management/loyalty-management';
@@ -74,6 +77,8 @@ export default function SettingsPage() {
   const [inventoryControlEnabled, setInventoryControlEnabled] = React.useState(false);
   const [newPassword, setNewPassword] = React.useState('');
   const [confirmPassword, setConfirmPassword] = React.useState('');
+  const [logoUrl, setLogoUrl] = React.useState<string | null>(null);
+  const [uploadingLogo, setUploadingLogo] = React.useState(false);
 
   React.useEffect(() => {
     async function loadData() {
@@ -96,6 +101,7 @@ export default function SettingsPage() {
           setValorPorKm(Number(compData.valor_por_km || 0));
           setTaxaEntregaFixa(Number(compData.taxa_entrega_fixa || 0));
           setInventoryControlEnabled(!!compData.controle_estoque);
+          setLogoUrl(compData.logo || null);
         }
       } catch (err) {
         console.error('Erro ao carregar configurações:', err);
@@ -105,6 +111,26 @@ export default function SettingsPage() {
     }
     loadData();
   }, []);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploadingLogo(true);
+      const formData = new FormData();
+      formData.append('image', file);
+      const url = await uploadImageAction(formData);
+      if (url) {
+        setLogoUrl(url);
+        toast.success('Logo carregada com sucesso! Salve as alterações para confirmar.');
+      }
+    } catch (error) {
+      toast.error('Erro ao carregar logo.');
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
 
   const handleSave = async () => {
     try {
@@ -125,12 +151,12 @@ export default function SettingsPage() {
             estado: (formData.get('estado') as string),
             instancia_evolution: (formData.get('instancia_evolution') as string),
             nincho: (formData.get('nincho') as string),
+            logo: logoUrl
           });
         }
       }
 
       if (activeSection === 'delivery') {
-        // Salva todos os bairros em uma única chamada de lote para evitar erros de Server Component
         const res = await saveDeliveryRatesBatch(neighborhoods);
         if (!res || !res.success) {
            throw new Error('Falha ao salvar os bairros. Verifique se os dados estão corretos.');
@@ -241,6 +267,34 @@ export default function SettingsPage() {
             <div className="flex-1 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 sm:p-8 space-y-8 min-w-0">
               {activeSection === 'general' && (
                 <div className="space-y-6">
+                  <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-slate-100 dark:border-slate-700">
+                    <div className="relative group">
+                      <div className="size-24 rounded-2xl bg-slate-100 dark:bg-slate-700 border-2 border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center overflow-hidden relative">
+                        {logoUrl ? (
+                          <Image src={logoUrl} alt="Logo" fill className="object-cover" />
+                        ) : (
+                          <Store className="size-8 text-slate-400" />
+                        )}
+                        {uploadingLogo && (
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                            <Loader2 className="size-6 text-white animate-spin" />
+                          </div>
+                        )}
+                      </div>
+                      <label className="absolute -bottom-2 -right-2 size-8 bg-primary text-white rounded-lg shadow-lg flex items-center justify-center cursor-pointer hover:scale-110 transition-transform">
+                        <Upload className="size-4" />
+                        <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} disabled={uploadingLogo} />
+                      </label>
+                    </div>
+                    <div className="text-center sm:text-left">
+                      <h4 className="font-bold text-slate-900 dark:text-white">Logo da Loja</h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Recomendado: 512x512px (PNG ou JPG)</p>
+                      {logoUrl && (
+                        <button onClick={() => setLogoUrl(null)} className="text-xs text-red-500 font-bold mt-2 hover:underline">Remover Logo</button>
+                      )}
+                    </div>
+                  </div>
+
                   <form id="company-form" className="space-y-6">
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white">Informações da Loja</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-6">
@@ -361,7 +415,9 @@ export default function SettingsPage() {
                               </div>
                             </div>
                           )}
-                          {h.fechado_o_dia_todo && <span className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase">Fechado</span>}
+                          {h.fechado_o_dia_todo && (
+                            <span className="text-xs font-bold text-red-500 uppercase tracking-wider bg-red-50 dark:bg-red-900/20 px-3 py-1 rounded-full">Fechado</span>
+                          )}
                         </div>
                       );
                     })}
@@ -369,176 +425,144 @@ export default function SettingsPage() {
                 </div>
               )}
 
+              {activeSection === 'payments' && (
+                <MercadoPagoConnection />
+              )}
+
               {activeSection === 'delivery' && (
-                <div className="space-y-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Regras de Entrega</h3>
-                    <div className="flex items-center gap-2 px-3 py-1 bg-amber-50 dark:bg-amber-900/30 border border-amber-100 dark:border-amber-700 rounded-lg whitespace-nowrap">
-                      <Info className="size-3.5 text-amber-600 dark:text-amber-400" />
-                      <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 uppercase">Configuração de Frete</span>
+                <div className="space-y-8">
+                  <div className="p-6 bg-slate-50 dark:bg-slate-700 rounded-2xl border border-slate-100 dark:border-slate-600 space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="size-10 bg-white dark:bg-slate-600 rounded-xl shadow-sm flex items-center justify-center text-slate-600 dark:text-slate-300">
+                          <MapPin className="size-5" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-900 dark:text-white">Cálculo Automático por Raio?</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">Usa o Google Maps para calcular a taxa baseada na distância.</p>
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={autoRadius}
+                          onChange={() => setAutoRadius(!autoRadius)}
+                        />
+                        <div className="w-11 h-6 bg-slate-200 dark:bg-slate-500 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                      </label>
                     </div>
+
+                    <AnimatePresence>
+                      {autoRadius && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Valor por KM (R$)</label>
+                              <CurrencyInput
+                                defaultValue={valorPorKm}
+                                onValueChange={(val) => setValorPorKm(val)}
+                                className="w-full pr-4 py-2 bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all dark:text-white"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Taxa Base/Fixa (R$)</label>
+                              <CurrencyInput
+                                defaultValue={taxaEntregaFixa}
+                                onValueChange={(val) => setTaxaEntregaFixa(val)}
+                                className="w-full pr-4 py-2 bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all dark:text-white"
+                              />
+                            </div>
+                            <form id="delivery-form" className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Latitude da Loja</label>
+                                <input name="lat_loja" type="number" step="any" defaultValue={company?.lat_loja || ''} className="w-full px-4 py-2 bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none dark:text-white" />
+                              </div>
+                              <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Longitude da Loja</label>
+                                <input name="lng_loja" type="number" step="any" defaultValue={company?.lng_loja || ''} className="w-full px-4 py-2 bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none dark:text-white" />
+                              </div>
+                            </form>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
 
                   <div className="space-y-4">
-                    <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-100 dark:border-slate-600 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-bold text-slate-900 dark:text-white">Raio de Entrega Automático</p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">Calcular frete baseado na distância (Google Maps)</p>
-                        </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            className="sr-only peer"
-                            checked={autoRadius}
-                            onChange={() => setAutoRadius(!autoRadius)}
-                          />
-                          <div className="w-11 h-6 bg-slate-200 dark:bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                        </label>
-                      </div>
-
-                      <AnimatePresence>
-                        {autoRadius && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="overflow-hidden"
-                          >
-                            <form id="delivery-form" className="pt-2 space-y-4">
-                              <div className="flex flex-col sm:flex-row items-center gap-4">
-                                <div className="flex-1 space-y-1.5 w-full">
-                                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Valor Cobrado por KM (R$)</label>
-                                  <div className="relative">
-                                    <CurrencyInput
-                                      defaultValue={valorPorKm}
-                                      onValueChange={(val) => setValorPorKm(val)}
-                                      className="w-full pr-4 py-2 bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all dark:text-white"
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Latitude da Loja</label>
-                                  <input
-                                    name="lat_loja"
-                                    type="number"
-                                    step="any"
-                                    defaultValue={company?.lat_loja || ''}
-                                    className="w-full px-4 py-2 bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all dark:text-white"
-                                    placeholder="-23.5505"
-                                  />
-                                </div>
-                                <div className="space-y-1.5">
-                                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Longitude da Loja</label>
-                                  <input
-                                    name="lng_loja"
-                                    type="number"
-                                    step="any"
-                                    defaultValue={company?.lng_loja || ''}
-                                    className="w-full px-4 py-2 bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all dark:text-white"
-                                    placeholder="-46.6333"
-                                  />
-                                </div>
-                              </div>
-                            </form>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-bold text-slate-900 dark:text-white">Taxas por Bairro</h3>
+                      <button
+                        onClick={addNeighborhood}
+                        className="text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all"
+                      >
+                        <Plus className="size-4" />
+                        Adicionar Bairro
+                      </button>
                     </div>
 
-                    {!autoRadius && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-600"
-                      >
-                        {/* Taxa de Entrega Fixa */}
-                        <div className="p-4 bg-green-50 dark:bg-green-900/30 rounded-xl border border-green-100 dark:border-green-800 space-y-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-bold text-slate-900 dark:text-white">Taxa de Entrega Fixa</p>
-                              <p className="text-xs text-slate-500 dark:text-slate-400">Valor cobrado para todas as entregas (quando raio automático está desativado)</p>
-                            </div>
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Valor da Taxa (R$)</label>
-                            <CurrencyInput
-                              defaultValue={taxaEntregaFixa}
-                              onValueChange={(val) => setTaxaEntregaFixa(val)}
-                              className="w-full pr-4 py-2 bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all dark:text-white"
-                              placeholder="0.00"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">Cadastro Manual de Bairros</h4>
-                          <button
-                            onClick={addNeighborhood}
-                            className="text-xs font-bold text-primary flex items-center gap-1 hover:underline"
-                          >
-                            <Plus className="size-3" /> Adicionar Bairro
-                          </button>
-                        </div>
-
-                        <div className="space-y-3">
-                          {neighborhoods.map((n, idx) => (
-                            <div key={n.id || idx} className="flex flex-col gap-3 p-4 bg-white dark:bg-slate-700 border border-slate-100 dark:border-slate-600 rounded-xl shadow-sm">
-                              <div className="flex flex-col sm:flex-row gap-3">
-                                <div className="flex-1 space-y-1">
-                                  <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Bairro / Região</label>
-                                  <input
-                                    type="text"
-                                    value={n.bairro}
-                                    onChange={(e) => {
-                                      const updated = [...neighborhoods];
-                                      updated[idx].bairro = e.target.value;
-                                      setNeighborhoods(updated);
-                                    }}
-                                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white" placeholder="Ex: Centro" />
-                                </div>
-                                <div className="w-full sm:w-32 space-y-1">
-                                  <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Taxa (R$)</label>
-                                  <CurrencyInput
-                                    defaultValue={n.valor_taxa}
-                                    onValueChange={(val) => {
-                                      const updated = [...neighborhoods];
-                                      updated[idx].valor_taxa = val;
-                                      setNeighborhoods(updated);
-                                    }}
-                                    className="w-full pr-3 py-2 bg-slate-50 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20" />
-                                </div>
-                                <div className="w-full sm:w-32 space-y-1">
-                                  <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Tempo Est.</label>
-                                  <input
-                                    type="text"
-                                    value={n.tempo_estimado}
-                                    onChange={(e) => {
-                                      const updated = [...neighborhoods];
-                                      updated[idx].tempo_estimado = e.target.value;
-                                      setNeighborhoods(updated);
-                                    }}
-                                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white" placeholder="Ex: 30-40" />
-                                </div>
-                                <div className="flex items-end">
-                                  <button onClick={() => removeNeighborhood(n.id)} className="text-slate-300 hover:text-red-500 transition-colors p-2">
-                                    <Trash2 className="size-4" />
-                                  </button>
-                                </div>
+                    {neighborhoods.length === 0 ? (
+                      <div className="text-center py-12 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl">
+                        <MapPin className="size-8 text-slate-300 mx-auto mb-3" />
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Nenhum bairro configurado.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {neighborhoods.map((n, idx) => (
+                          <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-700 rounded-xl border border-slate-100 dark:border-slate-600">
+                            <div className="flex flex-col sm:flex-row gap-4">
+                              <div className="flex-1 space-y-1">
+                                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Nome do Bairro</label>
+                                <input
+                                  type="text"
+                                  value={n.bairro}
+                                  onChange={(e) => {
+                                    const updated = [...neighborhoods];
+                                    updated[idx].bairro = e.target.value;
+                                    setNeighborhoods(updated);
+                                  }}
+                                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white" placeholder="Ex: Centro" />
+                              </div>
+                              <div className="w-full sm:w-32 space-y-1">
+                                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Taxa (R$)</label>
+                                <CurrencyInput
+                                  defaultValue={n.valor_taxa}
+                                  onValueChange={(val) => {
+                                    const updated = [...neighborhoods];
+                                    updated[idx].valor_taxa = val;
+                                    setNeighborhoods(updated);
+                                  }}
+                                  className="w-full pr-3 py-2 bg-slate-50 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                              </div>
+                              <div className="w-full sm:w-32 space-y-1">
+                                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Tempo Est.</label>
+                                <input
+                                  type="text"
+                                  value={n.tempo_estimado}
+                                  onChange={(e) => {
+                                    const updated = [...neighborhoods];
+                                    updated[idx].tempo_estimado = e.target.value;
+                                    setNeighborhoods(updated);
+                                  }}
+                                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white" placeholder="Ex: 30-40" />
+                              </div>
+                              <div className="flex items-end">
+                                <button onClick={() => removeNeighborhood(n.id)} className="text-slate-300 hover:text-red-500 transition-colors p-2">
+                                  <Trash2 className="size-4" />
+                                </button>
                               </div>
                             </div>
-                          ))}
-                        </div>
-                      </motion.div>
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
                 </div>
-              )}
-
-              {activeSection === 'payments' && (
-                <MercadoPagoConnection />
               )}
 
               {activeSection === 'generalRules' && (
@@ -686,78 +710,55 @@ export default function SettingsPage() {
                       </p>
                     </div>
                   </div>
-
-                  <div className="p-4 border border-slate-200 dark:border-slate-600 rounded-xl">
-                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3">Mensagens Automáticas</p>
-                    <div className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
-                      <div className="flex items-center gap-2">
-                        <span className="size-2 bg-green-500 rounded-full"></span>
-                        <span>Pedido criado → Link de rastreamento</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="size-2 bg-green-500 rounded-full"></span>
-                        <span>Status atualizado → Notificação ao cliente</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="size-2 bg-green-500 rounded-full"></span>
-                        <span>Entregador atribuído → Dados da entrega</span>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               )}
 
               {activeSection === 'security' && (
                 <div className="space-y-6">
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">Segurança e Acesso</h3>
-                  <div className="p-4 border border-slate-200 dark:border-slate-600 rounded-xl space-y-3">
-                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Alterar Senha do Painel</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">Segurança</h3>
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Nova Senha</label>
                       <input
                         type="password"
-                        placeholder="Nova senha"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        className="px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
+                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white"
+                        placeholder="Mínimo 6 caracteres"
                       />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Confirmar Nova Senha</label>
                       <input
                         type="password"
-                        placeholder="Confirmar nova senha"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
+                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white"
+                        placeholder="Repita a nova senha"
                       />
                     </div>
                     <button
                       onClick={async () => {
-                        if (!newPassword || newPassword !== confirmPassword) {
-                          toast.error('As senhas não coincidem ou estão vazias.');
+                        if (!newPassword || newPassword.length < 6) {
+                          toast.error('A senha deve ter pelo menos 6 caracteres');
                           return;
                         }
-                        await changePassword(newPassword);
-                        toast.success('Senha atualizada com sucesso!');
-                        setNewPassword('');
-                        setConfirmPassword('');
+                        if (newPassword !== confirmPassword) {
+                          toast.error('As senhas não coincidem');
+                          return;
+                        }
+                        try {
+                          await changePassword(newPassword);
+                          setNewPassword('');
+                          setConfirmPassword('');
+                          toast.success('Senha alterada com sucesso!');
+                        } catch (error: any) {
+                          toast.error(error.message || 'Erro ao alterar senha');
+                        }
                       }}
-                      className="text-xs font-bold text-primary hover:underline"
+                      className="px-6 py-2.5 bg-slate-900 dark:bg-slate-700 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-all"
                     >
-                      Atualizar Senha
-                    </button>
-                  </div>
-
-                  {/* Tutorial Button */}
-                  <div className="p-4 border border-slate-200 dark:border-slate-600 rounded-xl">
-                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Tutorial do Sistema</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Veja o tutorial de boas-vindas novamente para conhecer todas as funcionalidades</p>
-                    <button
-                      onClick={() => {
-                        localStorage.removeItem('zapflow_onboarding_seen');
-                        window.location.reload();
-                      }}
-                      className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg text-sm font-bold hover:opacity-90 transition-opacity"
-                    >
-                      <Sparkles className="size-4" />
-                      Ver Tutorial
+                      Alterar Senha
                     </button>
                   </div>
                 </div>
@@ -765,130 +766,23 @@ export default function SettingsPage() {
 
               {activeSection === 'bot' && (
                 <div className="space-y-6">
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <Bot className="size-6 text-primary" />
-                    🤖 Assistente Virtual
-                  </h3>
-
-                  {/* Robot Hero Card com design único */}
-                  <div className="relative overflow-hidden rounded-3xl">
-                    {/* Background mesh dramático */}
-                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-amber-200 via-orange-100 to-rose-100 dark:from-amber-900/30 dark:via-orange-900/20 dark:to-rose-900/20"></div>
-
-                    {/* Grid pattern decoration */}
-                    <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05]" style={{ backgroundImage: 'linear-gradient(to right, #000 1px, transparent 1px), linear-gradient(to bottom, #000 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
-
-                    {/* Floating shapes */}
-                    <div className="absolute top-8 right-8 w-20 h-20 bg-gradient-to-br from-amber-300/20 to-orange-400/20 rounded-2xl rotate-12 animate-pulse"></div>
-                    <div className="absolute bottom-16 left-12 w-16 h-16 bg-gradient-to-br from-rose-300/20 to-amber-300/20 rounded-full animate-ping delay-300"></div>
-                    <div className="absolute top-1/2 right-1/4 w-4 h-4 bg-orange-400/60 rounded-full animate-pulse"></div>
-
-                    <div className="relative p-8 sm:p-12 flex flex-col lg:flex-row items-center gap-10">
-                      {/* Robot Character */}
-                      <div className="relative flex-shrink-0">
-                        {/* Outer glow ring */}
-                        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-400 to-rose-500 blur-xl opacity-40 animate-pulse"></div>
-
-                        {/* Robot body container */}
-                        <div className="relative w-44 h-44 sm:w-52 sm:h-52">
-                          {/* Animated rings */}
-                          <div className="absolute inset-2 rounded-full border-2 border-amber-300/50 animate-[spin_8s_linear_infinite]"></div>
-                          <div className="absolute inset-4 rounded-full border border-orange-300/30 animate-[spin_6s_linear_infinite_reverse]"></div>
-
-                          {/* Main robot face */}
-                          <div className="absolute inset-0 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/70 dark:to-orange-900/70 rounded-[2.5rem] flex items-center justify-center shadow-2xl">
-                            <div className="text-7xl sm:text-8xl filter drop-shadow-lg">
-                              🤖
-                            </div>
-                          </div>
-
-                          {/* Eyes */}
-                          <div className="absolute top-1/3 left-1/4 w-3 h-3 sm:w-4 sm:h-4 bg-slate-800 dark:bg-slate-200 rounded-full animate-pulse shadow-lg"></div>
-                          <div className="absolute top-1/3 right-1/4 w-3 h-3 sm:w-4 sm:h-4 bg-slate-800 dark:bg-slate-200 rounded-full animate-pulse delay-200 shadow-lg"></div>
-
-                          {/* Smile */}
-                          <div className="absolute bottom-1/4 left-1/2 -translate-x-1/2 w-8 h-4 border-b-4 border-slate-800 dark:border-slate-200 rounded-full"></div>
-                        </div>
-
-                        {/* Antenna */}
-                        <div className="absolute -top-6 left-1/2 -translate-x-1/2">
-                          <div className="w-2 h-8 bg-gradient-to-t from-amber-500 to-amber-400 rounded-full"></div>
-                          <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-amber-400 rounded-full animate-ping"></div>
-                        </div>
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1 text-center lg:text-left space-y-6">
-                        {/* Badge */}
-                        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-amber-100 dark:bg-amber-900/40 rounded-full">
-                          <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-                          </span>
-                          <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider">Em Desenvolvimento</span>
-                        </div>
-
-                        {/* Title */}
-                        <div>
-                          <h4 className="text-4xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight">
-                            Seu Novo<span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-rose-500"> Assistente</span> 🤖
-                          </h4>
-                          <p className="text-lg text-slate-600 dark:text-slate-300 mt-3 max-w-lg">
-                            Um companion inteligente que vai revolucionar como você atiende seus clientes!
-                          </p>
-                        </div>
-
-                        {/* Feature Pills */}
-                        <div className="flex flex-wrap justify-center lg:justify-start gap-3">
-                          <div className="group px-5 py-3 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
-                            <div className="flex items-center gap-2">
-                              <span className="text-2xl">💬</span>
-                              <span className="font-semibold text-slate-700 dark:text-slate-200">Atende 24/7</span>
-                            </div>
-                          </div>
-                          <div className="group px-5 py-3 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
-                            <div className="flex items-center gap-2">
-                              <span className="text-2xl">🛒</span>
-                              <span className="font-semibold text-slate-700 dark:text-slate-200">Pedidos Auto</span>
-                            </div>
-                          </div>
-                          <div className="group px-5 py-3 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
-                            <div className="flex items-center gap-2">
-                              <span className="text-2xl">🧠</span>
-                              <span className="font-semibold text-slate-700 dark:text-slate-200">IA Avançada</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Progress info */}
-                        <div className="pt-4">
-                          <div className="flex items-center justify-center lg:justify-start gap-4">
-                            <div className="flex -space-x-3">
-                              {[1, 2, 3, 4].map((i) => (
-                                <div key={i} className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600 border-4 border-white dark:border-slate-900 flex items-center justify-center text-xs font-bold text-slate-500">
-                                  {String.fromCharCode(64 + i)}
-                                </div>
-                              ))}
-                            </div>
-                            <div className="text-left">
-                              <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Equipe trabalhando</p>
-                              <p className="text-xs text-slate-500">Lançamento em breve!</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                  <div className="flex items-center gap-3">
+                    <div className="size-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
+                      <Bot className="size-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900 dark:text-white">ZapFlow AI Bot</h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Configurações do assistente inteligente de vendas.</p>
                     </div>
                   </div>
 
-                  {/* Coming Soon Banner */}
-                  <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 p-px">
-                    <div className="absolute inset-0 bg-gradient-to-r from-amber-500/0 via-amber-500/10 to-amber-500/0 animate-[shimmer_2s_linear_infinite]"></div>
-                    <div className="relative p-6 sm:p-8 flex items-center justify-between">
-                      <div>
-                        <h5 className="text-white font-bold text-xl">Fique por dentro! 🔔</h5>
-                        <p className="text-slate-400 mt-1">Quando lançada, você será notificado.</p>
-                      </div>
-                      <div className="hidden sm:block text-6xl">🚀</div>
+                  <div className="p-8 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-3xl text-center space-y-4">
+                    <div className="size-16 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center mx-auto">
+                      <Sparkles className="size-8 text-slate-300" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-900 dark:text-white">Em Breve</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs mx-auto">Estamos finalizando a integração do bot de IA para automatizar seus pedidos.</p>
                     </div>
                   </div>
                 </div>

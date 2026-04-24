@@ -16,6 +16,7 @@ const CategoryModal = dynamic(() => import('@/components/menu/category-modal'), 
 export default function MenuPage() {
   const [activeTab, setActiveTab] = useState<'produtos' | 'compostos'>('produtos');
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<any>(null);
   const { categories, handleSaveCategory, handleDeleteCategory } = useMenuData();
 
   return (
@@ -59,8 +60,8 @@ export default function MenuPage() {
         <CategoryModal
           isOpen={isCategoryModalOpen}
           onClose={() => setIsCategoryModalOpen(false)}
-          editingCategory={null}
-          setEditingCategory={() => {}}
+          editingCategory={editingCategory}
+          setEditingCategory={setEditingCategory}
           categories={categories}
           onSave={handleSaveCategory}
           onDelete={handleDeleteCategory}
