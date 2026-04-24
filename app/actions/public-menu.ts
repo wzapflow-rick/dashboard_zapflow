@@ -51,6 +51,7 @@ export interface PublicEmpresa {
     cidade: string | null;
     endereco: string | null;
     cor_primaria?: string | null;
+    logo?: string | null;
 }
 
 export interface PublicProduct {
@@ -450,6 +451,7 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
                 slug: (empresa.login as string) || null,
                 cidade: (empresa.cidade as string) || null,
                 endereco: (empresa.endereco as string) || null,
+                logo: (empresa.logo as string) || null,
             },
             grouped: groupedFinal,
             compositeProducts: allCompositeProducts,
