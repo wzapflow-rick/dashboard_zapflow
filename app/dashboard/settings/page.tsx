@@ -101,7 +101,7 @@ export default function SettingsPage() {
           setValorPorKm(Number(compData.valor_por_km || 0));
           setTaxaEntregaFixa(Number(compData.taxa_entrega_fixa || 0));
           setInventoryControlEnabled(!!compData.controle_estoque);
-          setLogoUrl(compData.logo || null);
+          setLogoUrl((compData.logo && typeof compData.logo === 'string') ? compData.logo : null);
         }
       } catch (err) {
         console.error('Erro ao carregar configurações:', err);
