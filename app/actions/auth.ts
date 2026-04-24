@@ -216,6 +216,10 @@ export async function updateOnboarding(onboardingData: any) {
         path: '/',
     });
 
+    revalidatePath('/dashboard');
+    revalidatePath('/dashboard/settings');
+    revalidatePath('/dashboard/growth');
+
     return { success: true };
 }
 

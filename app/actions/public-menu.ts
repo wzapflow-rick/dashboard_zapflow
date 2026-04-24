@@ -12,7 +12,7 @@ import {
 } from '@/lib/constants';
 
 // ============================================================
-// HELPERS (RECOMPILE FORCE - v1.0.1)
+// HELPERS
 // ============================================================
 
 function toSlug(text: string): string {
@@ -66,6 +66,7 @@ export interface PublicProduct {
     destaque: boolean;
     ordem: number;
     tamanhos?: string | null;
+    categoria_id?: number | string | null;
     saborGroups: PublicGroup[];
     additionalGroups: PublicGroup[];
     complementGroups: PublicGroup[];
@@ -147,26 +148,25 @@ export interface PublicMenuData {
  */
 export async function getPublicMenu(slug: string): Promise<PublicMenuData | null> {
     try {
+        const targetSlug = slug.toLowerCase();
+
         // ── 1. Buscar empresa ──────────────────────────────────────────────────────────
+        // Tentativa 1: Busca direta por login (email) ou nome_fantasia exato
         let empresa: Record<string, unknown> | null = await noco.findOne(EMPRESAS_TABLE_ID, {
-            where: `(login,eq,${slug})`,
+            where: `(login,eq,${slug})~or(nome_fantasia,eq,${slug})`,
         });
 
-        if (!empresa) {
-            empresa = await noco.findOne(EMPRESAS_TABLE_ID, {
-                where: `(nome_fantasia,eq,${slug})`,
-            });
-        }
-
+        // Tentativa 2: Busca por slug gerado a partir do nome_fantasia
         if (!empresa) {
             const allEmpresas = await noco.list(EMPRESAS_TABLE_ID, {
-                limit: 500,
+                limit: 1000,
                 fields: 'id,nome_fantasia,email,telefone_loja,nincho,cidade,endereco,controle_estoque,ativo,login',
             });
+            
             empresa = (allEmpresas.list as Record<string, unknown>[]).find((e) => {
                 const slugFromNome = toSlug(String(e.nome_fantasia || ''));
                 const slugFromLogin = toSlug(String(e.login || ''));
-                return slugFromNome === slug.toLowerCase() || slugFromLogin === slug.toLowerCase();
+                return slugFromNome === targetSlug || slugFromLogin === targetSlug;
             }) ?? null;
         }
 
@@ -210,11 +210,23 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
                 limit: 1,
             }),
             noco.findOne(CONFIGURACOES_LOJA_TABLE_ID, {
-                where: `(empresa_id,eq,${empresaId})`
+                where: `(Empresa ID,eq,${empresaId})`
             }),
         ]);
 
-        // ── 3. Processar produtos ─────────────────────────────────────────────
+        // ── 3. Processar empresa com logo ────────────────────────────────────
+        const publicEmpresa: PublicEmpresa = {
+            id: empresaId,
+            nome: (empresa.nome_fantasia as string) || (empresa.nome_admin as string) || 'Minha Loja',
+            telefone: (empresa.telefone_loja as string) || null,
+            nincho: (empresa.nincho as string) || null,
+            slug: slug,
+            cidade: (empresa.cidade as string) || null,
+            endereco: (empresa.endereco as string) || null,
+            logo: (extraConfigData?.Logo as string) || (empresa.logo as string) || null,
+        };
+
+        // ── 4. Processar produtos ─────────────────────────────────────────────
         const rawProducts = productsData.list as Record<string, unknown>[];
         const products = controleEstoque
             ? rawProducts.filter((p) => {
@@ -224,7 +236,7 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
               })
             : rawProducts;
 
-        // ── 4. Processar grupos/slots ─────────────────────────────────────────
+        // ── 5. Processar grupos/slots ─────────────────────────────────────────
         const gruposSlots = (gruposSlotsData.list as Record<string, unknown>[]).map((g) => ({
             id: g.id as number,
             nome: g.nome as string,
@@ -241,7 +253,7 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
             categoria_id: g.categoria_id || null,
         }));
 
-        // ── 5. Mapear itens base ──────────────────────────────────────────────
+        // ── 6. Mapear itens base ──────────────────────────────────────────────
         const itensBaseMap = new Map<number, PublicGroupItem>();
         (itensBaseData.list as Record<string, unknown>[]).forEach((item) => {
             itensBaseMap.set(item.id as number, {
@@ -252,7 +264,7 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
             });
         });
 
-        // ── 6. Montar mapa de grupos ──────────────────────────────────────────
+        // ── 7. Montar mapa de grupos ──────────────────────────────────────────
         const gruposMap = new Map<number, PublicGroup>();
         gruposSlots.forEach((g) => {
             const groupItems = g.itens
@@ -280,7 +292,7 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
             });
         });
 
-        // ── 7. Associar grupos aos produtos ──────────────────────────────────────────
+        // ── 8. Associar grupos aos produtos ──────────────────────────────────────────
         const productsWithGroups: PublicProduct[] = products.map((p) => {
             const gruposRaw = p.grupos ?? p.grupos_ids ?? p.grupo_ids ?? null;
             const gruposVinculados = parseJsonArray(gruposRaw);
@@ -302,178 +314,82 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
 
                 g.completamentos_ids.forEach((compId: number) => {
                     const compGroup = gruposMap.get(compId);
-                    if (compGroup && !additionalGroups.find((ag) => ag.id === compGroup.id)) {
+                    if (compGroup && !additionalGroups.find((ag) => ag.id === compId)) {
                         additionalGroups.push(compGroup);
                     }
                 });
             });
-
-            const imagemRaw = (p.imagem_url || p.imagem) as string | null | undefined;
-            const imagem = imagemRaw && imagemRaw.startsWith('http') ? imagemRaw : null;
 
             return {
                 id: p.id as number,
                 nome: p.nome as string,
                 descricao: p.descricao as string | undefined,
                 preco: Number(p.preco ?? 0),
-                preco_original: p.preco_original ? Number(p.preco_original) : undefined,
-                imagem,
-                disponivel: p.disponivel !== false,
+                preco_original: Number(p.preco_original ?? 0),
+                imagem: (p.imagem as string) || (p.imagem_url as string) || null,
+                disponivel: true,
                 destaque: p.destaque === true || p.destaque === 1,
                 ordem: Number(p.ordem ?? 0),
-                tamanhos: p.tamanhos as string | null | undefined,
+                tamanhos: p.tamanhos as string | null,
+                categoria_id: (p.categoria_id as number | string | null) || null,
                 saborGroups,
                 additionalGroups,
-                complementGroups: [...saborGroups, ...additionalGroups],
+                complementGroups: [],
             };
         });
 
-        // ── 8. Processar produtos compostos ─────────────────────────────────────
-        const allCompositeProducts: PublicCompositeProduct[] = gruposSlots
-            .filter((g) => g.tipo === 'fracionado' && g.itens.length > 0)
-            .map((g) => {
-                const groupData = gruposMap.get(g.id)!;
-                return {
-                    id: `composite-${g.id}`,
-                    _grupoId: g.id,
-                    _isComposite: true as const,
-                    _tipo: g.tipo,
-                    nome: g.nome,
-                    descricao: g.descricao || '',
-                    imagem: '',
-                    tipo_calculo: groupData.tipo_calculo,
-                    cobrar_mais_caro: groupData.cobrar_mais_caro,
-                    minimo: groupData.minimo,
-                    maximo: groupData.maximo,
-                    preco_fixo: groupData.preco_fixo,
-                    completamentos_ids: groupData.completamentos_ids,
-                    categoria_id: g.categoria_id as string | number | null,
-                    items: groupData.items,
-                };
-            });
+        // ── 9. Agrupar por categoria ─────────────────────────────────────────
+        const categories = (categoriesData.list as Record<string, unknown>[]).map((c) => ({
+            id: c.id as number,
+            name: c.nome as string,
+            icone: c.icone as string | null,
+            cor: c.cor as string | null,
+            ordem: Number(c.ordem ?? 0),
+            products: productsWithGroups.filter((p) => {
+                const pCatId = p.categoria_id ?? (rawProducts.find(rp => rp.id === p.id)?.categoria_id);
+                return Number(pCatId) === Number(c.id);
+            }),
+            compositeProducts: [],
+        }));
 
-        // ── 9. Agrupar por categoria ──────────────────────────────────────────
-        const categories = categoriesData.list as Record<string, unknown>[];
-        const groupedFinal: PublicCategory[] = categories
-            .map((cat) => ({
-                id: cat.id as number,
-                name: cat.nome as string,
-                icone: cat.icone as string | null,
-                cor: cat.cor as string | null,
-                ordem: Number(cat.ordem ?? 0),
-                products: productsWithGroups.filter(
-                    (p) => {
-                        const raw = products.find((r) => r.id === p.id) as Record<string, any>;
-                        const catId = raw?.categorias ?? raw?.categoria_id;
-                        const finalId = (typeof catId === 'object' && catId !== null) ? (catId.id || catId.Id) : catId;
-                        return String(finalId || '') === String(cat.id);
-                    }
-                ),
-                compositeProducts: allCompositeProducts.filter(
-                    (cp) => {
-                        const catId = cp.categoria_id;
-                        if (!catId) return false;
-                        const finalId = (typeof catId === 'object' && catId !== null) ? ((catId as any).id || (catId as any).Id) : catId;
-                        return String(finalId || '') === String(cat.id);
-                    }
-                )
-            }))
-            .filter((g) => g.products.length > 0 || g.compositeProducts.length > 0);
+        // ── 10. Produtos compostos (Upsell / Destaques) ──────────────────────
+        const compositeProducts: PublicCompositeProduct[] = productsWithGroups
+            .filter(p => p.destaque)
+            .map(p => ({
+                id: String(p.id),
+                _grupoId: 0,
+                _isComposite: true,
+                _tipo: 'destaque',
+                nome: p.nome,
+                descricao: p.descricao || '',
+                imagem: p.imagem || '',
+                tipo_calculo: 'soma',
+                cobrar_mais_caro: false,
+                minimo: 0,
+                maximo: 0,
+                preco_fixo: p.preco,
+                completamentos_ids: [],
+                items: [],
+            }));
 
-        // Produtos compostos sem categoria (Vão para "Monte seu Pedido")
-        const unassignedComposites = allCompositeProducts.filter(cp => {
-            const catId = cp.categoria_id;
-            if (!catId) return true;
-            
-            // Se for objeto (NocoDB Link), pega o id
-            const finalId = (typeof catId === 'object' && catId !== null) 
-                ? (catId as any).id || (catId as any).Id 
-                : catId;
-                
-            return !finalId;
-        });
-        
-        // Produtos normais sem categoria
-        const categorizedIds = new Set(
-            products
-                .filter((p) => {
-                    const catId = (p.categorias ?? p.categoria_id) as unknown;
-                    return categories.find((c) => String(c.id) === String(catId));
-                })
-                .map((p) => p.id as number)
-        );
-        const uncategorized = productsWithGroups.filter((p) => !categorizedIds.has(p.id));
-
-        // Adicionar seção "Monte seu Pedido" se houver compostos não atribuídos
-        if (unassignedComposites.length > 0) {
-            groupedFinal.unshift({
-                id: 'composites-default',
-                name: 'Monte seu Pedido',
-                icone: '🍕',
-                cor: null,
-                ordem: -10,
-                products: [],
-                compositeProducts: unassignedComposites
-            });
-        }
-
-        // Adicionar "Outros" se houver produtos normais não atribuídos
-        if (uncategorized.length > 0) {
-            groupedFinal.push({
-                id: 0,
-                name: 'Outros',
-                icone: null,
-                cor: null,
-                ordem: 9999,
-                products: uncategorized,
-                compositeProducts: []
-            });
-        }
-
-        // ── 10. Configuração de fidelidade ────────────────────────────────────
-        const loyaltyConfig = (loyaltyData.list[0] as Record<string, unknown>) ?? {
-            empresa_id: empresaId,
-            pontos_por_real: 1,
-            valor_ponto: 0.1,
-            pontos_para_desconto: 100,
-            desconto_tipo: 'valor_fixo',
-            desconto_valor: 10,
-            ativo: false,
-        };
-
-        // ── 11. Produtos em destaque (upsell) ─────────────────────────────────
-        const upsellProducts = productsWithGroups
-            .filter((p) => p.destaque)
-            .slice(0, 4);
-
-        // ── 12. Retornar dados estruturados ───────────────────────────────────
         return {
-            empresa: {
-                id: empresaId,
-                nome: (empresa.nome_fantasia as string) || '',
-                telefone: (empresa.telefone_loja as string) || null,
-                nincho: (empresa.nincho as string) || null,
-                slug: (empresa.login as string) || null,
-                cidade: (empresa.cidade as string) || null,
-                endereco: (empresa.endereco as string) || null,
-                logo: (extraConfigData?.logo || empresa.logo) as string || null,
-            },
-            grouped: groupedFinal,
-            compositeProducts: allCompositeProducts,
-            upsellProducts,
+            empresa: publicEmpresa,
+            grouped: categories.sort((a, b) => a.ordem - b.ordem),
+            compositeProducts: [],
+            upsellProducts: productsWithGroups.filter(p => p.destaque),
             loyaltyConfig: {
-                empresa_id: loyaltyConfig.empresa_id as number,
-                pontos_por_real: Number(loyaltyConfig.pontos_por_real ?? 1),
-                valor_ponto: Number(loyaltyConfig.valor_ponto ?? 0.1),
-                pontos_para_desconto: Number(loyaltyConfig.pontos_para_desconto ?? 100),
-                desconto_tipo: (loyaltyConfig.desconto_tipo as string) || 'valor_fixo',
-                desconto_valor: Number(loyaltyConfig.desconto_valor ?? 10),
-                ativo: loyaltyConfig.ativo === true || loyaltyConfig.ativo === 1,
+                empresa_id: empresaId,
+                pontos_por_real: Number(loyaltyData.list[0]?.pontos_por_real ?? 1),
+                valor_ponto: Number(loyaltyData.list[0]?.valor_ponto ?? 0.1),
+                pontos_para_desconto: Number(loyaltyData.list[0]?.pontos_para_desconto ?? 100),
+                desconto_tipo: (loyaltyData.list[0]?.desconto_tipo as string) || 'valor_fixo',
+                desconto_valor: Number(loyaltyData.list[0]?.desconto_valor ?? 10),
+                ativo: !!loyaltyData.list[0]?.ativo,
             },
             allGroups: Array.from(gruposMap.values()),
         };
     } catch (error) {
-        console.error('[getPublicMenu] Erro ao carregar cardápio:', error);
+        console.error('API Error (getPublicMenu):', error);
         return null;
     }
 }
