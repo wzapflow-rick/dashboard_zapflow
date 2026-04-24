@@ -243,7 +243,7 @@ export default function SettingsPage() {
                 <div className="space-y-6">
                   <form id="company-form" className="space-y-6">
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white">Informações da Loja</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-6">
                       <div className="space-y-1.5">
                         <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Nome da Unidade</label>
                         <input name="nome_fantasia" type="text" defaultValue={company?.nome_fantasia || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white" />
@@ -309,9 +309,9 @@ export default function SettingsPage() {
                   <h3 className="text-lg font-bold text-slate-900 dark:text-white">Horário de Funcionamento</h3>
                   <div className="divide-y divide-slate-100 dark:divide-slate-700">
                     {DIAS_SEMANA.map((day: string, idx: number) => {
-                      const h = horarios.find(item => item.dia_semana === idx) || { dia_semana: idx, hora_abertura: '18:00', hora_fechamento: '23:30', fechado_o_dia_todo: true };
+                      const h = horarios.find(item => item.dia_semana === idx) || { dia_semana: idx, hora_abertura: '09:00', hora_fechamento: '23:30', fechado_o_dia_todo: false };
                       return (
-                        <div key={day} className="py-4 flex items-center justify-between">
+                        <div key={day} className="py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                           <div className="flex items-center gap-4">
                             <input
                               type="checkbox"
@@ -322,37 +322,43 @@ export default function SettingsPage() {
                                 if (index >= 0) {
                                   newH[index].fechado_o_dia_todo = !e.target.checked;
                                 } else {
-                                  newH.push({ dia_semana: idx, hora_abertura: '18:00', hora_fechamento: '23:30', fechado_o_dia_todo: !e.target.checked });
+                                  newH.push({ dia_semana: idx, hora_abertura: '09:00', hora_fechamento: '23:30', fechado_o_dia_todo: !e.target.checked });
                                 }
                                 setHorarios(newH);
                               }}
                               className="size-5 rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary"
                             />
-                            <span className="font-bold text-slate-700 dark:text-slate-200">{day}</span>
+                            <span className="font-bold text-slate-700 dark:text-slate-200 min-w-[100px]">{day}</span>
                           </div>
                           {!h.fechado_o_dia_todo && (
-                            <div className="flex items-center gap-3">
-                              <TimeInput
-                                value={h.hora_abertura || '18:00'}
-                                onChange={(val) => {
-                                  const newH = [...horarios];
-                                  const index = newH.findIndex(item => item.dia_semana === idx);
-                                  if (index >= 0) newH[index].hora_abertura = val;
-                                  setHorarios(newH);
-                                }}
-                                className="px-3 py-1.5 bg-slate-100 dark:bg-slate-600 border-none rounded-lg text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-primary/20"
-                              />
-                              <span className="text-slate-400 font-bold">às</span>
-                              <TimeInput
-                                value={h.hora_fechamento || '23:30'}
-                                onChange={(val) => {
-                                  const newH = [...horarios];
-                                  const index = newH.findIndex(item => item.dia_semana === idx);
-                                  if (index >= 0) newH[index].hora_fechamento = val;
-                                  setHorarios(newH);
-                                }}
-                                className="px-3 py-1.5 bg-slate-100 dark:bg-slate-600 border-none rounded-lg text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-primary/20"
-                              />
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
+                              <div className="flex items-center gap-2 w-full sm:w-auto">
+                                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 sm:hidden">Abre:</label>
+                                <TimeInput
+                                  value={h.hora_abertura || '09:00'}
+                                  onChange={(val) => {
+                                    const newH = [...horarios];
+                                    const index = newH.findIndex(item => item.dia_semana === idx);
+                                    if (index >= 0) newH[index].hora_abertura = val;
+                                    setHorarios(newH);
+                                  }}
+                                  className="flex-1 sm:flex-none px-3 py-1.5 bg-slate-100 dark:bg-slate-600 border-none rounded-lg text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-primary/20"
+                                />
+                              </div>
+                              <span className="text-slate-400 font-bold hidden sm:inline">às</span>
+                              <div className="flex items-center gap-2 w-full sm:w-auto">
+                                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 sm:hidden">Fecha:</label>
+                                <TimeInput
+                                  value={h.hora_fechamento || '23:30'}
+                                  onChange={(val) => {
+                                    const newH = [...horarios];
+                                    const index = newH.findIndex(item => item.dia_semana === idx);
+                                    if (index >= 0) newH[index].hora_fechamento = val;
+                                    setHorarios(newH);
+                                  }}
+                                  className="flex-1 sm:flex-none px-3 py-1.5 bg-slate-100 dark:bg-slate-600 border-none rounded-lg text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-primary/20"
+                                />
+                              </div>
                             </div>
                           )}
                           {h.fechado_o_dia_todo && <span className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase">Fechado</span>}
@@ -365,9 +371,9 @@ export default function SettingsPage() {
 
               {activeSection === 'delivery' && (
                 <div className="space-y-6">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white">Regras de Entrega</h3>
-                    <div className="flex items-center gap-2 px-3 py-1 bg-amber-50 dark:bg-amber-900/30 border border-amber-100 dark:border-amber-700 rounded-lg">
+                    <div className="flex items-center gap-2 px-3 py-1 bg-amber-50 dark:bg-amber-900/30 border border-amber-100 dark:border-amber-700 rounded-lg whitespace-nowrap">
                       <Info className="size-3.5 text-amber-600 dark:text-amber-400" />
                       <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 uppercase">Configuração de Frete</span>
                     </div>
@@ -479,46 +485,48 @@ export default function SettingsPage() {
 
                         <div className="space-y-3">
                           {neighborhoods.map((n, idx) => (
-                            <div key={n.id || idx} className="flex flex-col sm:grid sm:grid-cols-12 gap-3 items-end p-3 bg-white dark:bg-slate-700 border border-slate-100 dark:border-slate-600 rounded-xl shadow-sm">
-                              <div className="w-full sm:col-span-5 space-y-1">
-                                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Bairro / Região</label>
-                                <input
-                                  type="text"
-                                  value={n.bairro}
-                                  onChange={(e) => {
-                                    const updated = [...neighborhoods];
-                                    updated[idx].bairro = e.target.value;
-                                    setNeighborhoods(updated);
-                                  }}
-                                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white" placeholder="Ex: Centro" />
-                              </div>
-                              <div className="w-full sm:col-span-3 space-y-1">
-                                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Taxa (R$)</label>
-                                <CurrencyInput
-                                  defaultValue={n.valor_taxa}
-                                  onValueChange={(val) => {
-                                    const updated = [...neighborhoods];
-                                    updated[idx].valor_taxa = val;
-                                    setNeighborhoods(updated);
-                                  }}
-                                  className="w-full pr-3 py-2 bg-slate-50 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20" />
-                              </div>
-                              <div className="w-full sm:col-span-3 space-y-1">
-                                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Tempo Est.</label>
-                                <input
-                                  type="text"
-                                  value={n.tempo_estimado}
-                                  onChange={(e) => {
-                                    const updated = [...neighborhoods];
-                                    updated[idx].tempo_estimado = e.target.value;
-                                    setNeighborhoods(updated);
-                                  }}
-                                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white" placeholder="Ex: 30-40" />
-                              </div>
-                              <div className="w-full sm:col-span-1 flex justify-center sm:pb-2">
-                                <button onClick={() => removeNeighborhood(n.id)} className="text-slate-300 hover:text-red-500 transition-colors p-2">
-                                  <Trash2 className="size-4" />
-                                </button>
+                            <div key={n.id || idx} className="flex flex-col gap-3 p-4 bg-white dark:bg-slate-700 border border-slate-100 dark:border-slate-600 rounded-xl shadow-sm">
+                              <div className="flex flex-col sm:flex-row gap-3">
+                                <div className="flex-1 space-y-1">
+                                  <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Bairro / Região</label>
+                                  <input
+                                    type="text"
+                                    value={n.bairro}
+                                    onChange={(e) => {
+                                      const updated = [...neighborhoods];
+                                      updated[idx].bairro = e.target.value;
+                                      setNeighborhoods(updated);
+                                    }}
+                                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white" placeholder="Ex: Centro" />
+                                </div>
+                                <div className="w-full sm:w-32 space-y-1">
+                                  <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Taxa (R$)</label>
+                                  <CurrencyInput
+                                    defaultValue={n.valor_taxa}
+                                    onValueChange={(val) => {
+                                      const updated = [...neighborhoods];
+                                      updated[idx].valor_taxa = val;
+                                      setNeighborhoods(updated);
+                                    }}
+                                    className="w-full pr-3 py-2 bg-slate-50 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                                </div>
+                                <div className="w-full sm:w-32 space-y-1">
+                                  <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Tempo Est.</label>
+                                  <input
+                                    type="text"
+                                    value={n.tempo_estimado}
+                                    onChange={(e) => {
+                                      const updated = [...neighborhoods];
+                                      updated[idx].tempo_estimado = e.target.value;
+                                      setNeighborhoods(updated);
+                                    }}
+                                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white" placeholder="Ex: 30-40" />
+                                </div>
+                                <div className="flex items-end">
+                                  <button onClick={() => removeNeighborhood(n.id)} className="text-slate-300 hover:text-red-500 transition-colors p-2">
+                                    <Trash2 className="size-4" />
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           ))}
