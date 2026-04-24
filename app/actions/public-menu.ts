@@ -8,6 +8,7 @@ import {
     GRUPOS_SLOTS_TABLE_ID,
     ITENS_BASE_TABLE_ID,
     LOYALTY_CONFIG_TABLE_ID,
+    CONFIGURACOES_LOJA_TABLE_ID,
 } from '@/lib/constants';
 
 // ============================================================
@@ -184,6 +185,7 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
             gruposSlotsData,
             itensBaseData,
             loyaltyData,
+            extraConfigData,
         ] = await Promise.all([
             noco.list(PRODUTOS_TABLE_ID, {
                 where: `(empresa_id,eq,${empresaId})~and(disponivel,eq,true)`,
@@ -206,6 +208,9 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
             noco.list(LOYALTY_CONFIG_TABLE_ID, {
                 where: `(empresa_id,eq,${empresaId})`,
                 limit: 1,
+            }),
+            noco.findOne(CONFIGURACOES_LOJA_TABLE_ID, {
+                where: `(empresa_id,eq,${empresaId})`
             }),
         ]);
 
@@ -451,7 +456,7 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
                 slug: (empresa.login as string) || null,
                 cidade: (empresa.cidade as string) || null,
                 endereco: (empresa.endereco as string) || null,
-                logo: (empresa.logo || empresa.instancia_evolution) as string || null,
+                logo: (extraConfigData?.logo || empresa.logo) as string || null,
             },
             grouped: groupedFinal,
             compositeProducts: allCompositeProducts,

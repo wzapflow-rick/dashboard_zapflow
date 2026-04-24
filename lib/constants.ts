@@ -135,6 +135,10 @@ export const PAGAMENTOS_CONFIG_TABLE_ID =
 export const AVALIACOES_TABLE_ID =
   process.env.NOCODB_TABLE_AVALIACOES || 'm3ebs9cm1yjgmo1';
 
+/** Tabela de configurações extras da loja (logo, etc) */
+export const CONFIGURACOES_LOJA_TABLE_ID =
+  process.env.NOCODB_TABLE_CONFIGURACOES_LOJA || 'mtkx66k8jacnezx';
+
 // ============================================================
 // RATE LIMITING - CONFIGURAÇÕES GLOBAIS
 // ============================================================
