@@ -74,7 +74,7 @@ export default async function middleware(req: NextRequest) {
     // 2. Se logado e tentar acessar login/register -> dashboard ou onboarding
     if (isAuthRoute && session) {
         return session.onboarded
-            ? NextResponse.redirect(new URL('/dashboard', req.nextUrl))
+            ? NextResponse.redirect(new URL(session.role === 'cozinheiro' ? '/dashboard/expedition' : '/dashboard', req.nextUrl))
             : NextResponse.redirect(new URL('/onboarding', req.nextUrl))
     }
 
@@ -103,7 +103,7 @@ export default async function middleware(req: NextRequest) {
         const isAllowedRoute = allowed.some(route => path.startsWith(route));
         const isDashboardHome = path === '/dashboard' || path === '/dashboard/';
         
-        if (!isAllowedRoute && !isDashboardHome) {
+        if (!isAllowedRoute && (isDashboardHome || !isAllowedRoute)) {
             // Redireciona para a primeira rota permitida do role
             const fallback = allowed.length > 0 ? allowed[0] : '/dashboard/expedition';
             return NextResponse.redirect(new URL(fallback, req.nextUrl))
