@@ -86,25 +86,25 @@ export default async function PublicMenuPage({
             pontosPorReal={pontosPorReal}
             upsellProducts={upsellProducts}
         >
-            <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors pb-24">
+            <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors pb-24">
 
                 {/* ── Header Premium com Banner ──────────────────────────────────────────── */}
-                <header className="sticky top-0 z-50 bg-white dark:bg-slate-800 shadow-lg">
+                <header className="relative bg-white dark:bg-slate-900">
                     {/* Banner de fundo com gradiente */}
-                    <div className="relative h-32 sm:h-40 bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-600 dark:from-violet-700 dark:via-purple-700 dark:to-indigo-800 overflow-hidden">
+                    <div className="relative h-40 sm:h-52 bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 dark:from-violet-800 dark:via-purple-800 dark:to-indigo-950 overflow-hidden">
                         {/* Padrão decorativo de fundo */}
-                        <div className="absolute inset-0 opacity-10">
-                            <div className="absolute top-0 right-0 w-40 h-40 bg-white rounded-full mix-blend-multiply filter blur-3xl"></div>
-                            <div className="absolute -bottom-8 left-20 w-40 h-40 bg-white rounded-full mix-blend-multiply filter blur-3xl"></div>
+                        <div className="absolute inset-0 opacity-20">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full mix-blend-overlay filter blur-3xl"></div>
+                            <div className="absolute -bottom-8 left-20 w-64 h-64 bg-white rounded-full mix-blend-overlay filter blur-3xl"></div>
                         </div>
                     </div>
 
                     {/* Conteúdo do header com logo flutuante */}
-                    <div className="max-w-2xl mx-auto px-4 pb-4 sm:pb-6">
-                        <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4 -mt-16 sm:-mt-20">
-                            {/* Logo flutuante */}
+                    <div className="max-w-2xl mx-auto px-4 pb-8 sm:pb-10">
+                        <div className="relative flex flex-col items-center sm:items-start text-center sm:text-left">
+                            {/* Logo flutuante centralizada no mobile e esquerda no desktop */}
                             <div
-                                className="size-24 sm:size-32 rounded-2xl flex items-center justify-center text-white font-bold text-3xl sm:text-5xl shrink-0 shadow-xl border-4 border-white dark:border-slate-800 bg-white dark:bg-slate-700 overflow-hidden transition-transform hover:scale-105"
+                                className="size-28 sm:size-36 rounded-3xl flex items-center justify-center text-white font-bold text-4xl sm:text-6xl shrink-0 shadow-2xl border-4 border-white dark:border-slate-900 bg-white dark:bg-slate-800 overflow-hidden -mt-14 sm:-mt-18 transition-transform hover:scale-105 z-10"
                                 style={!empresa.logo ? { background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' } : { background: 'white' }}
                                 aria-hidden="true"
                             >
@@ -112,8 +112,8 @@ export default async function PublicMenuPage({
                                     <Image 
                                         src={empresa.logo} 
                                         alt={empresa.nome} 
-                                        width={128} 
-                                        height={128} 
+                                        width={144} 
+                                        height={144} 
                                         className="size-full object-cover"
                                     />
                                 ) : (
@@ -122,42 +122,46 @@ export default async function PublicMenuPage({
                             </div>
 
                             {/* Info da empresa */}
-                            <div className="flex-1 min-w-0 pb-2">
-                                <h1 className="font-black text-2xl sm:text-4xl text-slate-900 dark:text-white leading-tight mb-2">
-                                    {empresa.nome}
-                                </h1>
-                                <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-                                    {empresa.nincho && (
-                                        <span className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 capitalize font-semibold bg-slate-100 dark:bg-slate-700 px-3 py-1 rounded-full">
-                                            🏪 {empresa.nincho}
-                                        </span>
-                                    )}
-                                    {empresa.cidade && (
-                                        <span className="flex items-center gap-1.5 text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-semibold bg-slate-100 dark:bg-slate-700 px-3 py-1 rounded-full">
-                                            <MapPin className="size-3.5 sm:size-4" />
-                                            {empresa.cidade}
-                                        </span>
-                                    )}
-                                    {totalProdutos > 0 && (
-                                        <span className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-semibold bg-slate-100 dark:bg-slate-700 px-3 py-1 rounded-full">
-                                            📦 {totalProdutos} {totalProdutos === 1 ? 'item' : 'itens'}
-                                        </span>
+                            <div className="mt-4 sm:mt-6 w-full">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                    <div className="flex-1 min-w-0">
+                                        <h1 className="font-black text-3xl sm:text-5xl text-slate-900 dark:text-white leading-tight mb-3">
+                                            {empresa.nome}
+                                        </h1>
+                                        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-3">
+                                            {empresa.nincho && (
+                                                <span className="text-[10px] sm:text-xs text-slate-600 dark:text-slate-300 capitalize font-bold bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700">
+                                                    🏪 {empresa.nincho}
+                                                </span>
+                                            )}
+                                            {empresa.cidade && (
+                                                <span className="flex items-center gap-1.5 text-[10px] sm:text-xs text-slate-600 dark:text-slate-300 font-bold bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700">
+                                                    <MapPin className="size-3 sm:size-3.5" />
+                                                    {empresa.cidade}
+                                                </span>
+                                            )}
+                                            {totalProdutos > 0 && (
+                                                <span className="text-[10px] sm:text-xs text-slate-600 dark:text-slate-300 font-bold bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700">
+                                                    📦 {totalProdutos} {totalProdutos === 1 ? 'item' : 'itens'}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Badge de fidelidade se ativo */}
+                                    {loyaltyConfig?.ativo && (
+                                        <div className="self-center sm:self-end shrink-0 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs sm:text-sm font-black px-5 py-2.5 rounded-2xl shadow-lg shadow-orange-500/20 border-2 border-white dark:border-slate-900 animate-bounce-slow">
+                                            🌟 Fidelidade Ativo
+                                        </div>
                                     )}
                                 </div>
                             </div>
-
-                            {/* Badge de fidelidade se ativo */}
-                            {loyaltyConfig?.ativo && (
-                                <div className="shrink-0 bg-gradient-to-r from-amber-400 to-orange-400 text-white text-xs sm:text-sm font-bold px-4 py-2 rounded-full shadow-lg border-2 border-white dark:border-slate-800">
-                                    🌟 Fidelidade
-                                </div>
-                            )}
                         </div>
                     </div>
                 </header>
 
                 {/* ── Conteúdo principal ───────────────────────────────────── */}
-                <main className="max-w-2xl mx-auto px-4 py-4 sm:py-6">
+                <main className="max-w-2xl mx-auto px-4 py-6">
                     {grouped.length === 0 && compositeProducts.length === 0 ? (
                         /* Estado vazio */
                         <div className="text-center py-20 sm:py-24">
@@ -188,7 +192,7 @@ export default async function PublicMenuPage({
                     )}
 
                     {/* Footer */}
-                    <footer className="text-center pt-8 pb-4 mt-4 border-t border-slate-100 dark:border-slate-800">
+                    <footer className="text-center pt-12 pb-6 mt-8 border-t border-slate-200 dark:border-slate-800">
                         <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500">
                             Cardápio digital por{' '}
                             <span className="font-bold text-violet-500">
