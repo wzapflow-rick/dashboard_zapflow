@@ -25,8 +25,9 @@ export async function getCompanyDetails() {
 
         if (company) {
             // Mapeia 'Logo' e 'Banner' da tabela extra para as propriedades usadas no front-end
+            // Suporta variações de case: Banner, banner, BANNER
             company.logo = extraConfig?.Logo || company.logo || null;
-            company.banner = extraConfig?.Banner || company.banner || null;
+            company.banner = extraConfig?.Banner || extraConfig?.banner || extraConfig?.BANNER || company.banner || null;
         }
 
         return company;
@@ -63,7 +64,7 @@ export async function updateCompany(data: any) {
 
             const updatePayload: any = {};
             if (logo !== undefined) updatePayload.Logo = logo;
-            if (banner !== undefined) updatePayload.Banner = banner;
+            if (banner !== undefined) updatePayload.banner = banner;
 
             if (extraConfig) {
                 await noco.update(CONFIGURACOES_LOJA_TABLE_ID, {
