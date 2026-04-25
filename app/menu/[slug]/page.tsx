@@ -88,59 +88,71 @@ export default async function PublicMenuPage({
         >
             <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors pb-24">
 
-                {/* ── Header fixo ──────────────────────────────────────────── */}
-                <header className="sticky top-0 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm">
-                    <div className="max-w-2xl mx-auto px-4 py-2 sm:py-3 flex items-center gap-3">
-                        {/* Logo ou Avatar com inicial */}
-                        <div
-                            className="size-10 sm:size-11 rounded-xl flex items-center justify-center text-white font-bold text-base sm:text-lg shrink-0 shadow-sm overflow-hidden"
-                            style={!empresa.logo ? { background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' } : {}}
-                            aria-hidden="true"
-                        >
-                            {empresa.logo ? (
-                                <Image 
-                                    src={empresa.logo} 
-                                    alt={empresa.nome} 
-                                    width={44} 
-                                    height={44} 
-                                    className="size-full object-cover"
-                                />
-                            ) : (
-                                inicial
+                {/* ── Header Premium com Banner ──────────────────────────────────────────── */}
+                <header className="sticky top-0 z-50 bg-white dark:bg-slate-800 shadow-lg">
+                    {/* Banner de fundo com gradiente */}
+                    <div className="relative h-32 sm:h-40 bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-600 dark:from-violet-700 dark:via-purple-700 dark:to-indigo-800 overflow-hidden">
+                        {/* Padrão decorativo de fundo */}
+                        <div className="absolute inset-0 opacity-10">
+                            <div className="absolute top-0 right-0 w-40 h-40 bg-white rounded-full mix-blend-multiply filter blur-3xl"></div>
+                            <div className="absolute -bottom-8 left-20 w-40 h-40 bg-white rounded-full mix-blend-multiply filter blur-3xl"></div>
+                        </div>
+                    </div>
+
+                    {/* Conteúdo do header com logo flutuante */}
+                    <div className="max-w-2xl mx-auto px-4 pb-4 sm:pb-6">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4 -mt-16 sm:-mt-20">
+                            {/* Logo flutuante */}
+                            <div
+                                className="size-24 sm:size-32 rounded-2xl flex items-center justify-center text-white font-bold text-3xl sm:text-5xl shrink-0 shadow-xl border-4 border-white dark:border-slate-800 bg-white dark:bg-slate-700 overflow-hidden transition-transform hover:scale-105"
+                                style={!empresa.logo ? { background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' } : { background: 'white' }}
+                                aria-hidden="true"
+                            >
+                                {empresa.logo ? (
+                                    <Image 
+                                        src={empresa.logo} 
+                                        alt={empresa.nome} 
+                                        width={128} 
+                                        height={128} 
+                                        className="size-full object-cover"
+                                    />
+                                ) : (
+                                    <span style={{ color: '#6366f1' }}>{inicial}</span>
+                                )}
+                            </div>
+
+                            {/* Info da empresa */}
+                            <div className="flex-1 min-w-0 pb-2">
+                                <h1 className="font-black text-2xl sm:text-4xl text-slate-900 dark:text-white leading-tight mb-2">
+                                    {empresa.nome}
+                                </h1>
+                                <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+                                    {empresa.nincho && (
+                                        <span className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 capitalize font-semibold bg-slate-100 dark:bg-slate-700 px-3 py-1 rounded-full">
+                                            🏪 {empresa.nincho}
+                                        </span>
+                                    )}
+                                    {empresa.cidade && (
+                                        <span className="flex items-center gap-1.5 text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-semibold bg-slate-100 dark:bg-slate-700 px-3 py-1 rounded-full">
+                                            <MapPin className="size-3.5 sm:size-4" />
+                                            {empresa.cidade}
+                                        </span>
+                                    )}
+                                    {totalProdutos > 0 && (
+                                        <span className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-semibold bg-slate-100 dark:bg-slate-700 px-3 py-1 rounded-full">
+                                            📦 {totalProdutos} {totalProdutos === 1 ? 'item' : 'itens'}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Badge de fidelidade se ativo */}
+                            {loyaltyConfig?.ativo && (
+                                <div className="shrink-0 bg-gradient-to-r from-amber-400 to-orange-400 text-white text-xs sm:text-sm font-bold px-4 py-2 rounded-full shadow-lg border-2 border-white dark:border-slate-800">
+                                    🌟 Fidelidade
+                                </div>
                             )}
                         </div>
-
-                        {/* Info da empresa */}
-                        <div className="flex-1 min-w-0">
-                            <h1 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base leading-tight truncate">
-                                {empresa.nome}
-                            </h1>
-                            <div className="flex items-center gap-2 sm:gap-3 mt-0.5">
-                                {empresa.nincho && (
-                                    <span className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 capitalize truncate max-w-[80px] sm:max-w-none">
-                                        {empresa.nincho}
-                                    </span>
-                                )}
-                                {empresa.cidade && (
-                                    <span className="flex items-center gap-1 text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 truncate">
-                                        <MapPin className="size-2.5 sm:size-3" />
-                                        {empresa.cidade}
-                                    </span>
-                                )}
-                                {totalProdutos > 0 && (
-                                    <span className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 shrink-0">
-                                        • {totalProdutos} {totalProdutos === 1 ? 'item' : 'itens'}
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Badge de fidelidade se ativo - Escondido em telas muito pequenas */}
-                        {loyaltyConfig?.ativo && (
-                            <div className="hidden xs:flex shrink-0 bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 text-[10px] sm:text-xs font-semibold px-2 sm:px-2.5 py-1 rounded-full border border-violet-200 dark:border-violet-800">
-                                🌟 <span className="hidden sm:inline ml-1">Fidelidade</span>
-                            </div>
-                        )}
                     </div>
                 </header>
 
