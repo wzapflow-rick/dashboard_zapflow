@@ -139,9 +139,10 @@ export default function DashboardOverview() {
             </span>
           </div>
           {/* Chart de vendas por hora */}
-          <div className="h-[240px] flex items-end justify-between gap-1 bg-slate-50 rounded-xl p-4 border border-slate-100 dark:bg-slate-900/50 dark:border-slate-700/50">
-            {dashboardData?.chartData && dashboardData.chartData.length > 0 ? (
-              dashboardData.chartData.map((val: number, i: number) => {
+          <div className="overflow-x-auto custom-scrollbar -mx-2 px-2">
+            <div className="h-[240px] flex items-end justify-between gap-1 bg-slate-50 rounded-xl p-4 border border-slate-100 dark:bg-slate-900/50 dark:border-slate-700/50 min-w-[600px] sm:min-w-0">
+              {dashboardData?.chartData && dashboardData.chartData.length > 0 ? (
+                dashboardData.chartData.map((val: number, i: number) => {
                 const maxVal = Math.max(...dashboardData.chartData);
                 const height = val === 0 ? 4 : Math.max(8, Math.round((val / Math.max(maxVal, 1)) * 180));
 
