@@ -78,7 +78,9 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword] = React.useState('');
   const [confirmPassword, setConfirmPassword] = React.useState('');
   const [logoUrl, setLogoUrl] = React.useState<string | null>(null);
+  const [bannerUrl, setBannerUrl] = React.useState<string | null>(null);
   const [uploadingLogo, setUploadingLogo] = React.useState(false);
+  const [uploadingBanner, setUploadingBanner] = React.useState(false);
 
   React.useEffect(() => {
     async function loadData() {
@@ -102,6 +104,7 @@ export default function SettingsPage() {
           setTaxaEntregaFixa(Number(compData.taxa_entrega_fixa || 0));
           setInventoryControlEnabled(!!compData.controle_estoque);
           setLogoUrl((compData.logo && typeof compData.logo === 'string') ? compData.logo : null);
+          setBannerUrl((compData.banner && typeof compData.banner === 'string') ? compData.banner : null);
         }
       } catch (err) {
         console.error('Erro ao carregar configurações:', err);
@@ -150,6 +153,44 @@ export default function SettingsPage() {
     }
   };
 
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploadingBanner(true);
+      
+      const { processImage, isValidImageFile, formatFileSize } = await import('@/lib/image-utils');
+      
+      if (!isValidImageFile(file)) {
+        toast.error('Arquivo inválido. Use PNG, JPG, WebP ou GIF com até 10MB.');
+        setUploadingBanner(false);
+        return;
+      }
+      
+      const processedFile = await processImage(file, {
+        maxWidth: 1200,
+        maxHeight: 600,
+        quality: 0.8,
+        format: 'jpeg'
+      });
+      
+      const formData = new FormData();
+      formData.append('image', processedFile);
+      const url = await uploadImageAction(formData);
+      
+      if (url) {
+        setBannerUrl(url);
+        toast.success(`Banner carregado com sucesso! (${formatFileSize(processedFile.size)})`);
+      }
+    } catch (error: any) {
+      console.error('Erro ao processar banner:', error);
+      toast.error(error.message || 'Erro ao carregar banner. Tente novamente.');
+    } finally {
+      setUploadingBanner(false);
+    }
+  };
+
   const handleSave = async () => {
     try {
       if (activeSection === 'general') {
@@ -167,10 +208,11 @@ export default function SettingsPage() {
             endereco: (formData.get('endereco') as string),
             cidade: (formData.get('cidade') as string),
             estado: (formData.get('estado') as string),
-            instancia_evolution: (formData.get('instancia_evolution') as string),
-            nincho: (formData.get('nincho') as string),
-            logo: logoUrl
-          });
+	            instancia_evolution: (formData.get('instancia_evolution') as string),
+	            nincho: (formData.get('nincho') as string),
+	            logo: logoUrl,
+	            banner: bannerUrl
+	          });
         }
       }
 
@@ -304,15 +346,43 @@ export default function SettingsPage() {
                         <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} disabled={uploadingLogo} />
                       </label>
                     </div>
-                    <div className="text-center sm:text-left">
-                      <h4 className="font-bold text-slate-900 dark:text-white">Logo da Loja</h4>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Qualquer tamanho ou formato (PNG, JPG, WebP, GIF)</p>
-                      <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Redimensionada automaticamente para 512x512px</p>
-                      {logoUrl && (
-                        <button onClick={() => setLogoUrl(null)} className="text-xs text-red-500 font-bold mt-2 hover:underline">Remover Logo</button>
-                      )}
-                    </div>
-                  </div>
+	                    <div className="text-center sm:text-left">
+	                      <h4 className="font-bold text-slate-900 dark:text-white">Logo da Loja</h4>
+	                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Qualquer tamanho ou formato (PNG, JPG, WebP, GIF)</p>
+	                      <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Redimensionada automaticamente para 512x512px</p>
+	                      {logoUrl && (
+	                        <button onClick={() => setLogoUrl(null)} className="text-xs text-red-500 font-bold mt-2 hover:underline">Remover Logo</button>
+	                      )}
+	                    </div>
+	                  </div>
+
+	                  {/* Banner do Cardápio */}
+	                  <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-slate-100 dark:border-slate-700">
+	                    <div className="relative group w-full sm:w-48 h-24 sm:h-28 rounded-2xl bg-slate-100 dark:bg-slate-700 border-2 border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center overflow-hidden relative">
+	                      {bannerUrl ? (
+	                        <Image src={bannerUrl} alt="Banner" fill className="object-cover" />
+	                      ) : (
+	                        <Sparkles className="size-8 text-slate-400" />
+	                      )}
+	                      {uploadingBanner && (
+	                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+	                          <Loader2 className="size-6 text-white animate-spin" />
+	                        </div>
+	                      )}
+	                      <label className="absolute bottom-2 right-2 size-8 bg-primary text-white rounded-lg shadow-lg flex items-center justify-center cursor-pointer hover:scale-110 transition-transform">
+	                        <Upload className="size-4" />
+	                        <input type="file" className="hidden" accept="image/*" onChange={handleBannerUpload} disabled={uploadingBanner} />
+	                      </label>
+	                    </div>
+	                    <div className="text-center sm:text-left">
+	                      <h4 className="font-bold text-slate-900 dark:text-white">Banner do Cardápio</h4>
+	                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Ideal para fotos da loja ou produtos em destaque</p>
+	                      <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Recomendado: 1200x600px (Paisagem)</p>
+	                      {bannerUrl && (
+	                        <button onClick={() => setBannerUrl(null)} className="text-xs text-red-500 font-bold mt-2 hover:underline">Remover Banner</button>
+	                      )}
+	                    </div>
+	                  </div>
 
                   <form id="company-form" className="space-y-6">
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white">Informações da Loja</h3>

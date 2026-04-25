@@ -24,8 +24,9 @@ export async function getCompanyDetails() {
         ]);
 
         if (company) {
-            // Mapeia 'Logo' da tabela extra para a propriedade 'logo' usada no front-end
+            // Mapeia 'Logo' e 'Banner' da tabela extra para as propriedades usadas no front-end
             company.logo = extraConfig?.Logo || company.logo || null;
+            company.banner = extraConfig?.Banner || company.banner || null;
         }
 
         return company;
@@ -43,8 +44,8 @@ export async function updateCompany(data: any) {
     try {
         const user = await requireAdmin();
 
-        // 1. Separar dados da logo para a nova tabela
-        const { logo, ...companyData } = data;
+        // 1. Separar dados da logo e banner para a nova tabela
+        const { logo, banner, ...companyData } = data;
 
         // 2. Atualizar dados principais da empresa
         const payload = {
@@ -54,26 +55,32 @@ export async function updateCompany(data: any) {
 
         const updatedData = await noco.update(EMPRESAS_TABLE_ID, payload) as any;
 
-        // 3. Persistir a logo na tabela dedicada (mapeando para as colunas reais do NocoDB)
-        if (logo !== undefined) {
+        // 3. Persistir a logo e banner na tabela dedicada (mapeando para as colunas reais do NocoDB)
+        if (logo !== undefined || banner !== undefined) {
             const extraConfig = await noco.findOne(CONFIGURACOES_LOJA_TABLE_ID, {
                 where: `(Empresa ID,eq,${user.empresaId})`
             }) as any;
 
+            const updatePayload: any = {
+                Logo: logo !== undefined ? logo : extraConfig?.Logo,
+                Banner: banner !== undefined ? banner : extraConfig?.Banner
+            };
+
             if (extraConfig) {
                 await noco.update(CONFIGURACOES_LOJA_TABLE_ID, {
                     id: extraConfig.Id || extraConfig.id,
-                    Logo: logo
+                    ...updatePayload
                 });
             } else {
                 await noco.create(CONFIGURACOES_LOJA_TABLE_ID, {
                     'Empresa ID': user.empresaId,
-                    'Logo': logo
+                    ...updatePayload
                 });
             }
             
-            // Garante que o retorno tenha a logo atualizada
-            updatedData.logo = logo;
+            // Garante que o retorno tenha os dados atualizados
+            if (logo !== undefined) updatedData.logo = logo;
+            if (banner !== undefined) updatedData.banner = banner;
         }
 
         // 4. Atualizar a sessão se o nome fantasia mudou
