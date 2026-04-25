@@ -225,7 +225,7 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
             cidade: (empresa.cidade as string) || null,
             endereco: (empresa.endereco as string) || null,
             logo: (extraConfigData?.Logo as string) || (empresa.logo as string) || null,
-            banner: (extraConfigData?.Banner as string) || (empresa.banner as string) || null,
+            banner: (extraConfigData?.banner as string) || (extraConfigData?.Banner as string) || (empresa.banner as string) || null,
         };
 
         // ── 4. Processar produtos ─────────────────────────────────────────────
