@@ -143,32 +143,33 @@ export default function DashboardOverview() {
             <div className="h-[240px] flex items-end justify-between gap-1 bg-slate-50 rounded-xl p-4 border border-slate-100 dark:bg-slate-900/50 dark:border-slate-700/50 min-w-[600px] sm:min-w-0">
               {dashboardData?.chartData && dashboardData.chartData.length > 0 ? (
                 dashboardData.chartData.map((val: number, i: number) => {
-                const maxVal = Math.max(...dashboardData.chartData);
-                const height = val === 0 ? 4 : Math.max(8, Math.round((val / Math.max(maxVal, 1)) * 180));
+                  const maxVal = Math.max(...dashboardData.chartData);
+                  const height = val === 0 ? 4 : Math.max(8, Math.round((val / Math.max(maxVal, 1)) * 180));
 
-                return (
-                  <div key={i} className="flex-1 flex flex-col items-center relative group h-full justify-end">
-                    <motion.div
-                      initial={{ height: 0 }}
-                      animate={{ height: `${height}px` }}
-                      className="w-full bg-gradient-to-t from-blue-600 to-blue-400 dark:from-blue-500 dark:to-blue-300 rounded-t-sm transition-all duration-300 group-hover:from-blue-500 group-hover:to-blue-300 shadow-sm"
-                      title={`${val} pedidos`}
-                    />
-                    <span className="text-[10px] font-bold mt-2 text-slate-400 dark:text-slate-500">
-                      {i}h
-                    </span>
-                    {/* Tooltip on hover */}
-                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 dark:bg-slate-700 text-white text-[10px] px-2 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-10 shadow-xl border border-white/10 whitespace-nowrap">
-                      <span className="font-bold">{val}</span> pedidos às {i}h
+                  return (
+                    <div key={i} className="flex-1 flex flex-col items-center relative group h-full justify-end">
+                      <motion.div
+                        initial={{ height: 0 }}
+                        animate={{ height: `${height}px` }}
+                        className="w-full bg-gradient-to-t from-blue-600 to-blue-400 dark:from-blue-500 dark:to-blue-300 rounded-t-sm transition-all duration-300 group-hover:from-blue-500 group-hover:to-blue-300 shadow-sm"
+                        title={`${val} pedidos`}
+                      />
+                      <span className="text-[10px] font-bold mt-2 text-slate-400 dark:text-slate-500">
+                        {i}h
+                      </span>
+                      {/* Tooltip on hover */}
+                      <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 dark:bg-slate-700 text-white text-[10px] px-2 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-10 shadow-xl border border-white/10 whitespace-nowrap">
+                        <span className="font-bold">{val}</span> pedidos às {i}h
+                      </div>
                     </div>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="w-full flex items-center justify-center text-slate-400">
-                Nenhum dado disponível
-              </div>
-            )}
+                  );
+                })
+              ) : (
+                <div className="w-full flex items-center justify-center text-slate-400">
+                  Nenhum dado disponível
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
