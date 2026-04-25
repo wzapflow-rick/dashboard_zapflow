@@ -25,21 +25,8 @@ export async function getCompanyDetails() {
 
         if (company) {
             // Mapeia 'Logo' e 'Banner' da tabela extra para as propriedades usadas no front-end
-            // Fallback: se o banner não estiver na coluna 'Banner', tenta extrair do marcador na coluna 'Logo'
-            let rawLogo = extraConfig?.Logo || company.logo || null;
-            let banner = extraConfig?.Banner || null;
-
-            if (rawLogo && typeof rawLogo === 'string' && rawLogo.includes('[[BANNER:')) {
-                const parts = rawLogo.split('[[BANNER:');
-                company.logo = parts[0].trim();
-                if (!banner) {
-                    banner = parts[1].replace(']]', '').trim();
-                }
-            } else {
-                company.logo = rawLogo;
-            }
-
-            company.banner = banner || company.banner || null;
+            company.logo = extraConfig?.Logo || company.logo || null;
+            company.banner = extraConfig?.Banner || company.banner || null;
         }
 
         return company;
@@ -74,17 +61,9 @@ export async function updateCompany(data: any) {
                 where: `(Empresa ID,eq,${user.empresaId})`
             }) as any;
 
-            // Estratégia de Fallback: Como a coluna 'Banner' pode não existir no NocoDB,
-            // vamos salvar a URL do banner anexada ao campo 'Logo' com um marcador especial.
-            const currentLogo = logo !== undefined ? logo : (extraConfig?.Logo?.split('[[BANNER:')[0]?.trim() || '');
-            const currentBanner = banner !== undefined ? banner : (extraConfig?.Banner || extraConfig?.Logo?.split('[[BANNER:')[1]?.replace(']]', '')?.trim() || '');
-
-            const finalLogoValue = currentBanner ? `${currentLogo} [[BANNER:${currentBanner}]]` : currentLogo;
-
-            const updatePayload: any = {
-                Logo: finalLogoValue,
-                Banner: currentBanner // Tenta salvar na coluna oficial também, caso ela exista
-            };
+            const updatePayload: any = {};
+            if (logo !== undefined) updatePayload.Logo = logo;
+            if (banner !== undefined) updatePayload.Banner = banner;
 
             if (extraConfig) {
                 await noco.update(CONFIGURACOES_LOJA_TABLE_ID, {
@@ -100,7 +79,7 @@ export async function updateCompany(data: any) {
             
             // Garante que o retorno tenha os dados atualizados
             if (logo !== undefined) updatedData.logo = logo;
-            if (banner !== undefined) updatedData.banner = currentBanner;
+            if (banner !== undefined) updatedData.banner = banner;
         }
 
         // 4. Atualizar a sessão se o nome fantasia mudou
