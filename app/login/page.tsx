@@ -9,7 +9,10 @@ import {
     MessageSquare,
     Loader2,
     Lock,
-    Mail
+    Mail,
+    TrendingUp,
+    CheckCircle2,
+    Zap as ZapIcon
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
@@ -87,7 +90,7 @@ export default function LoginPage() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-primary hover:bg-primary/90 disabled:opacity-60 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/25 flex items-center justify-center gap-2 transition-all active:scale-[0.98] mt-4"
+                            className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 text-white font-bold py-4 rounded-xl shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 transition-all active:scale-[0.98] mt-4"
                         >
                             {loading ? (
                                 <Loader2 className="size-5 animate-spin" />
@@ -101,7 +104,7 @@ export default function LoginPage() {
                     </form>
 
                     <p className="text-center text-sm text-slate-500 dark:text-slate-400 mt-8">
-                        Não tem uma conta? <Link href="/" className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline">Criar Conta Grátis</Link>
+                        Não tem uma conta? <Link href="/" className="text-emerald-500 font-bold hover:text-emerald-600 transition-colors hover:underline">Criar Conta Grátis</Link>
                     </p>
 
                     <div className="mt-12 pt-8 border-t border-slate-100 dark:border-slate-800 flex items-center justify-center gap-6 opacity-50 grayscale dark:invert">
@@ -128,28 +131,28 @@ export default function LoginPage() {
                         animate={{ opacity: 1, y: 0 }}
                         className="space-y-8"
                     >
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/10 text-xs font-bold uppercase tracking-widest">
-                            <Zap className="size-3 fill-current" />
-                            IA Power Delivery
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-400/30 text-xs font-bold uppercase tracking-widest text-emerald-300">
+                            <TrendingUp className="size-3" />
+                            Controle + Lucro
                         </div>
 
                         <h2 className="text-5xl font-black leading-[1.1] tracking-tight">
-                            Sua loja no WhatsApp, 24h por dia.
+                            Organize seus pedidos no WhatsApp e pare de perder dinheiro com erros
                         </h2>
 
                         <p className="text-xl text-white/80 font-medium leading-relaxed">
-                            O ZapFlow gerencia seus pedidos, responde clientes e recupera carrinhos enquanto você descansa.
+                            O ZapFlow transforma mensagens em pedidos organizados, automatiza seu atendimento e mantém sua operação rodando sem caos.
                         </p>
 
                         <div className="space-y-6 pt-8">
                             {[
-                                { icon: MessageSquare, title: 'Atendimento 24/7', desc: 'Respostas instantâneas mesmo fora do horário.' },
-                                { icon: ShieldCheck, title: 'Gestão Segura', desc: 'Seus dados e de seus clientes protegidos.' },
-                                { icon: Globe, title: 'Cardápio Digital', desc: 'Link personalizado para sua loja no WhatsApp.' }
+                                { icon: CheckCircle2, title: 'Controle Total', desc: 'Cada pedido rastreado, nenhum erro de digitação.' },
+                                { icon: TrendingUp, title: 'Mais Lucro', desc: 'Reduza erros, aumente vendas, maximize seu faturamento.' },
+                                { icon: ZapIcon, title: 'Menos Caos', desc: 'Automação inteligente que libera seu tempo para crescer.' }
                             ].map((item, i) => (
                                 <div key={i} className="flex gap-4">
-                                    <div className="size-12 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center shrink-0">
-                                        <item.icon className="size-6" />
+                                    <div className="size-12 rounded-2xl bg-emerald-500/10 border border-emerald-400/30 flex items-center justify-center shrink-0">
+                                        <item.icon className="size-6 text-emerald-300" />
                                     </div>
                                     <div>
                                         <h4 className="font-bold text-lg">{item.title}</h4>
@@ -162,13 +165,13 @@ export default function LoginPage() {
                         <div className="pt-12 flex items-center gap-4">
                             <div className="flex -space-x-3">
                                 {[1, 2, 3, 4].map(i => (
-                                    <div key={i} className="relative size-10 rounded-full border-2 border-primary bg-slate-200 overflow-hidden">
+                                    <div key={i} className="relative size-10 rounded-full border-2 border-emerald-400 bg-slate-200 overflow-hidden">
                                         <Image src={`https://i.pravatar.cc/100?img=${i + 10}`} alt="User" fill className="object-cover" referrerPolicy="no-referrer" />
                                     </div>
                                 ))}
                             </div>
                             <p className="text-sm font-medium text-white/80">
-                                <span className="font-bold text-white">+500 empresas</span> já estão escalando com ZapFlow.
+                                <span className="font-bold text-emerald-300">+500 empresas</span> já estão escalando com ZapFlow.
                             </p>
                         </div>
                     </motion.div>
