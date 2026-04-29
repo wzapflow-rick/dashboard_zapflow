@@ -301,6 +301,7 @@ export default function MenuManagement({ hideCategoryButton }: { hideCategoryBut
           categories={categories}
           insumosList={insumosList}
           productInsumos={editingProductInsumos}
+          allProducts={products}
           onSubmit={handleSaveProduct}
         />
       )}

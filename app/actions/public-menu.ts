@@ -67,6 +67,7 @@ export interface PublicProduct {
     destaque: boolean;
     ordem: number;
     tamanhos?: string | null;
+    recomendacoes?: string | null;
     categoria_id?: number | string | null;
     saborGroups: PublicGroup[];
     additionalGroups: PublicGroup[];
@@ -325,15 +326,18 @@ export async function getPublicMenu(slug: string): Promise<PublicMenuData | null
             return {
                 id: p.id as number,
                 nome: p.nome as string,
+                descricao: p.desc            return {
+                id: p.id as number,
+                nome: p.nome as string,
                 descricao: p.descricao as string | undefined,
                 preco: Number(p.preco ?? 0),
-                preco_original: Number(p.preco_original ?? 0),
-                imagem: (p.imagem as string) || (p.imagem_url as string) || null,
+                imagem: p.imagem as string | null,
                 disponivel: true,
                 destaque: p.destaque === true || p.destaque === 1,
                 ordem: Number(p.ordem ?? 0),
                 tamanhos: p.tamanhos as string | null,
-                categoria_id: (p.categoria_id as number | string | null) || null,
+                recomendacoes: p.recomendacoes as string | null,
+                categoria_id: p.categoria_id,
                 saborGroups,
                 additionalGroups,
                 complementGroups: [],

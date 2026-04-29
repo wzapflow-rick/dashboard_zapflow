@@ -46,6 +46,7 @@ export async function getProducts() {
       empresa_id: p.empresa_id,
       tamanhos: p.tamanhos || null,
       tamanhos_json: p.tamanhos || null,
+      recomendacoes: p.recomendacoes || null,
       criado_em: p.criado_em || null,
     })));
   } catch (error) {
@@ -225,6 +226,10 @@ export async function upsertProduct(productData: any, selectedInsumos?: { insumo
       payload.tamanhos = product.tamanhos;
     }
 
+    if (productData.recomendacoes !== undefined) {
+      payload.recomendacoes = productData.recomendacoes;
+    }
+
     delete payload.created_at;
     delete payload.updated_at;
 
@@ -240,7 +245,8 @@ export async function upsertProduct(productData: any, selectedInsumos?: { insumo
         ...productData, 
         ...data, 
         categoria_id: productData.categoria_id || data.categoria_id,
-        tamanhos: productData.tamanhos || data.tamanhos || (data as any).tamanhos
+        tamanhos: productData.tamanhos || data.tamanhos || (data as any).tamanhos,
+        recomendacoes: productData.recomendacoes || data.recomendacoes
       };
     } else {
       const data = await noco.create(PRODUTOS_TABLE_ID, payload);
@@ -248,7 +254,8 @@ export async function upsertProduct(productData: any, selectedInsumos?: { insumo
         ...productData, 
         ...data,
         categoria_id: productData.categoria_id || data.categoria_id,
-        tamanhos: productData.tamanhos || data.tamanhos || (data as any).tamanhos
+        tamanhos: productData.tamanhos || data.tamanhos || (data as any).tamanhos,
+        recomendacoes: productData.recomendacoes || data.recomendacoes
       };
     }
 

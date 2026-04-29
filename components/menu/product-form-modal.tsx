@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Image as ImageIcon, Plus, Check, PackageOpen, Trash2, Ruler } from 'lucide-react';
+import { X, Image as ImageIcon, Plus, Check, PackageOpen, Trash2, Ruler, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import { type Category } from '@/app/actions/products';
 import { type Insumo } from '@/app/actions/insumos';
@@ -23,6 +23,7 @@ interface ProductFormModalProps {
     categories: Category[];
     insumosList: Insumo[];
     productInsumos?: { insumo_id: number; quantidade_necessaria: number }[];
+    allProducts?: any[];
     onSubmit: (formData: FormData, isCreatingCategory: boolean, selectedInsumos: { insumo_id: string, quantidade_necessaria: number }[]) => Promise<void>;
 }
 
@@ -33,6 +34,7 @@ export default function ProductFormModal({
     categories,
     insumosList,
     productInsumos = [],
+    allProducts = [],
     onSubmit
 }: ProductFormModalProps) {
     const [isCreatingCategory, setIsCreatingCategory] = useState(false);
@@ -47,6 +49,9 @@ export default function ProductFormModal({
     // Insumos State
     const [usaInsumos, setUsaInsumos] = useState(false);
     const [selectedInsumos, setSelectedInsumos] = useState<{ insumo_id: number, quantidade_necessaria: number }[]>([]);
+
+    // Recommendations State
+    const [selectedRecommendations, setSelectedRecommendations] = useState<number[]>([]);
 
     useEffect(() => {
         import('@/app/actions/auth').then(({ getMe }) => {
@@ -105,6 +110,25 @@ export default function ProductFormModal({
             setSelectedInsumos([]);
         }
 
+        // Load recommendations
+        if (editingProduct?.recomendacoes) {
+            try {
+                const recs = typeof editingProduct.recomendacoes === 'string'
+                    ? JSON.parse(editingProduct.recomendacoes)
+                    : editingProduct.recomendacoes;
+                if (Array.isArray(recs)) {
+                    setSelectedRecommendations(recs.map(Number));
+                } else {
+                    setSelectedRecommendations([]);
+                }
+            } catch (e) {
+                console.error('Error parsing recommendations:', e);
+                setSelectedRecommendations([]);
+            }
+        } else {
+            setSelectedRecommendations([]);
+        }
+
         return () => {
             toast.dismiss();
         };
@@ -159,6 +183,9 @@ export default function ProductFormModal({
             const newDesc = cleanDesc ? `${cleanDesc}\n\n[[SIZES:${sizesJson}]]` : `[[SIZES:${sizesJson}]]`;
             formData.set('descricao', newDesc);
         }
+
+        // Adicionar recomendações ao formData
+        formData.set('recomendacoes', JSON.stringify(selectedRecommendations));
 
         try {
             await onSubmit(
@@ -377,6 +404,74 @@ export default function ProductFormModal({
                                     </motion.div>
                                 )}
                             </AnimatePresence>
+                        </div>
+
+                        {/* Recommendations (Upsell) Section */}
+                        <div className="pt-4 border-t border-slate-100 dark:border-slate-700">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="size-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                                    <Sparkles className="size-4" />
+                                </div>
+                                <div>
+                                    <div className="text-sm font-bold text-slate-900 dark:text-white">Sugestão de Venda (Upsell)</div>
+                                    <div className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">Quais produtos sugerir quando o cliente escolher este?</div>
+                                </div>
+                            </div>
+
+                            <div className="bg-slate-50 dark:bg-slate-700 rounded-xl p-4 border border-slate-100 dark:border-slate-600 space-y-4">
+                                <div className="flex gap-2">
+                                    <select
+                                        id="recommendationSelector"
+                                        className="flex-1 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 text-slate-700 dark:text-slate-300"
+                                        defaultValue=""
+                                    >
+                                        <option value="" disabled>Sugerir produto...</option>
+                                        {allProducts
+                                            .filter(p => p.id !== editingProduct?.id && !selectedRecommendations.includes(p.id))
+                                            .map(p => (
+                                                <option key={p.id} value={p.id}>{p.nome}</option>
+                                            ))
+                                        }
+                                    </select>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const select = document.getElementById('recommendationSelector') as HTMLSelectElement;
+                                            if (select.value) {
+                                                setSelectedRecommendations([...selectedRecommendations, Number(select.value)]);
+                                                select.value = "";
+                                            }
+                                        }}
+                                        className="px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-bold hover:bg-amber-600 transition-colors"
+                                    >
+                                        Adicionar
+                                    </button>
+                                </div>
+
+                                <div className="flex flex-wrap gap-2">
+                                    {selectedRecommendations.map(id => {
+                                        const product = allProducts.find(p => p.id === id);
+                                        if (!product) return null;
+                                        return (
+                                            <div key={id} className="flex items-center gap-2 bg-white dark:bg-slate-800 pl-3 pr-1.5 py-1.5 rounded-full border border-slate-200 dark:border-slate-600 shadow-sm">
+                                                <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{product.nome}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSelectedRecommendations(selectedRecommendations.filter(rid => rid !== id))}
+                                                    className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full text-slate-400 hover:text-red-500 transition-colors"
+                                                >
+                                                    <X className="size-3" />
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
+                                    {selectedRecommendations.length === 0 && (
+                                        <div className="text-center w-full py-2 text-[10px] text-slate-400 italic">
+                                            Nenhuma sugestão configurada para este produto.
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </div>
 
                         {/* Insumos Section */}
