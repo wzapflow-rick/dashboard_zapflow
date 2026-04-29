@@ -1,401 +1,172 @@
-'use server';
+import { getNocoClient } from '@/lib/nocodb';
+import { PRODUTOS_TABLE_ID, CATEGORIAS_TABLE_ID, COMPLEMENTOS_GRUPOS_TABLE_ID, COMPLEMENTOS_ITENS_TABLE_ID, EMPRESA_TABLE_ID, CONFIGURACOES_TABLE_ID, LOYALTY_CONFIG_TABLE_ID } from '@/lib/constants';
 
-import { noco } from '@/lib/nocodb';
-import {
-    EMPRESAS_TABLE_ID,
-    PRODUTOS_TABLE_ID,
-    CATEGORIAS_TABLE_ID,
-    GRUPOS_SLOTS_TABLE_ID,
-    ITENS_BASE_TABLE_ID,
-    LOYALTY_CONFIG_TABLE_ID,
-    CONFIGURACOES_LOJA_TABLE_ID,
-} from '@/lib/constants';
-
-// ============================================================
-// HELPERS
-// ============================================================
-
-function toSlug(text: string): string {
-    return text
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-z0-9\s-]/g, '')
-        .trim()
-        .replace(/\s+/g, '-');
-}
-
-function parseJsonArray(value: unknown): number[] {
-    if (!value) return [];
-    if (Array.isArray(value)) return value as number[];
-    if (typeof value === 'string') {
-        try {
-            const parsed = JSON.parse(value);
-            return Array.isArray(parsed) ? parsed : [];
-        } catch {
-            return value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
-        }
-    }
-    return [];
-}
-
-// ============================================================
-// TIPOS
-// ============================================================
-
-export interface PublicEmpresa {
-    id: number;
-    nome: string;
-    telefone: string | null;
-    nincho: string | null;
-    slug: string | null;
-    cidade: string | null;
-    endereco: string | null;
-    cor_primaria?: string | null;
-    logo?: string | null;
-    banner?: string | null;
-}
-
-export interface PublicProduct {
-    id: number;
-    nome: string;
-    descricao?: string;
-    preco: number;
-    preco_original?: number;
-    imagem?: string | null;
-    disponivel: boolean;
-    destaque: boolean;
-    ordem: number;
-    tamanhos?: string | null;
-    recomendacoes?: string | null;
-    categoria_id?: number | string | null;
-    saborGroups: PublicGroup[];
-    additionalGroups: PublicGroup[];
-    complementGroups: PublicGroup[];
-}
-
-export interface PublicGroup {
-    id: number;
-    nome: string;
-    tipo: string;
-    minimo: number;
-    maximo: number;
-    obrigatorio: boolean;
-    tipo_calculo: string;
-    cobrar_mais_caro: boolean;
-    total_slots: number;
-    preco_fixo: number;
-    completamentos_ids: number[];
-    items: PublicGroupItem[];
-}
-
-export interface PublicGroupItem {
-    id: number;
-    nome: string;
-    preco: number;
-    fator_proporcao: number;
-}
-
-export interface PublicCategory {
-    id: number | string;
-    name: string;
-    icone?: string | null;
-    cor?: string | null;
-    ordem: number;
-    products: PublicProduct[];
-    compositeProducts: PublicCompositeProduct[];
-}
-
-export interface PublicCompositeProduct {
-    id: string;
-    _grupoId: number;
-    _isComposite: true;
-    _tipo: string;
-    nome: string;
-    descricao: string;
-    imagem: string;
-    tipo_calculo: string;
-    cobrar_mais_caro: boolean;
-    minimo: number;
-    maximo: number;
-    preco_fixo: number;
-    completamentos_ids: number[];
-    categoria_id?: number | string | null;
-    items: PublicGroupItem[];
-}
-
-export interface PublicMenuData {
-    empresa: PublicEmpresa;
-    grouped: PublicCategory[];
-    compositeProducts: PublicCompositeProduct[];
-    upsellProducts: PublicProduct[];
-    loyaltyConfig: {
-        empresa_id: number;
-        pontos_por_real: number;
-        valor_ponto: number;
-        pontos_para_desconto: number;
-        desconto_tipo: string;
-        desconto_valor: number;
-        ativo: boolean;
-    };
-    allGroups: PublicGroup[];
-}
-
-// ============================================================
-// FUNÇÃO PRINCIPAL
-// ============================================================
-
-/**
- * Busca todos os dados necessários para renderizar o cardápio público de uma empresa.
- */
-export async function getPublicMenu(slug: string): Promise<PublicMenuData | null> {
+export async function getPublicMenu(slug: string) {
     try {
-        const targetSlug = slug.toLowerCase();
+        const noco = await getNocoClient();
 
-        // ── 1. Buscar empresa ──────────────────────────────────────────────────────────
-        // Tentativa 1: Busca direta por login (email) ou nome_fantasia exato
-        let empresa: Record<string, unknown> | null = await noco.findOne(EMPRESAS_TABLE_ID, {
-            where: `(login,eq,${slug})~or(nome_fantasia,eq,${slug})`,
+        // 1. Buscar Empresa pelo Slug
+        const empresaList = await noco.dbViewRow.list('v1', 'p8p8973z9152v98', EMPRESA_TABLE_ID, 'MainView', {
+            where: `(slug,eq,${slug})`,
+            limit: 1
         });
 
-        // Tentativa 2: Busca por slug gerado a partir do nome_fantasia
-        if (!empresa) {
-            const allEmpresas = await noco.list(EMPRESAS_TABLE_ID, {
-                limit: 1000,
-                fields: 'id,nome_fantasia,email,telefone_loja,nincho,cidade,endereco,controle_estoque,ativo,login',
-            });
-            
-            empresa = (allEmpresas.list as Record<string, unknown>[]).find((e) => {
-                const slugFromNome = toSlug(String(e.nome_fantasia || ''));
-                const slugFromLogin = toSlug(String(e.login || ''));
-                return slugFromNome === targetSlug || slugFromLogin === targetSlug;
-            }) ?? null;
+        if (!empresaList.list || empresaList.list.length === 0) {
+            return null;
         }
 
-        if (!empresa) return null;
+        const empresa = empresaList.list[0];
+        const empresaId = empresa.id;
 
-        const empresaId = empresa.id as number;
-        const controleEstoque =
-            empresa.controle_estoque === true ||
-            empresa.controle_estoque === 1 ||
-            empresa.controle_estoque === '1';
+        // 2. Buscar Configurações da Empresa (Banner e Logo oficiais)
+        const configList = await noco.dbViewRow.list('v1', 'p8p8973z9152v98', CONFIGURACOES_TABLE_ID, 'MainView', {
+            where: `(empresa_id,eq,${empresaId})`,
+            limit: 1
+        });
 
-        // ── 2. Buscar todos os dados em paralelo ──
-        const [
-            productsData,
-            categoriesData,
-            gruposSlotsData,
-            itensBaseData,
-            loyaltyData,
-            extraConfigData,
-        ] = await Promise.all([
-            noco.list(PRODUTOS_TABLE_ID, {
-                where: `(empresa_id,eq,${empresaId})~and(disponivel,eq,true)`,
-                sort: 'ordem',
-                limit: 500,
-            }),
-            noco.list(CATEGORIAS_TABLE_ID, {
-                where: `(empresa_id,eq,${empresaId})~and(disponivel,eq,true)`,
-                sort: 'ordem',
-                limit: 100,
-            }),
-            noco.list(GRUPOS_SLOTS_TABLE_ID, {
-                where: `(empresa_id,eq,${empresaId})`,
-                limit: 500,
-            }),
-            noco.list(ITENS_BASE_TABLE_ID, {
-                where: `(empresa_id,eq,${empresaId})`,
-                limit: 1000,
-            }),
-            noco.list(LOYALTY_CONFIG_TABLE_ID, {
-                where: `(empresa_id,eq,${empresaId})`,
-                limit: 1,
-            }),
-            noco.findOne(CONFIGURACOES_LOJA_TABLE_ID, {
-                where: `(Empresa ID,eq,${empresaId})`
-            }),
-        ]);
+        if (configList.list && configList.list.length > 0) {
+            const config = configList.list[0];
+            // Priorizar campos da tabela de configurações se existirem
+            if (config.Logo || config.logo) empresa.logo = config.Logo || config.logo;
+            if (config.Banner || config.banner) empresa.banner = config.Banner || config.banner;
+        }
 
-        // ── 3. Processar empresa com logo ────────────────────────────────────
-        const publicEmpresa: PublicEmpresa = {
-            id: empresaId,
-            nome: (empresa.nome_fantasia as string) || (empresa.nome_admin as string) || 'Minha Loja',
-            telefone: (empresa.telefone_loja as string) || null,
-            nincho: (empresa.nincho as string) || null,
-            slug: slug,
-            cidade: (empresa.cidade as string) || null,
-            endereco: (empresa.endereco as string) || null,
-            logo: (extraConfigData?.Logo as string) || (empresa.logo as string) || null,
-            banner: (extraConfigData?.banner as string) || (extraConfigData?.Banner as string) || (empresa.banner as string) || null,
-        };
+        // 3. Buscar Categorias
+        const categoriasList = await noco.dbViewRow.list('v1', 'p8p8973z9152v98', CATEGORIAS_TABLE_ID, 'MainView', {
+            where: `(empresa_id,eq,${empresaId})`,
+            sort: 'ordem'
+        });
 
-        // ── 4. Processar produtos ─────────────────────────────────────────────
-        const rawProducts = productsData.list as Record<string, unknown>[];
-        const products = controleEstoque
-            ? rawProducts.filter((p) => {
-                  const controlaProd = p.controla_estoque === true || p.controla_estoque === 1;
-                  if (!controlaProd) return true;
-                  return Number(p.quantidade_estoque ?? 0) > 0;
-              })
-            : rawProducts;
+        const categorias = categoriasList.list || [];
 
-        // ── 5. Processar grupos/slots ─────────────────────────────────────────
-        const gruposSlots = (gruposSlotsData.list as Record<string, unknown>[]).map((g) => ({
-            id: g.id as number,
-            nome: g.nome as string,
-            descricao: g.descricao as string | undefined,
-            tipo: (g.tipo as string) || 'fracionado',
-            qtd_slots: Number(g.qtd_slots ?? 2),
-            regra_preco: (g.regra_preco as string) || 'mais_caro',
-            min_slots: Number(g.min_slots ?? 1),
-            max_slots: Number(g.max_slots ?? 2),
-            itens: parseJsonArray(g.itens),
-            modo_preco: (g.modo_preco as string) || 'por_item',
-            preco_fixo: Number(g.preco_fixo ?? 0),
-            completamentos_ids: parseJsonArray(g.completamentos_ids),
-            categoria_id: g.categoria_id || null,
+        // 4. Buscar Todos os Produtos
+        const produtosList = await noco.dbViewRow.list('v1', 'p8p8973z9152v98', PRODUTOS_TABLE_ID, 'MainView', {
+            where: `(empresa_id,eq,${empresaId})`,
+            sort: 'ordem'
+        });
+
+        const todosProdutos = produtosList.list || [];
+
+        // 5. Buscar Todos os Grupos de Complementos da Empresa
+        const gruposList = await noco.dbViewRow.list('v1', 'p8p8973z9152v98', COMPLEMENTOS_GRUPOS_TABLE_ID, 'MainView', {
+            where: `(empresa_id,eq,${empresaId})`
+        });
+        const todosGrupos = gruposList.list || [];
+
+        // 6. Buscar Todos os Itens de Complementos
+        const itensList = await noco.dbViewRow.list('v1', 'p8p8973z9152v98', COMPLEMENTOS_ITENS_TABLE_ID, 'MainView', {
+            where: `(empresa_id,eq,${empresaId})`
+        });
+        const todosItens = itensList.list || [];
+
+        // 7. Buscar Configuração de Fidelidade
+        const loyaltyList = await noco.dbViewRow.list('v1', 'p8p8973z9152v98', LOYALTY_CONFIG_TABLE_ID, 'MainView', {
+            where: `(empresa_id,eq,${empresaId})`,
+            limit: 1
+        });
+        const loyaltyConfig = loyaltyList.list?.[0] || null;
+
+        // Processar produtos recomendados (Upsell)
+        const upsellProducts = todosProdutos.map(p => ({
+            id: p.id as number,
+            nome: p.nome as string,
+            preco: Number(p.preco ?? 0),
+            imagem: p.imagem as string | null,
+            descricao: p.descricao as string | undefined
         }));
 
-        // ── 6. Mapear itens base ──────────────────────────────────────────────
-        const itensBaseMap = new Map<number, PublicGroupItem>();
-        (itensBaseData.list as Record<string, unknown>[]).forEach((item) => {
-            itensBaseMap.set(item.id as number, {
-                id: item.id as number,
-                nome: item.nome as string,
-                preco: Number(item.preco_sugerido ?? 0),
-                fator_proporcao: 1,
-            });
-        });
-
-        // ── 7. Montar mapa de grupos ──────────────────────────────────────────
-        const gruposMap = new Map<number, PublicGroup>();
-        gruposSlots.forEach((g) => {
-            const groupItems = g.itens
-                .map((itemId: number) => itensBaseMap.get(itemId))
-                .filter(Boolean) as PublicGroupItem[];
-
-            gruposMap.set(g.id, {
-                id: g.id,
-                nome: g.nome,
-                tipo: g.tipo,
-                minimo: g.min_slots,
-                maximo: g.max_slots,
-                obrigatorio: false,
-                tipo_calculo:
-                    g.modo_preco === 'fixo'
-                        ? 'fixo'
-                        : g.regra_preco === 'mais_caro'
-                          ? 'maior_valor'
-                          : g.regra_preco,
-                cobrar_mais_caro: g.regra_preco === 'mais_caro',
-                total_slots: g.qtd_slots,
-                preco_fixo: g.modo_preco === 'fixo' ? g.preco_fixo : 0,
-                completamentos_ids: g.completamentos_ids,
-                items: groupItems,
-            });
-        });
-
-        // ── 8. Associar grupos aos produtos ──────────────────────────────────────────
-        const productsWithGroups: PublicProduct[] = products.map((p) => {
-            const gruposRaw = p.grupos ?? p.grupos_ids ?? p.grupo_ids ?? null;
-            const gruposVinculados = parseJsonArray(gruposRaw);
-            
-            const saborGroups: PublicGroup[] = [];
-            const additionalGroups: PublicGroup[] = [];
-
-            gruposVinculados.forEach((grupoId: number) => {
-                const g = gruposMap.get(grupoId);
-                if (!g) return;
-
-                if (g.tipo === 'fracionado') {
-                    saborGroups.push(g);
-                } else {
-                    if (!additionalGroups.find((ag) => ag.id === g.id)) {
-                        additionalGroups.push(g);
-                    }
-                }
-
-                g.completamentos_ids.forEach((compId: number) => {
-                    const compGroup = gruposMap.get(compId);
-                    if (compGroup && !additionalGroups.find((ag) => ag.id === compId)) {
-                        additionalGroups.push(compGroup);
-                    }
-                });
-            });
+        // Organizar Produtos por Categoria e Vincular Complementos
+        const grouped = categorias.map((cat: any) => {
+            const productsInCategory = todosProdutos.filter((p: any) => p.categoria_id === cat.id && p.tipo !== 'composto');
+            const compositeInCategory = todosProdutos.filter((p: any) => p.categoria_id === cat.id && p.tipo === 'composto');
 
             return {
-                id: p.id as number,
-                nome: p.nome as string,
-                descricao: p.desc            return {
-                id: p.id as number,
-                nome: p.nome as string,
-                descricao: p.descricao as string | undefined,
-                preco: Number(p.preco ?? 0),
-                imagem: p.imagem as string | null,
-                disponivel: true,
-                destaque: p.destaque === true || p.destaque === 1,
-                ordem: Number(p.ordem ?? 0),
-                tamanhos: p.tamanhos as string | null,
-                recomendacoes: p.recomendacoes as string | null,
-                categoria_id: p.categoria_id,
-                saborGroups,
-                additionalGroups,
-                complementGroups: [],
+                id: cat.id,
+                nome: cat.nome,
+                products: productsInCategory.map((p: any) => {
+                    const saborGroups: any[] = [];
+                    const additionalGroups: any[] = [];
+
+                    // Vincular grupos de complementos baseados nos IDs salvos no produto
+                    const groupIds = p.complementos_ids ? (typeof p.complementos_ids === 'string' ? p.complementos_ids.split(',').map(Number) : p.complementos_ids) : [];
+                    
+                    groupIds.forEach((gid: number) => {
+                        const grupo = todosGrupos.find((g: any) => g.id === gid);
+                        if (grupo) {
+                            const items = todosItens.filter((i: any) => {
+                                const itemGroupIds = i.grupos_ids ? (typeof i.grupos_ids === 'string' ? i.grupos_ids.split(',').map(Number) : i.grupos_ids) : [];
+                                return itemGroupIds.includes(gid);
+                            });
+
+                            const compGroup = {
+                                ...grupo,
+                                items: items.map((i: any) => ({
+                                    id: i.id,
+                                    nome: i.nome,
+                                    preco: Number(i.preco ?? 0)
+                                }))
+                            };
+
+                            if (grupo.tipo === 'sabor') {
+                                saborGroups.push(compGroup);
+                            } else {
+                                additionalGroups.push(compGroup);
+                            }
+                        }
+                    });
+
+                    return {
+                        id: p.id as number,
+                        nome: p.nome as string,
+                        descricao: p.descricao as string | undefined,
+                        preco: Number(p.preco ?? 0),
+                        imagem: p.imagem as string | null,
+                        disponivel: true,
+                        destaque: p.destaque === true || p.destaque === 1,
+                        ordem: Number(p.ordem ?? 0),
+                        tamanhos: p.tamanhos as string | null,
+                        recomendacoes: p.recomendacoes as string | null,
+                        saborGroups,
+                        additionalGroups
+                    };
+                }),
+                compositeProducts: compositeInCategory.map((p: any) => {
+                    // Lógica para produtos compostos se necessário
+                    return {
+                        id: p.id,
+                        nome: p.nome,
+                        descricao: p.descricao,
+                        preco: Number(p.preco ?? 0),
+                        imagem: p.imagem,
+                        tamanhos: p.tamanhos as string | null,
+                        recomendacoes: p.recomendacoes as string | null,
+                        tipo: 'composto'
+                    };
+                })
             };
         });
 
-        // ── 9. Agrupar por categoria ─────────────────────────────────────────
-        const categories = (categoriesData.list as Record<string, unknown>[]).map((c) => ({
-            id: c.id as number,
-            name: c.nome as string,
-            icone: c.icone as string | null,
-            cor: c.cor as string | null,
-            ordem: Number(c.ordem ?? 0),
-            products: productsWithGroups.filter((p) => {
-                const pCatId = p.categoria_id ?? (rawProducts.find(rp => rp.id === p.id)?.categoria_id);
-                return Number(pCatId) === Number(c.id);
-            }),
-            compositeProducts: [],
-        }));
-
-        // ── 10. Produtos compostos (Upsell / Destaques) ──────────────────────
-        const compositeProducts: PublicCompositeProduct[] = productsWithGroups
-            .filter(p => p.destaque)
-            .map(p => ({
-                id: String(p.id),
-                _grupoId: 0,
-                _isComposite: true,
-                _tipo: 'destaque',
-                nome: p.nome,
-                descricao: p.descricao || '',
-                imagem: p.imagem || '',
-                tipo_calculo: 'soma',
-                cobrar_mais_caro: false,
-                minimo: 0,
-                maximo: 0,
-                preco_fixo: p.preco,
-                completamentos_ids: [],
-                items: [],
-            }));
-
         return {
-            empresa: publicEmpresa,
-            grouped: categories.sort((a, b) => a.ordem - b.ordem),
-            compositeProducts: [],
-            upsellProducts: productsWithGroups.filter(p => p.destaque),
-            loyaltyConfig: {
-                empresa_id: empresaId,
-                pontos_por_real: Number(loyaltyData.list[0]?.pontos_por_real ?? 1),
-                valor_ponto: Number(loyaltyData.list[0]?.valor_ponto ?? 0.1),
-                pontos_para_desconto: Number(loyaltyData.list[0]?.pontos_para_desconto ?? 100),
-                desconto_tipo: (loyaltyData.list[0]?.desconto_tipo as string) || 'valor_fixo',
-                desconto_valor: Number(loyaltyData.list[0]?.desconto_valor ?? 10),
-                ativo: !!loyaltyData.list[0]?.ativo,
-            },
-            allGroups: Array.from(gruposMap.values()),
+            empresa,
+            grouped,
+            compositeProducts: todosProdutos.filter(p => p.tipo === 'composto'),
+            upsellProducts,
+            loyaltyConfig,
+            allGroups: todosGrupos.map(g => ({
+                ...g,
+                items: todosItens.filter(i => {
+                    const itemGroupIds = i.grupos_ids ? (typeof i.grupos_ids === 'string' ? i.grupos_ids.split(',').map(Number) : i.grupos_ids) : [];
+                    return itemGroupIds.includes(g.id);
+                }).map(i => ({
+                    id: i.id,
+                    nome: i.nome,
+                    preco: Number(i.preco ?? 0)
+                }))
+            }))
         };
+
     } catch (error) {
-        console.error('API Error (getPublicMenu):', error);
+        console.error('Erro ao buscar menu público:', error);
         return null;
     }
 }
