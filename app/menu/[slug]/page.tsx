@@ -164,12 +164,7 @@ export default async function PublicMenuPage({
                                         </div>
                                     </div>
 
-                                    {/* Badge de fidelidade se ativo */}
-                                    {loyaltyConfig?.ativo && (
-                                        <div className="self-center sm:self-end shrink-0 bg-gradient-to-r from-amber-300 to-orange-400 text-slate-900 text-xs sm:text-sm font-black px-6 py-3 rounded-full shadow-lg shadow-orange-400/30 border-2 border-white dark:border-slate-900 animate-pulse">
-                                            🌟 Fidelidade
-                                        </div>
-                                    )}
+
                                 </div>
                             </div>
                         </div>
