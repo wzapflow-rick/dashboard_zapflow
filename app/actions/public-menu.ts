@@ -1,73 +1,67 @@
-import { getNocoClient } from '@/lib/nocodb';
-import { PRODUTOS_TABLE_ID, CATEGORIAS_TABLE_ID, COMPLEMENTOS_GRUPOS_TABLE_ID, COMPLEMENTOS_ITENS_TABLE_ID, EMPRESA_TABLE_ID, CONFIGURACOES_TABLE_ID, LOYALTY_CONFIG_TABLE_ID } from '@/lib/constants';
+import { noco } from '@/lib/nocodb';
+import { 
+    PRODUTOS_TABLE_ID, 
+    CATEGORIAS_TABLE_ID, 
+    GRUPOS_COMPLEMENTOS_TABLE_ID, 
+    COMPLEMENTOS_TABLE_ID, 
+    EMPRESAS_TABLE_ID, 
+    CONFIGURACOES_LOJA_TABLE_ID, 
+    LOYALTY_CONFIG_TABLE_ID 
+} from '@/lib/constants';
 
 export async function getPublicMenu(slug: string) {
     try {
-        const noco = await getNocoClient();
-
         // 1. Buscar Empresa pelo Slug
-        const empresaList = await noco.dbViewRow.list('v1', 'p8p8973z9152v98', EMPRESA_TABLE_ID, 'MainView', {
-            where: `(slug,eq,${slug})`,
-            limit: 1
+        const empresa = await noco.findOne(EMPRESAS_TABLE_ID, {
+            where: `(slug,eq,${slug})`
         });
 
-        if (!empresaList.list || empresaList.list.length === 0) {
+        if (!empresa) {
             return null;
         }
 
-        const empresa = empresaList.list[0];
-        const empresaId = empresa.id;
+        const empresaId = empresa.id as number;
 
         // 2. Buscar Configurações da Empresa (Banner e Logo oficiais)
-        const configList = await noco.dbViewRow.list('v1', 'p8p8973z9152v98', CONFIGURACOES_TABLE_ID, 'MainView', {
-            where: `(empresa_id,eq,${empresaId})`,
-            limit: 1
+        const config = await noco.findOne(CONFIGURACOES_LOJA_TABLE_ID, {
+            where: `(empresa_id,eq,${empresaId})`
         });
 
-        if (configList.list && configList.list.length > 0) {
-            const config = configList.list[0];
+        if (config) {
             // Priorizar campos da tabela de configurações se existirem
             if (config.Logo || config.logo) empresa.logo = config.Logo || config.logo;
             if (config.Banner || config.banner) empresa.banner = config.Banner || config.banner;
         }
 
         // 3. Buscar Categorias
-        const categoriasList = await noco.dbViewRow.list('v1', 'p8p8973z9152v98', CATEGORIAS_TABLE_ID, 'MainView', {
+        const categorias = await noco.listAll(CATEGORIAS_TABLE_ID, {
             where: `(empresa_id,eq,${empresaId})`,
             sort: 'ordem'
         });
-
-        const categorias = categoriasList.list || [];
 
         // 4. Buscar Todos os Produtos
-        const produtosList = await noco.dbViewRow.list('v1', 'p8p8973z9152v98', PRODUTOS_TABLE_ID, 'MainView', {
+        const todosProdutos = await noco.listAll(PRODUTOS_TABLE_ID, {
             where: `(empresa_id,eq,${empresaId})`,
             sort: 'ordem'
         });
 
-        const todosProdutos = produtosList.list || [];
-
         // 5. Buscar Todos os Grupos de Complementos da Empresa
-        const gruposList = await noco.dbViewRow.list('v1', 'p8p8973z9152v98', COMPLEMENTOS_GRUPOS_TABLE_ID, 'MainView', {
+        const todosGrupos = await noco.listAll(GRUPOS_COMPLEMENTOS_TABLE_ID, {
             where: `(empresa_id,eq,${empresaId})`
         });
-        const todosGrupos = gruposList.list || [];
 
         // 6. Buscar Todos os Itens de Complementos
-        const itensList = await noco.dbViewRow.list('v1', 'p8p8973z9152v98', COMPLEMENTOS_ITENS_TABLE_ID, 'MainView', {
+        const todosItens = await noco.listAll(COMPLEMENTOS_TABLE_ID, {
             where: `(empresa_id,eq,${empresaId})`
         });
-        const todosItens = itensList.list || [];
 
         // 7. Buscar Configuração de Fidelidade
-        const loyaltyList = await noco.dbViewRow.list('v1', 'p8p8973z9152v98', LOYALTY_CONFIG_TABLE_ID, 'MainView', {
-            where: `(empresa_id,eq,${empresaId})`,
-            limit: 1
+        const loyaltyConfig = await noco.findOne(LOYALTY_CONFIG_TABLE_ID, {
+            where: `(empresa_id,eq,${empresaId})`
         });
-        const loyaltyConfig = loyaltyList.list?.[0] || null;
 
         // Processar produtos recomendados (Upsell)
-        const upsellProducts = todosProdutos.map(p => ({
+        const upsellProducts = todosProdutos.map((p: any) => ({
             id: p.id as number,
             nome: p.nome as string,
             preco: Number(p.preco ?? 0),
@@ -131,7 +125,6 @@ export async function getPublicMenu(slug: string) {
                     };
                 }),
                 compositeProducts: compositeInCategory.map((p: any) => {
-                    // Lógica para produtos compostos se necessário
                     return {
                         id: p.id,
                         nome: p.nome,
@@ -149,15 +142,15 @@ export async function getPublicMenu(slug: string) {
         return {
             empresa,
             grouped,
-            compositeProducts: todosProdutos.filter(p => p.tipo === 'composto'),
+            compositeProducts: todosProdutos.filter((p: any) => p.tipo === 'composto'),
             upsellProducts,
             loyaltyConfig,
-            allGroups: todosGrupos.map(g => ({
+            allGroups: todosGrupos.map((g: any) => ({
                 ...g,
-                items: todosItens.filter(i => {
+                items: todosItens.filter((i: any) => {
                     const itemGroupIds = i.grupos_ids ? (typeof i.grupos_ids === 'string' ? i.grupos_ids.split(',').map(Number) : i.grupos_ids) : [];
                     return itemGroupIds.includes(g.id);
-                }).map(i => ({
+                }).map((i: any) => ({
                     id: i.id,
                     nome: i.nome,
                     preco: Number(i.preco ?? 0)
