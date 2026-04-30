@@ -69,7 +69,15 @@ export default async function PublicMenuPage({
 
     // Garantias de tipo para satisfazer o TypeScript/Build
     const empresaNome = typeof empresa.nome === 'string' ? empresa.nome : 'ZapFlow';
-    const empresaId = typeof empresa.id === 'string' ? empresa.id : (typeof empresa.id === 'number' ? String(empresa.id) : '');
+    
+    // O componente MenuClientWrapper espera um NUMBER para o empresaId
+    let empresaId: number | undefined = undefined;
+    if (typeof empresa.id === 'number') {
+        empresaId = empresa.id;
+    } else if (typeof empresa.id === 'string') {
+        const parsed = parseInt(empresa.id, 10);
+        if (!isNaN(parsed)) empresaId = parsed;
+    }
     
     // Tratamento seguro para o telefone
     const rawTelefone = typeof empresa.telefone === 'string' ? empresa.telefone : '';
