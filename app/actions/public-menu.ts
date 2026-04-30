@@ -17,7 +17,7 @@ export async function getPublicMenu(slug: string) {
         let empresa: any = null;
         const possibleName = slug.replace(/-/g, ' ');
 
-        // TENTATIVA 1: Busca simples por nome_fantasia (sem LOWER para evitar erro 422)
+        // TENTATIVA 1: Busca simples por nome_fantasia
         console.log(`[MENU_DEBUG] Tentando buscar por nome_fantasia: ${possibleName}`);
         const empresasByFantasia = await noco.list(EMPRESAS_TABLE_ID, {
             where: `(nome_fantasia,like,%${possibleName}%)`,
@@ -113,14 +113,14 @@ export async function getPublicMenu(slug: string) {
                         }
                     });
 
-                    const metadata = produtosMetadados.find((m: any) => m.produto_id === p.id);
+                    const metadata = (produtosMetadados || []).find((m: any) => m.produto_id === p.id);
                     const recomendacoes = metadata?.recomendacoes ? JSON.parse(metadata.recomendacoes) : null;
                     const tamanhos = metadata?.tamanhos ? JSON.parse(metadata.tamanhos) : null;
 
                     return {
                         id: p.id,
-                        nome: String(p.nome || "),
-                        descricao: p.descricao || ",
+                        nome: String(p.nome || ""),
+                        descricao: p.descricao || "",
                         preco: Number(p.preco ?? 0),
                         imagem: p.imagem || null,
                         disponivel: p.disponivel !== false && p.disponivel !== 0,
@@ -132,27 +132,22 @@ export async function getPublicMenu(slug: string) {
                         additionalGroups
                     };
                 }),
-                compositeProducts: compositeInCategory.map((p: any) => ({
-                    id: p.id,
-                    nome: String(p.nome || ''),
-                    descricao: p.descricao || '',
-                    preco: Number(p.preco ?? 0),
-                    imagem: p.imagem || null,
-                    const metadata = produtosMetadados.find((m: any) => m.produto_id === p.id);
+                compositeProducts: compositeInCategory.map((p: any) => {
+                    const metadata = (produtosMetadados || []).find((m: any) => m.produto_id === p.id);
                     const recomendacoes = metadata?.recomendacoes ? JSON.parse(metadata.recomendacoes) : null;
                     const tamanhos = metadata?.tamanhos ? JSON.parse(metadata.tamanhos) : null;
 
                     return {
                         id: p.id,
-                        nome: String(p.nome || "),
-                        descricao: p.descricao || ",
+                        nome: String(p.nome || ""),
+                        descricao: p.descricao || "",
                         preco: Number(p.preco ?? 0),
                         imagem: p.imagem || null,
                         tamanhos: tamanhos || null,
                         recomendacoes: recomendacoes || null,
                         tipo: 'composto'
                     };
-                }))
+                })
             };
         });
 
