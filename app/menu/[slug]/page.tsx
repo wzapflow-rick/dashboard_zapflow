@@ -139,9 +139,9 @@ export default async function PublicMenuPage({
             pontosPorReal={pontosPorReal}
             upsellProducts={safeUpsell}
         >
-            <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors pb-24">
-                <header className="relative bg-white dark:bg-slate-900 rounded-b-3xl shadow-lg overflow-hidden">
-                    <div className="relative h-48 sm:h-64 bg-gradient-to-br from-violet-400/40 via-purple-400/30 to-indigo-400/40 dark:from-violet-600/30 dark:via-purple-600/20 dark:to-indigo-600/30 overflow-hidden">
+            <div className="min-h-screen bg-slate-50 dark:bg-[#1a0f2e] transition-colors pb-24">
+                <header className="relative bg-white dark:bg-[#2d1b4e] rounded-b-3xl shadow-lg overflow-hidden">
+                    <div className="relative h-48 sm:h-64 bg-gradient-to-br from-violet-400/40 via-purple-400/30 to-indigo-400/40 dark:from-purple-700/50 dark:via-purple-600/40 dark:to-indigo-700/40 overflow-hidden">
                         {empresaBanner ? (
                             <Image src={empresaBanner} alt={`Banner de ${empresaNome}`} fill className="object-cover" priority />
                         ) : (

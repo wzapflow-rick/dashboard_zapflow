@@ -95,7 +95,7 @@ function ProductCard({ product, onClick }: { product: Product; onClick: () => vo
             role="button"
             tabIndex={0}
             onKeyDown={(e) => e.key === 'Enter' && onClick()}
-            className="bg-white dark:bg-slate-800 rounded-xl sm:rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-2 sm:p-3 flex gap-3 hover:shadow-md hover:border-violet-200 dark:hover:border-violet-700 transition-all cursor-pointer active:scale-[0.98] group"
+            className="bg-white dark:bg-[#2d1b4e] rounded-xl sm:rounded-2xl border border-slate-100 dark:border-purple-700/30 shadow-sm p-2 sm:p-3 flex gap-3 hover:shadow-md hover:border-violet-200 dark:hover:border-purple-500/50 transition-all cursor-pointer active:scale-[0.98] group"
         >
             {/* Imagem */}
             <div className="relative w-20 h-20 sm:w-[88px] sm:h-[88px] rounded-lg sm:rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-700 shrink-0">
@@ -135,15 +135,15 @@ function ProductCard({ product, onClick }: { product: Product; onClick: () => vo
                                 {fmt(product.preco_original!)}
                             </p>
                         ) : null}
-                        <span className="text-sm sm:text-base font-black text-violet-600 dark:text-violet-400 leading-none">
+                        <span className="text-sm sm:text-base font-black text-emerald-600 dark:text-emerald-400 leading-none">
                             {fmt(product.preco)}
                         </span>
                     </div>
                     <span
                         className={`text-[10px] sm:text-xs font-bold px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl shrink-0 transition-colors ${
                             hasComplements
-                                ? 'text-violet-600 bg-violet-50 dark:bg-violet-900/20 dark:text-violet-400'
-                                : 'text-green-600 bg-green-50 dark:bg-green-900/20 dark:text-green-400'
+                                ? 'text-white bg-emerald-500 dark:bg-emerald-600 dark:text-white'
+                                : 'text-white bg-emerald-500 dark:bg-emerald-600 dark:text-white'
                         }`}
                     >
                         {hasComplements ? 'Escolher' : '+ Add'}
@@ -171,7 +171,7 @@ function CompositeCard({ product, onClick }: { product: CompositeProduct; onClic
             role="button"
             tabIndex={0}
             onKeyDown={(e) => e.key === 'Enter' && onClick()}
-            className="bg-white dark:bg-slate-800 rounded-xl sm:rounded-2xl border border-amber-200 dark:border-amber-700/50 shadow-sm p-2 sm:p-3 flex gap-3 hover:shadow-md hover:border-amber-300 dark:hover:border-amber-600 transition-all cursor-pointer active:scale-[0.98] group"
+            className="bg-white dark:bg-[#2d1b4e] rounded-xl sm:rounded-2xl border border-orange-200 dark:border-orange-600/50 shadow-sm p-2 sm:p-3 flex gap-3 hover:shadow-md hover:border-orange-300 dark:hover:border-orange-500 transition-all cursor-pointer active:scale-[0.98] group"
         >
             {/* Ícone */}
             <div className="relative w-20 h-20 sm:w-[88px] sm:h-[88px] rounded-lg sm:rounded-xl bg-gradient-to-br from-amber-50 to-orange-100 dark:from-amber-900/20 dark:to-orange-900/20 flex items-center justify-center shrink-0 border border-amber-100 dark:border-amber-800/30">
@@ -183,7 +183,7 @@ function CompositeCard({ product, onClick }: { product: CompositeProduct; onClic
                 <h3 className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm leading-tight line-clamp-2">
                     {product.nome}
                 </h3>
-                <p className="text-[10px] sm:text-xs text-amber-600 dark:text-amber-400 mt-1 font-medium">
+                <p className="text-[10px] sm:text-xs text-orange-500 dark:text-orange-400 mt-1 font-medium">
                     {saborLabel}
                 </p>
                 {product.descricao && (
@@ -192,10 +192,10 @@ function CompositeCard({ product, onClick }: { product: CompositeProduct; onClic
                     </p>
                 )}
                 <div className="mt-auto pt-1 sm:pt-2 flex items-end justify-between gap-2">
-                    <span className="text-sm sm:text-base font-black text-amber-600 dark:text-amber-400 leading-none">
+                    <span className="text-sm sm:text-base font-black text-orange-500 dark:text-orange-400 leading-none">
                         {minPrice > 0 ? `${fmt(minPrice)}` : 'Ver'}
                     </span>
-                    <span className="text-[10px] sm:text-xs font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-400 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl shrink-0 group-hover:bg-amber-100 transition-colors">
+                    <span className="text-[10px] sm:text-xs font-bold text-white bg-emerald-500 dark:bg-emerald-600 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl shrink-0 group-hover:bg-emerald-600 transition-colors">
                         Montar
                     </span>
                 </div>
