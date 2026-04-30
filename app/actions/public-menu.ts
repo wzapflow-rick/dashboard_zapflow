@@ -16,53 +16,42 @@ export async function getPublicMenu(slug: string) {
         // 1. BUSCA DA EMPRESA COM FALLBACK TOTAL
         let empresa: any = null;
 
-        // Tentativa 1: Por nome_fantasia (o campo que vimos no banco)
+        // Tentativa 1: Por nome_fantasia
         const possibleName = slug.replace(/-/g, ' ');
-        console.log(`[MENU_DEBUG] Tentando nome_fantasia: ${possibleName}`);
         empresa = await noco.findOne(EMPRESAS_TABLE_ID, {
             where: `(nome_fantasia,like,%${possibleName}%)`
         });
 
-        // Tentativa 2: Por ID específico (VR Pizza Show é ID 4 no banco do Riquelmo)
+        // Tentativa 2: Por ID específico (VR Pizza Show é ID 4)
         if (!empresa && (slug === 'vr-pizza-show' || slug === 'vr-pizza')) {
-            console.log(`[MENU_DEBUG] Busca por nome falhou, tentando ID 4 fixo`);
             empresa = await noco.findById(EMPRESAS_TABLE_ID, 4);
         }
 
-        // Tentativa 3: Listar tudo e procurar manualmente (mais lento, mas garantido)
+        // Tentativa 3: Listar tudo e procurar manualmente
         if (!empresa) {
-            console.log(`[MENU_DEBUG] Buscas diretas falharam, listando empresas...`);
             const lista = await noco.list(EMPRESAS_TABLE_ID, { limit: 50 });
             if (lista.list && lista.list.length > 0) {
-                // Tenta achar qualquer uma que combine com o slug
                 empresa = lista.list.find((e: any) => 
                     String(e.nome_fantasia || '').toLowerCase().includes(slug.toLowerCase()) ||
-                    String(e.nome || '').toLowerCase().includes(slug.toLowerCase()) ||
-                    String(e.slug || '').toLowerCase().includes(slug.toLowerCase())
+                    String(e.nome || '').toLowerCase().includes(slug.toLowerCase())
                 );
-                
-                // Se ainda nada, pega a primeira empresa ativa (Fallback final)
-                if (!empresa) {
-                    empresa = lista.list[0];
-                    console.log(`[MENU_DEBUG] Fallback final: usando primeira empresa da lista: ${empresa.nome_fantasia || empresa.nome}`);
-                }
+                if (!empresa) empresa = lista.list[0];
             }
         }
 
-        if (!empresa) {
-            console.error(`[MENU_DEBUG] Nenhuma empresa encontrada em nenhuma tentativa.`);
-            return null;
-        }
+        if (!empresa) return null;
 
         const empresaId = empresa.id;
-        // Normalizar campos para o frontend
         empresa.nome = empresa.nome_fantasia || empresa.nome || 'ZapFlow';
         
-        console.log(`[MENU_DEBUG] Empresa Identificada: ${empresa.nome} (ID: ${empresaId})`);
+        console.log(`[MENU_DEBUG] Empresa: ${empresa.nome} (ID: ${empresaId})`);
 
-        // 2. BUSCA DE DADOS EM PARALELO (Otimizado)
-        const [config, categorias, todosProdutos, todosGrupos, todosItens, loyaltyConfig] = await Promise.all([
-            noco.findOne(CONFIGURACOES_LOJA_TABLE_ID, { where: `(empresa_id,eq,${empresaId})` }).catch(() => null),
+        // 2. BUSCA DE DADOS EM PARALELO
+        // Usamos os IDs de tabela corretos e tratamos os campos específicos do NocoDB
+        const [configData, categorias, todosProdutos, todosGrupos, todosItens, loyaltyConfig] = await Promise.all([
+            noco.list(CONFIGURACOES_LOJA_TABLE_ID, { 
+                where: `(Empresa ID,eq,${empresaId})` 
+            }).catch(() => ({ list: [] })),
             noco.listAll(CATEGORIAS_TABLE_ID, { where: `(empresa_id,eq,${empresaId})` }).catch(() => []),
             noco.listAll(PRODUTOS_TABLE_ID, { where: `(empresa_id,eq,${empresaId})` }).catch(() => []),
             noco.listAll(GRUPOS_COMPLEMENTOS_TABLE_ID, { where: `(empresa_id,eq,${empresaId})` }).catch(() => []),
@@ -70,10 +59,17 @@ export async function getPublicMenu(slug: string) {
             noco.findOne(LOYALTY_CONFIG_TABLE_ID, { where: `(empresa_id,eq,${empresaId})` }).catch(() => null)
         ]);
 
-        // Aplicar configurações de logo/banner
+        // Pegar a primeira configuração encontrada
+        const config = configData.list && configData.list.length > 0 ? configData.list[0] : null;
+
+        // Mapeamento exato baseado na inspeção do banco: "Logo" (L maiúsculo) e "banner" (b minúsculo)
         if (config) {
-            if (config.Logo || config.logo) empresa.logo = config.Logo || config.logo;
-            if (config.Banner || config.banner) empresa.banner = config.Banner || config.banner;
+            console.log(`[MENU_DEBUG] Configurações encontradas. Logo: ${!!config.Logo}, Banner: ${!!config.banner}`);
+            if (config.Logo) empresa.logo = config.Logo;
+            if (config.banner) empresa.banner = config.banner;
+            // Fallbacks caso os nomes variem
+            if (!empresa.logo && config.logo) empresa.logo = config.logo;
+            if (!empresa.banner && config.Banner) empresa.banner = config.Banner;
         }
 
         // 3. ORGANIZAÇÃO DOS PRODUTOS
