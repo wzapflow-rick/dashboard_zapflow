@@ -6,7 +6,8 @@ import {
     COMPLEMENTOS_TABLE_ID, 
     EMPRESAS_TABLE_ID, 
     CONFIGURACOES_LOJA_TABLE_ID, 
-    LOYALTY_CONFIG_TABLE_ID 
+    LOYALTY_CONFIG_TABLE_ID,
+    PRODUTOS_METADADOS_TABLE_ID
 } from '@/lib/constants';
 
 export async function getPublicMenu(slug: string) {
@@ -54,7 +55,7 @@ export async function getPublicMenu(slug: string) {
         console.log(`[MENU_DEBUG] Empresa: ${empresa.nome} (ID: ${empresaId})`);
 
         // 2. BUSCA DE DADOS EM PARALELO
-        const [configData, categorias, todosProdutos, todosGrupos, todosItens, loyaltyConfig] = await Promise.all([
+        const [configData, categorias, todosProdutos, todosGrupos, todosItens, loyaltyConfig, produtosMetadados] = await Promise.all([
             noco.list(CONFIGURACOES_LOJA_TABLE_ID, { 
                 where: `(Empresa ID,eq,${empresaId})` 
             }).catch(() => ({ list: [] })),
@@ -62,7 +63,8 @@ export async function getPublicMenu(slug: string) {
             noco.listAll(PRODUTOS_TABLE_ID, { where: `(empresa_id,eq,${empresaId})` }).catch(() => []),
             noco.listAll(GRUPOS_COMPLEMENTOS_TABLE_ID, { where: `(empresa_id,eq,${empresaId})` }).catch(() => []),
             noco.listAll(COMPLEMENTOS_TABLE_ID, { where: `(empresa_id,eq,${empresaId})` }).catch(() => []),
-            noco.findOne(LOYALTY_CONFIG_TABLE_ID, { where: `(empresa_id,eq,${empresaId})` }).catch(() => null)
+            noco.findOne(LOYALTY_CONFIG_TABLE_ID, { where: `(empresa_id,eq,${empresaId})` }).catch(() => null),
+            noco.listAll(PRODUTOS_METADADOS_TABLE_ID, { where: `(produto_id,eq,${empresaId})` }).catch(() => []),
         ]);
 
         const config = configData.list && configData.list.length > 0 ? configData.list[0] : null;
@@ -111,17 +113,21 @@ export async function getPublicMenu(slug: string) {
                         }
                     });
 
+                    const metadata = produtosMetadados.find((m: any) => m.produto_id === p.id);
+                    const recomendacoes = metadata?.recomendacoes ? JSON.parse(metadata.recomendacoes) : null;
+                    const tamanhos = metadata?.tamanhos ? JSON.parse(metadata.tamanhos) : null;
+
                     return {
                         id: p.id,
-                        nome: String(p.nome || ''),
-                        descricao: p.descricao || '',
+                        nome: String(p.nome || "),
+                        descricao: p.descricao || ",
                         preco: Number(p.preco ?? 0),
                         imagem: p.imagem || null,
                         disponivel: p.disponivel !== false && p.disponivel !== 0,
                         destaque: p.destaque === true || p.destaque === 1,
                         ordem: Number(p.ordem ?? 0),
-                        tamanhos: p.tamanhos || null,
-                        recomendacoes: p.recomendacoes || null,
+                        tamanhos: tamanhos || null,
+                        recomendacoes: recomendacoes || null,
                         saborGroups,
                         additionalGroups
                     };
@@ -132,9 +138,20 @@ export async function getPublicMenu(slug: string) {
                     descricao: p.descricao || '',
                     preco: Number(p.preco ?? 0),
                     imagem: p.imagem || null,
-                    tamanhos: p.tamanhos || null,
-                    recomendacoes: p.recomendacoes || null,
-                    tipo: 'composto'
+                    const metadata = produtosMetadados.find((m: any) => m.produto_id === p.id);
+                    const recomendacoes = metadata?.recomendacoes ? JSON.parse(metadata.recomendacoes) : null;
+                    const tamanhos = metadata?.tamanhos ? JSON.parse(metadata.tamanhos) : null;
+
+                    return {
+                        id: p.id,
+                        nome: String(p.nome || "),
+                        descricao: p.descricao || ",
+                        preco: Number(p.preco ?? 0),
+                        imagem: p.imagem || null,
+                        tamanhos: tamanhos || null,
+                        recomendacoes: recomendacoes || null,
+                        tipo: 'composto'
+                    };
                 }))
             };
         });
