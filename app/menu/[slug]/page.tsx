@@ -20,21 +20,19 @@ export async function generateMetadata({
     if (!data) {
         return {
             title: 'Cardápio não encontrado',
-            description: 'O cardápio solicitado não foi encontrado.',
         };
     }
 
     const { empresa } = data;
-    const images = empresa.logo ? [{ url: empresa.logo }] : [];
+    const logoUrl = typeof empresa.logo === 'string' ? empresa.logo : undefined;
 
     return {
         title: `Cardápio — ${empresa.nome}`,
-        description: `Veja o cardápio completo de ${empresa.nome}${empresa.cidade ? ` em ${empresa.cidade}` : ''}. Peça agora pelo WhatsApp!`,
+        description: `Veja o cardápio completo de ${empresa.nome}. Peça agora pelo WhatsApp!`,
         openGraph: {
             title: `Cardápio — ${empresa.nome}`,
             description: `Peça agora pelo WhatsApp!`,
-            type: 'website',
-            images: images,
+            images: logoUrl ? [logoUrl] : [],
         },
     };
 }
@@ -61,9 +59,6 @@ export default async function PublicMenuPage({
                     <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
                         O link pode estar incorreto ou a loja ainda não configurou seu cardápio.
                     </p>
-                    <p className="text-xs text-slate-400 dark:text-slate-600 mt-4">
-                        Slug: <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">{slug}</code>
-                    </p>
                 </div>
             </div>
         );
@@ -73,11 +68,7 @@ export default async function PublicMenuPage({
 
     const whatsappNumber = empresa.telefone?.replace(/\D/g, '') ?? '';
     const pontosPorReal = loyaltyConfig?.ativo ? Number(loyaltyConfig.pontos_por_real || 1) : 0;
-
-    // Inicial do nome para o avatar (fallback se não tiver logo)
     const inicial = empresa.nome?.charAt(0)?.toUpperCase() ?? '?';
-
-    // Total de produtos disponíveis
     const totalProdutos = grouped.reduce((acc, cat) => acc + cat.products.length + cat.compositeProducts.length, 0);
 
     return (
@@ -92,10 +83,8 @@ export default async function PublicMenuPage({
 
                 {/* ── Header Premium com Banner Personalizado ──────────────────────────────────────────── */}
                 <header className="relative bg-white dark:bg-slate-900 rounded-b-3xl shadow-lg overflow-hidden">
-                    {/* Banner de fundo com gradiente suave ou imagem personalizada */}
                     <div className="relative h-48 sm:h-64 bg-gradient-to-br from-violet-400/40 via-purple-400/30 to-indigo-400/40 dark:from-violet-600/30 dark:via-purple-600/20 dark:to-indigo-600/30 overflow-hidden">
-                        {/* Se houver banner personalizado, exibir */}
-                        {empresa.banner ? (
+                        {empresa.banner && (
                             <Image 
                                 src={empresa.banner} 
                                 alt={`Banner de ${empresa.nome}`}
@@ -103,9 +92,8 @@ export default async function PublicMenuPage({
                                 className="object-cover"
                                 priority
                             />
-                        ) : null}
+                        )}
                         
-                        {/* Padrão decorativo suave de fundo (só aparece se não houver banner) */}
                         {!empresa.banner && (
                             <div className="absolute inset-0 opacity-30">
                                 <div className="absolute top-0 right-0 w-96 h-96 bg-violet-300 rounded-full mix-blend-multiply filter blur-3xl dark:opacity-20"></div>
@@ -113,18 +101,14 @@ export default async function PublicMenuPage({
                             </div>
                         )}
                         
-                        {/* Overlay suave para melhorar legibilidade do texto */}
                         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-white/20 dark:to-slate-900/40"></div>
                     </div>
 
-                    {/* Conteúdo do header com logo flutuante */}
                     <div className="max-w-2xl mx-auto px-4 pb-6 sm:pb-8">
                         <div className="relative flex flex-col items-center sm:items-start text-center sm:text-left">
-                            {/* Logo flutuante com efeito de vidro */}
                             <div
                                 className="size-32 sm:size-40 rounded-full flex items-center justify-center text-white font-bold text-5xl sm:text-7xl shrink-0 shadow-2xl border-4 border-white dark:border-slate-800 bg-white dark:bg-slate-800 overflow-hidden -mt-16 sm:-mt-20 transition-transform hover:scale-105 z-10 backdrop-blur-sm"
                                 style={!empresa.logo ? { background: 'linear-gradient(135deg, #a78bfa, #c084fc)' } : { background: 'white' }}
-                                aria-hidden="true"
                             >
                                 {empresa.logo ? (
                                     <Image 
@@ -139,7 +123,6 @@ export default async function PublicMenuPage({
                                 )}
                             </div>
 
-                            {/* Info da empresa */}
                             <div className="mt-5 sm:mt-7 w-full">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                     <div className="flex-1 min-w-0">
@@ -165,18 +148,14 @@ export default async function PublicMenuPage({
                                             )}
                                         </div>
                                     </div>
-
-
                                 </div>
                             </div>
                         </div>
                     </div>
                 </header>
 
-                {/* ── Conteúdo principal ───────────────────────────────────── */}
                 <main className="max-w-2xl mx-auto px-4 py-6">
                     {grouped.length === 0 && compositeProducts.length === 0 ? (
-                        /* Estado vazio */
                         <div className="text-center py-20 sm:py-24">
                             <div className="size-16 sm:size-20 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-5">
                                 <UtensilsCrossed className="size-8 sm:size-10 text-slate-300 dark:text-slate-600" />
@@ -187,10 +166,6 @@ export default async function PublicMenuPage({
                             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
                                 O cardápio está sendo atualizado. Volte em breve!
                             </p>
-                            <div className="flex items-center justify-center gap-1.5 mt-4 text-[10px] sm:text-xs text-slate-400 dark:text-slate-500">
-                                <Clock className="size-3 sm:size-3.5" />
-                                <span>Atualizado automaticamente</span>
-                            </div>
                         </div>
                     ) : (
                         <MenuFilter
@@ -204,7 +179,6 @@ export default async function PublicMenuPage({
                         />
                     )}
 
-                    {/* Footer */}
                     <footer className="text-center pt-12 pb-6 mt-8 border-t border-slate-200 dark:border-slate-800">
                         <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500">
                             Cardápio digital por{' '}
