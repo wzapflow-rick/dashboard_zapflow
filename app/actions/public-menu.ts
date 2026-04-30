@@ -79,7 +79,7 @@ export async function getPublicMenu(slug: string) {
         // 2. BUSCA DE DADOS EM PARALELO (Otimizado)
         const [configData, categorias, todosProdutos, todosGrupos, todosItens, loyaltyConfig] = await Promise.all([
             noco.list(CONFIGURACOES_LOJA_TABLE_ID, { 
-                where: `(Empresa ID,eq,${empresaId})` 
+                where: `(Empresa ID,eq,${empresaId})` // CORREÇÃO AQUI: 'Empresa ID' com espaço e maiúsculas
             }).catch(() => ({ list: [] })),
             noco.listAll(CATEGORIAS_TABLE_ID, { where: `(empresa_id,eq,${empresaId})` }).catch(() => []),
             noco.listAll(PRODUTOS_TABLE_ID, { where: `(empresa_id,eq,${empresaId})` }).catch(() => []),
