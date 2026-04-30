@@ -7,7 +7,7 @@ import { ProductSchema, CategorySchema } from '@/lib/validations';
 import { logAction } from '@/lib/audit';
 import { v2 as cloudinary } from 'cloudinary';
 import { noco } from '@/lib/nocodb';
-import { PRODUTOS_TABLE_ID, CATEGORIAS_TABLE_ID } from '@/lib/constants';
+import { PRODUTOS_TABLE_ID, CATEGORIAS_TABLE_ID, PRODUTOS_METADADOS_TABLE_ID } from '@/lib/constants';
 
 // Configurar Cloudinary
 cloudinary.config({
@@ -35,20 +35,30 @@ export async function getProducts() {
     });
     const products = data.list || [];
 
-    return products.map((p: any) => JSON.parse(JSON.stringify({
-      id: p.id || p.Id,
-      nome: p.nome || '',
-      preco: Number(p.preco || 0),
-      descricao: p.descricao || '',
-      imagem: p.imagem || '',
-      categoria_id: p.categoria_id || p.categorias || null,
-      disponivel: p.disponivel !== false && p.disponivel !== 0,
-      empresa_id: p.empresa_id,
-      tamanhos: p.tamanhos || null,
-      tamanhos_json: p.tamanhos || null,
-      recomendacoes: p.recomendacoes || null,
-      criado_em: p.criado_em || null,
-    })));
+    // Buscar metadados dos produtos
+    const metadataList = await noco.listAll(PRODUTOS_METADADOS_TABLE_ID, { where: `(produto_id,eq,${user.empresaId})` });
+    const metadataMap = new Map(metadataList.map((m: any) => [m.produto_id, m]));
+
+    return products.map((p: any) => {
+      const metadata = metadataMap.get(p.id);
+      const recomendacoes = metadata?.recomendacoes ? JSON.parse(metadata.recomendacoes) : null;
+      const tamanhos = metadata?.tamanhos ? JSON.parse(metadata.tamanhos) : null;
+
+      return JSON.parse(JSON.stringify({
+        id: p.id || p.Id,
+        nome: p.nome || ",
+        preco: Number(p.preco || 0),
+        descricao: p.descricao || ",
+        imagem: p.imagem || ",
+        categoria_id: p.categoria_id || p.categorias || null,
+        disponivel: p.disponivel !== false && p.disponivel !== 0,
+        empresa_id: p.empresa_id,
+        tamanhos: tamanhos || null,
+        tamanhos_json: tamanhos || null,
+        recomendacoes: recomendacoes || null,
+        criado_em: p.criado_em || null,
+      }));
+    });
   } catch (error) {
     console.error('API Error:', error);
     throw new Error('Failed to fetch products');
@@ -222,13 +232,11 @@ export async function upsertProduct(productData: any, selectedInsumos?: { insumo
     };
 
     // Garantir que o campo tamanhos está no payload se presente nos dados validados
-    if (product.tamanhos !== undefined) {
-      payload.tamanhos = product.tamanhos;
-    }
+    const recomendacoes = productData.recomendacoes;
+    const tamanhos = productData.tamanhos;
 
-    if (productData.recomendacoes !== undefined) {
-      payload.recomendacoes = productData.recomendacoes;
-    }
+    delete payload.recomendacoes;
+    delete payload.tamanhos;
 
     delete payload.created_at;
     delete payload.updated_at;
@@ -245,18 +253,36 @@ export async function upsertProduct(productData: any, selectedInsumos?: { insumo
         ...productData, 
         ...data, 
         categoria_id: productData.categoria_id || data.categoria_id,
-        tamanhos: productData.tamanhos || data.tamanhos || (data as any).tamanhos,
-        recomendacoes: productData.recomendacoes || data.recomendacoes
       };
+
+      // Salvar/Atualizar metadados do produto
+      const existingMetadata = await noco.findOne(PRODUTOS_METADADOS_TABLE_ID, { where: `(produto_id,eq,${savedProduct.id})` });
+      const metadataPayload: any = {
+        produto_id: savedProduct.id,
+        recomendacoes: recomendacoes ? JSON.stringify(recomendacoes) : null,
+        tamanhos: tamanhos ? JSON.stringify(tamanhos) : null,
+      };
+
+      if (existingMetadata) {
+        await noco.update(PRODUTOS_METADADOS_TABLE_ID, { id: existingMetadata.id, ...metadataPayload });
+      } else {
+        await noco.create(PRODUTOS_METADADOS_TABLE_ID, metadataPayload);
+      }
     } else {
       const data = await noco.create(PRODUTOS_TABLE_ID, payload);
       savedProduct = { 
         ...productData, 
         ...data,
         categoria_id: productData.categoria_id || data.categoria_id,
-        tamanhos: productData.tamanhos || data.tamanhos || (data as any).tamanhos,
-        recomendacoes: productData.recomendacoes || data.recomendacoes
       };
+
+      // Criar metadados do produto
+      const metadataPayload: any = {
+        produto_id: savedProduct.id,
+        recomendacoes: recomendacoes ? JSON.stringify(recomendacoes) : null,
+        tamanhos: tamanhos ? JSON.stringify(tamanhos) : null,
+      };
+      await noco.create(PRODUTOS_METADADOS_TABLE_ID, metadataPayload);
     }
 
     if (selectedInsumos !== undefined && savedProduct && savedProduct.id) {
