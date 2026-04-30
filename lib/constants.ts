@@ -182,3 +182,7 @@ export const DRIVER_STATUS = {
 } as const;
 
 export type DriverStatus = typeof DRIVER_STATUS[keyof typeof DRIVER_STATUS];
+
+/** Tabela de metadados de produtos (Upsell, Tamanhos, etc.) */
+export const PRODUTOS_METADADOS_TABLE_ID =
+  process.env.NOCODB_TABLE_PRODUTOS_METADADOS || 'm97yi797b432f4q';
