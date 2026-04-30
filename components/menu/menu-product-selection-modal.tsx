@@ -564,7 +564,7 @@ export default function MenuProductSelectionModal({
                     </div>
 
                     {/* Footer com Botão de Ação */}
-                    <div className="shrink-0 p-4 sm:p-6 bg-white dark:bg-[#2d1b4e] border-t border-slate-100 dark:border-slate-800 flex items-center gap-3"
+                    <div className="shrink-0 p-4 sm:p-6 bg-white dark:bg-[#2d1b4e] border-t border-slate-100 dark:border-slate-800 flex items-center gap-3">
                         {step !== (hasSizes ? 'size' : (hasFlavors ? 'flavors' : (hasAdditions ? 'additions' : 'observation'))) && step !== 'upsell' && (
                             <button
                                 onClick={prevStep}
