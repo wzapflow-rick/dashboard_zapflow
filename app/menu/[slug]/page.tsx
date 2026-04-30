@@ -1,5 +1,5 @@
 import { getPublicMenu } from '@/app/actions/public-menu';
-import { UtensilsCrossed, MapPin } from 'lucide-react';
+import { UtensilsCrossed, MapPin, AlertCircle } from 'lucide-react';
 import MenuClientWrapper from '@/components/menu/menu-client-wrapper';
 import MenuFilter from '@/components/menu/menu-filter';
 import type { Metadata } from 'next';
@@ -15,27 +15,24 @@ export async function generateMetadata({
     params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
     const { slug } = await params;
-    const data = await getPublicMenu(slug);
-
-    if (!data) {
+    try {
+        const data = await getPublicMenu(slug);
+        if (!data) return { title: 'Cardápio não encontrado' };
+        const { empresa } = data;
+        const logoUrl = typeof empresa.logo === 'string' ? empresa.logo : undefined;
+        const nomeEmpresa = typeof empresa.nome === 'string' ? empresa.nome : 'ZapFlow';
         return {
-            title: 'Cardápio não encontrado',
-        };
-    }
-
-    const { empresa } = data;
-    const logoUrl = typeof empresa.logo === 'string' ? empresa.logo : undefined;
-    const nomeEmpresa = typeof empresa.nome === 'string' ? empresa.nome : 'ZapFlow';
-
-    return {
-        title: `Cardápio — ${nomeEmpresa}`,
-        description: `Veja o cardápio completo de ${nomeEmpresa}. Peça agora pelo WhatsApp!`,
-        openGraph: {
             title: `Cardápio — ${nomeEmpresa}`,
-            description: `Peça agora pelo WhatsApp!`,
-            images: logoUrl ? [logoUrl] : [],
-        },
-    };
+            description: `Veja o cardápio completo de ${nomeEmpresa}. Peça agora pelo WhatsApp!`,
+            openGraph: {
+                title: `Cardápio — ${nomeEmpresa}`,
+                description: `Peça agora pelo WhatsApp!`,
+                images: logoUrl ? [logoUrl] : [],
+            },
+        };
+    } catch {
+        return { title: 'Erro no Cardápio' };
+    }
 }
 
 export default async function PublicMenuPage({
@@ -44,22 +41,44 @@ export default async function PublicMenuPage({
     params: Promise<{ slug: string }>;
 }) {
     const { slug } = await params;
-    const data = await getPublicMenu(slug);
+    
+    // Capturar erro técnico para diagnóstico
+    let data = null;
+    let errorDetail = null;
+    
+    try {
+        data = await getPublicMenu(slug);
+    } catch (e: any) {
+        errorDetail = e.message || 'Erro desconhecido na conexão';
+    }
 
     // ── Estado de erro: empresa não encontrada ────────────────────────────────
     if (!data) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
-                <div className="text-center p-8 max-w-sm">
-                    <div className="size-20 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-6">
-                        <UtensilsCrossed className="size-10 text-slate-300 dark:text-slate-600" />
+            <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 p-4">
+                <div className="text-center p-8 max-w-sm bg-white dark:bg-slate-800 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-700">
+                    <div className="size-20 rounded-2xl bg-rose-50 dark:bg-rose-900/20 flex items-center justify-center mx-auto mb-6">
+                        <AlertCircle className="size-10 text-rose-500" />
                     </div>
                     <h1 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">
-                        Cardápio não encontrado
+                        Cardápio Indisponível
                     </h1>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
-                        O link pode estar incorreto ou a loja ainda não configurou seu cardápio.
+                    <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-6">
+                        Não conseguimos localizar as informações da loja. Isso pode ser um problema temporário de conexão.
                     </p>
+                    
+                    {/* Painel de Diagnóstico para o Riquelmo */}
+                    <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-700 text-left">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Diagnóstico Técnico:</p>
+                        <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded-lg font-mono text-[10px] text-slate-600 dark:text-slate-400 break-all">
+                            <p>Slug: {slug}</p>
+                            <p>Status: {errorDetail ? 'Falha na API' : 'Empresa não encontrada no banco'}</p>
+                            {errorDetail && <p className="text-rose-500 mt-1">Erro: {errorDetail}</p>}
+                        </div>
+                        <p className="mt-4 text-[10px] text-slate-400 leading-tight">
+                            Verifique se as variáveis NOCODB_URL e NOCODB_TOKEN estão configuradas no Vercel.
+                        </p>
+                    </div>
                 </div>
             </div>
         );
@@ -67,31 +86,22 @@ export default async function PublicMenuPage({
 
     const { empresa, grouped, compositeProducts, upsellProducts, loyaltyConfig, allGroups } = data;
 
-    // ── Extração Segura de Dados (Garantindo Tipos Primitivos) ──────────────────
+    // ── Extração Segura de Dados ──────────────────
     const empresaNome = String(empresa.nome || 'ZapFlow');
     const empresaBanner = typeof empresa.banner === 'string' ? empresa.banner : null;
     const empresaLogo = typeof empresa.logo === 'string' ? empresa.logo : null;
     const empresaNincho = typeof empresa.nincho === 'string' ? empresa.nincho : null;
     const empresaCidade = typeof empresa.cidade === 'string' ? empresa.cidade : null;
     
-    // O componente MenuClientWrapper espera um NUMBER para o empresaId
     let empresaId: number | undefined = undefined;
-    if (typeof empresa.id === 'number') {
-        empresaId = empresa.id;
-    } else if (typeof empresa.id === 'string') {
-        const parsed = parseInt(empresa.id, 10);
-        if (!isNaN(parsed)) empresaId = parsed;
-    }
+    if (typeof empresa.id === 'number') empresaId = empresa.id;
+    else if (typeof empresa.id === 'string') empresaId = parseInt(empresa.id, 10);
     
     const rawTelefone = typeof empresa.telefone === 'string' ? empresa.telefone : '';
     const whatsappNumber = rawTelefone.replace(/\D/g, '');
-    
     const pontosPorReal = loyaltyConfig?.ativo ? Number(loyaltyConfig.pontos_por_real || 1) : 0;
     const inicial = empresaNome.charAt(0).toUpperCase();
     
-    // ── Transformação de Dados para o MenuFilter ──────────────────────────────
-    
-    // Função para transformar um produto composto bruto no formato esperado pelo componente
     const transformComposite = (p: any) => ({
         ...p,
         id: String(p.id),
@@ -119,7 +129,6 @@ export default async function PublicMenuPage({
     const safeComposites = (compositeProducts || []).map(transformComposite);
     const safeUpsell = Array.isArray(upsellProducts) ? upsellProducts : [];
     const safeAllGroups = Array.isArray(allGroups) ? allGroups : [];
-
     const totalProdutos = safeGrouped.reduce((acc: number, cat: any) => acc + (cat.products?.length || 0) + (cat.compositeProducts?.length || 0), 0);
 
     return (
@@ -131,18 +140,10 @@ export default async function PublicMenuPage({
             upsellProducts={safeUpsell}
         >
             <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors pb-24">
-
-                {/* ── Header Premium ──────────────────────────────────────────────────────────── */}
                 <header className="relative bg-white dark:bg-slate-900 rounded-b-3xl shadow-lg overflow-hidden">
                     <div className="relative h-48 sm:h-64 bg-gradient-to-br from-violet-400/40 via-purple-400/30 to-indigo-400/40 dark:from-violet-600/30 dark:via-purple-600/20 dark:to-indigo-600/30 overflow-hidden">
                         {empresaBanner ? (
-                            <Image 
-                                src={empresaBanner} 
-                                alt={`Banner de ${empresaNome}`}
-                                fill
-                                className="object-cover"
-                                priority
-                            />
+                            <Image src={empresaBanner} alt={`Banner de ${empresaNome}`} fill className="object-cover" priority />
                         ) : (
                             <div className="absolute inset-0 opacity-30">
                                 <div className="absolute top-0 right-0 w-96 h-96 bg-violet-300 rounded-full mix-blend-multiply filter blur-3xl dark:opacity-20"></div>
@@ -159,13 +160,7 @@ export default async function PublicMenuPage({
                                 style={!empresaLogo ? { background: 'linear-gradient(135deg, #a78bfa, #c084fc)' } : { background: 'white' }}
                             >
                                 {empresaLogo ? (
-                                    <Image 
-                                        src={empresaLogo} 
-                                        alt={empresaNome} 
-                                        width={160} 
-                                        height={160} 
-                                        className="size-full object-cover"
-                                    />
+                                    <Image src={empresaLogo} alt={empresaNome} width={160} height={160} className="size-full object-cover" />
                                 ) : (
                                     <span style={{ color: '#a78bfa' }}>{inicial}</span>
                                 )}
@@ -208,12 +203,8 @@ export default async function PublicMenuPage({
                             <div className="size-16 sm:size-20 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-5">
                                 <UtensilsCrossed className="size-8 sm:size-10 text-slate-300 dark:text-slate-600" />
                             </div>
-                            <h2 className="text-base sm:text-lg font-bold text-slate-700 dark:text-white mb-2">
-                                Nenhum produto disponível
-                            </h2>
-                            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
-                                O cardápio está sendo atualizado. Volte em breve!
-                            </p>
+                            <h2 className="text-base sm:text-lg font-bold text-slate-700 dark:text-white mb-2">Nenhum produto disponível</h2>
+                            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-xs mx-auto">O cardápio está sendo atualizado. Volte em breve!</p>
                         </div>
                     ) : (
                         <MenuFilter
@@ -226,14 +217,8 @@ export default async function PublicMenuPage({
                             allGroups={safeAllGroups}
                         />
                     )}
-
                     <footer className="text-center pt-12 pb-6 mt-8 border-t border-slate-200 dark:border-slate-800">
-                        <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500">
-                            Cardápio digital por{' '}
-                            <span className="font-bold text-violet-500">
-                                ZapFlow
-                            </span>
-                        </p>
+                        <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500">Cardápio digital por <span className="font-bold text-violet-500">ZapFlow</span></p>
                     </footer>
                 </main>
             </div>
