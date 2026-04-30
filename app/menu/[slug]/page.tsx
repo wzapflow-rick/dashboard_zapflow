@@ -89,7 +89,12 @@ export default async function PublicMenuPage({
     const pontosPorReal = loyaltyConfig?.ativo ? Number(loyaltyConfig.pontos_por_real || 1) : 0;
     const inicial = empresaNome.charAt(0).toUpperCase();
     
-    const safeGrouped = Array.isArray(grouped) ? grouped : [];
+    // Ajuste de Tipagem para o MenuFilter: Garantir que 'nome' seja mapeado para 'name'
+    const safeGrouped = Array.isArray(grouped) ? grouped.map(cat => ({
+        ...cat,
+        name: cat.nome || 'Categoria' // MenuFilter exige 'name'
+    })) : [];
+
     const safeComposites = Array.isArray(compositeProducts) ? compositeProducts : [];
     const safeUpsell = Array.isArray(upsellProducts) ? upsellProducts : [];
     const safeAllGroups = Array.isArray(allGroups) ? allGroups : [];
