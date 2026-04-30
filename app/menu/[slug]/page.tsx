@@ -67,8 +67,12 @@ export default async function PublicMenuPage({
 
     const { empresa, grouped, compositeProducts, upsellProducts, loyaltyConfig, allGroups } = data;
 
-    // Garantias de tipo para satisfazer o TypeScript/Build
+    // ── Extração Segura de Dados (Garantindo Tipos Primitivos) ──────────────────
     const empresaNome = typeof empresa.nome === 'string' ? empresa.nome : 'ZapFlow';
+    const empresaBanner = typeof empresa.banner === 'string' ? empresa.banner : null;
+    const empresaLogo = typeof empresa.logo === 'string' ? empresa.logo : null;
+    const empresaNincho = typeof empresa.nincho === 'string' ? empresa.nincho : null;
+    const empresaCidade = typeof empresa.cidade === 'string' ? empresa.cidade : null;
     
     // O componente MenuClientWrapper espera um NUMBER para o empresaId
     let empresaId: number | undefined = undefined;
@@ -79,13 +83,18 @@ export default async function PublicMenuPage({
         if (!isNaN(parsed)) empresaId = parsed;
     }
     
-    // Tratamento seguro para o telefone
     const rawTelefone = typeof empresa.telefone === 'string' ? empresa.telefone : '';
     const whatsappNumber = rawTelefone.replace(/\D/g, '');
     
     const pontosPorReal = loyaltyConfig?.ativo ? Number(loyaltyConfig.pontos_por_real || 1) : 0;
     const inicial = empresaNome.charAt(0).toUpperCase();
-    const totalProdutos = (grouped?.length || 0) > 0 ? grouped.reduce((acc, cat) => acc + (cat.products?.length || 0) + (cat.compositeProducts?.length || 0), 0) : 0;
+    
+    const safeGrouped = Array.isArray(grouped) ? grouped : [];
+    const safeComposites = Array.isArray(compositeProducts) ? compositeProducts : [];
+    const safeUpsell = Array.isArray(upsellProducts) ? upsellProducts : [];
+    const safeAllGroups = Array.isArray(allGroups) ? allGroups : [];
+
+    const totalProdutos = safeGrouped.reduce((acc, cat) => acc + (cat.products?.length || 0) + (cat.compositeProducts?.length || 0), 0);
 
     return (
         <MenuClientWrapper
@@ -93,30 +102,27 @@ export default async function PublicMenuPage({
             empresaNome={empresaNome}
             empresaId={empresaId}
             pontosPorReal={pontosPorReal}
-            upsellProducts={upsellProducts || []}
+            upsellProducts={safeUpsell}
         >
             <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors pb-24">
 
-                {/* ── Header Premium com Banner Personalizado ──────────────────────────────────────────── */}
+                {/* ── Header Premium ──────────────────────────────────────────────────────────── */}
                 <header className="relative bg-white dark:bg-slate-900 rounded-b-3xl shadow-lg overflow-hidden">
                     <div className="relative h-48 sm:h-64 bg-gradient-to-br from-violet-400/40 via-purple-400/30 to-indigo-400/40 dark:from-violet-600/30 dark:via-purple-600/20 dark:to-indigo-600/30 overflow-hidden">
-                        {empresa.banner && typeof empresa.banner === 'string' && (
+                        {empresaBanner ? (
                             <Image 
-                                src={empresa.banner} 
+                                src={empresaBanner} 
                                 alt={`Banner de ${empresaNome}`}
                                 fill
                                 className="object-cover"
                                 priority
                             />
-                        )}
-                        
-                        {(!empresa.banner || typeof empresa.banner !== 'string') && (
+                        ) : (
                             <div className="absolute inset-0 opacity-30">
                                 <div className="absolute top-0 right-0 w-96 h-96 bg-violet-300 rounded-full mix-blend-multiply filter blur-3xl dark:opacity-20"></div>
                                 <div className="absolute -bottom-8 left-20 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl dark:opacity-20"></div>
                             </div>
                         )}
-                        
                         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-white/20 dark:to-slate-900/40"></div>
                     </div>
 
@@ -124,11 +130,11 @@ export default async function PublicMenuPage({
                         <div className="relative flex flex-col items-center sm:items-start text-center sm:text-left">
                             <div
                                 className="size-32 sm:size-40 rounded-full flex items-center justify-center text-white font-bold text-5xl sm:text-7xl shrink-0 shadow-2xl border-4 border-white dark:border-slate-800 bg-white dark:bg-slate-800 overflow-hidden -mt-16 sm:-mt-20 transition-transform hover:scale-105 z-10 backdrop-blur-sm"
-                                style={(!empresa.logo || typeof empresa.logo !== 'string') ? { background: 'linear-gradient(135deg, #a78bfa, #c084fc)' } : { background: 'white' }}
+                                style={!empresaLogo ? { background: 'linear-gradient(135deg, #a78bfa, #c084fc)' } : { background: 'white' }}
                             >
-                                {empresa.logo && typeof empresa.logo === 'string' ? (
+                                {empresaLogo ? (
                                     <Image 
-                                        src={empresa.logo} 
+                                        src={empresaLogo} 
                                         alt={empresaNome} 
                                         width={160} 
                                         height={160} 
@@ -146,15 +152,15 @@ export default async function PublicMenuPage({
                                             {empresaNome}
                                         </h1>
                                         <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-3">
-                                            {empresa.nincho && typeof empresa.nincho === 'string' && (
+                                            {empresaNincho && (
                                                 <span className="text-[11px] sm:text-sm text-slate-700 dark:text-slate-200 capitalize font-semibold bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm px-4 py-2 rounded-full border border-white/40 dark:border-slate-700/40 shadow-sm">
-                                                    🏪 {empresa.nincho}
+                                                    🏪 {empresaNincho}
                                                 </span>
                                             )}
-                                            {empresa.cidade && typeof empresa.cidade === 'string' && (
+                                            {empresaCidade && (
                                                 <span className="flex items-center gap-1.5 text-[11px] sm:text-sm text-slate-700 dark:text-slate-200 font-semibold bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm px-4 py-2 rounded-full border border-white/40 dark:border-slate-700/40 shadow-sm">
                                                     <MapPin className="size-3.5 sm:size-4" />
-                                                    {empresa.cidade}
+                                                    {empresaCidade}
                                                 </span>
                                             )}
                                             {totalProdutos > 0 && (
@@ -171,7 +177,7 @@ export default async function PublicMenuPage({
                 </header>
 
                 <main className="max-w-2xl mx-auto px-4 py-6">
-                    {(!grouped || grouped.length === 0) && (!compositeProducts || compositeProducts.length === 0) ? (
+                    {safeGrouped.length === 0 && safeComposites.length === 0 ? (
                         <div className="text-center py-20 sm:py-24">
                             <div className="size-16 sm:size-20 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-5">
                                 <UtensilsCrossed className="size-8 sm:size-10 text-slate-300 dark:text-slate-600" />
@@ -185,13 +191,13 @@ export default async function PublicMenuPage({
                         </div>
                     ) : (
                         <MenuFilter
-                            grouped={grouped || []}
-                            compositeProducts={compositeProducts || []}
-                            upsellProducts={upsellProducts || []}
+                            grouped={safeGrouped}
+                            compositeProducts={safeComposites}
+                            upsellProducts={safeUpsell}
                             whatsappNumber={whatsappNumber}
                             empresaNome={empresaNome}
-                            allComposites={compositeProducts || []}
-                            allGroups={allGroups || []}
+                            allComposites={safeComposites}
+                            allGroups={safeAllGroups}
                         />
                     )}
 
