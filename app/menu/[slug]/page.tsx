@@ -25,12 +25,13 @@ export async function generateMetadata({
 
     const { empresa } = data;
     const logoUrl = typeof empresa.logo === 'string' ? empresa.logo : undefined;
+    const nomeEmpresa = typeof empresa.nome === 'string' ? empresa.nome : 'ZapFlow';
 
     return {
-        title: `Cardápio — ${empresa.nome}`,
-        description: `Veja o cardápio completo de ${empresa.nome}. Peça agora pelo WhatsApp!`,
+        title: `Cardápio — ${nomeEmpresa}`,
+        description: `Veja o cardápio completo de ${nomeEmpresa}. Peça agora pelo WhatsApp!`,
         openGraph: {
-            title: `Cardápio — ${empresa.nome}`,
+            title: `Cardápio — ${nomeEmpresa}`,
             description: `Peça agora pelo WhatsApp!`,
             images: logoUrl ? [logoUrl] : [],
         },
@@ -66,19 +67,23 @@ export default async function PublicMenuPage({
 
     const { empresa, grouped, compositeProducts, upsellProducts, loyaltyConfig, allGroups } = data;
 
-    // Tratamento seguro para o telefone (evita erro de replace em objeto vazio do NocoDB)
+    // Garantias de tipo para satisfazer o TypeScript/Build
+    const empresaNome = typeof empresa.nome === 'string' ? empresa.nome : 'ZapFlow';
+    const empresaId = typeof empresa.id === 'string' ? empresa.id : (typeof empresa.id === 'number' ? String(empresa.id) : '');
+    
+    // Tratamento seguro para o telefone
     const rawTelefone = typeof empresa.telefone === 'string' ? empresa.telefone : '';
     const whatsappNumber = rawTelefone.replace(/\D/g, '');
     
     const pontosPorReal = loyaltyConfig?.ativo ? Number(loyaltyConfig.pontos_por_real || 1) : 0;
-    const inicial = typeof empresa.nome === 'string' ? empresa.nome.charAt(0).toUpperCase() : '?';
+    const inicial = empresaNome.charAt(0).toUpperCase();
     const totalProdutos = (grouped?.length || 0) > 0 ? grouped.reduce((acc, cat) => acc + (cat.products?.length || 0) + (cat.compositeProducts?.length || 0), 0) : 0;
 
     return (
         <MenuClientWrapper
             whatsappNumber={whatsappNumber}
-            empresaNome={empresa.nome}
-            empresaId={empresa.id}
+            empresaNome={empresaNome}
+            empresaId={empresaId}
             pontosPorReal={pontosPorReal}
             upsellProducts={upsellProducts || []}
         >
@@ -90,7 +95,7 @@ export default async function PublicMenuPage({
                         {empresa.banner && typeof empresa.banner === 'string' && (
                             <Image 
                                 src={empresa.banner} 
-                                alt={`Banner de ${empresa.nome}`}
+                                alt={`Banner de ${empresaNome}`}
                                 fill
                                 className="object-cover"
                                 priority
@@ -116,7 +121,7 @@ export default async function PublicMenuPage({
                                 {empresa.logo && typeof empresa.logo === 'string' ? (
                                     <Image 
                                         src={empresa.logo} 
-                                        alt={empresa.nome} 
+                                        alt={empresaNome} 
                                         width={160} 
                                         height={160} 
                                         className="size-full object-cover"
@@ -130,7 +135,7 @@ export default async function PublicMenuPage({
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                     <div className="flex-1 min-w-0">
                                         <h1 className="font-black text-4xl sm:text-6xl text-slate-900 dark:text-white leading-tight mb-4">
-                                            {empresa.nome}
+                                            {empresaNome}
                                         </h1>
                                         <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-3">
                                             {empresa.nincho && typeof empresa.nincho === 'string' && (
@@ -176,7 +181,7 @@ export default async function PublicMenuPage({
                             compositeProducts={compositeProducts || []}
                             upsellProducts={upsellProducts || []}
                             whatsappNumber={whatsappNumber}
-                            empresaNome={empresa.nome}
+                            empresaNome={empresaNome}
                             allComposites={compositeProducts || []}
                             allGroups={allGroups || []}
                         />
