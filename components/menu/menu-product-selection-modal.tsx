@@ -109,14 +109,31 @@ export default function MenuProductSelectionModal({
     });
     
     const [observacao, setObservacao] = useState(product._editingData?.observacao || '');
-    const [step, setStep] = useState<Step>(hasSizes ? 'size' : 'flavors');
+    const [step, setStep] = useState<Step>(() => {
+        if (hasSizes) return 'size';
+        if (hasFlavors) return 'flavors';
+        if (hasAdditions) return 'additions';
+        return 'observation';
+    });
 
     const recommendedProductIds = useMemo<number[]>(() => {
-        if (!product.recomendacoes) return [];
-        try {
-            const parsed = JSON.parse(product.recomendacoes);
-            return Array.isArray(parsed) ? parsed.map(Number) : [];
-        } catch { return []; }
+        const raw = product.recomendacoes;
+        if (!raw) return [];
+        
+        if (Array.isArray(raw)) {
+            return raw.map(Number);
+        }
+        
+        if (typeof raw === 'string') {
+            try {
+                const parsed = JSON.parse(raw);
+                return Array.isArray(parsed) ? parsed.map(Number) : [];
+            } catch {
+                return [];
+            }
+        }
+        
+        return [];
     }, [product.recomendacoes]);
 
     const availableUpsells = useMemo(() => {
