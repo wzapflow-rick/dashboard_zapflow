@@ -16,11 +16,13 @@ export async function getPublicMenu(slug: string) {
     try {
         // 1. Buscar Empresa pelo Slug ou Nome
         // Tentamos busca exata pelo slug primeiro
-        let empresa = await noco.findOne(EMPRESAS_TABLE_ID, {
+        let empresa: any = await noco.findOne(EMPRESAS_TABLE_ID, {
             where: `(slug,eq,${slug})`
         });
         
-        if (empresa) console.log(`[DEBUG] Empresa encontrada por slug exato: ${empresa.nome}`);
+        if (empresa) {
+            console.log(`[DEBUG] Empresa encontrada por slug exato: ${empresa.nome}`);
+        }
 
         // Se não encontrar pelo slug, tentamos pelo nome da unidade (convertendo o slug de volta ou busca aproximada)
         if (!empresa) {
@@ -28,7 +30,9 @@ export async function getPublicMenu(slug: string) {
             empresa = await noco.findOne(EMPRESAS_TABLE_ID, {
                 where: `(slug,like,%${slug}%)`
             });
-            if (empresa) console.log(`[DEBUG] Empresa encontrada por slug aproximado: ${empresa.nome}`);
+            if (empresa) {
+                console.log(`[DEBUG] Empresa encontrada por slug aproximado: ${empresa.nome}`);
+            }
         }
 
         // Se ainda não encontrar, tentamos buscar pelo nome da unidade que você informou
@@ -38,7 +42,9 @@ export async function getPublicMenu(slug: string) {
             empresa = await noco.findOne(EMPRESAS_TABLE_ID, {
                 where: `(nome,like,%${possibleName}%)`
             });
-            if (empresa) console.log(`[DEBUG] Empresa encontrada por nome aproximado: ${empresa.nome}`);
+            if (empresa) {
+                console.log(`[DEBUG] Empresa encontrada por nome aproximado: ${empresa.nome}`);
+            }
         }
 
         // Última tentativa: buscar qualquer empresa se houver apenas uma (fallback de segurança)
@@ -48,9 +54,11 @@ export async function getPublicMenu(slug: string) {
             console.log(`[DEBUG] Total de empresas encontradas no banco: ${todasEmpresas.list.length}`);
             if (todasEmpresas.list.length === 1) {
                 empresa = todasEmpresas.list[0] as any;
-                console.log(`[DEBUG] Fallback ativado: Usando única empresa disponível: ${empresa.nome}`);
+                if (empresa) {
+                    console.log(`[DEBUG] Fallback ativado: Usando única empresa disponível: ${empresa.nome}`);
+                }
             } else if (todasEmpresas.list.length > 1) {
-                console.log(`[DEBUG] Múltiplas empresas encontradas: ${todasEmpresas.list.map((e:any) => e.nome).join(', ')}`);
+                console.log(`[DEBUG] Múltiplas empresas encontradas: ${todasEmpresas.list.map((e:any) => e.nome || 'Sem Nome').join(', ')}`);
             }
         }
 
