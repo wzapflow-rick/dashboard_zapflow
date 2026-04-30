@@ -320,7 +320,7 @@ export default function MenuProductSelectionModal({
                     animate={{ y: 0 }}
                     exit={{ y: '100%' }}
                     transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                    className="bg-white dark:bg-slate-900 w-full max-w-lg h-full sm:h-auto sm:max-h-[90vh] sm:rounded-3xl overflow-hidden flex flex-col shadow-2xl"
+                    className="bg-white dark:bg-[#2d1b4e] w-full max-w-lg h-full sm:h-auto sm:max-h-[90vh] sm:rounded-3xl overflow-hidden flex flex-col shadow-2xl"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header do Modal */}
@@ -353,21 +353,21 @@ export default function MenuProductSelectionModal({
                         {/* Indicador de Progresso */}
                         <div className="flex items-center gap-2 mb-2 overflow-x-auto pb-2 no-scrollbar">
                             {hasSizes && (
-                                <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors ${step === 'size' ? 'bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400' : 'text-slate-400'}`}>
+                                <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors ${step === 'size' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'text-slate-400'}`}>
                                     <Ruler className="size-3" /> Tamanho
                                 </div>
                             )}
                             {hasFlavors && (
-                                <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors ${step === 'flavors' ? 'bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400' : 'text-slate-400'}`}>
+                                <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors ${step === 'flavors' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'text-slate-400'}`}>
                                     <Sparkles className="size-3" /> Sabores
                                 </div>
                             )}
                             {hasAdditions && (
-                                <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors ${step === 'additions' ? 'bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400' : 'text-slate-400'}`}>
+                                <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors ${step === 'additions' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'text-slate-400'}`}>
                                     <ShoppingCart className="size-3" /> Adicionais
                                 </div>
                             )}
-                            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors ${step === 'observation' ? 'bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400' : 'text-slate-400'}`}>
+                            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors ${step === 'observation' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'text-slate-400'}`}>
                                 <MessageSquare className="size-3" /> Obs
                             </div>
                         </div>
@@ -386,7 +386,7 @@ export default function MenuProductSelectionModal({
                                         <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                             Escolha o tamanho <span className="text-rose-500">*</span>
                                         </h3>
-                                        <span className="text-[10px] font-bold text-violet-500 uppercase tracking-widest bg-violet-50 dark:bg-violet-900/20 px-2 py-1 rounded">Obrigatório</span>
+                                        <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded">Obrigatório</span>
                                     </div>
                                     <div className="grid grid-cols-1 gap-3">
                                         {availableSizes.map((size) => (
@@ -395,16 +395,16 @@ export default function MenuProductSelectionModal({
                                                 onClick={() => setSelectedSize(size)}
                                                 className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${
                                                     selectedSize?.nome === size.nome
-                                                        ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/20'
+                                                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
                                                         : 'border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700'
                                                 }`}
                                             >
-                                                <span className={`font-bold ${selectedSize?.nome === size.nome ? 'text-violet-700 dark:text-violet-300' : 'text-slate-700 dark:text-slate-300'}`}>
+                                                <span className={`font-bold ${selectedSize?.nome === size.nome ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-700 dark:text-slate-300'}`}>
                                                     {size.nome}
                                                 </span>
                                                 <div className="flex items-center gap-3">
                                                     <span className="font-black text-slate-900 dark:text-white">{fmt(size.preco)}</span>
-                                                    <div className={`size-5 rounded-full border-2 flex items-center justify-center transition-colors ${selectedSize?.nome === size.nome ? 'border-violet-500 bg-violet-500' : 'border-slate-300'}`}>
+                                                    <div className={`size-5 rounded-full border-2 flex items-center justify-center transition-colors ${selectedSize?.nome === size.nome ? 'border-emerald-500 bg-emerald-500' : 'border-slate-300'}`}>
                                                         {selectedSize?.nome === size.nome && <Check className="size-3 text-white" />}
                                                     </div>
                                                 </div>
@@ -454,16 +454,16 @@ export default function MenuProductSelectionModal({
                                                                 key={item.id}
                                                                 onClick={() => toggleItem(grupo, item)}
                                                                 className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
-                                                                    isSelected
-                                                                        ? 'border-violet-200 bg-violet-50 dark:bg-violet-900/10 dark:border-violet-800'
-                                                                        : 'border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                                                    isSelected
+                                                        ? 'border-emerald-200 bg-emerald-50 dark:bg-emerald-900/10 dark:border-emerald-800'
+                                                        : 'border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50'
                                                                 }`}
                                                             >
                                                                 <div className="flex items-center gap-3">
-                                                                    <div className={`size-5 rounded border flex items-center justify-center transition-colors ${isSelected ? 'bg-violet-500 border-violet-500' : 'border-slate-300 dark:border-slate-600'}`}>
+                                                                    <div className={`size-5 rounded border flex items-center justify-center transition-colors ${isSelected ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300 dark:border-slate-600'}`}>
                                                                         {isSelected && <Check className="size-3 text-white" />}
                                                                     </div>
-                                                                    <span className={`text-xs sm:text-sm font-medium ${isSelected ? 'text-violet-700 dark:text-violet-300 font-bold' : 'text-slate-700 dark:text-slate-300'}`}>
+                                                                    <span className={`text-xs sm:text-sm font-medium ${isSelected ? 'text-emerald-700 dark:text-emerald-300 font-bold' : 'text-slate-700 dark:text-slate-300'}`}>
                                                                         {item.nome}
                                                                     </span>
                                                                 </div>
@@ -495,7 +495,7 @@ export default function MenuProductSelectionModal({
                                         value={observacao}
                                         onChange={(e) => setObservacao(e.target.value)}
                                         placeholder="Ex: Sem cebola, caprichar no queijo..."
-                                        className="w-full h-32 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none outline-none focus:ring-2 focus:ring-violet-400 transition-all text-sm placeholder:text-slate-400"
+                                        className="w-full h-32 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none outline-none focus:ring-2 focus:ring-emerald-400 transition-all text-sm placeholder:text-slate-400"
                                     />
                                 </motion.div>
                             )}
@@ -528,7 +528,7 @@ export default function MenuProductSelectionModal({
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <h4 className="font-bold text-slate-900 dark:text-white text-sm truncate">{upsell.nome}</h4>
-                                                    <p className="text-violet-600 dark:text-violet-400 font-black text-sm">{fmt(upsell.preco)}</p>
+                                                    <p className="text-orange-500 dark:text-orange-400 font-black text-sm">{fmt(upsell.preco)}</p>
                                                 </div>
                                                 <button
                                                     onClick={() => {
@@ -544,7 +544,7 @@ export default function MenuProductSelectionModal({
                                                         });
                                                         toast.success(`${upsell.nome} adicionado!`);
                                                     }}
-                                                    className="bg-violet-500 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-violet-600 transition-colors shadow-sm"
+                                                    className="bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-emerald-600 transition-colors shadow-sm"
                                                 >
                                                     Adicionar
                                                 </button>
@@ -564,7 +564,7 @@ export default function MenuProductSelectionModal({
                     </div>
 
                     {/* Footer com Botão de Ação */}
-                    <div className="shrink-0 p-4 sm:p-6 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex items-center gap-3">
+                    <div className="shrink-0 p-4 sm:p-6 bg-white dark:bg-[#2d1b4e] border-t border-slate-100 dark:border-slate-800 flex items-center gap-3"
                         {step !== (hasSizes ? 'size' : (hasFlavors ? 'flavors' : (hasAdditions ? 'additions' : 'observation'))) && step !== 'upsell' && (
                             <button
                                 onClick={prevStep}
@@ -577,7 +577,7 @@ export default function MenuProductSelectionModal({
                         {step !== 'upsell' && (
                             <button
                                 onClick={nextStep}
-                                className="flex-1 h-12 sm:h-14 bg-violet-600 hover:bg-violet-700 text-white rounded-2xl font-black flex items-center justify-center gap-3 shadow-lg shadow-violet-200 dark:shadow-none transition-all active:scale-[0.98]"
+                                className="flex-1 h-12 sm:h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black flex items-center justify-center gap-3 shadow-lg shadow-emerald-200 dark:shadow-none transition-all active:scale-[0.98]"
                             >
                                 {step === 'observation' ? (
                                     <>
@@ -596,7 +596,7 @@ export default function MenuProductSelectionModal({
                         {step === 'upsell' && (
                             <button
                                 onClick={addToCart}
-                                className="flex-1 h-12 sm:h-14 bg-violet-600 hover:bg-violet-700 text-white rounded-2xl font-black flex items-center justify-center gap-3 shadow-lg shadow-violet-200 dark:shadow-none transition-all active:scale-[0.98]"
+                                className="flex-1 h-12 sm:h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black flex items-center justify-center gap-3 shadow-lg shadow-emerald-200 dark:shadow-none transition-all active:scale-[0.98]"
                             >
                                 Finalizar e Ir para o Carrinho
                                 <ShoppingCart className="size-5" />
@@ -606,7 +606,7 @@ export default function MenuProductSelectionModal({
                     
                     {/* Preço Flutuante no Mobile */}
                     <div className="absolute top-4 left-4 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg border border-white/20 dark:border-slate-700/30 z-20 sm:hidden">
-                        <span className="text-xs font-black text-violet-600 dark:text-violet-400">{fmt(finalPrice)}</span>
+                        <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">{fmt(finalPrice)}</span>
                     </div>
                 </motion.div>
             </motion.div>
