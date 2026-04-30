@@ -41,8 +41,24 @@ export async function getProducts() {
 
     return products.map((p: any) => {
       const metadata = metadataMap.get(p.id);
-      const recomendacoes = metadata?.recomendacoes ? JSON.parse(metadata.recomendacoes) : null;
-      const tamanhos = metadata?.tamanhos ? JSON.parse(metadata.tamanhos) : null;
+      let recomendacoes = null;
+      let tamanhos = null;
+
+      try {
+        if (metadata?.recomendacoes && typeof metadata.recomendacoes === 'string') {
+          recomendacoes = JSON.parse(metadata.recomendacoes);
+        } else if (metadata?.recomendacoes && typeof metadata.recomendacoes === 'object') {
+          recomendacoes = metadata.recomendacoes;
+        }
+        
+        if (metadata?.tamanhos && typeof metadata.tamanhos === 'string') {
+          tamanhos = JSON.parse(metadata.tamanhos);
+        } else if (metadata?.tamanhos && typeof metadata.tamanhos === 'object') {
+          tamanhos = metadata.tamanhos;
+        }
+      } catch (e) {
+        console.error('Error parsing metadata JSON', e);
+      }
 
       return JSON.parse(JSON.stringify({
         id: p.id || p.Id,
