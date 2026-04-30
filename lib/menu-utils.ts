@@ -61,7 +61,8 @@ export async function saveProduct(
     descricao: formData.get('descricao') as string,
     disponivel: editingProduct ? editingProduct.disponivel : true,
     imagem: editingProduct?.imagem || '',
-    tamanhos: formData.get('tamanhos') ? String(formData.get('tamanhos')) : null
+    tamanhos: formData.get('tamanhos') ? String(formData.get('tamanhos')) : null,
+    recomendacoes: formData.get('recomendacoes') ? String(formData.get('recomendacoes')) : null
   };
 
   // 1. Salva o produto primeiro. Isso garante a validação do DB. 
