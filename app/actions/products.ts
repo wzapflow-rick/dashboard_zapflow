@@ -36,7 +36,7 @@ export async function getProducts() {
     const products = data.list || [];
 
     // Buscar metadados dos produtos
-    const metadataList = await noco.listAll(PRODUTOS_METADADOS_TABLE_ID, { where: `(produto_id,eq,${user.empresaId})` });
+    const metadataList = await noco.listAll(PRODUTOS_METADADOS_TABLE_ID, { where: `(produto_id,eq,${user.empresaId})` }).catch(() => []);
     const metadataMap = new Map(metadataList.map((m: any) => [m.produto_id, m]));
 
     return products.map((p: any) => {
@@ -46,10 +46,10 @@ export async function getProducts() {
 
       return JSON.parse(JSON.stringify({
         id: p.id || p.Id,
-        nome: p.nome || ",
+        nome: p.nome || '',
         preco: Number(p.preco || 0),
-        descricao: p.descricao || ",
-        imagem: p.imagem || ",
+        descricao: p.descricao || '',
+        imagem: p.imagem || '',
         categoria_id: p.categoria_id || p.categorias || null,
         disponivel: p.disponivel !== false && p.disponivel !== 0,
         empresa_id: p.empresa_id,
@@ -231,7 +231,6 @@ export async function upsertProduct(productData: any, selectedInsumos?: { insumo
       empresa_id: user.empresaId
     };
 
-    // Garantir que o campo tamanhos está no payload se presente nos dados validados
     const recomendacoes = productData.recomendacoes;
     const tamanhos = productData.tamanhos;
 
@@ -248,7 +247,6 @@ export async function upsertProduct(productData: any, selectedInsumos?: { insumo
       delete updatePayload.empresa_id;
 
       const data = await noco.update(PRODUTOS_TABLE_ID, updatePayload);
-      // Garantir que categoria_id e tamanhos sejam preservados no retorno para evitar bugs de UI
       savedProduct = { 
         ...productData, 
         ...data, 
