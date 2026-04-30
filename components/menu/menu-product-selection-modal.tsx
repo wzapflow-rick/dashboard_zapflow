@@ -83,12 +83,16 @@ export default function MenuProductSelectionModal({
         }
         if (!rawTamanhos) return [];
         try {
-            const parsed = JSON.parse(rawTamanhos);
+            const parsed = typeof rawTamanhos === 'string' ? JSON.parse(rawTamanhos) : rawTamanhos;
             return Array.isArray(parsed) ? parsed : [];
         } catch { return []; }
     }, [product.tamanhos, product.descricao]);
 
     const hasSizes = availableSizes.length > 0;
+    const saborGroups = product.saborGroups || [];
+    const additionalGroups = product.additionalGroups || [];
+    const hasFlavors = saborGroups.length > 0;
+    const hasAdditions = additionalGroups.length > 0;
 
     const [selectedSize, setSelectedSize] = useState<SizeOption | null>(() => {
         if (product._editingData?.tamanho) {
@@ -109,30 +113,26 @@ export default function MenuProductSelectionModal({
     });
     
     const [observacao, setObservacao] = useState(product._editingData?.observacao || '');
-    const [step, setStep] = useState<Step>(() => {
-        if (hasSizes) return 'size';
-        if (hasFlavors) return 'flavors';
-        if (hasAdditions) return 'additions';
-        return 'observation';
-    });
+    const [step, setStep] = useState<Step>('observation');
+
+    // Ajustar o step inicial após a montagem do componente para evitar erros de hidratação
+    useEffect(() => {
+        if (hasSizes) setStep('size');
+        else if (hasFlavors) setStep('flavors');
+        else if (hasAdditions) setStep('additions');
+        else setStep('observation');
+    }, [hasSizes, hasFlavors, hasAdditions]);
 
     const recommendedProductIds = useMemo<number[]>(() => {
         const raw = product.recomendacoes;
         if (!raw) return [];
-        
-        if (Array.isArray(raw)) {
-            return raw.map(Number);
-        }
-        
+        if (Array.isArray(raw)) return raw.map(Number);
         if (typeof raw === 'string') {
             try {
                 const parsed = JSON.parse(raw);
                 return Array.isArray(parsed) ? parsed.map(Number) : [];
-            } catch {
-                return [];
-            }
+            } catch { return []; }
         }
-        
         return [];
     }, [product.recomendacoes]);
 
@@ -141,10 +141,6 @@ export default function MenuProductSelectionModal({
     }, [upsellProducts, recommendedProductIds]);
 
     const hasUpsells = availableUpsells.length > 0;
-    const saborGroups = product.saborGroups || [];
-    const additionalGroups = product.additionalGroups || [];
-    const hasFlavors = saborGroups.length > 0;
-    const hasAdditions = additionalGroups.length > 0;
 
     const currentGroups = useMemo(() => {
         if (step === 'flavors') return saborGroups;
@@ -472,9 +468,7 @@ export default function MenuProductSelectionModal({
                                                                     </span>
                                                                 </div>
                                                                 {item.preco > 0 && (
-                                                                    <span className="text-xs font-bold text-slate-900 dark:text-white">
-                                                                        +{fmt(item.preco)}
-                                                                    </span>
+                                                                    <span className="text-xs font-bold text-slate-900 dark:text-white">{fmt(item.preco)}</span>
                                                                 )}
                                                             </button>
                                                         );
@@ -500,8 +494,8 @@ export default function MenuProductSelectionModal({
                                     <textarea
                                         value={observacao}
                                         onChange={(e) => setObservacao(e.target.value)}
-                                        placeholder="Ex: Tirar cebola, ponto da carne, etc..."
-                                        className="w-full h-32 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 focus:border-violet-500 focus:ring-0 transition-all resize-none text-sm text-slate-700 dark:text-slate-200"
+                                        placeholder="Ex: Sem cebola, caprichar no queijo..."
+                                        className="w-full h-32 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none outline-none focus:ring-2 focus:ring-violet-400 transition-all text-sm placeholder:text-slate-400"
                                     />
                                 </motion.div>
                             )}
@@ -509,12 +503,12 @@ export default function MenuProductSelectionModal({
                             {step === 'upsell' && (
                                 <motion.div
                                     key="upsell"
-                                    initial={{ opacity: 0, scale: 0.95 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.95 }}
-                                    className="space-y-6 py-4"
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -20 }}
+                                    className="space-y-6"
                                 >
-                                    <div className="text-center space-y-2">
+                                    <div className="text-center py-4">
                                         <div className="size-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                                             <Sparkles className="size-8 text-amber-500" />
                                         </div>
@@ -571,7 +565,7 @@ export default function MenuProductSelectionModal({
 
                     {/* Footer com Botão de Ação */}
                     <div className="shrink-0 p-4 sm:p-6 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex items-center gap-3">
-                        {step !== (hasSizes ? 'size' : 'flavors') && step !== 'upsell' && (
+                        {step !== (hasSizes ? 'size' : (hasFlavors ? 'flavors' : (hasAdditions ? 'additions' : 'observation'))) && step !== 'upsell' && (
                             <button
                                 onClick={prevStep}
                                 className="size-12 sm:size-14 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center hover:bg-slate-200 transition-colors"
