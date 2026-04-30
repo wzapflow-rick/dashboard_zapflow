@@ -89,13 +89,35 @@ export default async function PublicMenuPage({
     const pontosPorReal = loyaltyConfig?.ativo ? Number(loyaltyConfig.pontos_por_real || 1) : 0;
     const inicial = empresaNome.charAt(0).toUpperCase();
     
-    // Ajuste de Tipagem para o MenuFilter: Garantir que 'nome' seja mapeado para 'name'
+    // ── Transformação de Dados para o MenuFilter ──────────────────────────────
+    
+    // Função para transformar um produto composto bruto no formato esperado pelo componente
+    const transformComposite = (p: any) => ({
+        id: String(p.id),
+        _grupoId: Number(p.id), // Fallback para grupo
+        _isComposite: true as const,
+        nome: String(p.nome || ''),
+        descricao: String(p.descricao || ''),
+        imagem: String(p.imagem || ''),
+        minimo: Number(p.minimo || 1),
+        maximo: Number(p.maximo || 1),
+        items: Array.isArray(p.items) ? p.items : [],
+        preco_fixo: Number(p.preco || 0),
+        tipo_calculo: String(p.tipo_calculo || 'fixo')
+    });
+
     const safeGrouped = Array.isArray(grouped) ? grouped.map(cat => ({
         ...cat,
-        name: cat.nome || 'Categoria' // MenuFilter exige 'name'
+        name: String(cat.nome || 'Categoria'),
+        compositeProducts: Array.isArray(cat.compositeProducts) 
+            ? cat.compositeProducts.map(transformComposite)
+            : []
     })) : [];
 
-    const safeComposites = Array.isArray(compositeProducts) ? compositeProducts : [];
+    const safeComposites = Array.isArray(compositeProducts) 
+        ? compositeProducts.map(transformComposite)
+        : [];
+
     const safeUpsell = Array.isArray(upsellProducts) ? upsellProducts : [];
     const safeAllGroups = Array.isArray(allGroups) ? allGroups : [];
 
