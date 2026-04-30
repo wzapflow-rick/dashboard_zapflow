@@ -68,7 +68,7 @@ export default async function PublicMenuPage({
     const { empresa, grouped, compositeProducts, upsellProducts, loyaltyConfig, allGroups } = data;
 
     // ── Extração Segura de Dados (Garantindo Tipos Primitivos) ──────────────────
-    const empresaNome = typeof empresa.nome === 'string' ? empresa.nome : 'ZapFlow';
+    const empresaNome = String(empresa.nome || 'ZapFlow');
     const empresaBanner = typeof empresa.banner === 'string' ? empresa.banner : null;
     const empresaLogo = typeof empresa.logo === 'string' ? empresa.logo : null;
     const empresaNincho = typeof empresa.nincho === 'string' ? empresa.nincho : null;
@@ -93,8 +93,9 @@ export default async function PublicMenuPage({
     
     // Função para transformar um produto composto bruto no formato esperado pelo componente
     const transformComposite = (p: any) => ({
+        ...p,
         id: String(p.id),
-        _grupoId: Number(p.id), // Fallback para grupo
+        _grupoId: Number(p.id), 
         _isComposite: true as const,
         nome: String(p.nome || ''),
         descricao: String(p.descricao || ''),
@@ -106,22 +107,20 @@ export default async function PublicMenuPage({
         tipo_calculo: String(p.tipo_calculo || 'fixo')
     });
 
-    const safeGrouped = Array.isArray(grouped) ? grouped.map(cat => ({
+    const safeGrouped = (grouped || []).map((cat: any) => ({
         ...cat,
-        name: String(cat.nome || 'Categoria'),
+        name: String(cat.nome || cat.name || 'Categoria'),
+        products: Array.isArray(cat.products) ? cat.products : [],
         compositeProducts: Array.isArray(cat.compositeProducts) 
             ? cat.compositeProducts.map(transformComposite)
             : []
-    })) : [];
+    }));
 
-    const safeComposites = Array.isArray(compositeProducts) 
-        ? compositeProducts.map(transformComposite)
-        : [];
-
+    const safeComposites = (compositeProducts || []).map(transformComposite);
     const safeUpsell = Array.isArray(upsellProducts) ? upsellProducts : [];
     const safeAllGroups = Array.isArray(allGroups) ? allGroups : [];
 
-    const totalProdutos = safeGrouped.reduce((acc, cat) => acc + (cat.products?.length || 0) + (cat.compositeProducts?.length || 0), 0);
+    const totalProdutos = safeGrouped.reduce((acc: number, cat: any) => acc + (cat.products?.length || 0) + (cat.compositeProducts?.length || 0), 0);
 
     return (
         <MenuClientWrapper
