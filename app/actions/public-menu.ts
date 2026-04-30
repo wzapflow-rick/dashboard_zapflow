@@ -12,11 +12,20 @@ import {
 export async function getPublicMenu(slug: string) {
     try {
         // 1. Buscar Empresa pelo Slug
-        const empresa = await noco.findOne(EMPRESAS_TABLE_ID, {
+        // Tentamos uma busca exata primeiro
+        let empresa = await noco.findOne(EMPRESAS_TABLE_ID, {
             where: `(slug,eq,${slug})`
         });
 
+        // Se não encontrar, tentamos uma busca mais flexível (like) para evitar problemas com espaços ou caracteres
         if (!empresa) {
+            empresa = await noco.findOne(EMPRESAS_TABLE_ID, {
+                where: `(slug,like,%${slug}%)`
+            });
+        }
+
+        if (!empresa) {
+            console.error(`Empresa não encontrada para o slug: ${slug}`);
             return null;
         }
 
@@ -163,4 +172,3 @@ export async function getPublicMenu(slug: string) {
         return null;
     }
 }
-// Forcing redeploy
