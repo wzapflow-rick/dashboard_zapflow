@@ -10,112 +10,93 @@ import {
 } from '@/lib/constants';
 
 export async function getPublicMenu(slug: string) {
-    console.log(`[DEBUG] Iniciando busca de menu para o slug: ${slug}`);
-    console.log(`[DEBUG] Usando EMPRESAS_TABLE_ID: ${EMPRESAS_TABLE_ID}`);
+    console.log(`[MENU_DEBUG] Buscando cardápio para: ${slug}`);
     
     try {
-        // 1. Buscar Empresa pelo Slug ou Nome
-        // Tentamos busca exata pelo slug primeiro
-        let empresa: any = await noco.findOne(EMPRESAS_TABLE_ID, {
+        // 1. BUSCA ULTRA-RESILIENTE DA EMPRESA
+        let empresa: any = null;
+
+        // TENTATIVA A: Busca exata pelo slug
+        empresa = await noco.findOne(EMPRESAS_TABLE_ID, {
             where: `(slug,eq,${slug})`
         });
-        
-        if (empresa) {
-            console.log(`[DEBUG] Empresa encontrada por slug exato: ${empresa.nome}`);
-        }
 
-        // Se não encontrar pelo slug, tentamos pelo nome da unidade (convertendo o slug de volta ou busca aproximada)
+        // TENTATIVA B: Busca por slug aproximado (like)
         if (!empresa) {
-            console.log(`[DEBUG] Slug exato falhou, tentando busca aproximada (like)`);
+            console.log(`[MENU_DEBUG] Slug exato falhou, tentando aproximado`);
             empresa = await noco.findOne(EMPRESAS_TABLE_ID, {
                 where: `(slug,like,%${slug}%)`
             });
-            if (empresa) {
-                console.log(`[DEBUG] Empresa encontrada por slug aproximado: ${empresa.nome}`);
-            }
         }
 
-        // Se ainda não encontrar, tentamos buscar pelo nome da unidade que você informou
+        // TENTATIVA C: Busca pelo nome da unidade (VR Pizza Show)
         if (!empresa) {
             const possibleName = slug.replace(/-/g, ' ');
-            console.log(`[DEBUG] Slug aproximado falhou, tentando busca por nome: ${possibleName}`);
+            console.log(`[MENU_DEBUG] Slug falhou, tentando por nome: ${possibleName}`);
             empresa = await noco.findOne(EMPRESAS_TABLE_ID, {
                 where: `(nome,like,%${possibleName}%)`
             });
-            if (empresa) {
-                console.log(`[DEBUG] Empresa encontrada por nome aproximado: ${empresa.nome}`);
-            }
         }
 
-        // Última tentativa: buscar qualquer empresa se houver apenas uma (fallback de segurança)
+        // TENTATIVA D: Fallback de Segurança - Se houver poucas empresas, tenta a primeira
         if (!empresa) {
-            console.log(`[DEBUG] Todas as buscas falharam, tentando fallback para empresa única`);
-            const todasEmpresas = await noco.list(EMPRESAS_TABLE_ID, { limit: 10 });
-            console.log(`[DEBUG] Total de empresas encontradas no banco: ${todasEmpresas.list.length}`);
-            if (todasEmpresas.list.length === 1) {
-                empresa = todasEmpresas.list[0] as any;
-                if (empresa) {
-                    console.log(`[DEBUG] Fallback ativado: Usando única empresa disponível: ${empresa.nome}`);
+            console.log(`[MENU_DEBUG] Buscas específicas falharam, tentando listar empresas`);
+            const listaEmpresas = await noco.list(EMPRESAS_TABLE_ID, { limit: 10 });
+            if (listaEmpresas.list && listaEmpresas.list.length > 0) {
+                // Se só tem uma empresa, é ela!
+                if (listaEmpresas.list.length === 1) {
+                    empresa = listaEmpresas.list[0];
+                    console.log(`[MENU_DEBUG] Única empresa encontrada no banco: ${empresa.nome}`);
+                } else {
+                    // Se tem mais de uma, tenta ver se o slug faz parte de algum nome
+                    empresa = listaEmpresas.list.find((e: any) => 
+                        String(e.nome || '').toLowerCase().includes(slug.toLowerCase()) ||
+                        String(e.slug || '').toLowerCase().includes(slug.toLowerCase())
+                    );
+                    if (!empresa) {
+                        // Se ainda assim não achou, pega a primeira como último recurso para não dar 404
+                        empresa = listaEmpresas.list[0];
+                        console.log(`[MENU_DEBUG] Usando primeira empresa da lista como último recurso: ${empresa.nome}`);
+                    }
                 }
-            } else if (todasEmpresas.list.length > 1) {
-                console.log(`[DEBUG] Múltiplas empresas encontradas: ${todasEmpresas.list.map((e:any) => e.nome || 'Sem Nome').join(', ')}`);
             }
         }
 
         if (!empresa) {
-            console.error(`Empresa não encontrada para o slug: ${slug}`);
+            console.error(`[MENU_DEBUG] Nenhuma empresa encontrada no banco de dados!`);
             return null;
         }
 
-        const empresaId = empresa.id as number;
+        const empresaId = empresa.id;
+        console.log(`[MENU_DEBUG] Empresa selecionada: ${empresa.nome} (ID: ${empresaId})`);
 
-        // 2. Buscar Configurações da Empresa (Banner e Logo oficiais)
-        const config = await noco.findOne(CONFIGURACOES_LOJA_TABLE_ID, {
-            where: `(empresa_id,eq,${empresaId})`
-        });
+        // 2. BUSCA DE DADOS COMPLEMENTARES
+        // Buscamos tudo em paralelo para ser mais rápido
+        const [config, categorias, todosProdutos, todosGrupos, todosItens, loyaltyConfig] = await Promise.all([
+            noco.findOne(CONFIGURACOES_LOJA_TABLE_ID, { where: `(empresa_id,eq,${empresaId})` }),
+            noco.listAll(CATEGORIAS_TABLE_ID, { where: `(empresa_id,eq,${empresaId})`, sort: 'ordem' }),
+            noco.listAll(PRODUTOS_TABLE_ID, { where: `(empresa_id,eq,${empresaId})`, sort: 'ordem' }),
+            noco.listAll(GRUPOS_COMPLEMENTOS_TABLE_ID, { where: `(empresa_id,eq,${empresaId})` }),
+            noco.listAll(COMPLEMENTOS_TABLE_ID, { where: `(empresa_id,eq,${empresaId})` }),
+            noco.findOne(LOYALTY_CONFIG_TABLE_ID, { where: `(empresa_id,eq,${empresaId})` })
+        ]);
 
+        // Priorizar logo/banner das configurações
         if (config) {
             if (config.Logo || config.logo) empresa.logo = config.Logo || config.logo;
             if (config.Banner || config.banner) empresa.banner = config.Banner || config.banner;
         }
 
-        // 3. Buscar Categorias
-        const categorias = await noco.listAll(CATEGORIAS_TABLE_ID, {
-            where: `(empresa_id,eq,${empresaId})`,
-            sort: 'ordem'
-        });
-
-        // 4. Buscar Todos os Produtos
-        const todosProdutos = await noco.listAll(PRODUTOS_TABLE_ID, {
-            where: `(empresa_id,eq,${empresaId})`,
-            sort: 'ordem'
-        });
-
-        // 5. Buscar Todos os Grupos de Complementos da Empresa
-        const todosGrupos = await noco.listAll(GRUPOS_COMPLEMENTOS_TABLE_ID, {
-            where: `(empresa_id,eq,${empresaId})`
-        });
-
-        // 6. Buscar Todos os Itens de Complementos
-        const todosItens = await noco.listAll(COMPLEMENTOS_TABLE_ID, {
-            where: `(empresa_id,eq,${empresaId})`
-        });
-
-        // 7. Buscar Configuração de Fidelidade
-        const loyaltyConfig = await noco.findOne(LOYALTY_CONFIG_TABLE_ID, {
-            where: `(empresa_id,eq,${empresaId})`
-        });
-
         // Processar produtos recomendados (Upsell)
         const upsellProducts = todosProdutos.map((p: any) => ({
-            id: p.id as number,
-            nome: p.nome as string,
+            id: p.id,
+            nome: String(p.nome || ''),
             preco: Number(p.preco ?? 0),
-            imagem: p.imagem as string | null,
-            descricao: p.descricao as string | undefined
+            imagem: p.imagem || null,
+            descricao: p.descricao || ''
         }));
 
-        // Organizar Produtos por Categoria e Vincular Complementos
+        // Organizar Produtos por Categoria
         const grouped = categorias.map((cat: any) => {
             const productsInCategory = todosProdutos.filter((p: any) => p.categoria_id === cat.id && p.tipo !== 'composto');
             const compositeInCategory = todosProdutos.filter((p: any) => p.categoria_id === cat.id && p.tipo === 'composto');
@@ -149,32 +130,30 @@ export async function getPublicMenu(slug: string) {
                     });
 
                     return {
-                        id: p.id as number,
-                        nome: p.nome as string,
-                        descricao: p.descricao as string | undefined,
+                        id: p.id,
+                        nome: String(p.nome || ''),
+                        descricao: p.descricao || '',
                         preco: Number(p.preco ?? 0),
-                        imagem: p.imagem as string | null,
+                        imagem: p.imagem || null,
                         disponivel: true,
                         destaque: p.destaque === true || p.destaque === 1,
                         ordem: Number(p.ordem ?? 0),
-                        tamanhos: p.tamanhos as string | null,
-                        recomendacoes: p.recomendacoes as string | null,
+                        tamanhos: p.tamanhos || null,
+                        recomendacoes: p.recomendacoes || null,
                         saborGroups,
                         additionalGroups
                     };
                 }),
-                compositeProducts: compositeInCategory.map((p: any) => {
-                    return {
-                        id: p.id,
-                        nome: p.nome,
-                        descricao: p.descricao,
-                        preco: Number(p.preco ?? 0),
-                        imagem: p.imagem,
-                        tamanhos: p.tamanhos as string | null,
-                        recomendacoes: p.recomendacoes as string | null,
-                        tipo: 'composto'
-                    };
-                })
+                compositeProducts: compositeInCategory.map((p: any) => ({
+                    id: p.id,
+                    nome: String(p.nome || ''),
+                    descricao: p.descricao || '',
+                    preco: Number(p.preco ?? 0),
+                    imagem: p.imagem || null,
+                    tamanhos: p.tamanhos || null,
+                    recomendacoes: p.recomendacoes || null,
+                    tipo: 'composto'
+                }))
             };
         });
 
@@ -197,7 +176,7 @@ export async function getPublicMenu(slug: string) {
             }))
         };
     } catch (error) {
-        console.error('Erro ao buscar menu público:', error);
+        console.error('[MENU_DEBUG] Erro crítico ao buscar menu:', error);
         return null;
     }
 }
