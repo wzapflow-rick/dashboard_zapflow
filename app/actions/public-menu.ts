@@ -64,7 +64,7 @@ export async function getPublicMenu(slug: string) {
             noco.listAll(GRUPOS_COMPLEMENTOS_TABLE_ID, { where: `(empresa_id,eq,${empresaId})` }).catch(() => []),
             noco.listAll(COMPLEMENTOS_TABLE_ID, { where: `(empresa_id,eq,${empresaId})` }).catch(() => []),
             noco.findOne(LOYALTY_CONFIG_TABLE_ID, { where: `(empresa_id,eq,${empresaId})` }).catch(() => null),
-            noco.listAll(PRODUTOS_METADADOS_TABLE_ID, { where: `(produto_id,eq,${empresaId})` }).catch(() => []),
+            noco.listAll(PRODUTOS_METADADOS_TABLE_ID).catch(() => []),
         ]);
 
         const config = configData.list && configData.list.length > 0 ? configData.list[0] : null;
@@ -113,21 +113,28 @@ export async function getPublicMenu(slug: string) {
                         }
                     });
 
-                    const metadata = (produtosMetadados || []).find((m: any) => m.produto_id === p.id);
+                    // Tentar encontrar por 'Produto ID' ou 'produto_id'
+                    const metadata = (produtosMetadados || []).find((m: any) => 
+                        Number(m['Produto ID'] || m.produto_id || m.Produto_ID) === Number(p.id)
+                    );
+                    
                     let recomendacoes = null;
                     let tamanhos = null;
 
+                    const rawRecom = metadata?.Recomendacoes || metadata?.recomendacoes || metadata?.Recomendações;
+                    const rawTamanhos = metadata?.Tamanhos || metadata?.tamanhos;
+
                     try {
-                        if (metadata?.recomendacoes && typeof metadata.recomendacoes === 'string') {
-                            recomendacoes = JSON.parse(metadata.recomendacoes);
-                        } else if (metadata?.recomendacoes && typeof metadata.recomendacoes === 'object') {
-                            recomendacoes = metadata.recomendacoes;
+                        if (rawRecom && typeof rawRecom === 'string') {
+                            recomendacoes = JSON.parse(rawRecom);
+                        } else if (rawRecom && typeof rawRecom === 'object') {
+                            recomendacoes = rawRecom;
                         }
                         
-                        if (metadata?.tamanhos && typeof metadata.tamanhos === 'string') {
-                            tamanhos = JSON.parse(metadata.tamanhos);
-                        } else if (metadata?.tamanhos && typeof metadata.tamanhos === 'object') {
-                            tamanhos = metadata.tamanhos;
+                        if (rawTamanhos && typeof rawTamanhos === 'string') {
+                            tamanhos = JSON.parse(rawTamanhos);
+                        } else if (rawTamanhos && typeof rawTamanhos === 'object') {
+                            tamanhos = rawTamanhos;
                         }
                     } catch (e) {
                         console.error('Error parsing metadata JSON', e);
@@ -149,21 +156,27 @@ export async function getPublicMenu(slug: string) {
                     };
                 }),
                 compositeProducts: compositeInCategory.map((p: any) => {
-                    const metadata = (produtosMetadados || []).find((m: any) => m.produto_id === p.id);
+                    const metadata = (produtosMetadados || []).find((m: any) => 
+                        Number(m['Produto ID'] || m.produto_id || m.Produto_ID) === Number(p.id)
+                    );
+                    
                     let recomendacoes = null;
                     let tamanhos = null;
 
+                    const rawRecom = metadata?.Recomendacoes || metadata?.recomendacoes || metadata?.Recomendações;
+                    const rawTamanhos = metadata?.Tamanhos || metadata?.tamanhos;
+
                     try {
-                        if (metadata?.recomendacoes && typeof metadata.recomendacoes === 'string') {
-                            recomendacoes = JSON.parse(metadata.recomendacoes);
-                        } else if (metadata?.recomendacoes && typeof metadata.recomendacoes === 'object') {
-                            recomendacoes = metadata.recomendacoes;
+                        if (rawRecom && typeof rawRecom === 'string') {
+                            recomendacoes = JSON.parse(rawRecom);
+                        } else if (rawRecom && typeof rawRecom === 'object') {
+                            recomendacoes = rawRecom;
                         }
                         
-                        if (metadata?.tamanhos && typeof metadata.tamanhos === 'string') {
-                            tamanhos = JSON.parse(metadata.tamanhos);
-                        } else if (metadata?.tamanhos && typeof metadata.tamanhos === 'object') {
-                            tamanhos = metadata.tamanhos;
+                        if (rawTamanhos && typeof rawTamanhos === 'string') {
+                            tamanhos = JSON.parse(rawTamanhos);
+                        } else if (rawTamanhos && typeof rawTamanhos === 'object') {
+                            tamanhos = rawTamanhos;
                         }
                     } catch (e) {
                         console.error('Error parsing metadata JSON', e);

@@ -36,25 +36,32 @@ export async function getProducts() {
     const products = data.list || [];
 
     // Buscar metadados dos produtos
-    const metadataList = await noco.listAll(PRODUTOS_METADADOS_TABLE_ID, { where: `(produto_id,gt,0)` }).catch(() => []);
-    const metadataMap = new Map(metadataList.map((m: any) => [m.produto_id, m]));
-
+    // Usando uma busca ampla e filtrando no código para evitar erros de alias de coluna na busca
+    const metadataList = await noco.listAll(PRODUTOS_METADADOS_TABLE_ID).catch(() => []);
+    
     return products.map((p: any) => {
-      const metadata = metadataMap.get(p.id);
+      // Tentar encontrar por 'Produto ID' ou 'produto_id'
+      const metadata = metadataList.find((m: any) => 
+        Number(m['Produto ID'] || m.produto_id || m.Produto_ID) === Number(p.id)
+      );
+      
       let recomendacoes = null;
       let tamanhos = null;
 
+      const rawRecom = metadata?.Recomendacoes || metadata?.recomendacoes || metadata?.Recomendações;
+      const rawTamanhos = metadata?.Tamanhos || metadata?.tamanhos;
+
       try {
-        if (metadata?.recomendacoes && typeof metadata.recomendacoes === 'string') {
-          recomendacoes = JSON.parse(metadata.recomendacoes);
-        } else if (metadata?.recomendacoes && typeof metadata.recomendacoes === 'object') {
-          recomendacoes = metadata.recomendacoes;
+        if (rawRecom && typeof rawRecom === 'string') {
+          recomendacoes = JSON.parse(rawRecom);
+        } else if (rawRecom && typeof rawRecom === 'object') {
+          recomendacoes = rawRecom;
         }
         
-        if (metadata?.tamanhos && typeof metadata.tamanhos === 'string') {
-          tamanhos = JSON.parse(metadata.tamanhos);
-        } else if (metadata?.tamanhos && typeof metadata.tamanhos === 'object') {
-          tamanhos = metadata.tamanhos;
+        if (rawTamanhos && typeof rawTamanhos === 'string') {
+          tamanhos = JSON.parse(rawTamanhos);
+        } else if (rawTamanhos && typeof rawTamanhos === 'object') {
+          tamanhos = rawTamanhos;
         }
       } catch (e) {
         console.error('Error parsing metadata JSON', e);
@@ -282,12 +289,17 @@ export async function upsertProduct(productData: any, selectedInsumos?: { insumo
     // SALVAMENTO DE METADADOS (UPSell e Tamanhos)
     try {
       console.log(`[UPSERT_PRODUCT] Salvando metadados para produto ID: ${savedProduct.id}`);
-      const existingMetadata = await noco.findOne(PRODUTOS_METADADOS_TABLE_ID, { where: `(produto_id,eq,${savedProduct.id})` }).catch(() => null);
+      
+      // Tentar encontrar metadados existentes
+      const metadataList = await noco.listAll(PRODUTOS_METADADOS_TABLE_ID).catch(() => []);
+      const existingMetadata = metadataList.find((m: any) => 
+        Number(m['Produto ID'] || m.produto_id || m.Produto_ID) === Number(savedProduct.id)
+      );
       
       const metadataPayload: any = {
-        produto_id: savedProduct.id,
-        recomendacoes: recomendacoes ? (typeof recomendacoes === 'string' ? recomendacoes : JSON.stringify(recomendacoes)) : null,
-        tamanhos: tamanhos ? (typeof tamanhos === 'string' ? tamanhos : JSON.stringify(tamanhos)) : null,
+        'Produto ID': savedProduct.id,
+        'Recomendacoes': recomendacoes ? (typeof recomendacoes === 'string' ? recomendacoes : JSON.stringify(recomendacoes)) : null,
+        'Tamanhos': tamanhos ? (typeof tamanhos === 'string' ? tamanhos : JSON.stringify(tamanhos)) : null,
       };
 
       if (existingMetadata) {
@@ -299,7 +311,6 @@ export async function upsertProduct(productData: any, selectedInsumos?: { insumo
       }
     } catch (metaError: any) {
       console.error('[UPSERT_PRODUCT] Erro ao salvar metadados:', metaError);
-      // Não trava o salvamento do produto principal, mas loga o erro
     }
 
     if (selectedInsumos !== undefined && savedProduct && savedProduct.id) {
