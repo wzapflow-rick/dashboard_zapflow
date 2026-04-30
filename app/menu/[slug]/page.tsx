@@ -25,6 +25,8 @@ export async function generateMetadata({
     }
 
     const { empresa } = data;
+    const images = empresa.logo ? [{ url: empresa.logo }] : [];
+
     return {
         title: `Cardápio — ${empresa.nome}`,
         description: `Veja o cardápio completo de ${empresa.nome}${empresa.cidade ? ` em ${empresa.cidade}` : ''}. Peça agora pelo WhatsApp!`,
@@ -32,7 +34,7 @@ export async function generateMetadata({
             title: `Cardápio — ${empresa.nome}`,
             description: `Peça agora pelo WhatsApp!`,
             type: 'website',
-            images: empresa.logo ? [empresa.logo] : [],
+            images: images,
         },
     };
 }
