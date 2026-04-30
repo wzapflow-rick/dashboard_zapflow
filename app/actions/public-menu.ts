@@ -11,17 +11,35 @@ import {
 
 export async function getPublicMenu(slug: string) {
     try {
-        // 1. Buscar Empresa pelo Slug
-        // Tentamos uma busca exata primeiro
+        // 1. Buscar Empresa pelo Slug ou Nome
+        // Tentamos busca exata pelo slug primeiro
         let empresa = await noco.findOne(EMPRESAS_TABLE_ID, {
             where: `(slug,eq,${slug})`
         });
 
-        // Se não encontrar, tentamos uma busca mais flexível (like) para evitar problemas com espaços ou caracteres
+        // Se não encontrar pelo slug, tentamos pelo nome da unidade (convertendo o slug de volta ou busca aproximada)
         if (!empresa) {
+            // Tenta busca aproximada pelo slug
             empresa = await noco.findOne(EMPRESAS_TABLE_ID, {
                 where: `(slug,like,%${slug}%)`
             });
+        }
+
+        // Se ainda não encontrar, tentamos buscar pelo nome da unidade que você informou
+        if (!empresa) {
+            // Transforma "vr-pizza-show" em "VR Pizza Show" aproximadamente para a busca
+            const possibleName = slug.replace(/-/g, ' ');
+            empresa = await noco.findOne(EMPRESAS_TABLE_ID, {
+                where: `(nome,like,%${possibleName}%)`
+            });
+        }
+
+        // Última tentativa: buscar qualquer empresa se houver apenas uma (fallback de segurança)
+        if (!empresa) {
+            const todasEmpresas = await noco.list(EMPRESAS_TABLE_ID, { limit: 2 });
+            if (todasEmpresas.list.length === 1) {
+                empresa = todasEmpresas.list[0] as any;
+            }
         }
 
         if (!empresa) {
@@ -37,7 +55,6 @@ export async function getPublicMenu(slug: string) {
         });
 
         if (config) {
-            // Priorizar campos da tabela de configurações se existirem
             if (config.Logo || config.logo) empresa.logo = config.Logo || config.logo;
             if (config.Banner || config.banner) empresa.banner = config.Banner || config.banner;
         }
@@ -89,8 +106,6 @@ export async function getPublicMenu(slug: string) {
                 products: productsInCategory.map((p: any) => {
                     const saborGroups: any[] = [];
                     const additionalGroups: any[] = [];
-
-                    // Vincular grupos de complementos baseados nos IDs salvos no produto
                     const groupIds = p.complementos_ids ? (typeof p.complementos_ids === 'string' ? p.complementos_ids.split(',').map(Number) : p.complementos_ids) : [];
                     
                     groupIds.forEach((gid: number) => {
@@ -100,7 +115,6 @@ export async function getPublicMenu(slug: string) {
                                 const itemGroupIds = i.grupos_ids ? (typeof i.grupos_ids === 'string' ? i.grupos_ids.split(',').map(Number) : i.grupos_ids) : [];
                                 return itemGroupIds.includes(gid);
                             });
-
                             const compGroup = {
                                 ...grupo,
                                 items: items.map((i: any) => ({
@@ -109,12 +123,8 @@ export async function getPublicMenu(slug: string) {
                                     preco: Number(i.preco ?? 0)
                                 }))
                             };
-
-                            if (grupo.tipo === 'sabor') {
-                                saborGroups.push(compGroup);
-                            } else {
-                                additionalGroups.push(compGroup);
-                            }
+                            if (grupo.tipo === 'sabor') saborGroups.push(compGroup);
+                            else additionalGroups.push(compGroup);
                         }
                     });
 
@@ -166,7 +176,6 @@ export async function getPublicMenu(slug: string) {
                 }))
             }))
         };
-
     } catch (error) {
         console.error('Erro ao buscar menu público:', error);
         return null;
