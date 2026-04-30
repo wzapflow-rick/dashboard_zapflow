@@ -36,7 +36,7 @@ export async function getProducts() {
     const products = data.list || [];
 
     // Buscar metadados dos produtos
-    const metadataList = await noco.listAll(PRODUTOS_METADADOS_TABLE_ID, { where: `(produto_id,eq,${user.empresaId})` }).catch(() => []);
+    const metadataList = await noco.listAll(PRODUTOS_METADADOS_TABLE_ID, { where: `(produto_id,gt,0)` }).catch(() => []);
     const metadataMap = new Map(metadataList.map((m: any) => [m.produto_id, m]));
 
     return products.map((p: any) => {
@@ -226,6 +226,7 @@ export async function deleteProduct(id: number | string) {
 export async function upsertProduct(productData: any, selectedInsumos?: { insumo_id: number | string, quantidade_necessaria: number }[]) {
   try {
     const user = await requireAdmin();
+    console.log(`[UPSERT_PRODUCT] Iniciando para produto: ${productData.nome}`);
 
     if (productData.preco === '' || productData.preco === undefined || productData.preco === null) {
       productData.preco = 0;
@@ -252,13 +253,13 @@ export async function upsertProduct(productData: any, selectedInsumos?: { insumo
 
     delete payload.recomendacoes;
     delete payload.tamanhos;
-
     delete payload.created_at;
     delete payload.updated_at;
 
     let savedProduct;
 
     if (payload.id) {
+      console.log(`[UPSERT_PRODUCT] Atualizando produto ID: ${payload.id}`);
       const updatePayload = { ...payload };
       delete updatePayload.empresa_id;
 
@@ -268,35 +269,37 @@ export async function upsertProduct(productData: any, selectedInsumos?: { insumo
         ...data, 
         categoria_id: productData.categoria_id || data.categoria_id,
       };
-
-      // Salvar/Atualizar metadados do produto
-      const existingMetadata = await noco.findOne(PRODUTOS_METADADOS_TABLE_ID, { where: `(produto_id,eq,${savedProduct.id})` });
-      const metadataPayload: any = {
-        produto_id: savedProduct.id,
-        recomendacoes: recomendacoes ? JSON.stringify(recomendacoes) : null,
-        tamanhos: tamanhos ? JSON.stringify(tamanhos) : null,
-      };
-
-      if (existingMetadata) {
-        await noco.update(PRODUTOS_METADADOS_TABLE_ID, { id: existingMetadata.id, ...metadataPayload });
-      } else {
-        await noco.create(PRODUTOS_METADADOS_TABLE_ID, metadataPayload);
-      }
     } else {
+      console.log(`[UPSERT_PRODUCT] Criando novo produto`);
       const data = await noco.create(PRODUTOS_TABLE_ID, payload);
       savedProduct = { 
         ...productData, 
         ...data,
         categoria_id: productData.categoria_id || data.categoria_id,
       };
+    }
 
-      // Criar metadados do produto
+    // SALVAMENTO DE METADADOS (UPSell e Tamanhos)
+    try {
+      console.log(`[UPSERT_PRODUCT] Salvando metadados para produto ID: ${savedProduct.id}`);
+      const existingMetadata = await noco.findOne(PRODUTOS_METADADOS_TABLE_ID, { where: `(produto_id,eq,${savedProduct.id})` }).catch(() => null);
+      
       const metadataPayload: any = {
         produto_id: savedProduct.id,
-        recomendacoes: recomendacoes ? JSON.stringify(recomendacoes) : null,
-        tamanhos: tamanhos ? JSON.stringify(tamanhos) : null,
+        recomendacoes: recomendacoes ? (typeof recomendacoes === 'string' ? recomendacoes : JSON.stringify(recomendacoes)) : null,
+        tamanhos: tamanhos ? (typeof tamanhos === 'string' ? tamanhos : JSON.stringify(tamanhos)) : null,
       };
-      await noco.create(PRODUTOS_METADADOS_TABLE_ID, metadataPayload);
+
+      if (existingMetadata) {
+        console.log(`[UPSERT_PRODUCT] Atualizando metadados ID: ${existingMetadata.id}`);
+        await noco.update(PRODUTOS_METADADOS_TABLE_ID, { id: existingMetadata.id, ...metadataPayload });
+      } else {
+        console.log(`[UPSERT_PRODUCT] Criando novos metadados`);
+        await noco.create(PRODUTOS_METADADOS_TABLE_ID, metadataPayload);
+      }
+    } catch (metaError: any) {
+      console.error('[UPSERT_PRODUCT] Erro ao salvar metadados:', metaError);
+      // Não trava o salvamento do produto principal, mas loga o erro
     }
 
     if (selectedInsumos !== undefined && savedProduct && savedProduct.id) {
@@ -306,7 +309,7 @@ export async function upsertProduct(productData: any, selectedInsumos?: { insumo
     revalidatePath('/dashboard/menu');
     return savedProduct;
   } catch (error: any) {
-    console.error('API Error:', error);
+    console.error('[UPSERT_PRODUCT] Erro Crítico:', error);
     throw new Error(error.message || 'Failed to save product');
   }
 }
