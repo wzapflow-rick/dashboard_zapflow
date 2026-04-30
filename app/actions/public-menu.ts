@@ -10,35 +10,47 @@ import {
 } from '@/lib/constants';
 
 export async function getPublicMenu(slug: string) {
+    console.log(`[DEBUG] Iniciando busca de menu para o slug: ${slug}`);
+    console.log(`[DEBUG] Usando EMPRESAS_TABLE_ID: ${EMPRESAS_TABLE_ID}`);
+    
     try {
         // 1. Buscar Empresa pelo Slug ou Nome
         // Tentamos busca exata pelo slug primeiro
         let empresa = await noco.findOne(EMPRESAS_TABLE_ID, {
             where: `(slug,eq,${slug})`
         });
+        
+        if (empresa) console.log(`[DEBUG] Empresa encontrada por slug exato: ${empresa.nome}`);
 
         // Se não encontrar pelo slug, tentamos pelo nome da unidade (convertendo o slug de volta ou busca aproximada)
         if (!empresa) {
-            // Tenta busca aproximada pelo slug
+            console.log(`[DEBUG] Slug exato falhou, tentando busca aproximada (like)`);
             empresa = await noco.findOne(EMPRESAS_TABLE_ID, {
                 where: `(slug,like,%${slug}%)`
             });
+            if (empresa) console.log(`[DEBUG] Empresa encontrada por slug aproximado: ${empresa.nome}`);
         }
 
         // Se ainda não encontrar, tentamos buscar pelo nome da unidade que você informou
         if (!empresa) {
-            // Transforma "vr-pizza-show" em "VR Pizza Show" aproximadamente para a busca
             const possibleName = slug.replace(/-/g, ' ');
+            console.log(`[DEBUG] Slug aproximado falhou, tentando busca por nome: ${possibleName}`);
             empresa = await noco.findOne(EMPRESAS_TABLE_ID, {
                 where: `(nome,like,%${possibleName}%)`
             });
+            if (empresa) console.log(`[DEBUG] Empresa encontrada por nome aproximado: ${empresa.nome}`);
         }
 
         // Última tentativa: buscar qualquer empresa se houver apenas uma (fallback de segurança)
         if (!empresa) {
-            const todasEmpresas = await noco.list(EMPRESAS_TABLE_ID, { limit: 2 });
+            console.log(`[DEBUG] Todas as buscas falharam, tentando fallback para empresa única`);
+            const todasEmpresas = await noco.list(EMPRESAS_TABLE_ID, { limit: 10 });
+            console.log(`[DEBUG] Total de empresas encontradas no banco: ${todasEmpresas.list.length}`);
             if (todasEmpresas.list.length === 1) {
                 empresa = todasEmpresas.list[0] as any;
+                console.log(`[DEBUG] Fallback ativado: Usando única empresa disponível: ${empresa.nome}`);
+            } else if (todasEmpresas.list.length > 1) {
+                console.log(`[DEBUG] Múltiplas empresas encontradas: ${todasEmpresas.list.map((e:any) => e.nome).join(', ')}`);
             }
         }
 
