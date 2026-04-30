@@ -340,12 +340,13 @@ export default function MenuFilter({
 
     // ── Handlers ──────────────────────────────────────────────────────────────
     const handleProductClick = useCallback(
-        (product: Product) => {
+        (product: any) => {
             const hasSaborGroups = product.saborGroups && product.saborGroups.length > 0;
             const hasAdditionalGroups = product.additionalGroups && product.additionalGroups.length > 0;
             const hasSizes = (!!product.tamanhos && product.tamanhos !== '[]') || product.descricao?.includes('[[SIZES:');
+            const hasUpsell = !!product.recomendacoes && (typeof product.recomendacoes === 'string' ? product.recomendacoes !== '[]' : Array.isArray(product.recomendacoes) && product.recomendacoes.length > 0);
 
-            if (hasSaborGroups || hasAdditionalGroups || hasSizes) {
+            if (hasSaborGroups || hasAdditionalGroups || hasSizes || hasUpsell) {
                 setSelectedProduct(product);
             } else {
                 addItem({
