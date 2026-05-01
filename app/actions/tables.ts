@@ -460,7 +460,7 @@ export async function fecharMesa(mesaId: number): Promise<{ total: number; coman
     where: `(mesa_id,eq,${mesaId})~and(status,eq,${COMANDA_STATUS.ABERTA})`,
     limit: 100,
   });
-  const comandas = comandasData.list || [];
+  const comandas = (comandasData.list || []) as unknown as Comanda[];
 
   let totalGeral = 0;
 
@@ -468,7 +468,7 @@ export async function fecharMesa(mesaId: number): Promise<{ total: number; coman
   for (const comanda of comandas) {
     totalGeral += Number(comanda.total) || 0;
     await noco.update(COMANDAS_TABLE_ID, {
-      id: comanda.id,
+      id: comanda.id as number,
       status: COMANDA_STATUS.PAGA,
       closed_at: new Date().toISOString(),
     });
