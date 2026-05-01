@@ -114,7 +114,7 @@ export async function createMesa(data: {
   nome?: string;
   capacidade?: number;
 }): Promise<Mesa> {
-  const user = await requireRole(['admin', 'gerente']);
+  const user = await requireRole(['admin', 'gerente', 'atendente']);
 
   // Verificar se já existe mesa com esse número
   const existente = await noco.findOne(MESAS_TABLE_ID, {

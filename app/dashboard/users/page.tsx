@@ -15,8 +15,8 @@ const ROLE_LABELS: Record<string, string> = {
 
 const ROLE_PERMS: Record<string, string[]> = {
     admin: ['Acesso completo ao sistema'],
-    gerente: ['Expedição (Kanban)', 'Clientes', 'Avaliações', 'Acertos'],
-    atendente: ['Expedição (Kanban)', 'Clientes'],
+    gerente: ['Expedição (Kanban)', 'Mesas', 'Clientes', 'Avaliações', 'Acertos'],
+    atendente: ['Expedição (Kanban)', 'Mesas', 'Clientes'],
     cozinheiro: ['Expedição (Kanban)'],
 };
 
@@ -262,8 +262,8 @@ export default function UsersPage() {
                                         onChange={e => setForm({ ...form, role: e.target.value })}
                                         className="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
                                     >
-                                        <option value="gerente">Gerente (Kanban + Clientes + Avaliações + Acertos)</option>
-                                        <option value="atendente">Atendente (Kanban + Clientes)</option>
+                                        <option value="gerente">Gerente (Kanban + Mesas + Clientes + Avaliações + Acertos)</option>
+                                        <option value="atendente">Atendente (Kanban + Mesas + Clientes)</option>
                                         <option value="cozinheiro">Cozinheiro (Kanban)</option>
                                     </select>
                                 </div>
