@@ -120,7 +120,7 @@ export async function createMesa(data: {
   const result = await noco.create(MESAS_TABLE_ID, payload);
 
   revalidatePath('/dashboard/mesas');
-  return result as Mesa;
+  return result as unknown as Mesa;
 }
 
 export async function updateMesa(
@@ -147,7 +147,7 @@ export async function updateMesa(
   const result = await noco.update(MESAS_TABLE_ID, { id, ...data });
 
   revalidatePath('/dashboard/mesas');
-  return result as Mesa;
+  return result as unknown as Mesa;
 }
 
 export async function deleteMesa(id: number): Promise<void> {
@@ -249,7 +249,7 @@ export async function createComanda(data: {
   }
 
   revalidatePath('/dashboard/mesas');
-  return result as Comanda;
+  return result as unknown as Comanda;
 }
 
 export async function updateComanda(
@@ -279,7 +279,7 @@ export async function updateComanda(
 
   revalidatePath('/dashboard/mesas');
   revalidatePath('/dashboard/expedition');
-  return result as Comanda;
+  return result as unknown as Comanda;
 }
 
 async function verificarELiberarMesa(mesaId: number): Promise<void> {
