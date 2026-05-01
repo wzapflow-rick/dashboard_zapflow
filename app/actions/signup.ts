@@ -199,7 +199,7 @@ export async function getPendingSignup(token: string): Promise<PendingSignup | n
     }
     
     // Verificar se expirou
-    const expiraEm = new Date(signup.expira_em);
+    const expiraEm = new Date(signup.expira_em as string);
     if (expiraEm < new Date()) {
       // Marcar como expirado
       await noco.update(PENDING_SIGNUPS_TABLE_ID, {
