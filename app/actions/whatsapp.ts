@@ -159,3 +159,67 @@ export async function testWhatsApp(phone: string): Promise<{ success: boolean; f
         };
     }
 }
+
+// ============================================================
+// MENSAGENS DE CADASTRO / SIGNUP
+// ============================================================
+
+/**
+ * Enviar mensagem de ativacao de conta (apos pagamento confirmado)
+ */
+export async function sendWelcomeSignupMessage(
+    phone: string, 
+    nome: string, 
+    token: string
+): Promise<boolean> {
+    const activationUrl = `${BASE_URL}/ativar/${token}`;
+    
+    const message = `Oba, ${nome}! Seu pagamento foi confirmado!
+
+Agora falta pouco para comecar a vender mais!
+
+Complete seu cadastro e acesse o painel:
+${activationUrl}
+
+Este link expira em 24 horas.
+
+Qualquer duvida, estamos aqui!
+Equipe ZapFlow`;
+
+    return sendWhatsAppMessage(phone, message);
+}
+
+/**
+ * Enviar mensagem de boas-vindas (apos ativacao da conta)
+ */
+export async function sendWelcomeMessage(
+    phone: string,
+    nome: string,
+    email: string,
+    plano: string
+): Promise<boolean> {
+    const planNames: Record<string, string> = {
+        start: 'Start',
+        pro: 'PRO',
+        elite: 'ELITE',
+    };
+    
+    const planName = planNames[plano] || plano;
+    
+    const message = `Bem-vindo ao ZapFlow, ${nome}!
+
+Sua conta foi ativada com sucesso!
+
+Plano: ${planName}
+Email: ${email}
+Acesso: ${BASE_URL}
+
+Agora e so configurar seu cardapio e comecar a receber pedidos!
+
+Dica: Comece adicionando suas categorias e produtos no menu "Cardapio".
+
+Boas vendas!
+Equipe ZapFlow`;
+
+    return sendWhatsAppMessage(phone, message);
+}
