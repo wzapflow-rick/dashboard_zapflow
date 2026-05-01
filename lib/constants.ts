@@ -191,6 +191,10 @@ export const PRODUTOS_METADADOS_TABLE_ID =
 // ASSINATURAS E FATURAS
 // ============================================================
 
+/** Tabela de cadastros pendentes (pos-pagamento) */
+export const PENDING_SIGNUPS_TABLE_ID =
+  process.env.NOCODB_TABLE_PENDING_SIGNUPS || 'm1hq56kbk1zhcrp';
+
 /** Tabela de assinaturas de planos */
 export const ASSINATURAS_TABLE_ID =
   process.env.NOCODB_TABLE_ASSINATURAS || 'msrjfeb28e07cwx';
