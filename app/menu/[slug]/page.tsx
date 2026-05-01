@@ -1,5 +1,5 @@
 import { getPublicMenu } from '@/app/actions/public-menu';
-import { UtensilsCrossed, MapPin, AlertCircle } from 'lucide-react';
+import { UtensilsCrossed, MapPin, AlertCircle, Clock } from 'lucide-react';
 import MenuClientWrapper from '@/components/menu/menu-client-wrapper';
 import MenuFilter from '@/components/menu/menu-filter';
 import type { Metadata } from 'next';
@@ -55,27 +55,27 @@ export default async function PublicMenuPage({
     // ── Estado de erro: empresa não encontrada ────────────────────────────────
     if (!data) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 p-4">
-                <div className="text-center p-8 max-w-sm bg-white dark:bg-slate-800 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-700">
-                    <div className="size-20 rounded-2xl bg-rose-50 dark:bg-rose-900/20 flex items-center justify-center mx-auto mb-6">
-                        <AlertCircle className="size-10 text-rose-500" />
+            <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] p-4">
+                <div className="text-center p-8 max-w-sm bg-[#1a1a1a] rounded-3xl shadow-xl border border-[#2a2a2a]">
+                    <div className="size-20 rounded-2xl bg-red-900/20 flex items-center justify-center mx-auto mb-6">
+                        <AlertCircle className="size-10 text-red-500" />
                     </div>
-                    <h1 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">
+                    <h1 className="text-2xl font-bold text-white mb-2">
                         Cardápio Indisponível
                     </h1>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-6">
+                    <p className="text-gray-400 text-sm leading-relaxed mb-6">
                         Não conseguimos localizar as informações da loja. Isso pode ser um problema temporário de conexão.
                     </p>
                     
                     {/* Painel de Diagnóstico para o Riquelmo */}
-                    <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-700 text-left">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Diagnóstico Técnico:</p>
-                        <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded-lg font-mono text-[10px] text-slate-600 dark:text-slate-400 break-all">
+                    <div className="mt-6 pt-6 border-t border-[#2a2a2a] text-left">
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Diagnóstico Técnico:</p>
+                        <div className="bg-[#0a0a0a] p-3 rounded-lg font-mono text-[10px] text-gray-500 break-all">
                             <p>Slug: {slug}</p>
                             <p>Status: {errorDetail ? 'Falha na API' : 'Empresa não encontrada no banco'}</p>
-                            {errorDetail && <p className="text-rose-500 mt-1">Erro: {errorDetail}</p>}
+                            {errorDetail && <p className="text-red-500 mt-1">Erro: {errorDetail}</p>}
                         </div>
-                        <p className="mt-4 text-[10px] text-slate-400 leading-tight">
+                        <p className="mt-4 text-[10px] text-gray-600 leading-tight">
                             Verifique se as variáveis NOCODB_URL e NOCODB_TOKEN estão configuradas no Vercel.
                         </p>
                     </div>
@@ -139,72 +139,82 @@ export default async function PublicMenuPage({
             pontosPorReal={pontosPorReal}
             upsellProducts={safeUpsell}
         >
-            <div className="min-h-screen bg-slate-50 dark:bg-[#1a0f2e] transition-colors pb-24">
-                <header className="relative bg-white dark:bg-[#2d1b4e] rounded-b-3xl shadow-lg overflow-hidden">
-                    <div className="relative h-48 sm:h-64 bg-gradient-to-br from-violet-400/40 via-purple-400/30 to-indigo-400/40 dark:from-purple-700/50 dark:via-purple-600/40 dark:to-indigo-700/40 overflow-hidden">
+            <div className="min-h-screen bg-[#0a0a0a] transition-colors pb-32">
+                {/* Header - Estilo iFood */}
+                <header className="relative">
+                    {/* Banner */}
+                    <div className="relative h-44 sm:h-56 bg-[#1a1a1a] overflow-hidden">
                         {empresaBanner ? (
-                            <Image src={empresaBanner} alt={`Banner de ${empresaNome}`} fill className="object-cover" priority />
+                            <>
+                                <Image 
+                                    src={empresaBanner} 
+                                    alt={`Banner de ${empresaNome}`} 
+                                    fill 
+                                    className="object-cover" 
+                                    priority 
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/60 to-transparent" />
+                            </>
                         ) : (
-                            <div className="absolute inset-0 opacity-30">
-                                <div className="absolute top-0 right-0 w-96 h-96 bg-violet-300 rounded-full mix-blend-multiply filter blur-3xl dark:opacity-20"></div>
-                                <div className="absolute -bottom-8 left-20 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl dark:opacity-20"></div>
-                            </div>
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-white/20 dark:to-slate-900/40"></div>
-                    </div>
-
-                    <div className="max-w-2xl mx-auto px-4 pb-6 sm:pb-8">
-                        <div className="relative flex flex-col items-center sm:items-start text-center sm:text-left">
-                            <div
-                                className="size-32 sm:size-40 rounded-full flex items-center justify-center text-white font-bold text-5xl sm:text-7xl shrink-0 shadow-2xl border-4 border-white dark:border-slate-800 bg-white dark:bg-slate-800 overflow-hidden -mt-16 sm:-mt-20 transition-transform hover:scale-105 z-10 backdrop-blur-sm"
-                                style={!empresaLogo ? { background: 'linear-gradient(135deg, #a78bfa, #c084fc)' } : { background: 'white' }}
-                            >
-                                {empresaLogo ? (
-                                    <Image src={empresaLogo} alt={empresaNome} width={160} height={160} className="size-full object-cover" />
-                                ) : (
-                                    <span style={{ color: '#a78bfa' }}>{inicial}</span>
-                                )}
-                            </div>
-
-                            <div className="mt-5 sm:mt-7 w-full">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                    <div className="flex-1 min-w-0">
-                                        <h1 className="font-black text-4xl sm:text-6xl text-slate-900 dark:text-white leading-tight mb-4">
-                                            {empresaNome}
-                                        </h1>
-                                        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-3">
-                                            {empresaNincho && (
-                                                <span className="text-[11px] sm:text-sm text-slate-700 dark:text-slate-200 capitalize font-semibold bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm px-4 py-2 rounded-full border border-white/40 dark:border-slate-700/40 shadow-sm">
-                                                    🏪 {empresaNincho}
-                                                </span>
-                                            )}
-                                            {empresaCidade && (
-                                                <span className="flex items-center gap-1.5 text-[11px] sm:text-sm text-slate-700 dark:text-slate-200 font-semibold bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm px-4 py-2 rounded-full border border-white/40 dark:border-slate-700/40 shadow-sm">
-                                                    <MapPin className="size-3.5 sm:size-4" />
-                                                    {empresaCidade}
-                                                </span>
-                                            )}
-                                            {totalProdutos > 0 && (
-                                                <span className="text-[11px] sm:text-sm text-slate-700 dark:text-slate-200 font-semibold bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm px-4 py-2 rounded-full border border-white/40 dark:border-slate-700/40 shadow-sm">
-                                                    📦 {totalProdutos} {totalProdutos === 1 ? 'item' : 'itens'}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
+                            <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a]">
+                                <div className="absolute inset-0 opacity-10">
+                                    <div className="absolute top-10 right-10 w-32 h-32 bg-[#22c55e] rounded-full filter blur-3xl"></div>
+                                    <div className="absolute bottom-10 left-10 w-40 h-40 bg-[#22c55e] rounded-full filter blur-3xl"></div>
                                 </div>
                             </div>
+                        )}
+                        
+                        {/* Logo posicionada sobre o banner */}
+                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-20">
+                            <div
+                                className="size-24 sm:size-28 rounded-2xl flex items-center justify-center text-white font-bold text-3xl sm:text-4xl shrink-0 shadow-2xl border-4 border-[#0a0a0a] bg-[#1a1a1a] overflow-hidden transition-transform hover:scale-105"
+                                style={!empresaLogo ? { background: 'linear-gradient(135deg, #22c55e, #16a34a)' } : { background: '#1a1a1a' }}
+                            >
+                                {empresaLogo ? (
+                                    <Image src={empresaLogo} alt={empresaNome} width={112} height={112} className="size-full object-cover" />
+                                ) : (
+                                    <span className="text-white">{inicial}</span>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Info da empresa */}
+                    <div className="max-w-2xl mx-auto px-4 pt-16 pb-6 text-center">
+                        <h1 className="font-black text-2xl sm:text-3xl text-white leading-tight mb-4 uppercase tracking-tight">
+                            {empresaNome}
+                        </h1>
+                        
+                        {/* Tags - Estilo iFood */}
+                        <div className="flex flex-wrap items-center justify-center gap-2">
+                            {empresaNincho && (
+                                <span className="text-xs text-gray-300 font-medium bg-[#1a1a1a] px-3 py-1.5 rounded-full border border-[#2a2a2a]">
+                                    {empresaNincho}
+                                </span>
+                            )}
+                            {empresaCidade && (
+                                <span className="flex items-center gap-1.5 text-xs text-gray-300 font-medium bg-[#1a1a1a] px-3 py-1.5 rounded-full border border-[#2a2a2a]">
+                                    <MapPin className="size-3" />
+                                    {empresaCidade}
+                                </span>
+                            )}
+                            <span className="flex items-center gap-1.5 text-xs text-[#22c55e] font-semibold bg-[#22c55e]/10 px-3 py-1.5 rounded-full border border-[#22c55e]/20">
+                                <Clock className="size-3" />
+                                Aberto agora
+                            </span>
                         </div>
                     </div>
                 </header>
 
-                <main className="max-w-2xl mx-auto px-4 py-6">
+                {/* Main Content */}
+                <main className="max-w-2xl mx-auto px-4 py-4">
                     {safeGrouped.length === 0 && safeComposites.length === 0 ? (
                         <div className="text-center py-20 sm:py-24">
-                            <div className="size-16 sm:size-20 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-5">
-                                <UtensilsCrossed className="size-8 sm:size-10 text-slate-300 dark:text-slate-600" />
+                            <div className="size-16 sm:size-20 rounded-2xl bg-[#1a1a1a] flex items-center justify-center mx-auto mb-5 border border-[#2a2a2a]">
+                                <UtensilsCrossed className="size-8 sm:size-10 text-gray-600" />
                             </div>
-                            <h2 className="text-base sm:text-lg font-bold text-slate-700 dark:text-white mb-2">Nenhum produto disponível</h2>
-                            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-xs mx-auto">O cardápio está sendo atualizado. Volte em breve!</p>
+                            <h2 className="text-base sm:text-lg font-bold text-white mb-2">Nenhum produto disponível</h2>
+                            <p className="text-xs sm:text-sm text-gray-500 max-w-xs mx-auto">O cardápio está sendo atualizado. Volte em breve!</p>
                         </div>
                     ) : (
                         <MenuFilter
@@ -217,8 +227,12 @@ export default async function PublicMenuPage({
                             allGroups={safeAllGroups}
                         />
                     )}
-                    <footer className="text-center pt-12 pb-6 mt-8 border-t border-slate-200 dark:border-slate-800">
-                        <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500">Cardápio digital por <span className="font-bold text-violet-500">ZapFlow</span></p>
+                    
+                    {/* Footer */}
+                    <footer className="text-center pt-12 pb-6 mt-8 border-t border-[#1a1a1a]">
+                        <p className="text-[10px] sm:text-xs text-gray-600">
+                            Cardápio digital por <span className="font-bold text-[#22c55e]">ZapFlow</span>
+                        </p>
                     </footer>
                 </main>
             </div>
