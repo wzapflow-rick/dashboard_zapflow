@@ -353,31 +353,46 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
 
   return (
     <>
-      {/* Floating Cart Button */}
+      {/* Floating Cart Button - Estilo iFood */}
       <AnimatePresence>
         {items.length > 0 && step !== 'success' && (
-          <motion.button
+          <motion.div
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
-            onClick={() => setIsOpen(true)}
-            className="fixed bottom-6 left-6 right-6 z-50 bg-green-500 hover:bg-green-600 text-white rounded-2xl p-4 shadow-2xl shadow-green-500/30 transition-all active:scale-[0.98] flex items-center justify-between"
+            className="fixed bottom-6 left-4 right-4 z-50"
           >
-            <div className="flex items-center gap-3">
-              <div className="bg-white/20 p-2 rounded-lg">
-                <ShoppingCart className="size-5" />
+            <button
+              onClick={() => setIsOpen(true)}
+              className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl p-3 shadow-2xl flex items-center justify-between gap-3"
+            >
+              {/* Lado Esquerdo - Ver meu pedido */}
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <div className="bg-[#22c55e] p-2.5 rounded-xl">
+                    <ShoppingCart className="size-5 text-white" />
+                  </div>
+                  <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold size-5 rounded-full flex items-center justify-center">
+                    {itemCount}
+                  </span>
+                </div>
+                <div className="text-left">
+                  <p className="text-xs text-gray-400 font-medium">Ver meu pedido</p>
+                  <p className="text-sm font-bold text-white">{itemCount} {itemCount === 1 ? 'item' : 'itens'}</p>
+                </div>
               </div>
-              <div className="text-left">
-                <p className="text-[10px] font-bold uppercase tracking-wider opacity-80">Ver Carrinho</p>
-                <p className="text-sm font-black">{itemCount} {itemCount === 1 ? 'item' : 'itens'}</p>
+
+              {/* Lado Direito - Finalizar Pedido */}
+              <div className="bg-[#22c55e] px-5 py-3 rounded-xl">
+                <p className="text-[10px] text-white/80 font-semibold uppercase tracking-wider">Finalizar</p>
+                <p className="text-sm font-black text-white">{formatPrice(totalFinal)}</p>
               </div>
-            </div>
-            <p className="text-lg font-black">{formatPrice(totalFinal)}</p>
-          </motion.button>
+            </button>
+          </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Cart Bottom Sheet */}
+      {/* Cart Bottom Sheet - Estilo iFood */}
       <AnimatePresence>
         {isOpen && (
           <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
@@ -386,7 +401,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => step !== 'success' && setIsOpen(false)}
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
             />
 
             <motion.div
@@ -394,20 +409,20 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh]"
+              className="relative w-full max-w-lg bg-[#0a0a0a] rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh]"
             >
               {/* Header */}
-              <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-white dark:bg-slate-900">
+              <div className="p-4 sm:p-5 border-b border-[#1a1a1a] flex items-center justify-between shrink-0 bg-[#0a0a0a]">
                 <div className="flex items-center gap-3">
                   {step !== 'cart' && step !== 'success' && (
                     <button
                       onClick={() => setStep(step === 'payment' ? 'customer' : 'cart')}
-                      className="p-2 bg-slate-50 dark:bg-slate-800 rounded-xl text-slate-500 transition-colors"
+                      className="p-2 bg-[#1a1a1a] rounded-xl text-gray-400 hover:text-white transition-colors"
                     >
                       <ArrowLeft className="size-5" />
                     </button>
                   )}
-                  <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                  <h2 className="text-lg font-black text-white uppercase tracking-tight">
                     {step === 'cart' && 'Carrinho'}
                     {step === 'customer' && 'Identificação'}
                     {step === 'payment' && 'Pagamento'}
@@ -417,7 +432,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                 {step !== 'success' && (
                   <button
                     onClick={() => setIsOpen(false)}
-                    className="p-2 bg-slate-50 dark:bg-slate-800 rounded-full text-slate-400"
+                    className="p-2 bg-[#1a1a1a] rounded-full text-gray-500 hover:text-white transition-colors"
                   >
                     <X className="size-5" />
                   </button>
@@ -430,28 +445,28 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                   <div className="space-y-6">
                     {items.length === 0 ? (
                       <div className="py-12 text-center">
-                        <ShoppingCart className="size-16 text-slate-100 dark:text-slate-800 mx-auto mb-4" />
-                        <p className="text-slate-500 font-bold">Seu carrinho está vazio</p>
+                        <ShoppingCart className="size-16 text-[#1a1a1a] mx-auto mb-4" />
+                        <p className="text-gray-500 font-bold">Seu carrinho está vazio</p>
                       </div>
                     ) : (
                       <>
                         <div className="space-y-3">
                           {items.map((item) => (
-                            <div key={item.id} className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-100 dark:border-slate-800">
+                            <div key={item.id} className="bg-[#1a1a1a] rounded-2xl p-4 border border-[#2a2a2a]">
                               <div className="flex justify-between items-start gap-4">
                                 <div className="flex-1">
-                                  <h4 className="font-bold text-slate-900 dark:text-white text-sm">{item.nome}</h4>
+                                  <h4 className="font-bold text-white text-sm">{item.nome}</h4>
                                   {item.complementos?.map((grupo, idx) => (
-                                    <p key={idx} className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                    <p key={idx} className="text-[10px] text-gray-500 mt-0.5">
                                       {grupo.items.map(i => i.nome).join(', ')}
                                     </p>
                                   ))}
-                                  <p className="text-xs font-black text-violet-600 dark:text-violet-400 mt-2">{formatPrice(item.preco * item.quantidade)}</p>
+                                  <p className="text-xs font-black text-[#22c55e] mt-2">{formatPrice(item.preco * item.quantidade)}</p>
                                 </div>
-                                <div className="flex items-center bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-1">
-                                  <button onClick={() => updateQuantity(item.id, item.quantidade - 1)} className="p-1.5 text-slate-400 hover:text-red-500"><Minus className="size-3.5" /></button>
-                                  <span className="w-8 text-center text-xs font-bold dark:text-white">{item.quantidade}</span>
-                                  <button onClick={() => updateQuantity(item.id, item.quantidade + 1)} className="p-1.5 text-slate-400 hover:text-green-500"><Plus className="size-3.5" /></button>
+                                <div className="flex items-center bg-[#0a0a0a] rounded-xl border border-[#2a2a2a] p-1">
+                                  <button onClick={() => updateQuantity(item.id, item.quantidade - 1)} className="p-1.5 text-gray-500 hover:text-red-500"><Minus className="size-3.5" /></button>
+                                  <span className="w-8 text-center text-xs font-bold text-white">{item.quantidade}</span>
+                                  <button onClick={() => updateQuantity(item.id, item.quantidade + 1)} className="p-1.5 text-gray-500 hover:text-[#22c55e]"><Plus className="size-3.5" /></button>
                                 </div>
                               </div>
                             </div>
@@ -459,20 +474,20 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                         </div>
 
                         {/* Totais */}
-                        <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-5 space-y-3 border border-slate-100 dark:border-slate-800">
+                        <div className="bg-[#1a1a1a] rounded-2xl p-5 space-y-3 border border-[#2a2a2a]">
                           <div className="flex justify-between text-sm">
-                            <span className="text-slate-500">Subtotal</span>
-                            <span className="font-bold dark:text-white">{formatPrice(subtotal)}</span>
+                            <span className="text-gray-500">Subtotal</span>
+                            <span className="font-bold text-white">{formatPrice(subtotal)}</span>
                           </div>
                           {desconto > 0 && (
-                            <div className="flex justify-between text-sm text-green-600">
+                            <div className="flex justify-between text-sm text-[#22c55e]">
                               <span>Desconto</span>
                               <span className="font-bold">-{formatPrice(desconto)}</span>
                             </div>
                           )}
-                          <div className="pt-3 border-t border-slate-200 dark:border-slate-700 flex justify-between">
-                            <span className="font-black text-slate-900 dark:text-white uppercase tracking-wider">Total</span>
-                            <span className="text-xl font-black text-violet-600 dark:text-violet-400">{formatPrice(totalFinal)}</span>
+                          <div className="pt-3 border-t border-[#2a2a2a] flex justify-between">
+                            <span className="font-black text-white uppercase tracking-wider">Total</span>
+                            <span className="text-xl font-black text-[#22c55e]">{formatPrice(totalFinal)}</span>
                           </div>
                         </div>
                       </>
@@ -482,26 +497,26 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
 
                 {step === 'customer' && (
                   <div className="space-y-5">
-                    <div className="bg-violet-50 dark:bg-violet-900/20 p-4 rounded-2xl border border-violet-100 dark:border-violet-800/50">
-                      <p className="text-xs font-bold text-violet-600 dark:text-violet-400 uppercase mb-1">Passo 2 de 3</p>
-                      <p className="text-sm font-black text-slate-900 dark:text-white">Onde vamos entregar?</p>
+                    <div className="bg-[#22c55e]/10 p-4 rounded-2xl border border-[#22c55e]/20">
+                      <p className="text-xs font-bold text-[#22c55e] uppercase mb-1">Passo 2 de 3</p>
+                      <p className="text-sm font-black text-white">Onde vamos entregar?</p>
                     </div>
 
                     <div className="space-y-4">
                       <div className="grid grid-cols-2 gap-2">
                         <button 
                           onClick={() => setIsDelivery(true)}
-                          className={cn("p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2", isDelivery ? "border-violet-500 bg-violet-50 dark:bg-violet-900/20" : "border-slate-100 dark:border-slate-800")}
+                          className={cn("p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2", isDelivery ? "border-[#22c55e] bg-[#22c55e]/10" : "border-[#2a2a2a] bg-[#1a1a1a]")}
                         >
                           <span className="text-2xl">🛵</span>
-                          <span className="text-xs font-bold dark:text-white">Delivery</span>
+                          <span className="text-xs font-bold text-white">Delivery</span>
                         </button>
                         <button 
                           onClick={() => { setIsDelivery(false); setDeliveryFee(0); }}
-                          className={cn("p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2", !isDelivery ? "border-violet-500 bg-violet-50 dark:bg-violet-900/20" : "border-slate-100 dark:border-slate-800")}
+                          className={cn("p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2", !isDelivery ? "border-[#22c55e] bg-[#22c55e]/10" : "border-[#2a2a2a] bg-[#1a1a1a]")}
                         >
                           <span className="text-2xl">🏪</span>
-                          <span className="text-xs font-bold dark:text-white">Retirada</span>
+                          <span className="text-xs font-bold text-white">Retirada</span>
                         </button>
                       </div>
 
@@ -511,14 +526,14 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                           placeholder="Seu Nome"
                           value={customerData.nome}
                           onChange={(e) => setCustomerData({ ...customerData, nome: e.target.value })}
-                          className="w-full p-4 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-violet-500/20 dark:text-white"
+                          className="w-full p-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#22c55e]/30 focus:border-[#22c55e] text-white placeholder:text-gray-600"
                         />
                         <input
                           type="tel"
                           placeholder="WhatsApp (DDD + Número)"
                           value={customerData.telefone}
                           onChange={(e) => setCustomerData({ ...customerData, telefone: e.target.value })}
-                          className="w-full p-4 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-violet-500/20 dark:text-white"
+                          className="w-full p-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#22c55e]/30 focus:border-[#22c55e] text-white placeholder:text-gray-600"
                         />
                         {isDelivery && (
                           <input
@@ -526,7 +541,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                             placeholder="Endereço Completo"
                             value={customerData.endereco}
                             onChange={(e) => setCustomerData({ ...customerData, endereco: e.target.value })}
-                            className="w-full p-4 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-violet-500/20 dark:text-white"
+                            className="w-full p-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#22c55e]/30 focus:border-[#22c55e] text-white placeholder:text-gray-600"
                           />
                         )}
                       </div>
@@ -538,18 +553,18 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                   <div className="space-y-5">
                     {mpQrCode ? (
                       <div className="text-center space-y-6">
-                        <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-2xl border border-green-100 dark:border-green-800">
-                          <p className="text-sm font-black text-green-700 dark:text-green-400">PIX Gerado com Sucesso!</p>
+                        <div className="bg-[#22c55e]/10 p-4 rounded-2xl border border-[#22c55e]/30">
+                          <p className="text-sm font-black text-[#22c55e]">PIX Gerado com Sucesso!</p>
                         </div>
                         {mpQrCodeBase64 && (
-                          <div className="bg-white p-4 rounded-3xl shadow-xl inline-block border-4 border-slate-50">
+                          <div className="bg-white p-4 rounded-3xl shadow-xl inline-block">
                             <Image src={`data:image/png;base64,${mpQrCodeBase64}`} alt="PIX" width={200} height={200} />
                           </div>
                         )}
-                        <button onClick={copyPixCode} className="w-full p-4 bg-slate-100 dark:bg-slate-800 rounded-2xl font-bold text-slate-700 dark:text-slate-300 flex items-center justify-center gap-2">
+                        <button onClick={copyPixCode} className="w-full p-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl font-bold text-gray-300 flex items-center justify-center gap-2 hover:border-[#3a3a3a] transition-colors">
                           <Copy className="size-5" /> Copiar Código PIX
                         </button>
-                        <button onClick={checkPixPayment} className="w-full p-5 bg-green-500 text-white font-black rounded-2xl shadow-lg shadow-green-200 dark:shadow-none">JÁ PAGUEI</button>
+                        <button onClick={checkPixPayment} className="w-full p-5 bg-[#22c55e] text-white font-black rounded-2xl shadow-lg shadow-green-900/30 hover:bg-[#1ea34d] transition-colors">JÁ PAGUEI</button>
                       </div>
                     ) : (
                       <div className="space-y-3">
@@ -557,16 +572,16 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                           <button
                             key={method}
                             onClick={() => setPaymentData({ ...paymentData, forma: method as any })}
-                            className={cn("w-full p-5 rounded-2xl border-2 transition-all flex items-center gap-4", paymentData.forma === method ? "border-violet-500 bg-violet-50 dark:bg-violet-900/20" : "border-slate-100 dark:border-slate-800")}
+                            className={cn("w-full p-5 rounded-2xl border-2 transition-all flex items-center gap-4", paymentData.forma === method ? "border-[#22c55e] bg-[#22c55e]/10" : "border-[#2a2a2a] bg-[#1a1a1a]")}
                           >
-                            <div className={cn("size-12 rounded-xl flex items-center justify-center", paymentData.forma === method ? "bg-violet-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-400")}>
+                            <div className={cn("size-12 rounded-xl flex items-center justify-center", paymentData.forma === method ? "bg-[#22c55e] text-white" : "bg-[#2a2a2a] text-gray-500")}>
                               {method === 'pix' && <QrCode />}
                               {method === 'cartao' && <CreditCard />}
                               {method === 'dinheiro' && <Banknote />}
                             </div>
                             <div className="text-left">
-                              <p className="font-bold dark:text-white uppercase text-xs tracking-wider">{method}</p>
-                              <p className="text-[10px] text-slate-500">Pague na {isDelivery ? 'entrega' : 'retirada'}</p>
+                              <p className="font-bold text-white uppercase text-xs tracking-wider">{method}</p>
+                              <p className="text-[10px] text-gray-500">Pague na {isDelivery ? 'entrega' : 'retirada'}</p>
                             </div>
                           </button>
                         ))}
@@ -577,25 +592,25 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
 
                 {step === 'success' && (
                   <div className="py-10 text-center space-y-6">
-                    <div className="size-24 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto">
-                      <Check className="size-12 text-green-500" />
+                    <div className="size-24 bg-[#22c55e]/20 rounded-full flex items-center justify-center mx-auto">
+                      <Check className="size-12 text-[#22c55e]" />
                     </div>
                     <div>
-                      <h2 className="text-2xl font-black text-slate-900 dark:text-white">Pedido Recebido!</h2>
-                      <p className="text-slate-500 mt-2">Estamos preparando tudo com muito carinho.</p>
+                      <h2 className="text-2xl font-black text-white">Pedido Recebido!</h2>
+                      <p className="text-gray-500 mt-2">Estamos preparando tudo com muito carinho.</p>
                     </div>
-                    <button onClick={() => setIsOpen(false)} className="w-full p-5 bg-slate-900 dark:bg-white dark:text-slate-900 text-white font-black rounded-2xl">VOLTAR AO CARDÁPIO</button>
+                    <button onClick={() => setIsOpen(false)} className="w-full p-5 bg-white text-black font-black rounded-2xl hover:bg-gray-100 transition-colors">VOLTAR AO CARDÁPIO</button>
                   </div>
                 )}
               </div>
 
               {/* Footer Button */}
               {step !== 'success' && !mpQrCode && (
-                <div className="p-5 sm:p-6 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 pb-10 sm:pb-6">
+                <div className="p-5 sm:p-6 border-t border-[#1a1a1a] bg-[#0a0a0a] pb-10 sm:pb-6">
                   <button
                     onClick={step === 'cart' ? () => setStep('customer') : step === 'customer' ? () => setStep('payment') : finishOrder}
                     disabled={loading || items.length === 0}
-                    className="w-full p-5 bg-green-500 hover:bg-green-600 disabled:bg-slate-200 text-white font-black rounded-2xl shadow-xl shadow-green-200 dark:shadow-none transition-all flex items-center justify-center gap-3"
+                    className="w-full p-5 bg-[#22c55e] hover:bg-[#1ea34d] disabled:bg-[#1a1a1a] disabled:text-gray-600 text-white font-black rounded-2xl shadow-xl shadow-green-900/30 transition-all flex items-center justify-center gap-3"
                   >
                     {loading ? <Loader2 className="animate-spin" /> : (
                       <>
