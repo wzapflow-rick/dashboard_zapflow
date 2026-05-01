@@ -75,17 +75,33 @@ export async function saveProduct(
   // 2. Com o produto salvo, processa o upload da imagem.
   const file = formData.get('imagem_file') as File;
   if (file && file.size > 0) {
-    const uploadFormData = new FormData();
-    uploadFormData.append('image', file);
     try {
-      const uploadedUrl = await uploadImageAction(uploadFormData);
-      if (uploadedUrl) {
-        // Se a imagem subiu com sucesso, atualiza o produto com a nova imagem
-        savedProduct = await upsertProduct({
-          ...productData,
-          id: savedProduct.id,
-          imagem: uploadedUrl
+      // Importa utilities de imagem e processa antes de enviar
+      const { processImage, isValidImageFile } = await import('@/lib/image-utils');
+      
+      if (!isValidImageFile(file)) {
+        toast.error('Arquivo invalido. Use PNG, JPG, WebP ou GIF com ate 10MB.');
+      } else {
+        // Processa a imagem (redimensiona e otimiza)
+        const processedFile = await processImage(file, {
+          maxWidth: 800,
+          maxHeight: 800,
+          quality: 0.85,
+          format: 'jpeg'
         });
+        
+        const uploadFormData = new FormData();
+        uploadFormData.append('image', processedFile);
+        
+        const uploadedUrl = await uploadImageAction(uploadFormData);
+        if (uploadedUrl) {
+          // Se a imagem subiu com sucesso, atualiza o produto com a nova imagem
+          savedProduct = await upsertProduct({
+            ...productData,
+            id: savedProduct.id,
+            imagem: uploadedUrl
+          });
+        }
       }
     } catch (uploadError) {
       console.error('Upload Error:', uploadError);
