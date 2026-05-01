@@ -193,11 +193,11 @@ export const PRODUTOS_METADADOS_TABLE_ID =
 
 /** Tabela de mesas do estabelecimento */
 export const MESAS_TABLE_ID =
-  process.env.NOCODB_TABLE_MESAS || '';
+  process.env.NOCODB_TABLE_MESAS || 'mzft45xyoznab9k';
 
 /** Tabela de comandas (contas individuais por pessoa na mesa) */
 export const COMANDAS_TABLE_ID =
-  process.env.NOCODB_TABLE_COMANDAS || '';
+  process.env.NOCODB_TABLE_COMANDAS || 'mkpep3jg6ri9d7x';
 
 // ============================================================
 // STATUS DE MESAS
