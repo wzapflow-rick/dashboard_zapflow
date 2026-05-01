@@ -125,14 +125,29 @@ export async function createMesa(data: {
 
 export async function updateMesa(
   id: number,
-  data: Partial<Pick<Mesa, 'numero' | 'nome' | 'capacidade' | 'status'>>
+  data: Partial<Pick<Mesa, 'numero' | 'nome' | 'capacidade' | 'status' | 'qr_code'>>
 ): Promise<Mesa> {
-  const user = await requireRole(['admin', 'gerente', 'atendente']);
+  try {
+    console.log('[v0] updateMesa - id:', id, 'data:', data);
+    const user = await requireRole(['admin', 'gerente', 'atendente']);
 
-  const mesa = await noco.findById(MESAS_TABLE_ID, id) as unknown as Mesa;
-  if (!mesa || String(mesa.store_id) !== String(user.empresaId)) {
-    throw new Error('Mesa não encontrada');
+    const mesa = await noco.findById(MESAS_TABLE_ID, id) as unknown as Mesa;
+    console.log('[v0] updateMesa - mesa encontrada:', mesa?.id);
+    
+    if (!mesa || String(mesa.store_id) !== String(user.empresaId)) {
+      throw new Error('Mesa não encontrada');
+    }
+
+    const result = await noco.update(MESAS_TABLE_ID, { id, ...data });
+    console.log('[v0] updateMesa - resultado:', result);
+
+    revalidatePath('/dashboard/mesas');
+    return result as unknown as Mesa;
+  } catch (error) {
+    console.error('[v0] updateMesa - ERRO:', error);
+    throw error;
   }
+}
 
   // Se está mudando o número, verificar duplicata
   if (data.numero && data.numero !== mesa.numero) {
@@ -431,20 +446,31 @@ export async function createTableOrder(data: {
 // ============================================================
 
 export async function abrirMesa(mesaId: number, nomeCliente?: string): Promise<Comanda> {
-  const user = await requireRole(['admin', 'gerente', 'atendente']);
+  try {
+    console.log('[v0] abrirMesa - mesaId:', mesaId);
+    const user = await requireRole(['admin', 'gerente', 'atendente']);
+    console.log('[v0] abrirMesa - user:', user?.empresaId);
 
-  const mesa = await noco.findById(MESAS_TABLE_ID, mesaId) as unknown as Mesa;
-  if (!mesa || String(mesa.store_id) !== String(user.empresaId)) {
-    throw new Error('Mesa não encontrada');
+    const mesa = await noco.findById(MESAS_TABLE_ID, mesaId) as unknown as Mesa;
+    console.log('[v0] abrirMesa - mesa encontrada:', mesa?.id);
+    
+    if (!mesa || String(mesa.store_id) !== String(user.empresaId)) {
+      throw new Error('Mesa não encontrada');
+    }
+
+    // Criar comanda padrão
+    console.log('[v0] abrirMesa - criando comanda');
+    const comanda = await createComanda({
+      mesa_id: mesaId,
+      nome_cliente: nomeCliente,
+    });
+    console.log('[v0] abrirMesa - comanda criada:', comanda?.id);
+
+    return comanda;
+  } catch (error) {
+    console.error('[v0] abrirMesa - ERRO:', error);
+    throw error;
   }
-
-  // Criar comanda padrão
-  const comanda = await createComanda({
-    mesa_id: mesaId,
-    nome_cliente: nomeCliente,
-  });
-
-  return comanda;
 }
 
 export async function fecharMesa(mesaId: number): Promise<{ total: number; comandas: number }> {

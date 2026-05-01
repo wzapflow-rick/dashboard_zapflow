@@ -176,11 +176,19 @@ export default function TablesManager() {
 
       {selectedMesa && (
         <TableDetailModal
-          mesa={selectedMesa}
+          mesa={mesas.find(m => m.id === selectedMesa.id) || selectedMesa}
           isOpen={!!selectedMesa}
           onClose={() => setSelectedMesa(null)}
-          onUpdate={() => {
-            mutate();
+          onUpdate={async () => {
+            const newMesas = await mutate();
+            if (newMesas) {
+              const updatedMesa = newMesas.find(m => m.id === selectedMesa.id);
+              if (updatedMesa) {
+                setSelectedMesa(updatedMesa);
+              } else {
+                setSelectedMesa(null);
+              }
+            }
           }}
         />
       )}
