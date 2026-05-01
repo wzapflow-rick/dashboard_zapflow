@@ -76,8 +76,10 @@ export async function getPublicMenu(slug: string) {
             if (!empresa.banner && config.Banner) empresa.banner = config.Banner;
         }
 
-        // 3. ORGANIZAÇÃO DOS PRODUTOS
-        const grouped = (categorias || []).map((cat: any) => {
+        // 3. ORGANIZAÇÃO DOS PRODUTOS (ordenar categorias pela ordem)
+        const categoriasOrdenadas = [...(categorias || [])].sort((a: any, b: any) => (a.ordem || 0) - (b.ordem || 0));
+        
+        const grouped = categoriasOrdenadas.map((cat: any) => {
             const productsInCategory = (todosProdutos || []).filter((p: any) => 
                 (p.categoria_id === cat.id || p.categorias === cat.id) && p.tipo !== 'composto'
             );
