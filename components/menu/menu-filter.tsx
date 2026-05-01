@@ -134,7 +134,7 @@ function ProductCard({ product, onClick }: { product: Product; onClick: () => vo
                         )}
                     </div>
                 )}
-                {product.descricao && (
+                {product.descricao && product.descricao.split('[[SIZES:')[0].trim() !== '' && (
                     <p className="text-xs text-gray-400 mt-1.5 line-clamp-2 leading-relaxed">
                         {product.descricao.split('[[SIZES:')[0].trim()}
                     </p>

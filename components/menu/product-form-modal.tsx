@@ -287,10 +287,10 @@ export default function ProductFormModal({
                             </div>
 
                             <div className="space-y-1.5">
-                                <label className="text-[10px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Descrição</label>
+                                <label className="text-[10px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Descricao</label>
                                 <textarea
                                     name="descricao"
-                                    defaultValue={editingProduct?.descricao}
+                                    defaultValue={editingProduct?.descricao?.split('[[SIZES:')[0].trim() || ''}
                                     rows={3}
                                     className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                     placeholder="Descreva os ingredientes ou detalhes do produto..."
