@@ -9,8 +9,8 @@ const adminOnlyRoutes = ['/dashboard/users', '/dashboard/settings', '/dashboard/
 
 const roleRoutes = {
     admin: ['/dashboard'],
-    gerente: ['/dashboard', '/dashboard/menu', '/dashboard/expedition', '/dashboard/customers', '/dashboard/ratings', '/dashboard/acertos', '/dashboard/reports'],
-    atendente: ['/dashboard', '/dashboard/expedition', '/dashboard/customers'],
+    gerente: ['/dashboard', '/dashboard/menu', '/dashboard/expedition', '/dashboard/mesas', '/dashboard/customers', '/dashboard/ratings', '/dashboard/acertos', '/dashboard/reports'],
+    atendente: ['/dashboard/expedition', '/dashboard/mesas', '/dashboard/customers'],
     cozinheiro: ['/dashboard/expedition']
 }
 
@@ -30,9 +30,13 @@ export async function middleware(req: NextRequest) {
 
     // 2. Se logado e tentar acessar login/register -> dashboard ou onboarding
     if (isAuthRoute && session) {
-        return session.onboarded
-            ? NextResponse.redirect(new URL(session.role === 'cozinheiro' ? '/dashboard/expedition' : '/dashboard', req.nextUrl))
-            : NextResponse.redirect(new URL('/onboarding', req.nextUrl))
+        if (!session.onboarded) {
+            return NextResponse.redirect(new URL('/onboarding', req.nextUrl))
+        }
+        // Redireciona para a primeira rota permitida do role
+        const allowedRoutes = roleRoutes[session.role as keyof typeof roleRoutes] || ['/dashboard/expedition'];
+        const redirectTo = allowedRoutes[0] || '/dashboard/expedition';
+        return NextResponse.redirect(new URL(redirectTo, req.nextUrl))
     }
 
     // 3. Se logado mas NÃO onboarded -> obriga onboarding (exceto se já estiver lá)
@@ -61,8 +65,8 @@ export async function middleware(req: NextRequest) {
         const isAllowedRoute = allowed.some(route => path.startsWith(route));
         const isDashboardHome = path === '/dashboard' || path === '/dashboard/';
         
-        // Se for cozinheiro e tentar acessar a home do dashboard, manda direto pra expedição
-        if (session.role === 'cozinheiro' && isDashboardHome) {
+        // Se for cozinheiro ou atendente e tentar acessar a home do dashboard, manda direto pra expedição
+        if ((session.role === 'cozinheiro' || session.role === 'atendente') && isDashboardHome) {
             return NextResponse.redirect(new URL('/dashboard/expedition', req.nextUrl))
         }
 

@@ -31,10 +31,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { isOpen, setIsOpen } = useSidebar();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   React.useEffect(() => {
     import('@/app/actions/auth').then(({ getMe }) => {
-      getMe().then(setUser);
+      getMe().then((userData) => {
+        setUser(userData);
+        setIsLoading(false);
+      }).catch(() => {
+        setIsLoading(false);
+      });
     });
   }, []);
 
@@ -42,11 +48,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-screen bg-background-light dark:bg-slate-900">
-      {!isCozinheiro && (
+      {!isLoading && !isCozinheiro && (
         <Sidebar
           isOpen={isOpen}
           isMobileMenuOpen={isMobileMenuOpen}
           setIsMobileMenuOpen={setIsMobileMenuOpen}
+          user={user}
         />
       )}
 

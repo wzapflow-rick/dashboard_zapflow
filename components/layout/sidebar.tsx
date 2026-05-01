@@ -47,60 +47,11 @@ interface SidebarProps {
     isOpen: boolean;
     isMobileMenuOpen: boolean;
     setIsMobileMenuOpen: (open: boolean) => void;
+    user?: any;
 }
 
-export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen }: SidebarProps) {
+export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen, user }: SidebarProps) {
     const pathname = usePathname();
-    const [user, setUser] = React.useState<any>(null);
-    const [isLoading, setIsLoading] = React.useState(true);
-
-    React.useEffect(() => {
-        import('@/app/actions/auth').then(({ getMe }) => {
-            getMe().then((userData) => {
-                setUser(userData);
-                setIsLoading(false);
-            }).catch(() => {
-                setIsLoading(false);
-            });
-        });
-    }, []);
-
-    // Nao renderiza nada enquanto carrega para evitar flash de itens nao permitidos
-    if (isLoading) {
-        return (
-            <aside
-                className={cn(
-                    "fixed left-0 top-0 h-full bg-gradient-to-b from-white to-slate-50 border-r border-slate-200/50 transition-all duration-300 z-[70] flex flex-col shadow-lg",
-                    isOpen ? "w-64" : "w-20",
-                    "lg:translate-x-0",
-                    isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
-                    "dark:bg-gradient-to-b dark:from-slate-900 dark:to-slate-800 dark:border-slate-700/50"
-                )}
-            >
-                <div className="p-6 flex items-center gap-3">
-                    <div className="size-10 bg-primary rounded-lg flex items-center justify-center text-white shrink-0 animate-pulse">
-                        <Bolt className="size-6" />
-                    </div>
-                    {(isOpen || isMobileMenuOpen) && (
-                        <div className="flex flex-col gap-2">
-                            <div className="h-4 w-24 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
-                            <div className="h-2 w-16 bg-slate-100 dark:bg-slate-800 rounded animate-pulse"></div>
-                        </div>
-                    )}
-                </div>
-                <nav className="flex-1 px-4 space-y-2 mt-4">
-                    {[1, 2, 3].map((i) => (
-                        <div key={i} className="flex items-center gap-3 px-3 py-2.5">
-                            <div className="size-5 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
-                            {(isOpen || isMobileMenuOpen) && (
-                                <div className="h-4 w-20 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
-                            )}
-                        </div>
-                    ))}
-                </nav>
-            </aside>
-        );
-    }
 
     if (user?.role === 'cozinheiro') {
         return null;
