@@ -25,12 +25,12 @@ import Image from 'next/image';
 const navItems = [
     { name: 'Visão Geral', href: '/dashboard', icon: LayoutDashboard, roles: ['admin'] },
     { name: 'Cardápio', href: '/dashboard/menu', icon: UtensilsCrossed, roles: ['admin'] },
-    { name: 'Insumos', href: '/dashboard/insumos', icon: PackageOpen, roles: ['admin'] },
     { name: 'Expedição', href: '/dashboard/expedition', icon: Truck, roles: ['admin', 'gerente', 'atendente', 'cozinheiro'] },
     { name: 'Mesas', href: '/dashboard/mesas', icon: LayoutGrid, roles: ['admin', 'gerente', 'atendente'] },
     { name: 'Clientes', href: '/dashboard/customers', icon: Users, roles: ['admin', 'gerente', 'atendente'] },
     { name: 'Divulgação', href: '/dashboard/growth', icon: Megaphone, roles: ['admin'] },
     { name: 'Campanhas', href: '/dashboard/campanhas', icon: Megaphone, roles: ['admin'] },
+    { name: 'Insumos', href: '/dashboard/insumos', icon: PackageOpen, roles: ['admin'] },
     { name: 'Módulo de Testes', href: '/dashboard/testes', icon: FlaskConical, roles: ['admin'] },
 ];
 
