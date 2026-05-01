@@ -348,20 +348,22 @@ export async function getMesasComDetalhes(): Promise<MesaComDetalhes[]> {
     });
     const comandas = normalizeRecordList((comandasData.list || []) as any[]) as Comanda[];
 
-    // Buscar pedidos das comandas abertas (tipo_entrega = mesa)
+    // Buscar pedidos de mesa (TODOS exceto cancelados - incluindo finalizados para mostrar no histórico da comanda)
     const pedidosData = await noco.list(PEDIDOS_TABLE_ID, {
-      where: `(empresa_id,eq,${user.empresaId})~and(tipo_entrega,eq,mesa)~and(status,neq,finalizado)~and(status,neq,cancelado)`,
+      where: `(empresa_id,eq,${user.empresaId})~and(tipo_entrega,eq,mesa)~and(status,neq,cancelado)`,
       limit: 500,
     });
     const pedidos = normalizeRecordList((pedidosData.list || []) as any[]);
+    console.log('[v0] getMesasComDetalhes - pedidos encontrados:', pedidos.length);
+    console.log('[v0] getMesasComDetalhes - pedidos:', pedidos.map((p: any) => ({ id: p.id, comanda_id: p.comanda_id, mesa_id: p.mesa_id })));
 
     // Montar estrutura de retorno
     const mesasComDetalhes: MesaComDetalhes[] = mesas.map((mesa) => {
-      const comandasDaMesa = comandas.filter((c) => c.mesa_id === mesa.id);
+      const comandasDaMesa = comandas.filter((c) => String(c.mesa_id) === String(mesa.id));
 
       const comandasComPedidos: ComandaComPedidos[] = comandasDaMesa.map((comanda) => {
         const pedidosDaComanda = pedidos.filter(
-          (p: any) => p.comanda_id === comanda.id
+          (p: any) => String(p.comanda_id) === String(comanda.id)
         );
 
         return {
@@ -434,10 +436,13 @@ export async function createTableOrder(data: {
     criado_em: new Date().toISOString(),
   };
 
+  console.log('[v0] createTableOrder - payload:', JSON.stringify(payload, null, 2));
   const result = await noco.create(PEDIDOS_TABLE_ID, payload);
+  console.log('[v0] createTableOrder - result:', JSON.stringify(result, null, 2));
 
   // Atualizar total da comanda
   const novoTotal = (Number(comanda.total) || 0) + data.valor_total;
+  console.log('[v0] createTableOrder - atualizando comanda', data.comanda_id, 'novo total:', novoTotal);
   await noco.update(COMANDAS_TABLE_ID, {
     id: data.comanda_id,
     total: novoTotal,
