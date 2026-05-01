@@ -193,11 +193,11 @@ export const PRODUTOS_METADADOS_TABLE_ID =
 
 /** Tabela de assinaturas de planos */
 export const ASSINATURAS_TABLE_ID =
-  process.env.NOCODB_TABLE_ASSINATURAS || '';
+  process.env.NOCODB_TABLE_ASSINATURAS || 'msrjfeb28e07cwx';
 
 /** Tabela de faturas de assinaturas */
 export const FATURAS_ASSINATURA_TABLE_ID =
-  process.env.NOCODB_TABLE_FATURAS_ASSINATURA || '';
+  process.env.NOCODB_TABLE_FATURAS_ASSINATURA || 'mhpkvk982298q8a';
 
 // ============================================================
 // PLANOS DISPONÍVEIS
