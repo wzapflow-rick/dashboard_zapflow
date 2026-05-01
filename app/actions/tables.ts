@@ -67,7 +67,7 @@ export async function getMesas(): Promise<Mesa[]> {
       limit: 100,
     });
 
-    return (data.list || []) as Mesa[];
+    return (data.list || []) as unknown as Mesa[];
   } catch (error) {
     console.error('Erro ao buscar mesas:', error);
     return [];
@@ -188,7 +188,7 @@ export async function getComandasByMesa(mesaId: number): Promise<Comanda[]> {
       limit: 100,
     });
 
-    return (data.list || []) as Comanda[];
+    return (data.list || []) as unknown as Comanda[];
   } catch (error) {
     console.error('Erro ao buscar comandas:', error);
     return [];
@@ -211,7 +211,7 @@ export async function getComandasAbertas(): Promise<Comanda[]> {
       limit: 100,
     });
 
-    return (data.list || []) as Comanda[];
+    return (data.list || []) as unknown as Comanda[];
   } catch (error) {
     console.error('Erro ao buscar comandas abertas:', error);
     return [];
@@ -318,7 +318,7 @@ export async function getMesasComDetalhes(): Promise<MesaComDetalhes[]> {
       sort: 'numero',
       limit: 100,
     });
-    const mesas = (mesasData.list || []) as Mesa[];
+    const mesas = (mesasData.list || []) as unknown as Mesa[];
 
     if (mesas.length === 0) return [];
 
@@ -327,7 +327,7 @@ export async function getMesasComDetalhes(): Promise<MesaComDetalhes[]> {
       where: `(store_id,eq,${user.empresaId})~and(status,eq,${COMANDA_STATUS.ABERTA})`,
       limit: 500,
     });
-    const comandas = (comandasData.list || []) as Comanda[];
+    const comandas = (comandasData.list || []) as unknown as Comanda[];
 
     // Buscar pedidos das comandas abertas (tipo_entrega = mesa)
     const pedidosData = await noco.list(PEDIDOS_TABLE_ID, {
