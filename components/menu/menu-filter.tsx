@@ -146,7 +146,7 @@ function ProductCard({ product, onClick }: { product: Product; onClick: () => vo
                                 {fmt(product.preco_original!)}
                             </p>
                         ) : null}
-                        <span className="text-base sm:text-lg font-black text-[#22c55e] leading-none">
+                        <span className="text-base sm:text-lg font-black text-red-500 leading-none">
                             {fmt(product.preco)}
                         </span>
                     </div>
