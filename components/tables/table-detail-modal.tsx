@@ -473,10 +473,26 @@ function ComandaCard({
   isLoading: boolean;
   mesaNumero: number;
 }) {
+  const [showItens, setShowItens] = useState(false);
+  
   const totalComanda = comanda.pedidos.reduce(
     (acc, p) => acc + (Number(p.valor_total) || 0),
     0
   );
+
+  // Extrair todos os itens de todos os pedidos
+  const todosItens = comanda.pedidos.flatMap((pedido: any) => {
+    try {
+      const itens = typeof pedido.itens === 'string' ? JSON.parse(pedido.itens) : pedido.itens;
+      return Array.isArray(itens) ? itens.map((item: any) => ({
+        ...item,
+        pedidoId: pedido.id,
+        pedidoStatus: pedido.status,
+      })) : [];
+    } catch {
+      return [];
+    }
+  });
 
   return (
     <div className="p-3 bg-slate-900/50 rounded-lg border border-slate-700/50">
@@ -486,34 +502,81 @@ function ComandaCard({
           <span className="text-sm font-medium text-white">
             {comanda.nome_cliente || `Comanda ${comanda.id}`}
           </span>
+          {todosItens.length > 0 && (
+            <span className="px-1.5 py-0.5 bg-slate-700 text-slate-300 text-[10px] rounded">
+              {todosItens.length} {todosItens.length === 1 ? 'item' : 'itens'}
+            </span>
+          )}
         </div>
         <span className="text-sm font-semibold text-primary">
           R$ {totalComanda.toFixed(2).replace('.', ',')}
         </span>
       </div>
 
-      {/* Pedidos da comanda */}
-      {comanda.pedidos.length > 0 && (
-        <div className="mb-3 space-y-1">
+      {/* Itens da comanda (expandível) */}
+      {todosItens.length > 0 && (
+        <div className="mb-3">
+          <button
+            onClick={() => setShowItens(!showItens)}
+            className="w-full text-left text-xs text-slate-400 hover:text-slate-300 flex items-center gap-1 mb-1"
+          >
+            <span className={`transition-transform ${showItens ? 'rotate-90' : ''}`}>▶</span>
+            {showItens ? 'Ocultar itens' : 'Ver itens'}
+          </button>
+          
+          <AnimatePresence>
+            {showItens && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="space-y-1 mt-2"
+              >
+                {todosItens.map((item: any, idx: number) => (
+                  <div
+                    key={`${item.pedidoId}-${idx}`}
+                    className="flex items-center justify-between text-xs py-1.5 px-2 bg-slate-800/50 rounded"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-slate-500">{item.quantidade}x</span>
+                      <span className="text-slate-200 truncate">{item.produto || item.nome}</span>
+                      <span className={cn(
+                        'px-1 py-0.5 rounded text-[9px] font-medium capitalize shrink-0',
+                        item.pedidoStatus === 'pendente' && 'bg-amber-500/20 text-amber-400',
+                        item.pedidoStatus === 'preparando' && 'bg-blue-500/20 text-blue-400',
+                        item.pedidoStatus === 'pronto' && 'bg-emerald-500/20 text-emerald-400',
+                        item.pedidoStatus === 'finalizado' && 'bg-slate-500/20 text-slate-400'
+                      )}>
+                        {item.pedidoStatus}
+                      </span>
+                    </div>
+                    <span className="text-slate-400 shrink-0">
+                      R$ {((Number(item.preco_unitario) || 0) * (item.quantidade || 1)).toFixed(2).replace('.', ',')}
+                    </span>
+                  </div>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+
+      {/* Pedidos resumo */}
+      {comanda.pedidos.length > 0 && !showItens && (
+        <div className="mb-3 flex flex-wrap gap-1">
           {comanda.pedidos.map((pedido: any) => (
-            <div
+            <span
               key={pedido.id}
-              className="flex items-center justify-between text-xs text-slate-400 py-1 px-2 bg-slate-800/50 rounded"
+              className={cn(
+                'px-1.5 py-0.5 rounded text-[10px] font-medium',
+                pedido.status === 'pendente' && 'bg-amber-500/20 text-amber-400',
+                pedido.status === 'preparando' && 'bg-blue-500/20 text-blue-400',
+                pedido.status === 'pronto' && 'bg-emerald-500/20 text-emerald-400',
+                pedido.status === 'finalizado' && 'bg-slate-500/20 text-slate-400'
+              )}
             >
-              <div className="flex items-center gap-2">
-                <Clock className="size-3" />
-                <span>Pedido #{pedido.id}</span>
-                <span className={cn(
-                  'px-1.5 py-0.5 rounded text-[10px] font-medium capitalize',
-                  pedido.status === 'pendente' && 'bg-amber-500/20 text-amber-400',
-                  pedido.status === 'preparando' && 'bg-blue-500/20 text-blue-400',
-                  pedido.status === 'pronto' && 'bg-emerald-500/20 text-emerald-400'
-                )}>
-                  {pedido.status}
-                </span>
-              </div>
-              <span>R$ {Number(pedido.valor_total).toFixed(2).replace('.', ',')}</span>
-            </div>
+              #{pedido.id} - {pedido.status}
+            </span>
           ))}
         </div>
       )}

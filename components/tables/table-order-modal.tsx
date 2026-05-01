@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Search, Plus, Minus, ShoppingCart, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { getProducts } from '@/app/actions/products';
+import { getProducts, getCategories, type Category } from '@/app/actions/products';
 import { getCompositeProducts, type CompositeProduct, type CompositeItem } from '@/app/actions/grupos-slots';
 import { createTableOrder } from '@/app/actions/tables';
 import { toast } from 'sonner';
@@ -13,7 +13,7 @@ interface Product {
   id: number;
   nome: string;
   preco: number;
-  categoria_id?: any;
+  categoria_id?: number | string;
   imagem?: string;
 }
 
@@ -40,8 +40,10 @@ export default function TableOrderModal({
   mesa,
 }: TableOrderModalProps) {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [compositeProducts, setCompositeProducts] = useState<CompositeProduct[]>([]);
   const [search, setSearch] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
@@ -57,11 +59,13 @@ export default function TableOrderModal({
 
   const fetchProducts = async () => {
     try {
-      const [productsData, compositeData] = await Promise.all([
+      const [productsData, categoriesData, compositeData] = await Promise.all([
         getProducts(),
+        getCategories(),
         getCompositeProducts(),
       ]);
       setProducts(productsData);
+      setCategories(categoriesData.sort((a, b) => (a.ordem || 0) - (b.ordem || 0)));
       setCompositeProducts(compositeData);
     } catch (error) {
       toast.error('Erro ao buscar produtos');
@@ -159,12 +163,30 @@ export default function TableOrderModal({
     }
   };
 
-  const filteredProducts = products.filter((p) =>
-    p.nome.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredProducts = products.filter((p) => {
+    const matchesSearch = p.nome.toLowerCase().includes(search.toLowerCase());
+    const matchesCategory = selectedCategory === null || String(p.categoria_id) === String(selectedCategory);
+    return matchesSearch && matchesCategory;
+  });
+  
   const filteredComposite = compositeProducts.filter((p) =>
     p.nome.toLowerCase().includes(search.toLowerCase())
   );
+
+  // Agrupar produtos por categoria
+  const productsByCategory = categories.reduce((acc, cat) => {
+    const catProducts = filteredProducts.filter(p => String(p.categoria_id) === String(cat.id));
+    if (catProducts.length > 0) {
+      acc[cat.id] = { nome: cat.nome, produtos: catProducts };
+    }
+    return acc;
+  }, {} as Record<number, { nome: string; produtos: Product[] }>);
+
+  // Produtos sem categoria
+  const uncategorizedProducts = filteredProducts.filter(p => !p.categoria_id || !categories.find(c => String(c.id) === String(p.categoria_id)));
+  if (uncategorizedProducts.length > 0) {
+    productsByCategory[0] = { nome: 'Outros', produtos: uncategorizedProducts };
+  }
 
   const openCompositeModal = (composite: CompositeProduct) => {
     setSelectedComposite(composite);
@@ -258,7 +280,7 @@ export default function TableOrderModal({
               </button>
             </header>
 
-            <div className="p-3 bg-slate-900/50">
+            <div className="p-3 bg-slate-900/50 space-y-2">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 size-4" />
                 <input
@@ -269,6 +291,32 @@ export default function TableOrderModal({
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
+              {/* Category Filter */}
+              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+                <button
+                  onClick={() => setSelectedCategory(null)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors ${
+                    selectedCategory === null
+                      ? 'bg-primary text-white'
+                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                  }`}
+                >
+                  Todos
+                </button>
+                {categories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors ${
+                      selectedCategory === cat.id
+                        ? 'bg-primary text-white'
+                        : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                    }`}
+                  >
+                    {cat.nome}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-3 space-y-4">
@@ -278,13 +326,16 @@ export default function TableOrderModal({
                 </div>
               ) : (
                 <>
-                  {filteredProducts.length > 0 && (
-                    <div>
-                      <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-1">
-                        Produtos
+                  {/* Produtos organizados por categoria */}
+                  {Object.entries(productsByCategory).map(([catId, { nome, produtos }]) => (
+                    <div key={catId}>
+                      <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-1 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-primary rounded-full"></span>
+                        {nome}
+                        <span className="text-slate-600">({produtos.length})</span>
                       </h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {filteredProducts.map((p) => (
+                        {produtos.map((p) => (
                           <button
                             key={p.id}
                             onClick={() => addToCart(p)}
@@ -294,21 +345,18 @@ export default function TableOrderModal({
                               <h4 className="font-semibold text-white text-sm truncate group-hover:text-primary transition-colors">
                                 {p.nome}
                               </h4>
-                              <span className="text-xs text-slate-500">Ref: {p.id}</span>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <span className="text-sm font-bold text-white">
+                              <span className="text-xs text-slate-500">
                                 R$ {Number(p.preco).toFixed(2).replace('.', ',')}
                               </span>
-                              <div className="size-7 bg-slate-800 rounded-lg flex items-center justify-center text-slate-400 group-hover:bg-primary group-hover:text-white transition-all">
-                                <Plus className="size-4" />
-                              </div>
+                            </div>
+                            <div className="size-7 bg-slate-800 rounded-lg flex items-center justify-center text-slate-400 group-hover:bg-primary group-hover:text-white transition-all shrink-0">
+                              <Plus className="size-4" />
                             </div>
                           </button>
                         ))}
                       </div>
                     </div>
-                  )}
+                  ))}
 
                   {filteredComposite.length > 0 && (
                     <div>
@@ -341,7 +389,7 @@ export default function TableOrderModal({
                     </div>
                   )}
 
-                  {filteredProducts.length === 0 && filteredComposite.length === 0 && (
+                  {Object.keys(productsByCategory).length === 0 && filteredComposite.length === 0 && (
                     <div className="text-center py-10 text-slate-500">
                       Nenhum produto encontrado
                     </div>
