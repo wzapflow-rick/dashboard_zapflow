@@ -68,7 +68,7 @@ export async function login(data: any) {
                 path: '/',
             });
             loginAttempts.delete(attemptKey);
-            return { success: true };
+            return { success: true, role: 'admin' };
         }
 
         // 2. Tentar login como usuário interno (atendente, cozinheiro, etc.)
@@ -108,7 +108,7 @@ export async function login(data: any) {
                 path: '/',
             });
             loginAttempts.delete(attemptKey);
-            return { success: true };
+            return { success: true, role: usuario.role || 'atendente' };
         }
 
         const currentAttempt = loginAttempts.get(attemptKey) || { count: 0, lastAttempt: now };

@@ -37,7 +37,13 @@ export default function LoginPage() {
             setLoading(false);
         } else {
             toast.success('Login realizado com sucesso!');
-            router.push('/dashboard');
+            // Redireciona baseado no role do usuario
+            const role = result?.role || 'admin';
+            if (role === 'atendente' || role === 'cozinheiro') {
+                router.push('/dashboard/expedition');
+            } else {
+                router.push('/dashboard');
+            }
             router.refresh();
         }
     }
