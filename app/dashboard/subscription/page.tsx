@@ -108,15 +108,15 @@ export default function SubscriptionPage() {
         : await createSubscription(selectedPlan);
       
       if (result.success) {
-        if ('initPoint' in result && result.initPoint) {
+        if ('initPoint' in result && typeof result.initPoint === 'string' && result.initPoint) {
           // Redireciona para checkout do MP
           window.location.href = result.initPoint;
         } else {
           toast.success('Plano alterado com sucesso!');
           await loadData();
         }
-      } else {
-        toast.error(result.error || 'Erro ao alterar plano');
+      } else if ('error' in result) {
+        toast.error(String(result.error) || 'Erro ao alterar plano');
       }
     } catch (error) {
       toast.error('Erro ao processar solicitacao');
