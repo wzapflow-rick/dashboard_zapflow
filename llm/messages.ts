@@ -187,7 +187,7 @@ ${description}${deliveryNote}
 ${trackUrl}`;
 
   if (status === 'finalizado' && empresaId) {
-    const ratingUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/rating/${empresaId}/${orderId}`;
+    const ratingUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://cardapio.wzapflow.com.br'}/rating/${empresaId}/${orderId}`;
     message += `
 
 ⭐ *Sua opinião vale muito!* Avalie o seu pedido em 1 clique:
