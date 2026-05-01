@@ -263,10 +263,10 @@ export default function SubscriptionPage() {
                   key={plan.id} 
                   className={cn(
                     "bg-white dark:bg-slate-800 rounded-3xl border p-6 md:p-8 flex flex-col relative overflow-hidden",
-                    plan.popular ? "border-primary ring-4 ring-primary/5" : "border-slate-200 dark:border-slate-700"
+                    'popular' in plan && plan.popular ? "border-primary ring-4 ring-primary/5" : "border-slate-200 dark:border-slate-700"
                   )}
                 >
-                  {plan.popular && (
+                  {'popular' in plan && plan.popular && (
                     <div className="absolute top-4 right-4">
                       <span className="bg-primary text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">Mais Popular</span>
                     </div>
