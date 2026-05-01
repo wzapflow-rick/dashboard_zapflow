@@ -8,10 +8,15 @@ import {
   SUBSCRIPTION_PLANS,
   type SubscriptionPlanId
 } from '@/lib/constants';
-import { hashPassword } from './auth';
+import bcrypt from 'bcryptjs';
 import { encrypt } from '@/lib/session';
 import { cookies } from 'next/headers';
 import { v4 as uuidv4 } from 'uuid';
+
+// Helper para hash de senha
+function hashPassword(password: string): string {
+  return bcrypt.hashSync(password, 10);
+}
 
 const MP_ACCESS_TOKEN = process.env.MERCADOPAGO_ACCESS_TOKEN || '';
 
