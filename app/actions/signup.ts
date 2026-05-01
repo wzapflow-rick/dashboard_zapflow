@@ -216,7 +216,7 @@ export async function getPendingSignup(token: string): Promise<PendingSignup | n
       return null;
     }
     
-    return signup as PendingSignup;
+    return signup as unknown as PendingSignup;
   } catch (error) {
     console.error('[Signup] Erro ao buscar pending signup:', error);
     return null;
