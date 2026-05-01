@@ -63,6 +63,11 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen }: Sideb
         return null;
     }
 
+    // Debug: verificar itens filtrados
+    console.log('[v0] navItems count:', navItems.length);
+    console.log('[v0] user role:', user?.role);
+    console.log('[v0] controle_estoque:', user?.controle_estoque);
+
     const closeMobileMenu = () => {
         if (isMobileMenuOpen) {
             setIsMobileMenuOpen(false);
