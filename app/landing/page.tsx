@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -15,8 +15,8 @@ import {
   ArrowRight,
   Check,
   Star,
-  Play,
-  Sparkles
+  Sparkles,
+  Flame
 } from 'lucide-react';
 
 // Componente de texto com efeito de queijo derretendo
@@ -101,167 +101,13 @@ function CheeseParticles({ isActive }: { isActive: boolean }) {
   );
 }
 
-// Pizza flutuante animada
-function FloatingPizza() {
-  return (
-    <motion.div 
-      className="absolute -right-20 top-20 w-[500px] h-[500px] opacity-90 z-0 hidden lg:block"
-      animate={{ 
-        y: [0, -20, 0],
-        rotate: [0, 5, 0, -5, 0]
-      }}
-      transition={{ 
-        duration: 6, 
-        repeat: Infinity,
-        ease: "easeInOut"
-      }}
-    >
-      <div className="relative w-full h-full">
-        {/* Pizza base */}
-        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-200 via-amber-300 to-amber-400 shadow-2xl" />
-        {/* Molho */}
-        <div className="absolute inset-8 rounded-full bg-gradient-to-br from-red-500 to-red-700" />
-        {/* Queijo */}
-        <div className="absolute inset-12 rounded-full bg-gradient-to-br from-yellow-200 via-yellow-300 to-amber-400 opacity-90" />
-        {/* Pepperoni */}
-        {[...Array(8)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-16 h-16 rounded-full bg-gradient-to-br from-red-600 to-red-800 shadow-lg"
-            style={{
-              left: `${30 + Math.cos(i * 0.8) * 25}%`,
-              top: `${30 + Math.sin(i * 0.8) * 25}%`,
-            }}
-            animate={{ scale: [1, 1.05, 1] }}
-            transition={{ duration: 2, delay: i * 0.2, repeat: Infinity }}
-          />
-        ))}
-        {/* Brilho */}
-        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/20 to-transparent" />
-        {/* Vapor */}
-        {[...Array(5)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-8 h-24 bg-gradient-to-t from-white/0 via-white/20 to-white/0 rounded-full blur-sm"
-            style={{
-              left: `${20 + i * 15}%`,
-              top: '-10%',
-            }}
-            animate={{
-              y: [-20, -60],
-              opacity: [0, 0.6, 0],
-              scaleY: [0.5, 1.5],
-            }}
-            transition={{
-              duration: 2 + Math.random(),
-              delay: i * 0.4,
-              repeat: Infinity,
-              ease: "easeOut"
-            }}
-          />
-        ))}
-      </div>
-    </motion.div>
-  );
-}
-
-// Hamburguer flutuante
-function FloatingBurger() {
-  return (
-    <motion.div 
-      className="absolute -left-10 bottom-20 w-[400px] h-[300px] z-0 hidden lg:block"
-      animate={{ 
-        y: [0, 15, 0],
-        rotate: [0, -3, 0, 3, 0]
-      }}
-      transition={{ 
-        duration: 5, 
-        repeat: Infinity,
-        ease: "easeInOut"
-      }}
-    >
-      <div className="relative w-full h-full flex flex-col items-center justify-center">
-        {/* Pao de cima */}
-        <motion.div 
-          className="w-64 h-20 rounded-t-full bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 shadow-xl z-30"
-          animate={{ y: [0, -5, 0] }}
-          transition={{ duration: 2, repeat: Infinity, delay: 0 }}
-        >
-          {/* Gergelim */}
-          {[...Array(12)].map((_, i) => (
-            <div 
-              key={i} 
-              className="absolute w-2 h-3 bg-yellow-100 rounded-full"
-              style={{
-                left: `${15 + (i % 6) * 14}%`,
-                top: `${20 + Math.floor(i / 6) * 30}%`,
-                transform: 'rotate(15deg)'
-              }}
-            />
-          ))}
-        </motion.div>
-        
-        {/* Alface */}
-        <motion.div 
-          className="w-72 h-6 -mt-2 bg-gradient-to-r from-green-400 via-green-500 to-green-400 z-20"
-          style={{ 
-            clipPath: 'polygon(0% 50%, 5% 0%, 10% 50%, 15% 0%, 20% 50%, 25% 0%, 30% 50%, 35% 0%, 40% 50%, 45% 0%, 50% 50%, 55% 0%, 60% 50%, 65% 0%, 70% 50%, 75% 0%, 80% 50%, 85% 0%, 90% 50%, 95% 0%, 100% 50%, 100% 100%, 0% 100%)'
-          }}
-          animate={{ y: [0, -3, 0] }}
-          transition={{ duration: 2, repeat: Infinity, delay: 0.1 }}
-        />
-        
-        {/* Queijo derretendo */}
-        <motion.div 
-          className="w-68 h-8 -mt-1 bg-gradient-to-b from-yellow-300 to-amber-400 z-10 relative"
-          animate={{ y: [0, -2, 0] }}
-          transition={{ duration: 2, repeat: Infinity, delay: 0.2 }}
-        >
-          {/* Gotas de queijo */}
-          {[...Array(6)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute w-4 h-8 bg-gradient-to-b from-yellow-300 to-amber-400 rounded-b-full"
-              style={{
-                left: `${10 + i * 16}%`,
-                top: '100%',
-              }}
-              animate={{ 
-                scaleY: [1, 1.3, 1],
-                y: [0, 4, 0]
-              }}
-              transition={{ 
-                duration: 2, 
-                delay: i * 0.3, 
-                repeat: Infinity 
-              }}
-            />
-          ))}
-        </motion.div>
-        
-        {/* Carne */}
-        <motion.div 
-          className="w-64 h-10 -mt-1 rounded-sm bg-gradient-to-b from-amber-800 via-amber-900 to-amber-950 shadow-lg"
-          animate={{ y: [0, -2, 0] }}
-          transition={{ duration: 2, repeat: Infinity, delay: 0.3 }}
-        />
-        
-        {/* Pao de baixo */}
-        <motion.div 
-          className="w-64 h-12 -mt-1 rounded-b-3xl bg-gradient-to-b from-amber-500 to-amber-600 shadow-xl"
-          animate={{ y: [0, -2, 0] }}
-          transition={{ duration: 2, repeat: Infinity, delay: 0.4 }}
-        />
-      </div>
-    </motion.div>
-  );
-}
-
 // Planos de preco
 const plans = [
   {
     name: 'Start',
     price: 79.90,
+    mascot: '/images/mascot-start.jpg',
+    mascotPosition: 'sitting',
     features: [
       'Cardapio digital (Link + QrCode)',
       'Painel Kanban basico',
@@ -273,6 +119,8 @@ const plans = [
     name: 'PRO',
     price: 149.90,
     popular: true,
+    mascot: '/images/mascot-pro.jpg',
+    mascotPosition: 'standing',
     features: [
       'Cardapio digital (Link + QrCode)',
       'Painel Kanban com notificacao no WhatsApp',
@@ -285,6 +133,8 @@ const plans = [
   {
     name: 'ELITE',
     price: 297.90,
+    mascot: '/images/mascot-elite.jpg',
+    mascotPosition: 'pointing',
     features: [
       'Cardapio digital com Customizacao Total',
       'Painel Kanban com notificacao no WhatsApp',
@@ -327,21 +177,15 @@ export default function LandingPage() {
             <nav className="hidden md:flex items-center gap-8">
               <a href="#features" className="text-sm text-gray-400 hover:text-white transition-colors">Recursos</a>
               <a href="#pricing" className="text-sm text-gray-400 hover:text-white transition-colors">Precos</a>
-              <a href="#faq" className="text-sm text-gray-400 hover:text-white transition-colors">FAQ</a>
+              <a href="#depoimentos" className="text-sm text-gray-400 hover:text-white transition-colors">Depoimentos</a>
             </nav>
             
             <div className="flex items-center gap-3">
               <Link 
-                href="/login" 
-                className="text-sm text-gray-400 hover:text-white transition-colors hidden sm:block"
+                href="https://cardapio.wzapflow.com.br"
+                className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 rounded-xl text-sm font-bold transition-all shadow-lg shadow-emerald-500/25"
               >
-                Entrar
-              </Link>
-              <Link 
-                href="/login"
-                className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 rounded-xl text-sm font-semibold transition-colors"
-              >
-                Comecar Gratis
+                Comecar Agora
               </Link>
             </div>
           </div>
@@ -352,112 +196,150 @@ export default function LandingPage() {
       <motion.section 
         ref={heroRef}
         style={{ opacity: heroOpacity, scale: heroScale }}
-        className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden"
+        className="relative min-h-screen flex items-center pt-20 overflow-hidden"
       >
         {/* Background effects */}
         <div className="absolute inset-0 bg-gradient-to-b from-emerald-950/20 via-transparent to-transparent" />
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl" />
         
-        {/* Floating food elements */}
-        <FloatingPizza />
-        <FloatingBurger />
-        
-        <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-          >
-            {/* Badge */}
-            <motion.div 
-              className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full mb-8"
-              animate={{ scale: [1, 1.02, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Texto do Hero */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
             >
-              <Sparkles className="w-4 h-4 text-emerald-400" />
-              <span className="text-sm text-emerald-400 font-medium">Novo: Agente de IA para WhatsApp</span>
+              {/* Badge com texto derretido */}
+              <motion.div 
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-full mb-8"
+                animate={{ scale: [1, 1.02, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <Flame className="w-4 h-4 text-amber-400" />
+                <span className="text-sm font-bold">
+                  <span className="text-amber-400">Fome</span>
+                  <span className="text-orange-300"> de </span>
+                  <span className="text-orange-400">crescer?</span>
+                </span>
+              </motion.div>
+              
+              {/* Main headline */}
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-black leading-tight mb-6">
+                <span className="block text-white">Seu delivery</span>
+                <span className="block mt-2">
+                  com sabor de{' '}
+                  <MeltingText className="text-amber-400">sucesso</MeltingText>
+                </span>
+              </h1>
+              
+              <p className="text-lg sm:text-xl text-gray-400 max-w-xl mb-8 leading-relaxed">
+                Cardapio digital irresistivel, pedidos que chegam quentinhos e gestao que faz seu caixa transbordar. 
+                Tudo que voce precisa para{' '}
+                <span className="text-amber-400 font-bold">vender mais</span>.
+              </p>
+              
+              {/* CTA Button */}
+              <div className="flex flex-col sm:flex-row items-start gap-4 relative">
+                <CheeseParticles isActive={isExploding} />
+                
+                <Link href="https://cardapio.wzapflow.com.br">
+                  <motion.button
+                    onClick={handleCTAClick}
+                    className="relative group px-8 py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-2xl text-lg font-bold shadow-xl shadow-emerald-500/25 overflow-hidden"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <span className="relative z-10 flex items-center gap-2">
+                      Quero meu cardapio
+                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    </span>
+                    <motion.div 
+                      className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-emerald-500"
+                      initial={{ x: '-100%' }}
+                      whileHover={{ x: 0 }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  </motion.button>
+                </Link>
+                
+                <p className="text-sm text-gray-500 mt-2 sm:mt-0 sm:ml-4 sm:self-center">
+                  Sem cartao de credito. Comece em 5 minutos.
+                </p>
+              </div>
+              
+              {/* Stats */}
+              <motion.div 
+                className="grid grid-cols-3 gap-6 mt-12 pt-8 border-t border-white/10"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5, duration: 0.8 }}
+              >
+                {[
+                  { value: '500+', label: 'Restaurantes ativos' },
+                  { value: '50k+', label: 'Pedidos por mes' },
+                  { value: '4.9', label: 'Nota dos clientes' },
+                ].map((stat, i) => (
+                  <div key={i}>
+                    <div className="text-2xl sm:text-3xl font-black text-white">{stat.value}</div>
+                    <div className="text-xs sm:text-sm text-gray-500">{stat.label}</div>
+                  </div>
+                ))}
+              </motion.div>
             </motion.div>
             
-            {/* Main headline */}
-            <h1 className="text-4xl sm:text-5xl md:text-7xl font-black leading-tight mb-6">
-              <span className="block">Seu delivery</span>
-              <span className="block mt-2">
-                com sabor de{' '}
-                <MeltingText className="text-amber-400">sucesso</MeltingText>
-              </span>
-            </h1>
-            
-            <p className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-              Cardapio digital, pedidos pelo WhatsApp, gestao completa e muito mais. 
-              Tudo que seu restaurante precisa para <span className="text-white font-semibold">vender mais</span>.
-            </p>
-            
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 relative">
-              <CheeseParticles isActive={isExploding} />
-              
-              <motion.button
-                onClick={handleCTAClick}
-                className="relative group px-8 py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-2xl text-lg font-bold shadow-xl shadow-emerald-500/25 overflow-hidden"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+            {/* Pizza + Screenshot do Cardapio */}
+            <motion.div
+              className="relative hidden lg:block"
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+            >
+              {/* Pizza flutuante */}
+              <motion.div 
+                className="absolute -top-10 -right-10 w-80 h-80 z-20"
+                animate={{ 
+                  y: [0, -15, 0],
+                  rotate: [0, 5, 0, -5, 0]
+                }}
+                transition={{ 
+                  duration: 5, 
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
               >
-                <span className="relative z-10 flex items-center gap-2">
-                  Comecar Agora
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </span>
-                <motion.div 
-                  className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-emerald-500"
-                  initial={{ x: '-100%' }}
-                  whileHover={{ x: 0 }}
-                  transition={{ duration: 0.3 }}
+                <Image
+                  src="/images/pizza-logo.png"
+                  alt="Pizza ZapFlow"
+                  width={320}
+                  height={320}
+                  className="drop-shadow-2xl"
                 />
-              </motion.button>
+              </motion.div>
               
-              <button className="flex items-center gap-2 px-6 py-4 text-gray-400 hover:text-white transition-colors">
-                <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
-                  <Play className="w-5 h-5 ml-0.5" />
-                </div>
-                <span>Ver demonstracao</span>
-              </button>
-            </div>
-          </motion.div>
-          
-          {/* Stats */}
-          <motion.div 
-            className="grid grid-cols-3 gap-8 mt-20 max-w-xl mx-auto"
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.8 }}
-          >
-            {[
-              { value: '500+', label: 'Restaurantes' },
-              { value: '50k+', label: 'Pedidos/mes' },
-              { value: '4.9', label: 'Avaliacao' },
-            ].map((stat, i) => (
-              <div key={i} className="text-center">
-                <div className="text-2xl sm:text-3xl font-black text-white">{stat.value}</div>
-                <div className="text-sm text-gray-500">{stat.label}</div>
-              </div>
-            ))}
-          </motion.div>
-        </div>
-        
-        {/* Scroll indicator */}
-        <motion.div 
-          className="absolute bottom-10 left-1/2 -translate-x-1/2"
-          animate={{ y: [0, 10, 0] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        >
-          <div className="w-6 h-10 rounded-full border-2 border-white/20 flex items-start justify-center p-2">
-            <motion.div 
-              className="w-1.5 h-2.5 bg-white/40 rounded-full"
-              animate={{ y: [0, 8, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            />
+              {/* Screenshot do cardapio */}
+              <motion.div 
+                className="relative z-10 rounded-3xl overflow-hidden shadow-2xl shadow-black/50 border border-white/10"
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <Image
+                  src="/images/menu-screenshot.png"
+                  alt="Cardapio ZapFlow"
+                  width={380}
+                  height={700}
+                  className="w-full"
+                />
+                {/* Brilho overlay */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent pointer-events-none" />
+              </motion.div>
+              
+              {/* Glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-amber-500/20 blur-3xl -z-10" />
+            </motion.div>
           </div>
-        </motion.div>
+        </div>
       </motion.section>
 
       {/* Features Section */}
@@ -471,10 +353,10 @@ export default function LandingPage() {
           >
             <h2 className="text-3xl sm:text-5xl font-black mb-4">
               Tudo que voce precisa para{' '}
-              <span className="text-emerald-400">vender mais</span>
+              <span className="text-amber-400">vender mais</span>
             </h2>
             <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              Ferramentas poderosas para transformar seu delivery em uma maquina de vendas
+              Ferramentas que transformam clientes famintos em pedidos no seu caixa
             </p>
           </motion.div>
           
@@ -482,52 +364,58 @@ export default function LandingPage() {
             {[
               {
                 icon: Smartphone,
-                title: 'Cardapio Digital',
-                description: 'Link personalizado e QR Code para seus clientes acessarem seu cardapio de qualquer lugar.',
-                color: 'emerald',
+                title: 'Cardapio que da agua na boca',
+                description: 'Fotos em alta qualidade, precos claros e botao de pedir. Seu cliente nao resiste.',
+                gradient: 'from-emerald-500/20 to-emerald-600/20',
+                iconColor: 'text-emerald-400',
               },
               {
                 icon: MessageCircle,
                 title: 'Pedidos no WhatsApp',
-                description: 'Receba pedidos diretamente no WhatsApp com notificacoes em tempo real.',
-                color: 'green',
+                description: 'Cliente pediu? Voce recebe na hora. Sem app, sem complicacao, so vendas.',
+                gradient: 'from-green-500/20 to-green-600/20',
+                iconColor: 'text-green-400',
               },
               {
                 icon: CreditCard,
-                title: 'Pagamentos Integrados',
-                description: 'Aceite Pix, cartoes de credito e debito com taxas competitivas.',
-                color: 'amber',
+                title: 'Pix e Cartao na hora',
+                description: 'Receba pagamentos antes do motoboy sair. Adeus calote, ola lucro.',
+                gradient: 'from-amber-500/20 to-amber-600/20',
+                iconColor: 'text-amber-400',
               },
               {
                 icon: ChefHat,
-                title: 'Painel Kanban',
-                description: 'Gerencie pedidos em tempo real com visao completa da cozinha.',
-                color: 'orange',
+                title: 'Cozinha organizada',
+                description: 'Painel Kanban mostra cada pedido. Nada queima, nada atrasa, cliente feliz.',
+                gradient: 'from-orange-500/20 to-orange-600/20',
+                iconColor: 'text-orange-400',
               },
               {
                 icon: BarChart3,
-                title: 'Relatorios Completos',
-                description: 'Acompanhe vendas, produtos mais pedidos e desempenho do seu delivery.',
-                color: 'red',
+                title: 'Saiba o que vende mais',
+                description: 'Relatorios mostram seus campeoes de venda. Invista no que da retorno.',
+                gradient: 'from-red-500/20 to-red-600/20',
+                iconColor: 'text-red-400',
               },
               {
                 icon: Clock,
-                title: 'Horarios Flexiveis',
-                description: 'Configure horarios de funcionamento e pausas automaticas.',
-                color: 'rose',
+                title: 'Aberto quando voce quiser',
+                description: 'Configure horarios, pausas e feriados. Seu cardapio obedece voce.',
+                gradient: 'from-rose-500/20 to-rose-600/20',
+                iconColor: 'text-rose-400',
               },
             ].map((feature, i) => (
               <motion.div
                 key={i}
-                className="group relative p-6 bg-white/5 border border-white/10 rounded-3xl hover:bg-white/10 transition-all duration-300"
+                className={`group relative p-6 bg-gradient-to-br ${feature.gradient} border border-white/10 rounded-3xl hover:border-white/20 transition-all duration-300`}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                whileHover={{ y: -5 }}
+                whileHover={{ y: -5, scale: 1.02 }}
               >
-                <div className={`w-14 h-14 rounded-2xl bg-${feature.color}-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                  <feature.icon className={`w-7 h-7 text-${feature.color}-400`} />
+                <div className={`w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                  <feature.icon className={`w-7 h-7 ${feature.iconColor}`} />
                 </div>
                 <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
                 <p className="text-gray-400">{feature.description}</p>
@@ -547,67 +435,96 @@ export default function LandingPage() {
             viewport={{ once: true }}
           >
             <h2 className="text-3xl sm:text-5xl font-black mb-4">
-              Planos que cabem no seu{' '}
-              <span className="text-amber-400">bolso</span>
+              Escolha o tamanho do seu{' '}
+              <span className="text-amber-400">apetite</span>
             </h2>
             <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              Escolha o plano ideal para o tamanho do seu negocio
+              Planos que cabem no seu bolso e fazem seu negocio crescer
             </p>
           </motion.div>
           
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-8 items-end">
             {plans.map((plan, i) => (
               <motion.div
                 key={i}
-                className={`relative p-6 sm:p-8 rounded-3xl border transition-all duration-300 ${
-                  plan.popular 
-                    ? 'bg-gradient-to-b from-emerald-950/50 to-emerald-950/20 border-emerald-500/50 scale-105' 
-                    : 'bg-white/5 border-white/10 hover:border-white/20'
-                }`}
+                className={`relative ${plan.popular ? 'md:-mt-8' : ''}`}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
+                transition={{ delay: i * 0.15 }}
               >
-                {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-emerald-500 rounded-full text-sm font-bold">
-                    Mais Popular
-                  </div>
-                )}
-                
-                <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                <div className="flex items-baseline gap-1 mb-6">
-                  <span className="text-4xl font-black">R$ {plan.price.toFixed(2).replace('.', ',')}</span>
-                  <span className="text-gray-400">/mes</span>
-                </div>
-                
-                <ul className="space-y-3 mb-8">
-                  {plan.features.map((feature, j) => (
-                    <li key={j} className="flex items-start gap-3">
-                      <Check className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-                      <span className="text-gray-300 text-sm">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-                
-                <Link
-                  href="/login"
-                  className={`block w-full py-3 rounded-xl text-center font-semibold transition-colors ${
-                    plan.popular
-                      ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
-                      : 'bg-white/10 hover:bg-white/20 text-white'
+                {/* Mascote */}
+                <motion.div 
+                  className={`absolute -top-20 left-1/2 -translate-x-1/2 w-28 h-28 z-20 ${
+                    plan.mascotPosition === 'sitting' ? 'rotate-[-5deg]' : 
+                    plan.mascotPosition === 'pointing' ? 'rotate-[5deg]' : ''
                   }`}
+                  animate={{ 
+                    y: [0, -8, 0],
+                    rotate: plan.mascotPosition === 'sitting' ? [-5, -8, -5] : 
+                            plan.mascotPosition === 'pointing' ? [5, 8, 5] : [0, 3, 0]
+                  }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
                 >
-                  Comecar Agora
-                </Link>
+                  <Image
+                    src={plan.mascot}
+                    alt={`Mascote ${plan.name}`}
+                    width={112}
+                    height={112}
+                    className="rounded-full border-4 border-[#1a1a1a] shadow-xl object-cover"
+                  />
+                </motion.div>
+                
+                {/* Card do plano */}
+                <div className={`relative p-8 pt-16 rounded-3xl border transition-all duration-300 ${
+                  plan.popular 
+                    ? 'bg-gradient-to-b from-emerald-900/50 to-[#1a1a1a] border-emerald-500/50 shadow-xl shadow-emerald-500/10' 
+                    : 'bg-[#1a1a1a] border-white/10 hover:border-white/20'
+                }`}>
+                  {plan.popular && (
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full text-xs font-black uppercase tracking-wider">
+                      Mais Popular
+                    </div>
+                  )}
+                  
+                  <h3 className="text-2xl font-black mb-2">{plan.name}</h3>
+                  <div className="flex items-baseline gap-1 mb-6">
+                    <span className="text-sm text-gray-400">R$</span>
+                    <span className="text-4xl font-black">{plan.price.toFixed(2).replace('.', ',')}</span>
+                    <span className="text-gray-400">/mes</span>
+                  </div>
+                  
+                  <ul className="space-y-3 mb-8">
+                    {plan.features.map((feature, j) => (
+                      <li key={j} className="flex items-start gap-3 text-sm text-gray-300">
+                        <Check className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  
+                  <Link href="https://cardapio.wzapflow.com.br">
+                    <motion.button
+                      className={`w-full py-4 rounded-xl font-bold transition-all ${
+                        plan.popular 
+                          ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40' 
+                          : 'bg-white/10 text-white hover:bg-white/20'
+                      }`}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      {plan.popular ? 'Comecar com PRO' : `Escolher ${plan.name}`}
+                    </motion.button>
+                  </Link>
+                </div>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-20 sm:py-32">
+      {/* Testimonials Section */}
+      <section id="depoimentos" className="py-20 sm:py-32 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div 
             className="text-center mb-16"
@@ -616,29 +533,35 @@ export default function LandingPage() {
             viewport={{ once: true }}
           >
             <h2 className="text-3xl sm:text-5xl font-black mb-4">
-              O que nossos clientes{' '}
-              <span className="text-emerald-400">dizem</span>
+              Quem provou,{' '}
+              <span className="text-amber-400">aprovou</span>
             </h2>
+            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+              Veja o que nossos clientes falam sobre o ZapFlow
+            </p>
           </motion.div>
           
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-8">
             {[
               {
                 name: 'Carlos Silva',
-                role: 'Pizzaria do Carlos',
-                content: 'Aumentei minhas vendas em 40% no primeiro mes. O sistema e muito facil de usar!',
+                business: 'Pizzaria do Carlos',
+                avatar: '🍕',
+                text: 'Triplicamos nossos pedidos em 2 meses. O cardapio digital e lindo e os clientes adoram!',
                 rating: 5,
               },
               {
-                name: 'Ana Santos',
-                role: 'Burguer House',
-                content: 'O atendimento automatico no WhatsApp mudou minha vida. Agora consigo atender muito mais clientes.',
+                name: 'Maria Santos',
+                business: 'Burger House',
+                avatar: '🍔',
+                text: 'Antes perdia pedidos no papel. Agora ta tudo organizado e minha cozinha nao para.',
                 rating: 5,
               },
               {
-                name: 'Roberto Lima',
-                role: 'Sushi Express',
-                content: 'O painel Kanban e perfeito para organizar os pedidos na cozinha. Recomendo demais!',
+                name: 'Joao Oliveira',
+                business: 'Acai do Joao',
+                avatar: '🍇',
+                text: 'O suporte e incrivel! Sempre me ajudam rapido. Recomendo de olhos fechados.',
                 rating: 5,
               },
             ].map((testimonial, i) => (
@@ -648,18 +571,23 @@ export default function LandingPage() {
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
+                transition={{ delay: i * 0.15 }}
               >
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-2xl">
+                    {testimonial.avatar}
+                  </div>
+                  <div>
+                    <h4 className="font-bold">{testimonial.name}</h4>
+                    <p className="text-sm text-gray-400">{testimonial.business}</p>
+                  </div>
+                </div>
                 <div className="flex gap-1 mb-4">
                   {[...Array(testimonial.rating)].map((_, j) => (
-                    <Star key={j} className="w-5 h-5 text-amber-400 fill-amber-400" />
+                    <Star key={j} className="w-4 h-4 text-amber-400 fill-amber-400" />
                   ))}
                 </div>
-                <p className="text-gray-300 mb-6">{`"${testimonial.content}"`}</p>
-                <div>
-                  <div className="font-semibold">{testimonial.name}</div>
-                  <div className="text-sm text-gray-500">{testimonial.role}</div>
-                </div>
+                <p className="text-gray-300 leading-relaxed">&ldquo;{testimonial.text}&rdquo;</p>
               </motion.div>
             ))}
           </div>
@@ -667,65 +595,72 @@ export default function LandingPage() {
       </section>
 
       {/* Final CTA */}
-      <section className="py-20 sm:py-32 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/50 via-transparent to-emerald-950/50" />
-        
-        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <section className="py-20 sm:py-32 relative">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
             <h2 className="text-3xl sm:text-5xl font-black mb-6">
-              Pronto para turbinar seu{' '}
-              <span className="text-amber-400">delivery</span>?
+              Pronto pra fazer seu delivery{' '}
+              <span className="text-amber-400">bombar</span>?
             </h2>
-            <p className="text-gray-400 text-lg mb-10 max-w-2xl mx-auto">
-              Junte-se a centenas de restaurantes que ja estao vendendo mais com o ZapFlow
+            <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto">
+              Junte-se a mais de 500 restaurantes que ja estao vendendo mais com o ZapFlow
             </p>
             
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                href="/login"
-                className="px-8 py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-2xl text-lg font-bold shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all"
-              >
-                Comecar Gratis
+            <div className="relative inline-block">
+              <CheeseParticles isActive={isExploding} />
+              <Link href="https://cardapio.wzapflow.com.br">
+                <motion.button
+                  onClick={handleCTAClick}
+                  className="relative group px-10 py-5 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-2xl text-xl font-bold shadow-xl shadow-emerald-500/25 overflow-hidden"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <span className="relative z-10 flex items-center gap-3">
+                    Criar meu cardapio gratis
+                    <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                  </span>
+                  <motion.div 
+                    className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-emerald-500"
+                    initial={{ x: '-100%' }}
+                    whileHover={{ x: 0 }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </motion.button>
               </Link>
-              <a 
-                href="https://wa.me/5511999999999" 
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-6 py-4 text-gray-400 hover:text-white transition-colors"
-              >
-                <MessageCircle className="w-5 h-5" />
-                Falar com um consultor
-              </a>
             </div>
+            
+            <p className="text-sm text-gray-500 mt-6">
+              Sem cartao de credito. Configure em 5 minutos. Cancele quando quiser.
+            </p>
           </motion.div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-12 border-t border-white/5">
+      <footer className="py-12 border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
-                <Zap className="w-6 h-6 text-white" />
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
+                <Zap className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-black">
+              <span className="text-lg font-black">
                 <span className="text-emerald-400">Zap</span>Flow
               </span>
             </div>
             
-            <div className="flex items-center gap-8 text-sm text-gray-500">
-              <a href="#" className="hover:text-white transition-colors">Termos de Uso</a>
-              <a href="#" className="hover:text-white transition-colors">Privacidade</a>
-              <a href="#" className="hover:text-white transition-colors">Contato</a>
-            </div>
+            <p className="text-sm text-gray-500">
+              &copy; {new Date().getFullYear()} ZapFlow. Todos os direitos reservados.
+            </p>
             
-            <div className="text-sm text-gray-500">
-              2024 ZapFlow. Todos os direitos reservados.
+            <div className="flex items-center gap-6">
+              <a href="#" className="text-sm text-gray-400 hover:text-white transition-colors">Termos</a>
+              <a href="#" className="text-sm text-gray-400 hover:text-white transition-colors">Privacidade</a>
+              <a href="#" className="text-sm text-gray-400 hover:text-white transition-colors">Contato</a>
             </div>
           </div>
         </div>
