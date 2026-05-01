@@ -52,6 +52,8 @@ export async function saveProduct(
     precoNumerico = 0;
   }
 
+  const tagValue = formData.get('tag') as string;
+  
   const productData: any = {
     id: editingProduct?.id,
     nome: formData.get('nome') as string,
@@ -62,7 +64,8 @@ export async function saveProduct(
     disponivel: editingProduct ? editingProduct.disponivel : true,
     imagem: editingProduct?.imagem || '',
     tamanhos: formData.get('tamanhos') ? String(formData.get('tamanhos')) : null,
-    recomendacoes: formData.get('recomendacoes') ? String(formData.get('recomendacoes')) : null
+    recomendacoes: formData.get('recomendacoes') ? String(formData.get('recomendacoes')) : null,
+    tag: tagValue || null
   };
 
   // 1. Salva o produto primeiro. Isso garante a validação do DB. 
