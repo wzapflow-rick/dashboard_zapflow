@@ -149,7 +149,8 @@ export async function register(formData: FormData) {
         nome_fantasia: nome,
         status: 'ativo',
         nincho: 'Outros',
-        instancia_evolution: ''
+        instancia_evolution: '',
+        planos: 'iniciante'
     }) as any;
 
     if (!empresa) return { error: 'Erro ao criar conta' };

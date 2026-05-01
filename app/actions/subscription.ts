@@ -230,6 +230,12 @@ export async function createSubscription(planId: SubscriptionPlanId, cardToken?:
       } else {
         await noco.create(ASSINATURAS_TABLE_ID, subscriptionData);
       }
+      
+      // Atualiza o plano na tabela de empresas para liberar o cardapio
+      await noco.update(EMPRESAS_TABLE_ID, {
+        id: me.empresaId,
+        planos: planId,
+      });
     }
 
     return {
@@ -295,6 +301,12 @@ export async function changePlan(newPlanId: SubscriptionPlanId): Promise<{
         plano: newPlanId,
         valor: plan.price,
       });
+      
+      // Atualiza o plano na tabela de empresas
+      await noco.update(EMPRESAS_TABLE_ID, {
+        id: me.empresaId,
+        planos: newPlanId,
+      });
     }
 
     return { success: true };
@@ -344,6 +356,12 @@ export async function cancelSubscription(): Promise<{
       await noco.update(ASSINATURAS_TABLE_ID, {
         id: subscription.id,
         status: 'cancelled',
+      });
+      
+      // Volta o plano da empresa para iniciante (bloqueia cardapio)
+      await noco.update(EMPRESAS_TABLE_ID, {
+        id: me.empresaId,
+        planos: 'iniciante',
       });
     }
 

@@ -57,18 +57,67 @@ export default async function PublicMenuPage({
                         <AlertCircle className="size-10 text-red-500" />
                     </div>
                     <h1 className="text-2xl font-bold text-white mb-2">
-                        Cardápio Indisponível
+                        Cardapio Indisponivel
                     </h1>
                     <p className="text-gray-400 text-sm leading-relaxed mb-6">
-                        Não conseguimos localizar as informações da loja.
+                        Nao conseguimos localizar as informacoes da loja.
                     </p>
                     <div className="mt-6 pt-6 border-t border-[#2a2a2a] text-left">
-                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Diagnóstico:</p>
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Diagnostico:</p>
                         <div className="bg-[#0a0a0a] p-3 rounded-lg font-mono text-[10px] text-gray-500 break-all">
                             <p>Slug: {slug}</p>
-                            <p>Status: {errorDetail ? 'Falha na API' : 'Empresa não encontrada'}</p>
+                            <p>Status: {errorDetail ? 'Falha na API' : 'Empresa nao encontrada'}</p>
                             {errorDetail && <p className="text-red-500 mt-1">Erro: {errorDetail}</p>}
                         </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Verificar se empresa esta bloqueada (sem plano pago)
+    if ('blocked' in data && data.blocked) {
+        const empresaInfo = data.empresa as { nome?: string; logo?: string };
+        const nomeLoja = empresaInfo?.nome || 'Esta loja';
+        const logoLoja = empresaInfo?.logo;
+        const inicialLoja = nomeLoja.charAt(0).toUpperCase();
+        
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] p-4">
+                <div className="text-center p-8 max-w-md bg-[#1a1a1a] rounded-3xl shadow-xl border border-[#2a2a2a]">
+                    {/* Logo da loja */}
+                    <div 
+                        className="size-24 rounded-2xl flex items-center justify-center mx-auto mb-6 overflow-hidden border-4 border-[#2a2a2a]"
+                        style={{ background: logoLoja ? '#0a0a0a' : 'linear-gradient(135deg, #22c55e, #16a34a)' }}
+                    >
+                        {logoLoja ? (
+                            <Image src={logoLoja} alt={nomeLoja} width={96} height={96} className="size-full object-cover" />
+                        ) : (
+                            <span className="text-white font-bold text-3xl">{inicialLoja}</span>
+                        )}
+                    </div>
+                    
+                    <div className="size-16 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto mb-6">
+                        <Clock className="size-8 text-amber-500" />
+                    </div>
+                    
+                    <h1 className="text-2xl font-bold text-white mb-3">
+                        Cardapio em Configuracao
+                    </h1>
+                    <p className="text-gray-400 text-sm leading-relaxed mb-6">
+                        <span className="font-semibold text-white">{nomeLoja}</span> esta finalizando a configuracao do cardapio digital. Em breve estara disponivel para voce!
+                    </p>
+                    
+                    <div className="bg-[#0a0a0a] rounded-2xl p-4 border border-[#2a2a2a]">
+                        <p className="text-xs text-gray-500 mb-2">Enquanto isso, entre em contato:</p>
+                        <a 
+                            href="https://wzapflow.com.br" 
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 bg-primary text-white font-semibold px-6 py-3 rounded-xl hover:bg-primary/90 transition-colors"
+                        >
+                            Conheca o ZapFlow
+                        </a>
                     </div>
                 </div>
             </div>

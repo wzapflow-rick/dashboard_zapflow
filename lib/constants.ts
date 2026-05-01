@@ -204,6 +204,19 @@ export const FATURAS_ASSINATURA_TABLE_ID =
 // ============================================================
 
 export const SUBSCRIPTION_PLANS = {
+  INICIANTE: {
+    id: 'iniciante',
+    name: 'Iniciante',
+    price: 0,
+    description: 'Configure sua loja antes de escolher um plano.',
+    trial: true,
+    features: [
+      'Acesso ao painel de configuracao',
+      'Cadastro de produtos',
+      'Configuracao do cardapio',
+      'Cardapio online bloqueado ate assinar',
+    ],
+  },
   START: {
     id: 'start',
     name: 'Start',
@@ -248,7 +261,15 @@ export const SUBSCRIPTION_PLANS = {
   },
 } as const;
 
-export type SubscriptionPlanId = 'start' | 'pro' | 'elite';
+export type SubscriptionPlanId = 'iniciante' | 'start' | 'pro' | 'elite';
+
+/** Planos que permitem cardapio online ativo */
+export const PAID_PLANS: SubscriptionPlanId[] = ['start', 'pro', 'elite'];
+
+/** Verifica se o plano permite cardapio online */
+export function isPaidPlan(plan: string | null | undefined): boolean {
+  return PAID_PLANS.includes(plan as SubscriptionPlanId);
+}
 
 // ============================================================
 // MESAS E COMANDAS (CONSUMO LOCAL)

@@ -7,7 +7,8 @@ import {
     EMPRESAS_TABLE_ID, 
     CONFIGURACOES_LOJA_TABLE_ID, 
     LOYALTY_CONFIG_TABLE_ID,
-    PRODUTOS_METADADOS_TABLE_ID
+    PRODUTOS_METADADOS_TABLE_ID,
+    isPaidPlan
 } from '@/lib/constants';
 
 export async function getPublicMenu(slug: string) {
@@ -53,6 +54,21 @@ export async function getPublicMenu(slug: string) {
         empresa.nome = empresa.nome_fantasia || empresa.nome || 'ZapFlow';
         
         console.log(`[MENU_DEBUG] Empresa: ${empresa.nome} (ID: ${empresaId})`);
+        
+        // Verificar se empresa tem plano pago ativo
+        const planoEmpresa = empresa.planos || empresa.plano || 'iniciante';
+        if (!isPaidPlan(planoEmpresa)) {
+            console.log(`[MENU_DEBUG] Empresa sem plano pago: ${planoEmpresa}`);
+            return {
+                blocked: true,
+                reason: 'no_subscription',
+                empresa: {
+                    id: empresaId,
+                    nome: empresa.nome,
+                    logo: empresa.logo || null,
+                }
+            };
+        }
 
         // 2. BUSCA DE DADOS EM PARALELO
         const [configData, categorias, todosProdutos, todosGrupos, todosItens, loyaltyConfig, produtosMetadados] = await Promise.all([
