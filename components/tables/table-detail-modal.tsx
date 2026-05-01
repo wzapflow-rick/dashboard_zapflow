@@ -13,6 +13,7 @@ import {
   DollarSign,
   Clock,
   AlertCircle,
+  Printer,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -27,6 +28,7 @@ import {
   abrirMesa,
 } from '@/app/actions/tables';
 import TableOrderModal from './table-order-modal';
+import TablePrintModal from './table-print-modal';
 
 interface TableDetailModalProps {
   mesa: MesaComDetalhes;
@@ -48,6 +50,9 @@ export default function TableDetailModal({
   const [newComandaNome, setNewComandaNome] = useState('');
   const [selectedComanda, setSelectedComanda] = useState<ComandaComPedidos | null>(null);
   const [showOrderModal, setShowOrderModal] = useState(false);
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [printType, setPrintType] = useState<'mesa' | 'comanda'>('mesa');
+  const [comandaToPrint, setComandaToPrint] = useState<ComandaComPedidos | null>(null);
 
   const handleAbrirMesa = async () => {
     setIsLoading(true);
@@ -315,6 +320,11 @@ export default function TableDetailModal({
                         comanda={comanda}
                         onNovoPedido={() => handleNovoPedido(comanda)}
                         onFechar={() => handleFecharComanda(comanda)}
+                        onPrint={() => {
+                          setComandaToPrint(comanda);
+                          setPrintType('comanda');
+                          setShowPrintModal(true);
+                        }}
                         isLoading={isLoading}
                         mesaNumero={mesa.numero}
                       />
@@ -326,12 +336,23 @@ export default function TableDetailModal({
               {/* Resumo */}
               {mesa.total_mesa > 0 && (
                 <div className="p-4 bg-primary/10 rounded-xl border border-primary/30">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between mb-3">
                     <span className="text-sm text-slate-300">Total da Mesa</span>
                     <span className="text-xl font-bold text-primary">
                       R$ {mesa.total_mesa.toFixed(2).replace('.', ',')}
                     </span>
                   </div>
+                  <button
+                    onClick={() => {
+                      setPrintType('mesa');
+                      setComandaToPrint(null);
+                      setShowPrintModal(true);
+                    }}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-slate-800 text-white text-sm rounded-lg hover:bg-slate-700 transition-colors"
+                  >
+                    <Printer className="size-4" />
+                    Imprimir Conta da Mesa
+                  </button>
                 </div>
               )}
 
@@ -415,6 +436,20 @@ export default function TableDetailModal({
               }}
             />
           )}
+
+          {/* Print Modal */}
+          {showPrintModal && (
+            <TablePrintModal
+              isOpen={showPrintModal}
+              onClose={() => {
+                setShowPrintModal(false);
+                setComandaToPrint(null);
+              }}
+              mesa={mesa}
+              comanda={comandaToPrint || undefined}
+              tipo={printType}
+            />
+          )}
         </>
       )}
     </AnimatePresence>
@@ -464,12 +499,14 @@ function ComandaCard({
   comanda,
   onNovoPedido,
   onFechar,
+  onPrint,
   isLoading,
   mesaNumero,
 }: {
   comanda: ComandaComPedidos;
   onNovoPedido: () => void;
   onFechar: () => void;
+  onPrint: () => void;
   isLoading: boolean;
   mesaNumero: number;
 }) {
@@ -590,6 +627,14 @@ function ComandaCard({
         >
           <ShoppingBag className="size-3.5" />
           Novo Pedido
+        </button>
+        <button
+          onClick={onPrint}
+          disabled={isLoading}
+          className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-slate-700 text-slate-300 text-sm rounded-lg hover:bg-slate-600 disabled:opacity-50"
+          title="Imprimir comanda"
+        >
+          <Printer className="size-3.5" />
         </button>
         <button
           onClick={onFechar}

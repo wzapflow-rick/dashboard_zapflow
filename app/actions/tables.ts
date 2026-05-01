@@ -354,8 +354,6 @@ export async function getMesasComDetalhes(): Promise<MesaComDetalhes[]> {
       limit: 500,
     });
     const pedidos = normalizeRecordList((pedidosData.list || []) as any[]);
-    console.log('[v0] getMesasComDetalhes - pedidos encontrados:', pedidos.length);
-    console.log('[v0] getMesasComDetalhes - pedidos:', pedidos.map((p: any) => ({ id: p.id, comanda_id: p.comanda_id, mesa_id: p.mesa_id })));
 
     // Montar estrutura de retorno
     const mesasComDetalhes: MesaComDetalhes[] = mesas.map((mesa) => {
@@ -436,13 +434,10 @@ export async function createTableOrder(data: {
     criado_em: new Date().toISOString(),
   };
 
-  console.log('[v0] createTableOrder - payload:', JSON.stringify(payload, null, 2));
   const result = await noco.create(PEDIDOS_TABLE_ID, payload);
-  console.log('[v0] createTableOrder - result:', JSON.stringify(result, null, 2));
 
   // Atualizar total da comanda
   const novoTotal = (Number(comanda.total) || 0) + data.valor_total;
-  console.log('[v0] createTableOrder - atualizando comanda', data.comanda_id, 'novo total:', novoTotal);
   await noco.update(COMANDAS_TABLE_ID, {
     id: data.comanda_id,
     total: novoTotal,
