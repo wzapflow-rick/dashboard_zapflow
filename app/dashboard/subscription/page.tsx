@@ -177,8 +177,8 @@ export default function SubscriptionPage() {
     }
   }
 
-  // Plans array
-  const plans = Object.values(SUBSCRIPTION_PLANS);
+  // Plans array (apenas planos pagos, exclui o iniciante)
+  const plans = Object.values(SUBSCRIPTION_PLANS).filter(p => p.id !== 'iniciante');
   const currentPlan = subscription?.plano || null;
 
   if (isLoading) {
