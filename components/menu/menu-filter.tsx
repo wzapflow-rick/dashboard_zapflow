@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Search, X, Star } from 'lucide-react';
+import { Search, X, Star, Flame } from 'lucide-react';
 import Image from 'next/image';
 import { useCart } from './cart-context';
 import { toast } from 'sonner';
@@ -76,7 +76,7 @@ function getProductImage(product: Product): string {
     return PLACEHOLDER_IMG;
 }
 
-// ── Componente: Card de Produto ────────────────────────────────────────────────
+// ── Componente: Card de Produto (Estilo iFood) ─────────────────────────────────
 
 function ProductCard({ product, onClick }: { product: Product; onClick: () => void }) {
     const hasComplements =
@@ -95,66 +95,62 @@ function ProductCard({ product, onClick }: { product: Product; onClick: () => vo
             role="button"
             tabIndex={0}
             onKeyDown={(e) => e.key === 'Enter' && onClick()}
-            className="bg-white dark:bg-[#2d1b4e] rounded-xl sm:rounded-2xl border border-slate-100 dark:border-purple-700/30 shadow-sm p-2 sm:p-3 flex gap-3 hover:shadow-md hover:border-violet-200 dark:hover:border-purple-500/50 transition-all cursor-pointer active:scale-[0.98] group"
+            className="bg-[#1a1a1a] rounded-2xl border border-[#2a2a2a] p-3 flex gap-4 hover:border-[#3a3a3a] transition-all cursor-pointer active:scale-[0.99] group"
         >
-            {/* Imagem */}
-            <div className="relative w-20 h-20 sm:w-[88px] sm:h-[88px] rounded-lg sm:rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-700 shrink-0">
+            {/* Imagem Grande */}
+            <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-xl overflow-hidden bg-[#2a2a2a] shrink-0">
                 <Image
                     src={imgSrc}
                     alt={product.nome}
                     fill
-                    sizes="(max-width: 640px) 80px, 88px"
+                    sizes="(max-width: 640px) 112px, 128px"
                     className="object-cover group-hover:scale-105 transition-transform duration-300"
                     onError={(e) => {
                         (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_IMG;
                     }}
                 />
-                {/* Badge destaque */}
+                {/* Badge destaque - Mais Pedida */}
                 {product.destaque && (
-                    <div className="absolute top-1 left-1 bg-amber-400 text-amber-900 text-[8px] sm:text-[10px] font-bold px-1 sm:px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow-sm">
-                        <Star className="size-2 sm:size-2.5 fill-current" />
-                        Top
+                    <div className="absolute top-2 left-2 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded-md flex items-center gap-1 shadow-lg">
+                        <Flame className="size-3 fill-current" />
+                        MAIS PEDIDA
                     </div>
                 )}
             </div>
 
             {/* Conteúdo */}
-            <div className="flex flex-col flex-1 min-w-0 py-0.5">
-                <h3 className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm leading-tight line-clamp-2">
+            <div className="flex flex-col flex-1 min-w-0 py-1">
+                <h3 className="font-bold text-white text-sm sm:text-base leading-tight line-clamp-2">
                     {product.nome}
                 </h3>
                 {product.descricao && (
-                    <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2 leading-tight sm:leading-relaxed">
+                    <p className="text-xs text-gray-400 mt-1.5 line-clamp-2 leading-relaxed">
                         {product.descricao.split('[[SIZES:')[0].trim()}
                     </p>
                 )}
-                <div className="mt-auto pt-1 sm:pt-2 flex items-end justify-between gap-2">
+                <div className="mt-auto pt-2 flex items-end justify-between gap-3">
                     <div className="flex flex-col">
                         {hasDiscount ? (
-                            <p className="text-[10px] sm:text-xs text-slate-400 line-through leading-none mb-0.5">
+                            <p className="text-xs text-gray-500 line-through leading-none mb-1">
                                 {fmt(product.preco_original!)}
                             </p>
                         ) : null}
-                        <span className="text-sm sm:text-base font-black text-emerald-600 dark:text-emerald-400 leading-none">
+                        <span className="text-base sm:text-lg font-black text-[#22c55e] leading-none">
                             {fmt(product.preco)}
                         </span>
                     </div>
-                    <span
-                        className={`text-[10px] sm:text-xs font-bold px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl shrink-0 transition-colors ${
-                            hasComplements
-                                ? 'text-white bg-emerald-500 dark:bg-emerald-600 dark:text-white'
-                                : 'text-white bg-emerald-500 dark:bg-emerald-600 dark:text-white'
-                        }`}
+                    <button
+                        className="text-xs sm:text-sm font-bold px-4 py-2 rounded-lg bg-[#22c55e] text-white hover:bg-[#1ea34d] transition-colors shadow-lg shadow-green-900/20"
                     >
-                        {hasComplements ? 'Escolher' : '+ Add'}
-                    </span>
+                        QUERO ESSA
+                    </button>
                 </div>
             </div>
         </div>
     );
 }
 
-// ── Componente: Card de Produto Composto ──────────────────────────────────────
+// ── Componente: Card de Produto Composto (Estilo iFood) ──────────────────────
 
 function CompositeCard({ product, onClick }: { product: CompositeProduct; onClick: () => void }) {
     const prices = product.items.map((i: any) => i.preco).filter((p: number) => p > 0);
@@ -171,40 +167,40 @@ function CompositeCard({ product, onClick }: { product: CompositeProduct; onClic
             role="button"
             tabIndex={0}
             onKeyDown={(e) => e.key === 'Enter' && onClick()}
-            className="bg-white dark:bg-[#2d1b4e] rounded-xl sm:rounded-2xl border border-orange-200 dark:border-orange-600/50 shadow-sm p-2 sm:p-3 flex gap-3 hover:shadow-md hover:border-orange-300 dark:hover:border-orange-500 transition-all cursor-pointer active:scale-[0.98] group"
+            className="bg-[#1a1a1a] rounded-2xl border border-orange-900/50 p-3 flex gap-4 hover:border-orange-700/50 transition-all cursor-pointer active:scale-[0.99] group"
         >
-            {/* Ícone */}
-            <div className="relative w-20 h-20 sm:w-[88px] sm:h-[88px] rounded-lg sm:rounded-xl bg-gradient-to-br from-amber-50 to-orange-100 dark:from-amber-900/20 dark:to-orange-900/20 flex items-center justify-center shrink-0 border border-amber-100 dark:border-amber-800/30">
-                <span className="text-3xl sm:text-4xl group-hover:scale-110 transition-transform duration-200">🍕</span>
+            {/* Icone */}
+            <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-xl bg-gradient-to-br from-orange-950/50 to-amber-950/50 flex items-center justify-center shrink-0 border border-orange-800/30">
+                <span className="text-5xl sm:text-6xl group-hover:scale-110 transition-transform duration-200">🍕</span>
             </div>
 
             {/* Conteúdo */}
-            <div className="flex flex-col flex-1 min-w-0 py-0.5">
-                <h3 className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm leading-tight line-clamp-2">
+            <div className="flex flex-col flex-1 min-w-0 py-1">
+                <h3 className="font-bold text-white text-sm sm:text-base leading-tight line-clamp-2">
                     {product.nome}
                 </h3>
-                <p className="text-[10px] sm:text-xs text-orange-500 dark:text-orange-400 mt-1 font-medium">
+                <p className="text-xs text-orange-400 mt-1.5 font-semibold">
                     {saborLabel}
                 </p>
                 {product.descricao && (
-                    <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
+                    <p className="text-xs text-gray-400 mt-1 line-clamp-1">
                         {product.descricao}
                     </p>
                 )}
-                <div className="mt-auto pt-1 sm:pt-2 flex items-end justify-between gap-2">
-                    <span className="text-sm sm:text-base font-black text-orange-500 dark:text-orange-400 leading-none">
+                <div className="mt-auto pt-2 flex items-end justify-between gap-3">
+                    <span className="text-base sm:text-lg font-black text-orange-400 leading-none">
                         {minPrice > 0 ? `${fmt(minPrice)}` : 'Ver'}
                     </span>
-                    <span className="text-[10px] sm:text-xs font-bold text-white bg-emerald-500 dark:bg-emerald-600 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl shrink-0 group-hover:bg-emerald-600 transition-colors">
-                        Montar
-                    </span>
+                    <button className="text-xs sm:text-sm font-bold text-white bg-[#22c55e] px-4 py-2 rounded-lg hover:bg-[#1ea34d] transition-colors shadow-lg shadow-green-900/20">
+                        MONTAR
+                    </button>
                 </div>
             </div>
         </div>
     );
 }
 
-// ── Componente: Chip de Categoria ─────────────────────────────────────────────
+// ── Componente: Chip de Categoria (Estilo iFood) ──────────────────────────────
 
 function CategoryChip({
     label,
@@ -220,10 +216,10 @@ function CategoryChip({
     return (
         <button
             onClick={onClick}
-            className={`shrink-0 flex items-center gap-2 px-3 py-2 rounded-full text-sm font-semibold transition-all ${
+            className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold transition-all border ${
                 isActive
-                    ? 'bg-violet-500 text-white shadow-md shadow-violet-200 dark:shadow-violet-900/30'
-                    : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                    ? 'bg-white text-black border-white'
+                    : 'bg-transparent border-[#3a3a3a] text-gray-300 hover:border-gray-500'
             }`}
         >
             {imageUrl && (
@@ -378,7 +374,7 @@ export default function MenuFilter({
 
     // ── Render ────────────────────────────────────────────────────────────────
     return (
-        <div className="space-y-5">
+        <div className="space-y-6">
             {/* Modais */}
             {selectedProduct && (
                 <MenuProductSelectionModal
@@ -411,20 +407,20 @@ export default function MenuFilter({
                 />
             )}
 
-            {/* Barra de Busca */}
+            {/* Barra de Busca - Estilo iFood */}
             <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4.5 text-slate-400 pointer-events-none" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-gray-500 pointer-events-none" />
                 <input
                     type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Buscar no cardápio..."
-                    className="w-full pl-11 pr-10 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent transition-all placeholder:text-slate-400 dark:text-white"
+                    className="w-full pl-12 pr-10 py-3.5 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#22c55e] focus:border-transparent transition-all placeholder:text-gray-500 text-white"
                 />
                 {search && (
                     <button
                         onClick={() => setSearch('')}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-gray-500 hover:text-white rounded-full hover:bg-[#2a2a2a] transition-colors"
                         aria-label="Limpar busca"
                     >
                         <X className="size-4" />
@@ -432,9 +428,9 @@ export default function MenuFilter({
                 )}
             </div>
 
-            {/* Chips de Categoria */}
+            {/* Chips de Categoria - Estilo iFood */}
             {categories.length > 1 && (
-                <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 custom-scrollbar">
+                <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 custom-scrollbar">
                     <CategoryChip
                         label="Todos"
                         isActive={selectedCategory === 'all'}
@@ -454,12 +450,12 @@ export default function MenuFilter({
 
             {/* Contador de resultados na busca */}
             {search.trim() && (
-                <p className="text-sm text-slate-500 dark:text-slate-400">
+                <p className="text-sm text-gray-400">
                     {hasResults ? (
                         <>
-                            <span className="font-semibold text-slate-700 dark:text-slate-200">{totalResults}</span>{' '}
+                            <span className="font-semibold text-white">{totalResults}</span>{' '}
                             {totalResults === 1 ? 'resultado' : 'resultados'} para{' '}
-                            <span className="font-semibold text-violet-600">"{search}"</span>
+                            <span className="font-semibold text-[#22c55e]">"{search}"</span>
                         </>
                     ) : (
                         <>Nenhum resultado para <span className="font-semibold">"{search}"</span></>
@@ -467,16 +463,16 @@ export default function MenuFilter({
                 </p>
             )}
 
-            {/* Categorias e seus produtos (Normais e Compostos) */}
+            {/* Categorias e seus produtos */}
             {filteredGroups.map((group) => (
                 <section key={group.id}>
-                    <div className="flex items-center gap-2 mb-3">
-                        <span className={`h-1 w-6 rounded-full shrink-0 ${group.id === 'composites-default' ? 'bg-amber-400' : 'bg-violet-500'}`} />
-                        <h2 className="text-base font-black text-slate-800 dark:text-white uppercase tracking-wide flex-1">
+                    <div className="flex items-center gap-3 mb-4">
+                        <Flame className="size-5 text-orange-500" />
+                        <h2 className="text-base font-bold text-white uppercase tracking-wide flex-1">
                             {group.name}
                         </h2>
-                        <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                            {(group.products.length + (group.compositeProducts?.length || 0))} { (group.products.length + (group.compositeProducts?.length || 0)) === 1 ? 'item' : 'itens'}
+                        <span className="text-xs text-gray-500 font-medium">
+                            {(group.products.length + (group.compositeProducts?.length || 0))} {(group.products.length + (group.compositeProducts?.length || 0)) === 1 ? 'item' : 'itens'}
                         </span>
                     </div>
                     <div className="space-y-3">
