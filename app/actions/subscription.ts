@@ -504,5 +504,6 @@ export async function getMPPublicKeyForSubscription(): Promise<string> {
 // ============================================================
 
 export async function getAvailablePlans() {
-  return Object.values(SUBSCRIPTION_PLANS);
+  // Filtra apenas planos pagos (exclui o plano iniciante)
+  return Object.values(SUBSCRIPTION_PLANS).filter(plan => plan.id !== 'iniciante');
 }
