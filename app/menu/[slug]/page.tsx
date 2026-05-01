@@ -129,47 +129,45 @@ export default async function PublicMenuPage({
             upsellProducts={safeUpsell}
         >
             <div className="min-h-screen bg-[#0a0a0a] pb-32">
-                {/* Header - Estilo iFood */}
-                <header className="relative">
-                    {/* Banner */}
-                    <div className="relative h-44 sm:h-56 bg-[#1a1a1a]">
-                        {empresaBanner ? (
-                            <>
-                                <Image 
-                                    src={empresaBanner} 
-                                    alt={`Banner de ${empresaNome}`} 
-                                    fill 
-                                    className="object-cover" 
-                                    priority 
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/60 to-transparent" />
-                            </>
-                        ) : (
-                            <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a]">
-                                <div className="absolute inset-0 opacity-10">
-                                    <div className="absolute top-10 right-10 w-32 h-32 bg-[#22c55e] rounded-full filter blur-3xl"></div>
-                                    <div className="absolute bottom-10 left-10 w-40 h-40 bg-[#22c55e] rounded-full filter blur-3xl"></div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                    
-                    {/* Logo posicionada sobre o banner */}
-                    <div className="absolute left-1/2 -translate-x-1/2 bottom-0 translate-y-1/2 z-30">
-                        <div
-                            className="size-24 sm:size-28 rounded-2xl flex items-center justify-center text-white font-bold text-3xl sm:text-4xl shrink-0 shadow-2xl border-4 border-[#0a0a0a] bg-[#1a1a1a] overflow-hidden transition-transform hover:scale-105"
-                            style={!empresaLogo ? { background: 'linear-gradient(135deg, #22c55e, #16a34a)' } : { background: '#1a1a1a' }}
-                        >
-                            {empresaLogo ? (
-                                <Image src={empresaLogo} alt={empresaNome} width={112} height={112} className="size-full object-cover" />
+                {/* Header */}
+                <header>
+                    {/* Banner com Logo sobreposta */}
+                    <div className="relative">
+                        {/* Banner Image */}
+                        <div className="h-44 sm:h-56 bg-[#1a1a1a] relative overflow-hidden">
+                            {empresaBanner ? (
+                                <>
+                                    <Image 
+                                        src={empresaBanner} 
+                                        alt={`Banner de ${empresaNome}`} 
+                                        fill 
+                                        className="object-cover" 
+                                        priority 
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/50 to-transparent" />
+                                </>
                             ) : (
-                                <span className="text-white">{inicial}</span>
+                                <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a]" />
                             )}
+                        </div>
+                        
+                        {/* Logo - Posicionada para sobrepor o banner */}
+                        <div className="flex justify-center -mt-12 relative z-10">
+                            <div
+                                className="size-24 sm:size-28 rounded-2xl flex items-center justify-center text-white font-bold text-3xl sm:text-4xl shadow-2xl border-4 border-[#0a0a0a] overflow-hidden"
+                                style={{ background: empresaLogo ? '#1a1a1a' : 'linear-gradient(135deg, #22c55e, #16a34a)' }}
+                            >
+                                {empresaLogo ? (
+                                    <Image src={empresaLogo} alt={empresaNome} width={112} height={112} className="size-full object-cover" />
+                                ) : (
+                                    <span>{inicial}</span>
+                                )}
+                            </div>
                         </div>
                     </div>
 
                     {/* Info da empresa */}
-                    <div className="max-w-2xl mx-auto px-4 pt-16 pb-6 text-center">
+                    <div className="max-w-2xl mx-auto px-4 pt-4 pb-6 text-center">
                         <h1 className="font-black text-2xl sm:text-3xl text-white leading-tight mb-4 uppercase tracking-tight">
                             {empresaNome}
                         </h1>
