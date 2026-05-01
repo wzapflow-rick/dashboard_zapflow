@@ -151,6 +151,8 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen }: Sideb
                             );
                         })}
 
+                    {/* Seção Administração - só mostra se o usuário tem acesso a pelo menos um item */}
+                    {adminItems.filter(item => !user?.role || user.role === 'admin' || item.roles?.includes(user.role)).length > 0 && (
                     <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-700">
                         {(isOpen || isMobileMenuOpen) && (
                             <span className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block dark:text-slate-500">
@@ -184,6 +186,7 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen }: Sideb
                                 );
                             })}
                     </div>
+                    )}
                 </nav>
 
                 <div className="p-4 border-t border-slate-100 dark:border-slate-700">
