@@ -18,6 +18,7 @@ interface Product {
     preco_original?: number;
     imagem?: string | null;
     disponivel?: boolean;
+    tag?: 'mais_pedido' | 'recomendado' | null;
     destaque?: boolean;
     complementGroups?: any[];
     saborGroups?: any[];
@@ -109,20 +110,30 @@ function ProductCard({ product, onClick }: { product: Product; onClick: () => vo
                         (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_IMG;
                     }}
                 />
-                {/* Badge destaque - Mais Pedida */}
-                {product.destaque && (
-                    <div className="absolute top-2 left-2 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded-md flex items-center gap-1 shadow-lg">
-                        <Flame className="size-3 fill-current" />
-                        MAIS PEDIDA
-                    </div>
-                )}
             </div>
 
-            {/* Conteúdo */}
+            {/* Conteudo */}
             <div className="flex flex-col flex-1 min-w-0 py-1">
                 <h3 className="font-bold text-white text-sm sm:text-base leading-tight line-clamp-2">
                     {product.nome}
                 </h3>
+                {/* Tags do Produto */}
+                {(product.tag || product.destaque) && (
+                    <div className="flex gap-1.5 mt-1.5">
+                        {(product.tag === 'mais_pedido' || product.destaque) && (
+                            <span className="inline-flex items-center gap-1 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded">
+                                <Flame className="size-3" />
+                                Mais Pedido
+                            </span>
+                        )}
+                        {product.tag === 'recomendado' && (
+                            <span className="inline-flex items-center gap-1 bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">
+                                <Star className="size-3 fill-current" />
+                                Recomendado
+                            </span>
+                        )}
+                    </div>
+                )}
                 {product.descricao && (
                     <p className="text-xs text-gray-400 mt-1.5 line-clamp-2 leading-relaxed">
                         {product.descricao.split('[[SIZES:')[0].trim()}
