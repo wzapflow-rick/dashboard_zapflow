@@ -225,7 +225,7 @@ export async function createComanda(data: {
   const user = await requireRole(['admin', 'gerente', 'atendente']);
 
   // Verificar se a mesa existe e pertence à empresa
-  const mesa = await noco.findById(MESAS_TABLE_ID, data.mesa_id) as Mesa;
+  const mesa = await noco.findById(MESAS_TABLE_ID, data.mesa_id) as unknown as Mesa;
   if (!mesa || String(mesa.store_id) !== String(user.empresaId)) {
     throw new Error('Mesa não encontrada');
   }
