@@ -149,22 +149,6 @@ export async function updateMesa(
   }
 }
 
-  // Se está mudando o número, verificar duplicata
-  if (data.numero && data.numero !== mesa.numero) {
-    const existente = await noco.findOne(MESAS_TABLE_ID, {
-      where: `(store_id,eq,${user.empresaId})~and(numero,eq,${data.numero})`,
-    });
-    if (existente) {
-      throw new Error(`Já existe uma mesa com o número ${data.numero}`);
-    }
-  }
-
-  const result = await noco.update(MESAS_TABLE_ID, { id, ...data });
-
-  revalidatePath('/dashboard/mesas');
-  return result as unknown as Mesa;
-}
-
 export async function deleteMesa(id: number): Promise<void> {
   const user = await requireRole(['admin', 'gerente']);
 
