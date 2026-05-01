@@ -148,6 +148,7 @@ export async function getPublicMenu(slug: string) {
                         imagem: p.imagem || null,
                         disponivel: p.disponivel !== false && p.disponivel !== 0,
                         destaque: p.destaque === true || p.destaque === 1,
+                        tag: p.tag || null,
                         ordem: Number(p.ordem ?? 0),
                         tamanhos: tamanhos || null,
                         recomendacoes: recomendacoes || null,
@@ -188,6 +189,7 @@ export async function getPublicMenu(slug: string) {
                         descricao: p.descricao || "",
                         preco: Number(p.preco ?? 0),
                         imagem: p.imagem || null,
+                        tag: p.tag || null,
                         tamanhos: tamanhos || null,
                         recomendacoes: recomendacoes || null,
                         tipo: 'composto'
@@ -205,7 +207,8 @@ export async function getPublicMenu(slug: string) {
                 nome: String(p.nome || ''),
                 preco: Number(p.preco ?? 0),
                 imagem: p.imagem || null,
-                descricao: p.descricao || ''
+                descricao: p.descricao || '',
+                tag: p.tag || null
             })),
             loyaltyConfig,
             allGroups: (todosGrupos || []).map((g: any) => ({
