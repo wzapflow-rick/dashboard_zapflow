@@ -15,7 +15,8 @@ import {
     PackageOpen,
     FlaskConical,
     Star,
-    DollarSign
+    DollarSign,
+    LayoutGrid,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -26,6 +27,7 @@ const navItems = [
     { name: 'Cardápio', href: '/dashboard/menu', icon: UtensilsCrossed, roles: ['admin'] },
     { name: 'Insumos', href: '/dashboard/insumos', icon: PackageOpen, roles: ['admin'] },
     { name: 'Expedição', href: '/dashboard/expedition', icon: Truck, roles: ['admin', 'gerente', 'atendente', 'cozinheiro'] },
+    { name: 'Mesas', href: '/dashboard/mesas', icon: LayoutGrid, roles: ['admin', 'gerente', 'atendente'] },
     { name: 'Clientes', href: '/dashboard/customers', icon: Users, roles: ['admin', 'gerente', 'atendente'] },
     { name: 'Divulgação', href: '/dashboard/growth', icon: Megaphone, roles: ['admin'] },
     { name: 'Campanhas', href: '/dashboard/campanhas', icon: Megaphone, roles: ['admin'] },

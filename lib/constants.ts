@@ -186,3 +186,51 @@ export type DriverStatus = typeof DRIVER_STATUS[keyof typeof DRIVER_STATUS];
 /** Tabela de metadados de produtos (Upsell, Tamanhos, etc.) */
 export const PRODUTOS_METADADOS_TABLE_ID =
   process.env.NOCODB_TABLE_PRODUTOS_METADADOS || 'm97yi797b432f4q';
+
+// ============================================================
+// MESAS E COMANDAS (CONSUMO LOCAL)
+// ============================================================
+
+/** Tabela de mesas do estabelecimento */
+export const MESAS_TABLE_ID =
+  process.env.NOCODB_TABLE_MESAS || '';
+
+/** Tabela de comandas (contas individuais por pessoa na mesa) */
+export const COMANDAS_TABLE_ID =
+  process.env.NOCODB_TABLE_COMANDAS || '';
+
+// ============================================================
+// STATUS DE MESAS
+// ============================================================
+
+export const MESA_STATUS = {
+  LIVRE: 'livre',
+  OCUPADA: 'ocupada',
+  RESERVADA: 'reservada',
+} as const;
+
+export type MesaStatus = typeof MESA_STATUS[keyof typeof MESA_STATUS];
+
+// ============================================================
+// STATUS DE COMANDAS
+// ============================================================
+
+export const COMANDA_STATUS = {
+  ABERTA: 'aberta',
+  FECHADA: 'fechada',
+  PAGA: 'paga',
+} as const;
+
+export type ComandaStatus = typeof COMANDA_STATUS[keyof typeof COMANDA_STATUS];
+
+// ============================================================
+// TIPOS DE ENTREGA (ATUALIZADO COM MESA)
+// ============================================================
+
+export const DELIVERY_TYPE = {
+  DELIVERY: 'delivery',
+  RETIRADA: 'retirada',
+  MESA: 'mesa',
+} as const;
+
+export type DeliveryType = typeof DELIVERY_TYPE[keyof typeof DELIVERY_TYPE];
