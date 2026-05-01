@@ -188,6 +188,69 @@ export const PRODUTOS_METADADOS_TABLE_ID =
   process.env.NOCODB_TABLE_PRODUTOS_METADADOS || 'm97yi797b432f4q';
 
 // ============================================================
+// ASSINATURAS E FATURAS
+// ============================================================
+
+/** Tabela de assinaturas de planos */
+export const ASSINATURAS_TABLE_ID =
+  process.env.NOCODB_TABLE_ASSINATURAS || '';
+
+/** Tabela de faturas de assinaturas */
+export const FATURAS_ASSINATURA_TABLE_ID =
+  process.env.NOCODB_TABLE_FATURAS_ASSINATURA || '';
+
+// ============================================================
+// PLANOS DISPONÍVEIS
+// ============================================================
+
+export const SUBSCRIPTION_PLANS = {
+  START: {
+    id: 'start',
+    name: 'Start',
+    price: 79.90,
+    description: 'Perfeito para comecar sua jornada no delivery.',
+    features: [
+      'Cardapio digital (Link + QrCode)',
+      'Painel Kanban basico',
+      'Pix + Cartoes',
+      'Taxa Fixa por bairro',
+    ],
+  },
+  PRO: {
+    id: 'pro',
+    name: 'PRO',
+    price: 149.90,
+    description: 'O plano ideal para escalar suas vendas.',
+    popular: true,
+    features: [
+      'Cardapio digital (Link + QrCode)',
+      'Painel Kanban com notificacao no WhatsApp',
+      'Pix + Cartoes',
+      'Taxa de entregas calculada pelo Google Maps',
+      'Agente de IA no WhatsApp',
+      'Cupons de desconto',
+    ],
+  },
+  ELITE: {
+    id: 'elite',
+    name: 'ELITE',
+    price: 297.90,
+    description: 'Solucao completa para operacoes avancadas.',
+    features: [
+      'Cardapio digital com Customizacao Total (Link + QrCode)',
+      'Painel Kanban com notificacao no WhatsApp',
+      'Pix + Cartoes',
+      'App para os entregadores',
+      'Agente de IA no WhatsApp',
+      'Cupons de desconto e Programa de pontos',
+      'Relatorios de Performance',
+    ],
+  },
+} as const;
+
+export type SubscriptionPlanId = 'start' | 'pro' | 'elite';
+
+// ============================================================
 // MESAS E COMANDAS (CONSUMO LOCAL)
 // ============================================================
 
