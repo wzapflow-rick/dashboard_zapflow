@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { X, Search, Plus, Minus, ShoppingCart, User, Phone, Check, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { getProducts } from '@/app/actions/products';
+import { getProducts, getCategories, type Category } from '@/app/actions/products';
 import { getCompositeProducts, type CompositeProduct, type CompositeItem } from '@/app/actions/grupos-slots';
 import { createManualOrder } from '@/app/actions/orders';
 import { toast } from 'sonner';
@@ -34,8 +34,10 @@ interface OrderCreatorModalProps {
 
 export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderCreatorModalProps) {
     const [products, setProducts] = useState<Product[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
     const [compositeProducts, setCompositeProducts] = useState<CompositeProduct[]>([]);
     const [search, setSearch] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
     const [cart, setCart] = useState<CartItem[]>([]);
     const [clienteNome, setClienteNome] = useState('');
     const [clienteTelefone, setClienteTelefone] = useState('');
@@ -75,11 +77,13 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
 
     const fetchProducts = async () => {
         try {
-            const [productsData, compositeData] = await Promise.all([
+            const [productsData, categoriesData, compositeData] = await Promise.all([
                 getProducts(),
+                getCategories(),
                 getCompositeProducts(),
             ]);
             setProducts(productsData);
+            setCategories(categoriesData.sort((a, b) => (a.ordem || 0) - (b.ordem || 0)));
             setCompositeProducts(compositeData);
         } catch (error) {
             toast.error('Erro ao buscar produtos');
@@ -216,8 +220,27 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
         }
     };
 
-    const filteredProducts = products.filter(p => p.nome.toLowerCase().includes(search.toLowerCase()));
+    const filteredProducts = products.filter(p => {
+        const matchesSearch = p.nome.toLowerCase().includes(search.toLowerCase());
+        const matchesCategory = selectedCategory === null || String(p.categoria_id) === String(selectedCategory);
+        return matchesSearch && matchesCategory;
+    });
     const filteredComposite = compositeProducts.filter(p => p.nome.toLowerCase().includes(search.toLowerCase()));
+
+    // Agrupar produtos por categoria
+    const productsByCategory = categories.reduce((acc, cat) => {
+        const catProducts = filteredProducts.filter(p => String(p.categoria_id) === String(cat.id));
+        if (catProducts.length > 0) {
+            acc[cat.id] = { nome: cat.nome, produtos: catProducts };
+        }
+        return acc;
+    }, {} as Record<number, { nome: string; produtos: Product[] }>);
+
+    // Produtos sem categoria
+    const uncategorizedProducts = filteredProducts.filter(p => !p.categoria_id || !categories.find(c => String(c.id) === String(p.categoria_id)));
+    if (uncategorizedProducts.length > 0) {
+        productsByCategory[0] = { nome: 'Outros', produtos: uncategorizedProducts };
+    }
 
     const openCompositeModal = (composite: CompositeProduct) => {
         setSelectedComposite(composite);
@@ -327,6 +350,32 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                                     onChange={(e) => setSearch(e.target.value)}
                                 />
                             </div>
+                            {/* Category Filter */}
+                            <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide mt-2">
+                                <button
+                                    onClick={() => setSelectedCategory(null)}
+                                    className={`px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors ${
+                                        selectedCategory === null
+                                            ? 'bg-primary text-white'
+                                            : 'bg-slate-200 text-slate-600 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-400 dark:hover:bg-slate-600'
+                                    }`}
+                                >
+                                    Todos
+                                </button>
+                                {categories.map((cat) => (
+                                    <button
+                                        key={cat.id}
+                                        onClick={() => setSelectedCategory(cat.id)}
+                                        className={`px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors ${
+                                            selectedCategory === cat.id
+                                                ? 'bg-primary text-white'
+                                                : 'bg-slate-200 text-slate-600 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-400 dark:hover:bg-slate-600'
+                                        }`}
+                                    >
+                                        {cat.nome}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
 
                         <div className="flex-1 overflow-y-auto overscroll-contain p-3 md:p-4 space-y-4 md:space-y-6 custom-scrollbar touch-pan-y">
@@ -336,12 +385,16 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                                 </div>
                             ) : (
                                 <>
-                                    {/* Produtos Normais */}
-                                    {filteredProducts.length > 0 && (
-                                        <div>
-                                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 px-1 dark:text-slate-500">Produtos</h3>
+                                    {/* Produtos organizados por categoria */}
+                                    {Object.entries(productsByCategory).map(([catId, { nome, produtos }]) => (
+                                        <div key={catId}>
+                                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 px-1 flex items-center gap-2 dark:text-slate-500">
+                                                <span className="w-2 h-2 bg-primary rounded-full"></span>
+                                                {nome}
+                                                <span className="text-slate-300 dark:text-slate-600">({produtos.length})</span>
+                                            </h3>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                {filteredProducts.map(p => (
+                                                {produtos.map(p => (
                                                     <button
                                                         key={p.id}
                                                         onClick={() => addToCart(p)}
@@ -349,12 +402,11 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                                                     >
                                                         <div>
                                                             <h4 className="font-black text-slate-900 group-hover:text-primary transition-colors line-clamp-1 dark:text-white dark:group-hover:text-primary">{p.nome}</h4>
-                                                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1 dark:text-slate-500">Ref: {p.id}</span>
-                                                        </div>
-                                                        <div className="flex items-center justify-between mt-auto">
-                                                            <span className="text-lg font-black text-slate-900 dark:text-white">
+                                                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1 dark:text-slate-500">
                                                                 {Number(p.preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                                             </span>
+                                                        </div>
+                                                        <div className="flex items-center justify-end mt-auto">
                                                             <div className="size-8 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400 group-hover:bg-primary group-hover:text-white transition-all dark:bg-slate-600 dark:text-slate-300">
                                                                 <Plus className="size-5" />
                                                             </div>
@@ -363,7 +415,7 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                                                 ))}
                                             </div>
                                         </div>
-                                    )}
+                                    ))}
 
                                     {/* Produtos Compostos (Grupos de Slots) */}
                                     {filteredComposite.length > 0 && (
@@ -396,7 +448,7 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                                         </div>
                                     )}
 
-                                    {filteredProducts.length === 0 && filteredComposite.length === 0 && (
+                                    {Object.keys(productsByCategory).length === 0 && filteredComposite.length === 0 && (
                                         <div className="col-span-full flex items-center justify-center py-20">
                                             <p className="text-slate-400 dark:text-slate-500">Nenhum produto encontrado</p>
                                         </div>
