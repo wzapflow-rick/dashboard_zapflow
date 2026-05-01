@@ -289,7 +289,7 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
 
     return (
         <AnimatePresence>
-            <div key="main-modal" className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+            <div key="main-modal" className="fixed inset-0 z-[150] flex items-end md:items-center justify-center md:p-4">
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -302,34 +302,34 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="relative w-full max-w-5xl h-[85vh] bg-white rounded-[32px] shadow-2xl overflow-hidden flex flex-col md:flex-row dark:bg-slate-800"
+                    className="relative w-full max-w-5xl h-[95dvh] md:h-[85vh] bg-white rounded-t-[32px] md:rounded-[32px] shadow-2xl overflow-hidden flex flex-col md:flex-row dark:bg-slate-800"
                 >
                     {/* Lista de Produtos */}
-                    <div className="flex-1 flex flex-col min-w-0 border-r border-slate-100 dark:border-slate-700">
-                        <header className="p-6 border-b border-slate-100 flex items-center justify-between dark:border-slate-700">
+                    <div className="flex-1 flex flex-col min-w-0 border-r border-slate-100 dark:border-slate-700 min-h-0">
+                        <header className="p-4 md:p-6 border-b border-slate-100 flex items-center justify-between dark:border-slate-700 shrink-0">
                             <div>
-                                <h2 className="text-2xl font-black text-slate-900 tracking-tight dark:text-white">Novo Pedido</h2>
-                                <p className="text-sm text-slate-500 font-bold uppercase tracking-wider dark:text-slate-400">Criação Manual • PDV</p>
+                                <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight dark:text-white">Novo Pedido</h2>
+                                <p className="text-xs md:text-sm text-slate-500 font-bold uppercase tracking-wider dark:text-slate-400">Criacao Manual</p>
                             </div>
                             <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors md:hidden dark:hover:bg-slate-700">
                                 <X className="size-6 text-slate-400" />
                             </button>
                         </header>
 
-                        <div className="p-4 bg-slate-50/50 dark:bg-slate-900/50">
+                        <div className="p-3 md:p-4 bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
                             <div className="relative">
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 size-5" />
                                 <input
                                     type="text"
-                                    placeholder="Buscar produto pelo nome..."
-                                    className="w-full h-12 pl-12 pr-4 bg-white border-2 border-slate-100 rounded-2xl text-sm font-bold focus:border-primary/30 outline-none transition-all dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:placeholder:text-slate-400"
+                                    placeholder="Buscar produto..."
+                                    className="w-full h-11 md:h-12 pl-12 pr-4 bg-white border-2 border-slate-100 rounded-2xl text-sm font-bold focus:border-primary/30 outline-none transition-all dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:placeholder:text-slate-400"
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                 />
                             </div>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
+                        <div className="flex-1 overflow-y-auto overscroll-contain p-3 md:p-4 space-y-4 md:space-y-6 custom-scrollbar touch-pan-y">
                             {isLoadingProducts ? (
                                 <div className="flex items-center justify-center py-20">
                                     <Loader2 className="size-10 text-primary animate-spin" />
@@ -407,8 +407,8 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                     </div>
 
                     {/* Carrinho e Cliente */}
-                    <div className="w-full md:w-[380px] bg-slate-50 flex flex-col shrink-0 dark:bg-slate-900">
-                        <div className="p-6 bg-white border-b border-slate-100 hidden md:flex items-center justify-between dark:bg-slate-800 dark:border-slate-700">
+                    <div className="w-full md:w-[380px] bg-slate-50 flex flex-col shrink-0 dark:bg-slate-900 max-h-[40vh] md:max-h-none min-h-0">
+                        <div className="p-4 md:p-6 bg-white border-b border-slate-100 hidden md:flex items-center justify-between dark:bg-slate-800 dark:border-slate-700 shrink-0">
                             <div className="flex items-center gap-3">
                                 <div className="size-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
                                     <ShoppingCart className="size-5" />
@@ -420,7 +420,7 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                             </button>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+                        <div className="flex-1 overflow-y-auto overscroll-contain p-4 md:p-6 space-y-4 md:space-y-6 custom-scrollbar touch-pan-y min-h-0">
                             {/* Itens do Carrinho */}
                             <div className="space-y-3">
                                 <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1 dark:text-slate-500">Itens Selecionados</h4>
@@ -504,20 +504,20 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                         </div>
 
                         {/* Footer de Resumo */}
-                        <div className="p-6 bg-white border-t border-slate-100 space-y-4 dark:bg-slate-800 dark:border-slate-700">
+                        <div className="p-4 md:p-6 bg-white border-t border-slate-100 space-y-3 md:space-y-4 dark:bg-slate-800 dark:border-slate-700 shrink-0">
                             <div className="flex items-center justify-between">
-                                <span className="text-sm font-bold text-slate-400 uppercase tracking-widest dark:text-slate-500">Total do Pedido</span>
-                                <span className="text-2xl font-black text-slate-900 dark:text-white">
+                                <span className="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-widest dark:text-slate-500">Total</span>
+                                <span className="text-xl md:text-2xl font-black text-slate-900 dark:text-white">
                                     {total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                 </span>
                             </div>
                             <button
                                 onClick={handleSubmit}
                                 disabled={isSubmitting || cart.length === 0}
-                                className="w-full h-14 bg-primary text-white font-black rounded-2xl shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all active:scale-[0.98] disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-2"
+                                className="w-full h-12 md:h-14 bg-primary text-white font-black rounded-2xl shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all active:scale-[0.98] disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-2"
                             >
-                                {isSubmitting ? <Loader2 className="size-6 animate-spin" /> : <Check className="size-6" />}
-                                FINALIZAR E ENVIAR
+                                {isSubmitting ? <Loader2 className="size-5 md:size-6 animate-spin" /> : <Check className="size-5 md:size-6" />}
+                                <span className="text-sm md:text-base">FINALIZAR</span>
                             </button>
                         </div>
                     </div>
