@@ -241,10 +241,24 @@ async function handleSubscriptionPayment(paymentId: string) {
 // ============================================================
 
 export async function POST(req: NextRequest) {
+  console.log('[v0] Webhook POST iniciado');
+  
   try {
     console.log('[MercadoPago Webhook] Recebendo notificacao...');
-
-    const body = await req.json();
+    
+    // Ler o body como texto primeiro para debug
+    const bodyText = await req.text();
+    console.log('[v0] Body texto bruto:', bodyText);
+    
+    // Parsear o JSON
+    let body;
+    try {
+      body = JSON.parse(bodyText);
+    } catch (parseError) {
+      console.error('[v0] Erro ao parsear JSON:', parseError);
+      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+    }
+    
     console.log('[MercadoPago Webhook] Body:', JSON.stringify(body));
 
     const topic = body.topic || body.action || body.type;
