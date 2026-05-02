@@ -224,7 +224,7 @@ export const SUBSCRIPTION_PLANS = {
   START: {
     id: 'start',
     name: 'Start',
-    price: 79.90,
+    price: 5.00, // TEMPORARIO PARA TESTE - voltar para 79.90
     description: 'Perfeito para comecar sua jornada no delivery.',
     features: [
       'Cardapio digital (Link + QrCode)',
