@@ -412,13 +412,22 @@ export async function completeSignup(token: string, password: string) {
       const planKey = signup.plano.toUpperCase() as keyof typeof SUBSCRIPTION_PLANS;
       const planData = SUBSCRIPTION_PLANS[planKey];
       
+      // Calcular proxima data de cobranca (30 dias a partir de hoje)
+      const hoje = new Date();
+      const proximaCobranca = new Date(hoje);
+      proximaCobranca.setDate(proximaCobranca.getDate() + 30);
+      
       await noco.create(ASSINATURAS_TABLE_ID, {
         empresa_id: empresaId,
         plano: signup.plano,
         status: 'authorized',
         valor: planData?.price || 0,
-        mp_subscription_id: signup.mp_subscription_id || null,
-        data_inicio: new Date().toISOString().split('T')[0],
+        mp_subscription_id: signup.mp_payment_id || signup.mp_subscription_id || '',
+        mp_preapproval_plan_id: '',
+        data_inicio: hoje.toISOString(),
+        data_proxima_cobranca: proximaCobranca.toISOString(),
+        cartao_ultimos_digitos: '',
+        cartao_bandeira: '',
       });
     }
     
