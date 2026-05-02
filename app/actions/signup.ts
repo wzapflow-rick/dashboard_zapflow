@@ -407,28 +407,37 @@ export async function completeSignup(token: string, password: string) {
     
     const empresaId = empresa.id || empresa.Id;
     
-    // Criar assinatura
+    // Criar assinatura (em try/catch separado para nao bloquear criacao da conta)
     if (ASSINATURAS_TABLE_ID) {
-      const planKey = signup.plano.toUpperCase() as keyof typeof SUBSCRIPTION_PLANS;
-      const planData = SUBSCRIPTION_PLANS[planKey];
-      
-      // Calcular proxima data de cobranca (30 dias a partir de hoje)
-      const hoje = new Date();
-      const proximaCobranca = new Date(hoje);
-      proximaCobranca.setDate(proximaCobranca.getDate() + 30);
-      
-      await noco.create(ASSINATURAS_TABLE_ID, {
-        empresa_id: empresaId,
-        plano: signup.plano,
-        status: 'authorized',
-        valor: planData?.price || 0,
-        mp_subscription_id: signup.mp_payment_id || signup.mp_subscription_id || '',
-        mp_preapproval_plan_id: '',
-        data_inicio: hoje.toISOString(),
-        data_proxima_cobranca: proximaCobranca.toISOString(),
-        cartao_ultimos_digitos: '',
-        cartao_bandeira: '',
-      });
+      try {
+        const planKey = signup.plano.toUpperCase() as keyof typeof SUBSCRIPTION_PLANS;
+        const planData = SUBSCRIPTION_PLANS[planKey];
+        
+        // Calcular proxima data de cobranca (30 dias a partir de hoje)
+        const hoje = new Date();
+        const proximaCobranca = new Date(hoje);
+        proximaCobranca.setDate(proximaCobranca.getDate() + 30);
+        
+        console.log('[v0] Criando assinatura para empresa:', empresaId);
+        
+        await noco.create(ASSINATURAS_TABLE_ID, {
+          empresa_id: empresaId,
+          plano: signup.plano,
+          status: 'authorized',
+          valor: planData?.price || 0,
+          mp_subscription_id: signup.mp_payment_id || signup.mp_subscription_id || 'pix_' + Date.now(),
+          mp_preapproval_plan_id: '',
+          data_inicio: hoje.toISOString(),
+          data_proxima_cobranca: proximaCobranca.toISOString(),
+          cartao_ultimos_digitos: '',
+          cartao_bandeira: '',
+        });
+        
+        console.log('[v0] Assinatura criada com sucesso');
+      } catch (subError) {
+        console.error('[v0] Erro ao criar assinatura (nao bloqueante):', subError);
+        // Continua mesmo se falhar a criacao da assinatura
+      }
     }
     
     // Marcar pending signup como completo
