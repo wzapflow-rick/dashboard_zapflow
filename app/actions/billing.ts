@@ -164,7 +164,7 @@ export async function getOverdueCompanies() {
 /**
  * Calcula proxima data de vencimento (dia 5 do proximo mes)
  */
-export function calculateNextDueDate(): string {
+export async function calculateNextDueDate(): Promise<string> {
   const now = new Date();
   let year = now.getFullYear();
   let month = now.getMonth() + 1; // Proximo mes
