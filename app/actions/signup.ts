@@ -429,6 +429,8 @@ export async function completeSignup(token: string, password: string) {
           mp_preapproval_plan_id: signup.plano || 'start',
           data_inicio: hoje.toISOString(),
           data_proxima_cobranca: proximaCobranca.toISOString(),
+          cartao_ultimos_digitos: 'PIX',
+          cartao_bandeira: 'PIX',
         };
         
         console.log('[v0] Dados da assinatura:', JSON.stringify(assinaturaData));
