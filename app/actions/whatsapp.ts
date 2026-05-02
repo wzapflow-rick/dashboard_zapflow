@@ -174,17 +174,18 @@ export async function sendWelcomeSignupMessage(
 ): Promise<boolean> {
     const activationUrl = `${BASE_URL}/ativar/${token}`;
     
-    const message = `Oba, ${nome}! Seu pagamento foi confirmado!
+    const message = `🎉 Pagamento confirmado, ${nome}!
 
-Agora falta pouco para comecar a vender mais!
+Agora sua jornada para vender mais com o ZapFlow começou 🚀
+Para liberar seu acesso, finalize seu cadastro clicando no link abaixo:
+👉 ${activationUrl}
 
-Complete seu cadastro e acesse o painel:
-${activationUrl}
+⏳ Importante: esse link é válido por 24 horas.
 
-Este link expira em 24 horas.
+Assim que concluir, você já poderá acessar seu painel e começar a receber pedidos automaticamente no WhatsApp.
 
-Qualquer duvida, estamos aqui!
-Equipe ZapFlow`;
+Se precisar de ajuda em qualquer etapa, é só chamar — estamos aqui com você 🤝
+— Equipe ZapFlow`;
 
     return sendWhatsAppMessage(phone, message);
 }
