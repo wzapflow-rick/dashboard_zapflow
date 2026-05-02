@@ -422,15 +422,13 @@ export async function completeSignup(token: string, password: string) {
         
         await noco.create(ASSINATURAS_TABLE_ID, {
           empresa_id: empresaId,
-          plano: signup.plano,
+          empresas: empresaId, // Link field para a tabela empresas
           status: 'authorized',
           valor: planData?.price || 0,
           mp_subscription_id: signup.mp_payment_id || signup.mp_subscription_id || 'pix_' + Date.now(),
-          mp_preapproval_plan_id: '',
+          mp_preapproval_plan_id: 'pix',
           data_inicio: hoje.toISOString(),
           data_proxima_cobranca: proximaCobranca.toISOString(),
-          cartao_ultimos_digitos: '',
-          cartao_bandeira: '',
         });
         
         console.log('[v0] Assinatura criada com sucesso');
