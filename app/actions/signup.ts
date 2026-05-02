@@ -460,9 +460,11 @@ export async function completeSignup(token: string, password: string) {
     });
     
     const cookieStore = await cookies();
+    const isProduction = process.env.NODE_ENV === 'production';
     cookieStore.set('session', session, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: isProduction,
+      sameSite: 'lax', // 'lax' permite navegacao cross-site (links externos)
       maxAge: 60 * 60 * 24, // 24 horas
       path: '/',
     });
