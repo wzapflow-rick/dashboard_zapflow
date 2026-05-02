@@ -316,17 +316,24 @@ export async function POST(req: NextRequest) {
       // ============================================================
       const externalRef = paymentData.external_reference || '';
       
+      console.log('[v0] DEBUG - externalRef:', externalRef);
+      console.log('[v0] DEBUG - status:', paymentData.status);
+      console.log('[v0] DEBUG - startsWithBracket:', externalRef.startsWith('{'));
+      
       if (externalRef.startsWith('{') && paymentData.status === 'approved') {
+        console.log('[v0] DEBUG - Entrou no bloco PIX signup');
         try {
           const signupData = JSON.parse(externalRef);
+          console.log('[v0] DEBUG - signupData parsed:', JSON.stringify(signupData));
           
           if (signupData.token && signupData.email && signupData.tipo === 'pix') {
-            console.log('[Webhook] Pagamento PIX de signup detectado:', signupData.email);
+            console.log('[v0] Pagamento PIX de signup detectado:', signupData.email);
             
             // Importar funcoes necessarias
             const { createPendingSignup } = await import('@/app/actions/signup');
             const { sendWelcomeSignupMessage } = await import('@/app/actions/whatsapp');
             
+            console.log('[v0] DEBUG - Criando pending signup...');
             // Criar pending signup
             await createPendingSignup({
               token: signupData.token,
@@ -336,15 +343,20 @@ export async function POST(req: NextRequest) {
               plano: signupData.plano,
               mp_payment_id: String(paymentData.id),
             });
+            console.log('[v0] DEBUG - Pending signup criado');
             
+            console.log('[v0] DEBUG - Enviando WhatsApp para:', signupData.telefone);
             // Enviar WhatsApp com link de ativacao
-            await sendWelcomeSignupMessage(signupData.telefone, signupData.nome, signupData.token);
+            const whatsappResult = await sendWelcomeSignupMessage(signupData.telefone, signupData.nome, signupData.token);
+            console.log('[v0] DEBUG - WhatsApp enviado, resultado:', whatsappResult);
             
-            console.log('[Webhook] PIX signup processado com sucesso:', signupData.email);
+            console.log('[v0] PIX signup processado com sucesso:', signupData.email);
             return NextResponse.json({ received: true, processed: 'pix_signup' });
+          } else {
+            console.log('[v0] DEBUG - Condicao nao atendida: token=', !!signupData.token, 'email=', !!signupData.email, 'tipo=', signupData.tipo);
           }
         } catch (parseError) {
-          console.log('[Webhook] external_reference nao e JSON valido para signup, continuando fluxo normal');
+          console.log('[v0] DEBUG - Erro ao parsear JSON:', parseError);
         }
       }
 
