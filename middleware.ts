@@ -16,6 +16,12 @@ const roleRoutes = {
 
 export async function middleware(req: NextRequest) {
     const path = req.nextUrl.pathname
+    
+    // Rotas que nao precisam de verificacao de sessao
+    if (path.startsWith('/ativar')) {
+        return NextResponse.next()
+    }
+    
     const isProtectedRoute = protectedRoutes.some(route => path.startsWith(route))
     const isAuthRoute = authRoutes.some(route => path.startsWith(route))
 

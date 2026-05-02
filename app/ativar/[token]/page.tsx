@@ -80,9 +80,9 @@ export default function AtivarContaPage() {
       if (result.success) {
         setSuccess(true);
         
-        // Redireciona para o dashboard apos 2 segundos
+        // Redireciona para o onboarding apos 2 segundos (usuario novo precisa configurar)
         setTimeout(() => {
-          router.push('/dashboard');
+          window.location.href = '/onboarding';
         }, 2000);
       } else {
         setError(result.error || 'Erro ao criar conta');
@@ -148,7 +148,7 @@ export default function AtivarContaPage() {
           <h1 className="text-2xl font-bold text-white mb-3">Conta Criada!</h1>
           <p className="text-gray-400 mb-6">
             Bem-vindo ao ZapFlow, {signupData?.nome}!<br />
-            Redirecionando para o painel...
+            Redirecionando para configuracao inicial...
           </p>
           <Loader2 className="size-6 text-primary animate-spin mx-auto" />
         </div>
