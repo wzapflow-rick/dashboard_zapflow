@@ -36,8 +36,8 @@ export async function GET(request: NextRequest) {
     let notified = 0;
     
     for (const empresa of empresas) {
-      const empresaId = empresa.id || empresa.Id;
-      const dataVencimento = new Date(empresa.data_vencimento);
+      const empresaId = (empresa.id || empresa.Id) as number;
+      const dataVencimento = new Date(empresa.data_vencimento as string);
       const diasAtraso = Math.floor((today.getTime() - dataVencimento.getTime()) / (1000 * 60 * 60 * 24));
       
       // Ja esta bloqueada, pular
