@@ -262,12 +262,20 @@ export async function POST(req: NextRequest) {
     console.log('[MercadoPago Webhook] Body:', JSON.stringify(body));
 
     const topic = body.topic || body.action || body.type;
-    const resourceId = body.resource || body.data?.id;
+    
+    // Extrair resourceId - pode vir como URL completa ou como ID direto
+    let resourceId = body.data?.id || body.resource || body.id;
+    
+    // Se resource for uma URL, extrair o ID do final
+    if (typeof resourceId === 'string' && resourceId.includes('/')) {
+      const parts = resourceId.split('/');
+      resourceId = parts[parts.length - 1];
+    }
     
     console.log(`[v0] DEBUG - topic: ${topic}, resourceId: ${resourceId}`);
 
     if (!resourceId) {
-      console.log('[MercadoPago Webhook] ID do recurso nao encontrado');
+      console.log('[MercadoPago Webhook] ID do recurso nao encontrado, body:', JSON.stringify(body));
       return NextResponse.json({ received: true });
     }
     
