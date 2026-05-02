@@ -446,11 +446,17 @@ export async function completeSignup(token: string, password: string) {
       });
     }
     
-    // Criar sessao (login automatico)
+    // Criar sessao (login automatico) - TODOS os campos necessarios
     const session = await encrypt({
-      empresaId,
+      userId: empresaId,
       email: signup.email,
+      empresaId,
       nome: signup.nome,
+      onboarded: false, // Usuario novo precisa fazer onboarding
+      controle_estoque: false,
+      role: 'admin',
+      source: 'empresa',
+      bloqueado: false,
     });
     
     const cookieStore = await cookies();

@@ -58,7 +58,8 @@ export async function middleware(req: NextRequest) {
 
     // 4. Bloqueio por inadimplencia
     // Se empresa esta bloqueada, redireciona para pagina de assinatura
-    if (session && session.bloqueado && !path.startsWith('/dashboard/subscription') && !path.startsWith('/api')) {
+    // Exceto onboarding (usuarios novos que ainda nao configuraram)
+    if (session && session.bloqueado && !path.startsWith('/dashboard/subscription') && !path.startsWith('/api') && !path.startsWith('/onboarding')) {
         return NextResponse.redirect(new URL('/dashboard/subscription?blocked=true', req.nextUrl))
     }
 
