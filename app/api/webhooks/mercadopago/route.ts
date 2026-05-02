@@ -268,8 +268,61 @@ export async function POST(req: NextRequest) {
     // ============================================================
     if (topic === 'payment' || topic === 'payment.created' || topic === 'payment.updated') {
       const paymentId = String(resourceId);
+      console.log(`[v0] Webhook payment recebido: paymentId=${paymentId}`);
       
-      // Primeiro verifica se e pagamento de subscription
+      // ============================================================
+      // PRIMEIRO: Verificar se e pagamento PIX de SIGNUP
+      // ============================================================
+      try {
+        const mpCheckResponse = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+          headers: { 'Authorization': `Bearer ${MP_ACCESS_TOKEN_FALLBACK}` },
+        });
+        
+        if (mpCheckResponse.ok) {
+          const paymentCheck = await mpCheckResponse.json();
+          const externalRef = paymentCheck.external_reference || '';
+          
+          console.log(`[v0] DEBUG - paymentCheck.status: ${paymentCheck.status}`);
+          console.log(`[v0] DEBUG - externalRef: ${externalRef}`);
+          
+          // Se external_reference e JSON e pagamento aprovado, e signup PIX
+          if (externalRef.startsWith('{') && paymentCheck.status === 'approved') {
+            console.log('[v0] Detectado pagamento PIX de signup!');
+            
+            try {
+              const signupData = JSON.parse(externalRef);
+              console.log('[v0] signupData:', JSON.stringify(signupData));
+              
+              if (signupData.token && signupData.email && signupData.tipo === 'pix') {
+                const { createPendingSignup } = await import('@/app/actions/signup');
+                const { sendWelcomeSignupMessage } = await import('@/app/actions/whatsapp');
+                
+                console.log('[v0] Criando pending signup...');
+                await createPendingSignup({
+                  token: signupData.token,
+                  email: signupData.email,
+                  nome: signupData.nome,
+                  telefone: signupData.telefone,
+                  plano: signupData.plano,
+                  mp_payment_id: String(paymentCheck.id),
+                });
+                
+                console.log('[v0] Enviando WhatsApp para:', signupData.telefone);
+                await sendWelcomeSignupMessage(signupData.telefone, signupData.nome, signupData.token);
+                
+                console.log('[v0] PIX signup processado com sucesso!');
+                return NextResponse.json({ received: true, processed: 'pix_signup' });
+              }
+            } catch (parseError) {
+              console.log('[v0] Erro ao processar signup PIX:', parseError);
+            }
+          }
+        }
+      } catch (checkError) {
+        console.log('[v0] Erro ao verificar pagamento:', checkError);
+      }
+      
+      // Verifica se e pagamento de subscription
       const isSubscriptionPayment = await handleSubscriptionPayment(paymentId);
       
       if (isSubscriptionPayment) {
