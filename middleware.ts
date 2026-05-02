@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getMe } from './lib/session-server'
 
-const protectedRoutes = ['/dashboard', '/onboarding']
+const protectedRoutes = ['/dashboard']
 const authRoutes = ['/login', '/register']
 
 const adminOnlyRoutes = ['/dashboard/users', '/dashboard/settings', '/dashboard/subscription', '/dashboard/testes']
