@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
       
       // Calcular dias de inadimplencia
       const diasInadimplente = Math.max(0, diasAtraso);
-      const ultimoAviso = empresa.ultimo_aviso_enviado || 0;
+      const ultimoAviso = (empresa.ultimo_aviso_enviado as number) || 0;
       
       console.log(`[Cron] Empresa ${empresaId}: ${diasInadimplente} dias inadimplente, ultimo aviso: ${ultimoAviso}`);
       
