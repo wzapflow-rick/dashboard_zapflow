@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server'
 import { getMe } from './lib/session-server'
 
 const protectedRoutes = ['/dashboard']
-const authRoutes = ['/login', '/register', '/']
+const authRoutes = ['/login', '/register']
 
 const adminOnlyRoutes = ['/dashboard/users', '/dashboard/settings', '/dashboard/subscription', '/dashboard/testes']
 
@@ -23,7 +23,7 @@ export async function middleware(req: NextRequest) {
     }
     
     const isProtectedRoute = protectedRoutes.some(route => path.startsWith(route))
-    const isAuthRoute = authRoutes.some(route => path.startsWith(route))
+    const isAuthRoute = authRoutes.some(route => path.startsWith(route)) || path === '/'
 
     const session = await getMe()
 
