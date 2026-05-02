@@ -373,6 +373,15 @@ export async function completeSignup(token: string, password: string) {
     // Hash da senha
     const hashedPassword = await hashPassword(password);
     
+    // Gerar slug unico baseado no nome
+    const baseSlug = signup.nome
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+    const uniqueSlug = `${baseSlug}-${Date.now().toString(36)}`;
+    
     // Criar empresa
     const empresa = await noco.create(EMPRESAS_TABLE_ID, {
       email: signup.email,
@@ -383,11 +392,13 @@ export async function completeSignup(token: string, password: string) {
       nome_admin: signup.nome,
       nome_fantasia: signup.nome,
       telefone: signup.telefone,
+      telefone_admin: signup.telefone,
       whatsapp: signup.telefone,
       status: 'ativo',
       nincho: 'Outros',
       instancia_evolution: '',
       planos: signup.plano,
+      slug: uniqueSlug,
     }) as any;
     
     if (!empresa?.id && !empresa?.Id) {
