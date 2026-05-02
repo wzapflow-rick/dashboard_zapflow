@@ -58,8 +58,9 @@ export async function GET(request: NextRequest) {
         
         // Enviar aviso de bloqueio
         if (empresa.telefone_admin || empresa.telefone) {
-          const telefone = empresa.telefone_admin || empresa.telefone;
-          await sendPaymentReminder(telefone, empresa.nome_fantasia || empresa.nome_admin, 5, empresaId);
+          const telefone = (empresa.telefone_admin || empresa.telefone) as string;
+          const nome = (empresa.nome_fantasia || empresa.nome_admin || 'Cliente') as string;
+          await sendPaymentReminder(telefone, nome, 5, empresaId);
         }
         
         blocked++;
@@ -78,8 +79,9 @@ export async function GET(request: NextRequest) {
         
         // Enviar WhatsApp
         if (empresa.telefone_admin || empresa.telefone) {
-          const telefone = empresa.telefone_admin || empresa.telefone;
-          await sendPaymentReminder(telefone, empresa.nome_fantasia || empresa.nome_admin, diasInadimplente, empresaId);
+          const telefone = (empresa.telefone_admin || empresa.telefone) as string;
+          const nome = (empresa.nome_fantasia || empresa.nome_admin || 'Cliente') as string;
+          await sendPaymentReminder(telefone, nome, diasInadimplente, empresaId);
           notified++;
         }
       } else if (diasInadimplente > 0) {
