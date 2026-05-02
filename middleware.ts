@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server'
 import { getMe } from './lib/session-server'
 
 const protectedRoutes = ['/dashboard']
-const authRoutes = ['/login', '/register']
+const authRoutes = ['/login', '/register', '/']
 
 const adminOnlyRoutes = ['/dashboard/users', '/dashboard/settings', '/dashboard/subscription', '/dashboard/testes']
 
@@ -34,12 +34,13 @@ export async function middleware(req: NextRequest) {
         return NextResponse.redirect(loginUrl)
     }
 
-    // 2. Se logado e tentar acessar login/register -> dashboard ou onboarding
+    // 2. Se logado e tentar acessar login/register/raiz -> dashboard ou onboarding
     if (isAuthRoute && session) {
-        if (!session.onboarded) {
+        // Se onboarded for explicitamente false, vai pro onboarding
+        if (session.onboarded === false) {
             return NextResponse.redirect(new URL('/onboarding', req.nextUrl))
         }
-        // Redireciona para a primeira rota permitida do role
+        // Caso contrario (true ou undefined), vai pro dashboard
         const allowedRoutes = roleRoutes[session.role as keyof typeof roleRoutes] || ['/dashboard/expedition'];
         const redirectTo = allowedRoutes[0] || '/dashboard/expedition';
         return NextResponse.redirect(new URL(redirectTo, req.nextUrl))
