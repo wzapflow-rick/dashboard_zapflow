@@ -223,3 +223,72 @@ Equipe ZapFlow`;
 
     return sendWhatsAppMessage(phone, message);
 }
+
+// ============================================================
+// MENSAGENS DE COBRANCA / INADIMPLENCIA
+// ============================================================
+
+const PAYMENT_MESSAGES: Record<number, (nome: string, link: string) => string> = {
+    1: (nome, link) => `Ola ${nome}! Sua assinatura ZapFlow vence hoje.
+
+Pague via PIX para continuar usando o sistema sem interrupcoes:
+${link}
+
+Qualquer duvida, estamos aqui!
+Equipe ZapFlow`,
+
+    2: (nome, link) => `Ola ${nome}, sua assinatura ZapFlow esta 1 dia atrasada.
+
+Regularize o pagamento para evitar o bloqueio do seu sistema:
+${link}
+
+Equipe ZapFlow`,
+
+    3: (nome, link) => `Atencao ${nome}!
+
+Sua assinatura esta 2 dias atrasada. Faltam apenas 2 dias para o bloqueio do seu sistema.
+
+Pague agora e evite a interrupcao:
+${link}
+
+Equipe ZapFlow`,
+
+    4: (nome, link) => `URGENTE ${nome}!
+
+Amanha seu sistema ZapFlow sera bloqueado por inadimplencia.
+
+Regularize AGORA para continuar recebendo pedidos:
+${link}
+
+Equipe ZapFlow`,
+
+    5: (nome, link) => `${nome}, seu sistema ZapFlow foi BLOQUEADO.
+
+Sua assinatura esta 5 dias atrasada e seu cardapio foi desativado.
+
+Para reativar imediatamente, pague aqui:
+${link}
+
+Equipe ZapFlow`,
+};
+
+/**
+ * Enviar lembrete de pagamento (cobranca)
+ */
+export async function sendPaymentReminder(
+    phone: string,
+    nome: string,
+    dia: number,
+    empresaId: number
+): Promise<boolean> {
+    const paymentLink = `${BASE_URL}/dashboard/subscription?pay=true&empresa=${empresaId}`;
+    
+    const getMessage = PAYMENT_MESSAGES[dia];
+    if (!getMessage) {
+        console.error('[WhatsApp] Dia de cobranca invalido:', dia);
+        return false;
+    }
+    
+    const message = getMessage(nome, paymentLink);
+    return sendWhatsAppMessage(phone, message);
+}

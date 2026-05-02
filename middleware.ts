@@ -50,7 +50,13 @@ export async function middleware(req: NextRequest) {
         }
     }
 
-    // 4. Controle de permissões por Role
+    // 4. Bloqueio por inadimplencia
+    // Se empresa esta bloqueada, redireciona para pagina de assinatura
+    if (session && session.bloqueado && !path.startsWith('/dashboard/subscription') && !path.startsWith('/api')) {
+        return NextResponse.redirect(new URL('/dashboard/subscription?blocked=true', req.nextUrl))
+    }
+
+    // 5. Controle de permissões por Role
     if (session && session.role !== 'admin') {
         const allowed = roleRoutes[session.role as keyof typeof roleRoutes] || []
         

@@ -56,7 +56,8 @@ export async function login(data: any) {
                 onboarded: !!empresa.nome_fantasia,
                 controle_estoque: !!empresa.controle_estoque,
                 role: 'admin',
-                source: 'empresa'
+                source: 'empresa',
+                bloqueado: !!empresa.bloqueado,
             });
 
             const isProduction = process.env.NODE_ENV === 'production';

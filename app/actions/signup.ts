@@ -140,10 +140,126 @@ export async function createCheckoutSession(data: CheckoutData) {
       success: true,
       initPoint: mpData.init_point,
       token,
+      tipo: 'cartao',
     };
     
   } catch (error: any) {
     console.error('[Signup] Erro:', error);
+    return { success: false, error: 'Erro interno' };
+  }
+}
+
+// ============================================================
+// CRIAR CHECKOUT PIX (PAGAMENTO UNICO MENSAL)
+// ============================================================
+
+export async function createPixCheckoutSession(data: CheckoutData) {
+  console.log('[v0] createPixCheckoutSession iniciado:', JSON.stringify(data));
+  
+  try {
+    const { email, nome, telefone, plano } = data;
+    
+    // Validacoes
+    if (!email || !nome || !telefone || !plano) {
+      return { success: false, error: 'Todos os campos sao obrigatorios' };
+    }
+    
+    // Verificar se email ja existe
+    const existingCompany = await noco.list(EMPRESAS_TABLE_ID, {
+      where: `(email,eq,${email})`,
+      limit: 1,
+    });
+    
+    if (existingCompany?.list?.length > 0) {
+      return { success: false, error: 'Este email ja esta cadastrado. Faca login.' };
+    }
+    
+    // Buscar dados do plano
+    const planKey = plano.toUpperCase() as keyof typeof SUBSCRIPTION_PLANS;
+    const planData = SUBSCRIPTION_PLANS[planKey];
+    
+    if (!planData || planData.id === 'iniciante') {
+      return { success: false, error: 'Plano invalido' };
+    }
+    
+    // Gerar token unico
+    const token = uuidv4();
+    
+    // Dados para external_reference (sera usado no webhook)
+    const externalReference = JSON.stringify({
+      token,
+      email,
+      nome,
+      telefone,
+      plano,
+      tipo: 'pix',
+    });
+    
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://cardapio.wzapflow.com.br';
+    
+    // Criar preferencia de pagamento PIX no Mercado Pago
+    const preference = {
+      items: [
+        {
+          title: `ZapFlow - Plano ${planData.name}`,
+          quantity: 1,
+          unit_price: planData.price,
+          currency_id: 'BRL',
+        },
+      ],
+      payer: {
+        email: email,
+        first_name: nome,
+      },
+      payment_methods: {
+        excluded_payment_types: [
+          { id: 'credit_card' },
+          { id: 'debit_card' },
+          { id: 'ticket' },
+        ],
+        default_payment_method_id: 'pix',
+      },
+      external_reference: externalReference,
+      back_urls: {
+        success: `${baseUrl}/ativar/${token}`,
+        failure: `${baseUrl}/?payment=failure`,
+        pending: `${baseUrl}/?payment=pending`,
+      },
+      auto_return: 'approved',
+      notification_url: `${baseUrl}/api/webhooks/mercadopago`,
+    };
+    
+    console.log('[v0] Criando PIX no MP:', JSON.stringify(preference));
+    
+    const response = await fetch('https://api.mercadopago.com/checkout/preferences', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${MP_ACCESS_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(preference),
+    });
+    
+    console.log('[v0] Resposta MP PIX status:', response.status);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('[v0] Erro MP PIX detalhado:', JSON.stringify(errorData));
+      return { success: false, error: 'Erro ao criar checkout PIX' };
+    }
+    
+    const mpData = await response.json();
+    console.log('[v0] MP PIX Data success:', JSON.stringify(mpData));
+    
+    return {
+      success: true,
+      initPoint: mpData.init_point,
+      token,
+      tipo: 'pix',
+    };
+    
+  } catch (error: any) {
+    console.error('[Signup] Erro PIX:', error);
     return { success: false, error: 'Erro interno' };
   }
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createCheckoutSession } from '@/app/actions/signup';
+import { createCheckoutSession, createPixCheckoutSession } from '@/app/actions/signup';
 
 // Permitir requisicoes da landing page (com e sem www)
 const ALLOWED_ORIGINS = [
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    const { email, nome, telefone, plano } = body;
+    const { email, nome, telefone, plano, tipo = 'cartao' } = body;
     
     console.log('[v0] Checkout request body:', JSON.stringify(body));
     
@@ -69,15 +69,19 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    console.log('[v0] Validacao OK, criando checkout para:', { email, nome, plano });
+    console.log('[v0] Validacao OK, criando checkout para:', { email, nome, plano, tipo });
     
-    // Criar sessao de checkout
-    const result = await createCheckoutSession({
+    // Criar sessao de checkout (PIX ou Cartao)
+    const checkoutData = {
       email: email.toLowerCase().trim(),
       nome: nome.trim(),
       telefone: telefoneClean,
       plano: plano.toLowerCase() as 'start' | 'pro' | 'elite',
-    });
+    };
+    
+    const result = tipo === 'pix' 
+      ? await createPixCheckoutSession(checkoutData)
+      : await createCheckoutSession(checkoutData);
     
     if (!result.success) {
       return NextResponse.json(
@@ -90,6 +94,7 @@ export async function POST(request: NextRequest) {
       success: true,
       initPoint: result.initPoint,
       token: result.token,
+      tipo: result.tipo || tipo,
     }, { headers: corsHeaders });
     
   } catch (error: any) {

@@ -48,6 +48,7 @@ export interface User {
     onboarded: boolean;
     controle_estoque: boolean;
     role: string;
+    bloqueado?: boolean;
     source?: string;
 }
 

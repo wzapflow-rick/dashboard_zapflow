@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState } from 'react';
 import { Sidebar } from './layout/sidebar';
 import { Header } from './layout/header';
+import { PaymentAlert } from './dashboard/payment-alert';
 import { cn } from '@/lib/utils';
 
 interface SidebarContextType {
@@ -69,6 +70,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           setIsMobileMenuOpen={setIsMobileMenuOpen}
         />
         <div className="p-4 sm:p-6 lg:p-8 flex-1 dark:bg-slate-900">
+          {user?.empresaId && <PaymentAlert empresaId={user.empresaId} />}
           {children}
         </div>
       </main>
