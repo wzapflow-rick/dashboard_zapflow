@@ -207,20 +207,23 @@ export async function sendWelcomeMessage(
     
     const planName = planNames[plano] || plano;
     
-    const message = `Bem-vindo ao ZapFlow, ${nome}!
+    const message = `🎉 Bem-vindo ao ZapFlow, ${nome}!
 
-Sua conta foi ativada com sucesso!
+Sua conta foi ativada com sucesso — agora é hora de começar a vender mais 🚀
 
-Plano: ${planName}
-Email: ${email}
-Acesso: ${BASE_URL}
+📦 Plano: ${planName}
+📧 E-mail: ${email}
 
-Agora e so configurar seu cardapio e comecar a receber pedidos!
+🔗 Acesse seu painel:
+${BASE_URL}
 
-Dica: Comece adicionando suas categorias e produtos no menu "Cardapio".
+Agora é só configurar seu cardápio e começar a receber pedidos direto no WhatsApp.
 
+💡 Dica rápida: comece criando suas categorias e adicionando seus produtos no menu "Cardápio" — isso já deixa sua loja pronta para vender.
+
+Qualquer dúvida, estamos por aqui para te ajudar 🤝
 Boas vendas!
-Equipe ZapFlow`;
+— Equipe ZapFlow`;
 
     return sendWhatsAppMessage(phone, message);
 }
