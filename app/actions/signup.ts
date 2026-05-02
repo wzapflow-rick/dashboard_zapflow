@@ -50,19 +50,26 @@ interface PendingSignup {
 // ============================================================
 
 export async function createCheckoutSession(data: CheckoutData) {
+  console.log('[v0] createCheckoutSession iniciado:', JSON.stringify(data));
+  
   try {
     const { email, nome, telefone, plano } = data;
     
     // Validacoes
     if (!email || !nome || !telefone || !plano) {
+      console.log('[v0] Campos faltando em createCheckoutSession');
       return { success: false, error: 'Todos os campos sao obrigatorios' };
     }
+    
+    console.log('[v0] Verificando email existente:', email);
     
     // Verificar se email ja existe
     const existingCompany = await noco.list(EMPRESAS_TABLE_ID, {
       where: `(email,eq,${email})`,
       limit: 1,
     });
+    
+    console.log('[v0] Resultado busca email:', existingCompany?.list?.length || 0);
     
     if (existingCompany?.list?.length > 0) {
       return { success: false, error: 'Este email ja esta cadastrado. Faca login.' };
@@ -105,6 +112,9 @@ export async function createCheckoutSession(data: CheckoutData) {
       status: 'pending',
     };
     
+    console.log('[v0] Criando assinatura no MP com preference:', JSON.stringify(preference));
+    console.log('[v0] MP_ACCESS_TOKEN presente:', !!MP_ACCESS_TOKEN);
+    
     // Criar assinatura no MP
     const response = await fetch('https://api.mercadopago.com/preapproval', {
       method: 'POST',
@@ -115,13 +125,16 @@ export async function createCheckoutSession(data: CheckoutData) {
       body: JSON.stringify(preference),
     });
     
+    console.log('[v0] Resposta MP status:', response.status);
+    
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('[Signup] Erro MP:', errorData);
+      console.error('[v0] Erro MP detalhado:', JSON.stringify(errorData));
       return { success: false, error: 'Erro ao criar checkout' };
     }
     
     const mpData = await response.json();
+    console.log('[v0] MP Data success:', JSON.stringify(mpData));
     
     return {
       success: true,

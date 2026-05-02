@@ -28,40 +28,48 @@ export async function POST(request: NextRequest) {
     
     const { email, nome, telefone, plano } = body;
     
+    console.log('[v0] Checkout request body:', JSON.stringify(body));
+    
     // Validacoes basicas
     if (!email || !nome || !telefone || !plano) {
+      console.log('[v0] Campos faltando:', { email: !!email, nome: !!nome, telefone: !!telefone, plano: !!plano });
       return NextResponse.json(
         { success: false, error: 'Todos os campos sao obrigatorios' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
     
     // Validar email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
+      console.log('[v0] Email invalido:', email);
       return NextResponse.json(
         { success: false, error: 'Email invalido' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
     
     // Validar telefone (minimo 10 digitos)
     const telefoneClean = telefone.replace(/\D/g, '');
     if (telefoneClean.length < 10) {
+      console.log('[v0] Telefone invalido:', telefone, 'limpo:', telefoneClean);
       return NextResponse.json(
         { success: false, error: 'Telefone invalido' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
     
     // Validar plano
     const planosValidos = ['start', 'pro', 'elite'];
     if (!planosValidos.includes(plano.toLowerCase())) {
+      console.log('[v0] Plano invalido:', plano);
       return NextResponse.json(
         { success: false, error: 'Plano invalido' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
+    
+    console.log('[v0] Validacao OK, criando checkout para:', { email, nome, plano });
     
     // Criar sessao de checkout
     const result = await createCheckoutSession({
