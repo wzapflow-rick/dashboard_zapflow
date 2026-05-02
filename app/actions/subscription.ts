@@ -118,7 +118,7 @@ export async function getInvoices(): Promise<Invoice[]> {
 
     const invoices = await noco.list(FATURAS_ASSINATURA_TABLE_ID, {
       where: `(empresa_id,eq,${me.empresaId})`,
-      sort: '-data_vencimento',
+      sort: '-created_at',
       limit: 12,
     }) as any;
 
