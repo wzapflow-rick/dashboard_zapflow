@@ -422,6 +422,7 @@ export async function completeSignup(token: string, password: string) {
         
         const assinaturaData: Record<string, any> = {
           empresa_id: empresaId,
+          plano: signup.plano || 'start',
           status: 'authorized',
           valor: planData?.price || 0,
           mp_subscription_id: signup.mp_payment_id || signup.mp_subscription_id || 'pix_' + Date.now(),
