@@ -19,7 +19,7 @@ export interface BillingStatus {
  */
 export async function getBillingStatus(empresaId: number): Promise<BillingStatus | null> {
   try {
-    const empresa = await noco.read(EMPRESAS_TABLE_ID, empresaId);
+    const empresa = await noco.findById(EMPRESAS_TABLE_ID, empresaId) as any;
     
     if (!empresa) return null;
     
@@ -47,7 +47,7 @@ export async function generatePixPayment(empresaId: number, plano: SubscriptionP
     }
 
     // Buscar dados da empresa
-    const empresa = await noco.read(EMPRESAS_TABLE_ID, empresaId);
+    const empresa = await noco.findById(EMPRESAS_TABLE_ID, empresaId) as any;
     if (!empresa) {
       return { success: false, error: 'Empresa nao encontrada' };
     }
