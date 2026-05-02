@@ -309,12 +309,52 @@ export async function POST(req: NextRequest) {
       }
 
       const paymentData = await mpResponse.json() as MPPaymentData;
-      console.log(`[MercadoPago Webhook] Pagamento ${paymentId}: status=${paymentData.status}`);
+      console.log(`[MercadoPago Webhook] Pagamento ${paymentId}: status=${paymentData.status}, external_reference=${paymentData.external_reference}`);
 
-      const orderId = Number(paymentData.external_reference);
+      // ============================================================
+      // VERIFICAR SE E UM PAGAMENTO PIX DE SIGNUP (external_reference e JSON)
+      // ============================================================
+      const externalRef = paymentData.external_reference || '';
+      
+      if (externalRef.startsWith('{') && paymentData.status === 'approved') {
+        try {
+          const signupData = JSON.parse(externalRef);
+          
+          if (signupData.token && signupData.email && signupData.tipo === 'pix') {
+            console.log('[Webhook] Pagamento PIX de signup detectado:', signupData.email);
+            
+            // Importar funcoes necessarias
+            const { createPendingSignup } = await import('@/app/actions/signup');
+            const { sendWelcomeSignupMessage } = await import('@/app/actions/whatsapp');
+            
+            // Criar pending signup
+            await createPendingSignup({
+              token: signupData.token,
+              email: signupData.email,
+              nome: signupData.nome,
+              telefone: signupData.telefone,
+              plano: signupData.plano,
+              mp_payment_id: String(paymentData.id),
+            });
+            
+            // Enviar WhatsApp com link de ativacao
+            await sendWelcomeSignupMessage(signupData.telefone, signupData.nome, signupData.token);
+            
+            console.log('[Webhook] PIX signup processado com sucesso:', signupData.email);
+            return NextResponse.json({ received: true, processed: 'pix_signup' });
+          }
+        } catch (parseError) {
+          console.log('[Webhook] external_reference nao e JSON valido para signup, continuando fluxo normal');
+        }
+      }
+
+      // ============================================================
+      // FLUXO NORMAL: PAGAMENTO DE PEDIDO
+      // ============================================================
+      const orderId = Number(externalRef);
 
       if (!orderId) {
-        console.log('[MercadoPago Webhook] external_reference nao encontrado');
+        console.log('[MercadoPago Webhook] external_reference nao encontrado ou nao e um orderId');
         return NextResponse.json({ received: true });
       }
 
