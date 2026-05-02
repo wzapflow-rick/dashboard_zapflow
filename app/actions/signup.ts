@@ -420,16 +420,19 @@ export async function completeSignup(token: string, password: string) {
         
         console.log('[v0] Criando assinatura para empresa:', empresaId);
         
-        await noco.create(ASSINATURAS_TABLE_ID, {
+        const assinaturaData: Record<string, any> = {
           empresa_id: empresaId,
-          empresas: empresaId, // Link field para a tabela empresas
           status: 'authorized',
           valor: planData?.price || 0,
           mp_subscription_id: signup.mp_payment_id || signup.mp_subscription_id || 'pix_' + Date.now(),
-          mp_preapproval_plan_id: 'pix',
+          mp_preapproval_plan_id: signup.plano || 'start',
           data_inicio: hoje.toISOString(),
           data_proxima_cobranca: proximaCobranca.toISOString(),
-        });
+        };
+        
+        console.log('[v0] Dados da assinatura:', JSON.stringify(assinaturaData));
+        
+        await noco.create(ASSINATURAS_TABLE_ID, assinaturaData);
         
         console.log('[v0] Assinatura criada com sucesso');
       } catch (subError) {

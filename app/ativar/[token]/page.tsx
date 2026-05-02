@@ -80,9 +80,9 @@ export default function AtivarContaPage() {
       if (result.success) {
         setSuccess(true);
         
-        // Redireciona para o onboarding apos 2 segundos (usuario novo precisa configurar)
+        // Redireciona para o login apos 2 segundos (usuario ja tem email e senha)
         setTimeout(() => {
-          window.location.href = '/onboarding';
+          window.location.href = '/login';
         }, 2000);
       } else {
         setError(result.error || 'Erro ao criar conta');

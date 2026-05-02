@@ -90,7 +90,7 @@ export async function getSubscription(): Promise<Subscription | null> {
       empresa_id: subscription.empresa_id,
       mp_subscription_id: subscription.mp_subscription_id,
       mp_preapproval_plan_id: subscription.mp_preapproval_plan_id,
-      plano: subscription.plano || 'start',
+      plano: subscription.plano || subscription.mp_preapproval_plan_id || 'start',
       status: subscription.status || 'pending',
       valor: Number(subscription.valor || 0),
       data_inicio: subscription.data_inicio,
