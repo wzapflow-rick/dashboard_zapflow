@@ -249,11 +249,15 @@ export async function POST(req: NextRequest) {
 
     const topic = body.topic || body.action || body.type;
     const resourceId = body.resource || body.data?.id;
+    
+    console.log(`[v0] DEBUG - topic: ${topic}, resourceId: ${resourceId}`);
 
     if (!resourceId) {
       console.log('[MercadoPago Webhook] ID do recurso nao encontrado');
       return NextResponse.json({ received: true });
     }
+    
+    console.log(`[v0] Processando evento - topic: ${topic}`);
 
     // ============================================================
     // EVENTOS DE SUBSCRIPTION (preapproval)
