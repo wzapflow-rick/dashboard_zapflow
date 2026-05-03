@@ -84,12 +84,12 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen, user }:
                     isOpen ? "w-64" : "w-20",
                     "lg:translate-x-0",
                     isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
-                    "dark:bg-gradient-to-b dark:from-slate-900 dark:to-slate-800 dark:border-slate-700/50"
+                    "dark:from-[#0f1f35] dark:to-[#0a1628] dark:border-[#1e3a5f]/50"
                 )}
             >
                 <div className="p-6 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                        <div className="size-10 bg-primary rounded-lg flex items-center justify-center text-white shrink-0">
+                        <div className="size-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center text-white shrink-0 shadow-lg shadow-orange-500/20">
                             <Bolt className="size-6" />
                         </div>
                         {(isOpen || isMobileMenuOpen) && (
@@ -136,7 +136,7 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen, user }:
                                         "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group",
                                         isActive
                                             ? "bg-primary/10 text-primary font-bold"
-                                            : "text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800"
+                                            :                                         "text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-[#162438]"
                                     )}
                                 >
                                     <item.icon className={cn("size-5 shrink-0", isActive ? "text-primary" : "text-slate-500 dark:text-slate-400")} />
@@ -147,7 +147,7 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen, user }:
 
                     {/* Seção Administração - só mostra se o usuário tem acesso a pelo menos um item */}
                     {adminItems.filter(item => !user?.role || user.role === 'admin' || item.roles?.includes(user.role)).length > 0 && (
-                    <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-700">
+                    <div className="pt-4 mt-4 border-t border-slate-100 dark:border-[#1e3a5f]">
                         {(isOpen || isMobileMenuOpen) && (
                             <span className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block dark:text-slate-500">
                                 Administração
@@ -171,7 +171,7 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen, user }:
                                             "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group",
                                             isActive
                                                 ? "bg-primary/10 text-primary font-bold"
-                                                : "text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800"
+                                                :                                         "text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-[#162438]"
                                         )}
                                     >
                                         <item.icon className={cn("size-5 shrink-0", isActive ? "text-primary" : "text-slate-500 dark:text-slate-400")} />
@@ -183,8 +183,8 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen, user }:
                     )}
                 </nav>
 
-                <div className="p-4 border-t border-slate-100 dark:border-slate-700">
-                    <div className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-xl cursor-pointer transition-colors dark:hover:bg-slate-800">
+                <div className="p-4 border-t border-slate-100 dark:border-[#1e3a5f]">
+                    <div className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-xl cursor-pointer transition-colors dark:hover:bg-[#162438]">
                         <div className="relative size-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs overflow-hidden shrink-0">
                             <Image
                                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuDm72iK3QVpJIMCWIHbWsRreh_QjkigiEYJ2gtcc6GqtkJAiL6-wR2AENgEq-Hrh8EA_6Yyyp_9TLAAg2R_RuFBNgiB9XbHm2Ny79MIfLQ3rMDm7alfZlyysgKOr16OG9gZZtvomKL1wz4cO-B6LuKMIBJJGkki0Fl3AbtpFUuZSBCKKgAMPAJZdTLel0MzOOPREwzSyK6_LPuFIa0zv1mHtyb3b_dJJrInLPf58HW0YS2CWO27sZamwhRyxsI0vDyhdFjw9DKBsYM"

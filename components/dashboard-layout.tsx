@@ -48,7 +48,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isCozinheiro = user?.role === 'cozinheiro';
 
   return (
-    <div className="flex min-h-screen bg-background-light dark:bg-slate-900">
+    <div className="flex min-h-screen bg-background-light dark:bg-[#0a1628]">
       {!isLoading && !isCozinheiro && (
         <Sidebar
           isOpen={isOpen}
@@ -69,7 +69,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           setIsOpen={setIsOpen}
           setIsMobileMenuOpen={setIsMobileMenuOpen}
         />
-        <div className="p-4 sm:p-6 lg:p-8 flex-1 dark:bg-slate-900">
+        <div className="p-4 sm:p-6 lg:p-8 flex-1 dark:bg-[#0a1628]">
           {user?.empresaId && <PaymentAlert empresaId={user.empresaId} />}
           {children}
         </div>

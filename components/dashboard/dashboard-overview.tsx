@@ -106,7 +106,7 @@ export default function DashboardOverview() {
           <select
             value={selectedPeriod}
             onChange={(e) => setSelectedPeriod(e.target.value)}
-            className="w-full sm:w-auto bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer shadow-sm dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300"
+            className="w-full sm:w-auto bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer shadow-sm dark:bg-[#0f1f35] dark:border-[#1e3a5f] dark:text-slate-300"
           >
             <option value="Hoje">Hoje</option>
             <option value="Últimos 7 dias">Últimos 7 dias</option>
@@ -131,7 +131,7 @@ export default function DashboardOverview() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Sales Chart */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm transition-all hover:shadow-md dark:bg-slate-800 dark:border-slate-700">
+        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm transition-all hover:shadow-md dark:bg-[#0f1f35] dark:border-[#1e3a5f]">
           <div className="flex justify-between items-center mb-6">
             <h4 className="font-bold text-slate-800 dark:text-white">Vendas por Hora</h4>
             <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-1.5">
@@ -140,7 +140,7 @@ export default function DashboardOverview() {
           </div>
           {/* Chart de vendas por hora */}
           <div className="overflow-x-auto custom-scrollbar -mx-2 px-2">
-            <div className="h-[240px] flex items-end justify-between gap-1 bg-slate-50 rounded-xl p-4 border border-slate-100 dark:bg-slate-900/50 dark:border-slate-700/50 min-w-[600px] sm:min-w-0">
+            <div className="h-[240px] flex items-end justify-between gap-1 bg-slate-50 rounded-xl p-4 border border-slate-100 dark:bg-[#0a1628]/50 dark:border-[#1e3a5f]/50 min-w-[600px] sm:min-w-0">
               {dashboardData?.chartData && dashboardData.chartData.length > 0 ? (
                 dashboardData.chartData.map((val: number, i: number) => {
                   const maxVal = Math.max(...dashboardData.chartData);
