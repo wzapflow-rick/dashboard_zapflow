@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getEmpresas, createEmpresa, updateEmpresa, concederTrialGratuito } from '@/app/actions/admin';
+import { getEmpresas, createEmpresa, updateEmpresa, concederTrialGratuito, deleteEmpresa } from '@/app/actions/admin';
 import { 
   Building2, Search, Plus, Edit2, Gift, ExternalLink, 
-  ChevronLeft, ChevronRight, X, Check, AlertCircle
+  ChevronLeft, ChevronRight, X, Check, AlertCircle, Trash2
 } from 'lucide-react';
 
 interface Empresa {
@@ -39,7 +39,9 @@ export default function EmpresasAdminPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showTrialModal, setShowTrialModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedEmpresa, setSelectedEmpresa] = useState<Empresa | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     loadEmpresas(1);
@@ -72,6 +74,23 @@ export default function EmpresasAdminPage() {
   const openTrialModal = (empresa: Empresa) => {
     setSelectedEmpresa(empresa);
     setShowTrialModal(true);
+  };
+
+  const openDeleteConfirm = (empresa: Empresa) => {
+    setSelectedEmpresa(empresa);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDelete = async () => {
+    if (!selectedEmpresa) return;
+    setDeleting(true);
+    const result = await deleteEmpresa(selectedEmpresa.id);
+    if (result.success) {
+      setShowDeleteConfirm(false);
+      setSelectedEmpresa(null);
+      loadEmpresas(pagination?.page || 1);
+    }
+    setDeleting(false);
   };
 
   const formatDate = (date: string) => {
@@ -194,6 +213,13 @@ export default function EmpresasAdminPage() {
                         >
                           <Gift className="size-4" />
                         </button>
+                        <button
+                          onClick={() => openDeleteConfirm(empresa)}
+                          className="p-2 hover:bg-red-500/10 rounded-lg text-slate-400 hover:text-red-400 transition-colors"
+                          title="Excluir Empresa"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
                         <a
                           href={`/menu/${empresa.slug}`}
                           target="_blank"
@@ -282,6 +308,42 @@ export default function EmpresasAdminPage() {
             loadEmpresas(pagination?.page || 1);
           }}
         />
+      )}
+
+      {/* Modal Confirmar Exclusao */}
+      {showDeleteConfirm && selectedEmpresa && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl w-full max-w-md">
+            <div className="p-6 text-center">
+              <div className="size-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="size-8 text-red-400" />
+              </div>
+              <h2 className="text-xl font-bold text-white mb-2">Excluir Empresa?</h2>
+              <p className="text-slate-400 mb-6">
+                Tem certeza que deseja excluir <strong className="text-white">{selectedEmpresa.nome_fantasia || selectedEmpresa.nome}</strong>? 
+                Esta acao ira remover todos os dados da empresa, incluindo assinaturas e usuarios.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setSelectedEmpresa(null);
+                  }}
+                  className="flex-1 px-4 py-3 border border-[#1e3a5f] rounded-lg text-slate-300 hover:bg-[#1e3a5f] transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white px-4 py-3 rounded-lg font-medium transition-all disabled:opacity-50"
+                >
+                  {deleting ? 'Excluindo...' : 'Sim, Excluir'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

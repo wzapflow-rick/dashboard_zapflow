@@ -7,57 +7,71 @@ import { revalidatePath } from 'next/cache';
 
 export async function getAdminStats() {
   try {
+    console.log('[Admin] Buscando stats...');
+    
     // Total de empresas
-    const empresasResult = await db.query('SELECT COUNT(*) as total FROM empresas');
-    const totalEmpresas = parseInt(empresasResult.rows[0]?.total || '0');
-
-    // Empresas por status
-    const empresasAtivasResult = await db.query(
-      "SELECT COUNT(*) as total FROM empresas WHERE status = 'active' OR status IS NULL"
-    );
-    const empresasAtivas = parseInt(empresasAtivasResult.rows[0]?.total || '0');
+    const empresasResult = await db.query('SELECT COUNT(*)::int as total FROM empresas');
+    const totalEmpresas = empresasResult.rows[0]?.total || 0;
+    console.log('[Admin] Total empresas:', totalEmpresas);
 
     // Total de assinaturas ativas
     const assinaturasResult = await db.query(
-      "SELECT COUNT(*) as total FROM assinaturas WHERE status = 'authorized'"
+      "SELECT COUNT(*)::int as total FROM assinaturas WHERE status = 'authorized'"
     );
-    const assinaturasAtivas = parseInt(assinaturasResult.rows[0]?.total || '0');
+    const assinaturasAtivas = assinaturasResult.rows[0]?.total || 0;
+    console.log('[Admin] Assinaturas ativas:', assinaturasAtivas);
 
     // Assinaturas por plano
     const planoResult = await db.query(`
-      SELECT plano, COUNT(*) as total 
+      SELECT LOWER(plano) as plano, COUNT(*)::int as total 
       FROM assinaturas 
       WHERE status = 'authorized'
-      GROUP BY plano
+      GROUP BY LOWER(plano)
     `);
-    const assinaturasPorPlano = planoResult.rows.reduce((acc: any, row: any) => {
-      acc[row.plano] = parseInt(row.total);
-      return acc;
-    }, {});
+    console.log('[Admin] Planos encontrados:', planoResult.rows);
+    
+    const assinaturasPorPlano: Record<string, number> = {
+      start: 0,
+      pro: 0,
+      elite: 0
+    };
+    planoResult.rows.forEach((row: any) => {
+      if (row.plano) {
+        assinaturasPorPlano[row.plano] = row.total;
+      }
+    });
 
     // Assinaturas vencendo em 7 dias
     const vencendoResult = await db.query(`
-      SELECT COUNT(*) as total 
+      SELECT COUNT(*)::int as total 
       FROM assinaturas 
       WHERE status = 'authorized'
       AND data_proxima_cobranca <= NOW() + INTERVAL '7 days'
       AND data_proxima_cobranca > NOW()
     `);
-    const vencendoEm7Dias = parseInt(vencendoResult.rows[0]?.total || '0');
+    const vencendoEm7Dias = vencendoResult.rows[0]?.total || 0;
 
     // Empresas recentes (ultimos 7 dias)
     const recentesResult = await db.query(`
-      SELECT COUNT(*) as total 
+      SELECT COUNT(*)::int as total 
       FROM empresas 
       WHERE created_at >= NOW() - INTERVAL '7 days'
     `);
-    const empresasRecentes = parseInt(recentesResult.rows[0]?.total || '0');
+    const empresasRecentes = recentesResult.rows[0]?.total || 0;
+
+    console.log('[Admin] Stats finais:', {
+      totalEmpresas,
+      assinaturasAtivas,
+      assinaturasPorPlano,
+      vencendoEm7Dias,
+      empresasRecentes
+    });
 
     return {
       success: true,
       stats: {
         totalEmpresas,
-        empresasAtivas,
+        empresasAtivas: totalEmpresas,
         assinaturasAtivas,
         assinaturasPorPlano,
         vencendoEm7Dias,
@@ -65,8 +79,19 @@ export async function getAdminStats() {
       }
     };
   } catch (error) {
-    console.error('Erro ao buscar stats admin:', error);
-    return { success: false, error: 'Erro ao buscar estatisticas' };
+    console.error('[Admin] Erro ao buscar stats:', error);
+    return { 
+      success: false, 
+      error: 'Erro ao buscar estatisticas',
+      stats: {
+        totalEmpresas: 0,
+        empresasAtivas: 0,
+        assinaturasAtivas: 0,
+        assinaturasPorPlano: { start: 0, pro: 0, elite: 0 },
+        vencendoEm7Dias: 0,
+        empresasRecentes: 0,
+      }
+    };
   }
 }
 
@@ -257,10 +282,33 @@ export async function updateEmpresa(id: number, data: {
   }
 }
 
+export async function deleteEmpresa(id: number) {
+  try {
+    console.log('[Admin] Deletando empresa:', id);
+    
+    // Primeiro deletar assinaturas relacionadas
+    await db.query('DELETE FROM assinaturas WHERE empresa_id = $1', [id]);
+    
+    // Deletar usuarios relacionados
+    await db.query('DELETE FROM usuarios WHERE empresa_id = $1', [id]);
+    
+    // Deletar a empresa
+    await db.query('DELETE FROM empresas WHERE id = $1', [id]);
+
+    revalidatePath('/admin/empresas');
+    revalidatePath('/admin/dashboard');
+    return { success: true };
+  } catch (error) {
+    console.error('Erro ao deletar empresa:', error);
+    return { success: false, error: 'Erro ao deletar empresa' };
+  }
+}
+
 // ==================== ASSINATURAS ====================
 
 export async function getAssinaturas(page = 1, limit = 20, search = '') {
   try {
+    console.log('[Admin] Buscando assinaturas...');
     const offset = (page - 1) * limit;
     
     let query = `
@@ -280,10 +328,11 @@ export async function getAssinaturas(page = 1, limit = 20, search = '') {
     params.push(limit, offset);
 
     const result = await db.query(query, params);
+    console.log('[Admin] Assinaturas encontradas:', result.rows.length);
 
     // Total count
     let countQuery = `
-      SELECT COUNT(*) as total 
+      SELECT COUNT(*)::int as total 
       FROM assinaturas a
       LEFT JOIN empresas e ON a.empresa_id = e.id
     `;
@@ -295,7 +344,8 @@ export async function getAssinaturas(page = 1, limit = 20, search = '') {
     }
     
     const countResult = await db.query(countQuery, countParams);
-    const total = parseInt(countResult.rows[0]?.total || '0');
+    const total = countResult.rows[0]?.total || 0;
+    console.log('[Admin] Total assinaturas:', total);
 
     return {
       success: true,
@@ -308,8 +358,8 @@ export async function getAssinaturas(page = 1, limit = 20, search = '') {
       }
     };
   } catch (error) {
-    console.error('Erro ao buscar assinaturas:', error);
-    return { success: false, error: 'Erro ao buscar assinaturas' };
+    console.error('[Admin] Erro ao buscar assinaturas:', error);
+    return { success: false, error: 'Erro ao buscar assinaturas', assinaturas: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } };
   }
 }
 
