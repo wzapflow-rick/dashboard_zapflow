@@ -197,11 +197,11 @@ export const PENDING_SIGNUPS_TABLE_ID =
 
 /** Tabela de assinaturas de planos */
 export const ASSINATURAS_TABLE_ID =
-  process.env.NOCODB_TABLE_ASSINATURAS || 'msrjfeb28e07cwx';
+  process.env.NOCODB_TABLE_ASSINATURAS || 'mhpkvk982298q8a';
 
 /** Tabela de faturas de assinaturas */
 export const FATURAS_ASSINATURA_TABLE_ID =
-  process.env.NOCODB_TABLE_FATURAS_ASSINATURA || 'mhpkvk982298q8a';
+  process.env.NOCODB_TABLE_FATURAS_ASSINATURA || 'msrjfeb28e07cwx';
 
 // ============================================================
 // PLANOS DISPONÍVEIS
