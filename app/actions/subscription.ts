@@ -113,33 +113,9 @@ export async function getSubscription(): Promise<Subscription | null> {
 // ============================================================
 
 export async function getInvoices(): Promise<Invoice[]> {
-  const me = await getCurrentUser();
-
-  try {
-    if (!FATURAS_ASSINATURA_TABLE_ID) {
-      return [];
-    }
-
-    const invoices = await noco.list(FATURAS_ASSINATURA_TABLE_ID, {
-      where: `(empresa_id,eq,${me.empresaId})`,
-      sort: '-created_at',
-      limit: 12,
-    }) as any;
-
-    return (invoices.list || []).map((inv: any) => ({
-      id: inv.id || inv.Id,
-      assinatura_id: inv.assinatura_id,
-      empresa_id: inv.empresa_id,
-      mp_payment_id: inv.mp_payment_id,
-      valor: Number(inv.valor || 0),
-      status: inv.status || 'pending',
-      data_vencimento: inv.data_vencimento,
-      data_pagamento: inv.data_pagamento,
-    }));
-  } catch (error) {
-    console.error('[Subscription] Erro ao buscar faturas:', error);
-    return [];
-  }
+  // Tabela de faturas ainda nao existe - retorna array vazio
+  // TODO: Criar tabela faturas_assinatura no NocoDB quando necessario
+  return [];
 }
 
 // ============================================================
