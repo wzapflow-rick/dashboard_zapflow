@@ -125,17 +125,17 @@ export default function EmpresasAdminPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Empresas</h1>
-          <p className="text-slate-400 mt-1">Gerencie todas as empresas do sistema</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-white">Empresas</h1>
+          <p className="text-slate-400 mt-1 text-sm sm:text-base">Gerencie todas as empresas do sistema</p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2 rounded-lg font-medium transition-all"
+          className="flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2.5 rounded-lg font-medium transition-all w-full sm:w-auto"
         >
           <Plus className="size-5" />
-          Nova Empresa
+          <span>Nova Empresa</span>
         </button>
       </div>
 
@@ -151,8 +151,63 @@ export default function EmpresasAdminPage() {
         />
       </div>
 
-      {/* Tabela */}
-      <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl overflow-hidden">
+      {/* Cards Mobile */}
+      <div className="lg:hidden space-y-4">
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+          </div>
+        ) : empresas.length === 0 ? (
+          <div className="text-center py-12 text-slate-400 bg-[#0f1f35] border border-[#1e3a5f] rounded-xl">
+            Nenhuma empresa encontrada
+          </div>
+        ) : (
+          empresas.map((empresa) => (
+            <div key={empresa.id} className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl p-4 space-y-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="font-medium text-white">{empresa.nome_fantasia || empresa.nome}</p>
+                  <p className="text-sm text-slate-400">{empresa.email || '-'}</p>
+                </div>
+                {getStatusBadge(empresa.assinatura_status, empresa.data_proxima_cobranca)}
+              </div>
+              <div className="flex flex-wrap gap-2 text-sm">
+                <span className="px-2 py-1 rounded-full text-xs bg-blue-500/10 text-blue-400 uppercase">
+                  {empresa.assinatura_plano || empresa.plano || 'Sem plano'}
+                </span>
+                {empresa.data_proxima_cobranca && (
+                  <span className="text-slate-400">Vence: {formatDate(empresa.data_proxima_cobranca)}</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 pt-2 border-t border-[#1e3a5f]/50">
+                <button
+                  onClick={() => openEditModal(empresa)}
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-[#162438] rounded-lg text-slate-300 hover:text-white transition-colors"
+                >
+                  <Edit2 className="size-4" />
+                  <span className="text-sm">Editar</span>
+                </button>
+                <button
+                  onClick={() => openTrialModal(empresa)}
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-500/10 rounded-lg text-green-400 hover:bg-green-500/20 transition-colors"
+                >
+                  <Gift className="size-4" />
+                  <span className="text-sm">Trial</span>
+                </button>
+                <button
+                  onClick={() => openDeleteConfirm(empresa)}
+                  className="p-2 bg-red-500/10 rounded-lg text-red-400 hover:bg-red-500/20 transition-colors"
+                >
+                  <Trash2 className="size-4" />
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Tabela Desktop */}
+      <div className="hidden lg:block bg-[#0f1f35] border border-[#1e3a5f] rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-[#0a1628]">
@@ -244,10 +299,7 @@ export default function EmpresasAdminPage() {
 
         {/* Paginacao */}
         {pagination && pagination.totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-[#1e3a5f] flex items-center justify-between">
-            <p className="text-sm text-slate-400">
-              Mostrando {empresas.length} de {pagination.total} empresas
-            </p>
+          <div className="px-6 py-4 border-t border-[#1e3a5f] flex items-center justify-center">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => loadEmpresas(pagination.page - 1)}
@@ -256,8 +308,8 @@ export default function EmpresasAdminPage() {
               >
                 <ChevronLeft className="size-5" />
               </button>
-              <span className="text-slate-300">
-                Pagina {pagination.page} de {pagination.totalPages}
+              <span className="text-slate-300 text-sm">
+                {pagination.page} / {pagination.totalPages}
               </span>
               <button
                 onClick={() => loadEmpresas(pagination.page + 1)}
@@ -270,6 +322,29 @@ export default function EmpresasAdminPage() {
           </div>
         )}
       </div>
+
+      {/* Paginacao Mobile */}
+      {pagination && pagination.totalPages > 1 && (
+        <div className="lg:hidden flex items-center justify-center gap-4 py-4">
+          <button
+            onClick={() => loadEmpresas(pagination.page - 1)}
+            disabled={pagination.page <= 1}
+            className="p-2 bg-[#0f1f35] border border-[#1e3a5f] rounded-lg text-slate-400 hover:text-white disabled:opacity-50"
+          >
+            <ChevronLeft className="size-5" />
+          </button>
+          <span className="text-slate-300 text-sm">
+            {pagination.page} / {pagination.totalPages}
+          </span>
+          <button
+            onClick={() => loadEmpresas(pagination.page + 1)}
+            disabled={pagination.page >= pagination.totalPages}
+            className="p-2 bg-[#0f1f35] border border-[#1e3a5f] rounded-lg text-slate-400 hover:text-white disabled:opacity-50"
+          >
+            <ChevronRight className="size-5" />
+          </button>
+        </div>
+      )}
 
       {/* Modal Criar Empresa */}
       {showCreateModal && (

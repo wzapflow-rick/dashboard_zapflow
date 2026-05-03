@@ -136,8 +136,8 @@ export default function AssinaturasAdminPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Assinaturas</h1>
-        <p className="text-slate-400 mt-1">Gerencie planos e datas de vencimento</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-white">Assinaturas</h1>
+        <p className="text-slate-400 mt-1 text-sm sm:text-base">Gerencie planos e datas de vencimento</p>
       </div>
 
       {/* Busca */}
@@ -152,8 +152,59 @@ export default function AssinaturasAdminPage() {
         />
       </div>
 
-      {/* Tabela */}
-      <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl overflow-hidden">
+      {/* Cards Mobile */}
+      <div className="lg:hidden space-y-4">
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+          </div>
+        ) : assinaturas.length === 0 ? (
+          <div className="text-center py-12 text-slate-400 bg-[#0f1f35] border border-[#1e3a5f] rounded-xl">
+            Nenhuma assinatura encontrada
+          </div>
+        ) : (
+          assinaturas.map((assinatura) => {
+            const statusInfo = getStatusLabel(assinatura.status, assinatura.data_proxima_cobranca);
+            return (
+              <div key={assinatura.id} className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl p-4 space-y-3">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="font-medium text-white">{assinatura.nome_fantasia || assinatura.empresa_nome}</p>
+                    <p className="text-sm text-slate-400">{assinatura.slug}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {getStatusIcon(assinatura.status, assinatura.data_proxima_cobranca)}
+                    <span className={`px-2 py-1 rounded-full text-xs ${statusInfo.color}`}>
+                      {statusInfo.text}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 text-sm">
+                  <span className={`px-2 py-1 rounded-full text-xs uppercase ${getPlanoBadge(assinatura.plano)}`}>
+                    {assinatura.plano || 'Sem plano'}
+                  </span>
+                  <span className="text-slate-300">{formatCurrency(assinatura.valor)}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm pt-2 border-t border-[#1e3a5f]/50">
+                  <div className="text-slate-400">
+                    <span>Vence: {formatDate(assinatura.data_proxima_cobranca)}</span>
+                  </div>
+                  <button
+                    onClick={() => openEditModal(assinatura)}
+                    className="flex items-center gap-2 px-3 py-2 bg-[#162438] rounded-lg text-slate-300 hover:text-white transition-colors"
+                  >
+                    <Edit2 className="size-4" />
+                    <span>Editar</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Tabela Desktop */}
+      <div className="hidden lg:block bg-[#0f1f35] border border-[#1e3a5f] rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-[#0a1628]">
@@ -236,10 +287,10 @@ export default function AssinaturasAdminPage() {
         {/* Paginacao */}
         {pagination && pagination.totalPages > 1 && (
           <div className="px-6 py-4 border-t border-[#1e3a5f] flex items-center justify-between">
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-slate-400 hidden sm:block">
               Mostrando {assinaturas.length} de {pagination.total} assinaturas
             </p>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
               <button
                 onClick={() => loadAssinaturas(pagination.page - 1)}
                 disabled={pagination.page <= 1}
@@ -247,8 +298,8 @@ export default function AssinaturasAdminPage() {
               >
                 <ChevronLeft className="size-5" />
               </button>
-              <span className="text-slate-300">
-                Pagina {pagination.page} de {pagination.totalPages}
+              <span className="text-slate-300 text-sm">
+                {pagination.page} / {pagination.totalPages}
               </span>
               <button
                 onClick={() => loadAssinaturas(pagination.page + 1)}
@@ -261,6 +312,29 @@ export default function AssinaturasAdminPage() {
           </div>
         )}
       </div>
+
+      {/* Paginacao Mobile */}
+      {pagination && pagination.totalPages > 1 && (
+        <div className="lg:hidden flex items-center justify-center gap-4 py-4">
+          <button
+            onClick={() => loadAssinaturas(pagination.page - 1)}
+            disabled={pagination.page <= 1}
+            className="p-2 bg-[#0f1f35] border border-[#1e3a5f] rounded-lg text-slate-400 hover:text-white disabled:opacity-50"
+          >
+            <ChevronLeft className="size-5" />
+          </button>
+          <span className="text-slate-300 text-sm">
+            {pagination.page} / {pagination.totalPages}
+          </span>
+          <button
+            onClick={() => loadAssinaturas(pagination.page + 1)}
+            disabled={pagination.page >= pagination.totalPages}
+            className="p-2 bg-[#0f1f35] border border-[#1e3a5f] rounded-lg text-slate-400 hover:text-white disabled:opacity-50"
+          >
+            <ChevronRight className="size-5" />
+          </button>
+        </div>
+      )}
 
       {/* Modal Editar Assinatura */}
       {showEditModal && selectedAssinatura && (

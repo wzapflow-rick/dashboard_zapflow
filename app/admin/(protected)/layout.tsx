@@ -14,9 +14,9 @@ export default async function AdminProtectedLayout({
   }
 
   return (
-    <div className="min-h-screen bg-[#0a1628] flex">
+    <div className="min-h-screen bg-[#0a1628]">
       <AdminSidebar username={session.username} />
-      <main className="flex-1 ml-64 p-8">
+      <main className="lg:ml-64 pt-20 lg:pt-0 p-4 lg:p-8 min-h-screen">
         {children}
       </main>
     </div>
