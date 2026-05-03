@@ -1,10 +1,10 @@
 'use server';
 
 import { noco } from '@/lib/nocodb';
+import db from '@/lib/db';
 import { 
   PENDING_SIGNUPS_TABLE_ID, 
   EMPRESAS_TABLE_ID, 
-  ASSINATURAS_TABLE_ID,
   SUBSCRIPTION_PLANS,
   type SubscriptionPlanId
 } from '@/lib/constants';
@@ -418,26 +418,35 @@ export async function completeSignup(token: string, password: string) {
         const proximaCobranca = new Date(hoje);
         proximaCobranca.setDate(proximaCobranca.getDate() + 30);
         
-        console.log('[v0] Criando assinatura para empresa:', empresaId);
+        console.log('[v0] Criando assinatura via SQL direto para empresa:', empresaId);
         
-        const assinaturaData: Record<string, any> = {
-          empresa_id: empresaId,
-          plano: signup.plano || 'start',
-          status: 'authorized',
-          valor: planData?.price || 0,
-          mp_subscription_id: signup.mp_payment_id || signup.mp_subscription_id || 'pix_' + Date.now(),
-          mp_preapproval_plan_id: signup.plano || 'start',
-          data_inicio: hoje.toISOString(),
-          data_proxima_cobranca: proximaCobranca.toISOString(),
-          cartao_ultimos_digitos: 'PIX',
-          cartao_bandeira: 'PIX',
-        };
+        // Usar SQL direto para contornar restricao de Link field do NocoDB
+        const plano = signup.plano || 'start';
+        const valor = planData?.price || 0;
+        const mpSubscriptionId = signup.mp_payment_id || signup.mp_subscription_id || 'pix_' + Date.now();
         
-        console.log('[v0] Dados da assinatura:', JSON.stringify(assinaturaData));
+        await db.query(`
+          INSERT INTO assinaturas (
+            empresa_id, plano, status, valor, 
+            mp_subscription_id, mp_preapproval_plan_id,
+            data_inicio, data_proxima_cobranca,
+            cartao_ultimos_digitos, cartao_bandeira,
+            created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+        `, [
+          empresaId,
+          plano,
+          'authorized',
+          valor,
+          mpSubscriptionId,
+          plano,
+          hoje.toISOString(),
+          proximaCobranca.toISOString(),
+          'PIX',
+          'PIX'
+        ]);
         
-        await noco.create(ASSINATURAS_TABLE_ID, assinaturaData);
-        
-        console.log('[v0] Assinatura criada com sucesso');
+        console.log('[v0] Assinatura criada com sucesso via SQL');
       } catch (subError) {
         console.error('[v0] Erro ao criar assinatura (nao bloqueante):', subError);
         // Continua mesmo se falhar a criacao da assinatura
