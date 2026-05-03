@@ -547,9 +547,133 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ received: true });
     }
 
+    // ============================================================
+    // EVENTOS DE MERCHANT ORDER (Preference API / Checkout Pro)
+    // ============================================================
+    if (topic === 'merchant_order' || topic === 'topic_merchant_order_wh') {
+      const orderId = String(resourceId);
+      console.log(`[v0] Webhook merchant_order recebido: orderId=${orderId}`);
+      
+      try {
+        // Buscar detalhes da merchant order
+        const moResponse = await fetch(`https://api.mercadopago.com/merchant_orders/${orderId}`, {
+          headers: { 'Authorization': `Bearer ${MP_ACCESS_TOKEN_FALLBACK}` },
+        });
+        
+        if (moResponse.ok) {
+          const merchantOrder = await moResponse.json();
+          console.log('[v0] Merchant order status:', merchantOrder.status);
+          console.log('[v0] Merchant order external_reference:', merchantOrder.external_reference);
+          
+          // Verificar se a order esta closed (paga)
+          if (merchantOrder.status === 'closed' && merchantOrder.payments?.length > 0) {
+            const approvedPayment = merchantOrder.payments.find((p: any) => p.status === 'approved');
+            
+            if (approvedPayment) {
+              const externalRef = merchantOrder.external_reference || '';
+              console.log('[v0] Pagamento aprovado encontrado, external_reference:', externalRef);
+              
+              // Verificar se e PIX mensal
+              if (externalRef.startsWith('{')) {
+                try {
+                  const signupData = JSON.parse(externalRef);
+                  
+                  if (signupData.empresaId && signupData.plano && signupData.tipo === 'pix_mensal') {
+                    console.log('[v0] Processando PIX mensal via merchant_order para empresa:', signupData.empresaId);
+                    
+                    const db = (await import('@/lib/db')).default;
+                    
+                    const empresaId = signupData.empresaId;
+                    const plano = signupData.plano;
+                    const hoje = new Date();
+                    const proximaCobranca = new Date(hoje);
+                    proximaCobranca.setMonth(proximaCobranca.getMonth() + 1);
+                    
+                    // Verifica se ja existe assinatura
+                    const existingResult = await db.query(
+                      'SELECT id FROM assinaturas WHERE empresa_id = $1 LIMIT 1',
+                      [empresaId]
+                    );
+                    
+                    if (existingResult.rows.length > 0) {
+                      // Atualiza assinatura existente
+                      await db.query(`
+                        UPDATE assinaturas 
+                        SET status = 'authorized',
+                            plano = $1,
+                            mp_subscription_id = $2,
+                            data_proxima_cobranca = $3,
+                            updated_at = NOW()
+                        WHERE empresa_id = $4
+                      `, [plano, String(approvedPayment.id), proximaCobranca.toISOString(), empresaId]);
+                      
+                      console.log('[v0] Assinatura atualizada via merchant_order para empresa:', empresaId);
+                    } else {
+                      // Cria nova assinatura
+                      await db.query(`
+                        INSERT INTO assinaturas (
+                          empresa_id, plano, status, valor, 
+                          mp_subscription_id, mp_preapproval_plan_id,
+                          data_inicio, data_proxima_cobranca,
+                          cartao_ultimos_digitos, cartao_bandeira,
+                          created_at, updated_at
+                        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+                      `, [
+                        empresaId,
+                        plano,
+                        'authorized',
+                        approvedPayment.transaction_amount || 0,
+                        String(approvedPayment.id),
+                        plano,
+                        hoje.toISOString(),
+                        proximaCobranca.toISOString(),
+                        'PIX',
+                        'PIX'
+                      ]);
+                      
+                      console.log('[v0] Nova assinatura criada via merchant_order para empresa:', empresaId);
+                    }
+                    
+                    return NextResponse.json({ received: true, processed: 'pix_mensal_merchant_order' });
+                  }
+                  
+                  // PIX de signup
+                  if (signupData.token && signupData.email && signupData.tipo === 'pix') {
+                    console.log('[v0] Processando PIX signup via merchant_order');
+                    
+                    const { createPendingSignup } = await import('@/app/actions/signup');
+                    const { sendWelcomeSignupMessage } = await import('@/app/actions/whatsapp');
+                    
+                    await createPendingSignup({
+                      token: signupData.token,
+                      email: signupData.email,
+                      nome: signupData.nome,
+                      telefone: signupData.telefone,
+                      plano: signupData.plano,
+                      mp_payment_id: String(approvedPayment.id),
+                    });
+                    
+                    await sendWelcomeSignupMessage(signupData.telefone, signupData.nome, signupData.token);
+                    
+                    console.log('[v0] PIX signup processado via merchant_order');
+                    return NextResponse.json({ received: true, processed: 'pix_signup_merchant_order' });
+                  }
+                } catch (parseError) {
+                  console.log('[v0] Erro ao parsear external_reference:', parseError);
+                }
+              }
+            }
+          }
+        }
+      } catch (moError) {
+        console.error('[v0] Erro ao processar merchant_order:', moError);
+      }
+      
+      return NextResponse.json({ received: true });
+    }
+
     // Topic nao tratado
     console.log(`[MercadoPago Webhook] Topic ignorado: ${topic}`);
-    return NextResponse.json({ received: true });
   } catch (error: any) {
     console.error('[MercadoPago Webhook] Erro:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
