@@ -11,11 +11,15 @@ interface Empresa {
   id: number;
   nome: string;
   nome_fantasia: string;
+  razao_social?: string;
   slug: string;
+  url_slug?: string;
   email: string;
   telefone: string;
+  whatsapp?: string;
   status: string;
   plano: string;
+  assinatura_plano?: string;
   assinatura_status: string;
   data_proxima_cobranca: string;
   created_at: string;
@@ -186,11 +190,11 @@ export default function EmpresasAdminPage() {
                     <td className="px-6 py-4">
                       <span className="text-slate-300">{empresa.slug}</span>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className="px-2 py-1 rounded-full text-xs bg-blue-500/10 text-blue-400 uppercase">
-                        {empresa.plano || 'Sem plano'}
-                      </span>
-                    </td>
+                      <td className="px-6 py-4">
+                        <span className="px-2 py-1 rounded-full text-xs bg-blue-500/10 text-blue-400 uppercase">
+                          {empresa.assinatura_plano || empresa.plano || 'Sem plano'}
+                        </span>
+                      </td>
                     <td className="px-6 py-4">
                       {getStatusBadge(empresa.assinatura_status, empresa.data_proxima_cobranca)}
                     </td>
@@ -516,12 +520,16 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
 function EditEmpresaModal({ empresa, onClose, onSuccess }: { empresa: Empresa; onClose: () => void; onSuccess: () => void }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  // Log para debug - ver o que vem na empresa
+  console.log('[v0] Empresa recebida no modal:', empresa);
+  
   const [formData, setFormData] = useState({
-    nome: empresa.nome || '',
+    nome: empresa.nome || empresa.razao_social || empresa.nome_fantasia || '',
     nome_fantasia: empresa.nome_fantasia || '',
-    slug: empresa.slug || '',
+    slug: empresa.slug || empresa.url_slug || '',
     email: empresa.email || '',
-    telefone: empresa.telefone || '',
+    telefone: empresa.telefone || empresa.whatsapp || '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -633,7 +641,7 @@ function EditEmpresaModal({ empresa, onClose, onSuccess }: { empresa: Empresa; o
 function TrialModal({ empresa, onClose, onSuccess }: { empresa: Empresa; onClose: () => void; onSuccess: () => void }) {
   const [loading, setLoading] = useState(false);
   const [dias, setDias] = useState(30);
-  const [plano, setPlano] = useState(empresa.plano || 'start');
+  const [plano, setPlano] = useState(empresa.assinatura_plano || empresa.plano || 'start');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
