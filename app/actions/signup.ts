@@ -408,8 +408,7 @@ export async function completeSignup(token: string, password: string) {
     const empresaId = empresa.id || empresa.Id;
     
     // Criar assinatura (em try/catch separado para nao bloquear criacao da conta)
-    if (ASSINATURAS_TABLE_ID) {
-      try {
+    try {
         const planKey = signup.plano.toUpperCase() as keyof typeof SUBSCRIPTION_PLANS;
         const planData = SUBSCRIPTION_PLANS[planKey];
         
@@ -447,10 +446,9 @@ export async function completeSignup(token: string, password: string) {
         ]);
         
         console.log('[v0] Assinatura criada com sucesso via SQL');
-      } catch (subError) {
-        console.error('[v0] Erro ao criar assinatura (nao bloqueante):', subError);
-        // Continua mesmo se falhar a criacao da assinatura
-      }
+    } catch (subError) {
+      console.error('[v0] Erro ao criar assinatura (nao bloqueante):', subError);
+      // Continua mesmo se falhar a criacao da assinatura
     }
     
     // Marcar pending signup como completo
