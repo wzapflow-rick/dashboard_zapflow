@@ -339,6 +339,70 @@ export async function POST(req: NextRequest) {
                 console.log('[v0] PIX signup processado com sucesso!');
                 return NextResponse.json({ received: true, processed: 'pix_signup' });
               }
+              
+              // PIX MENSAL de empresa existente
+              if (signupData.empresaId && signupData.plano && signupData.tipo === 'pix_mensal') {
+                console.log('[v0] Detectado pagamento PIX mensal para empresa:', signupData.empresaId);
+                
+                try {
+                  const db = (await import('@/lib/db')).default;
+                  
+                  const empresaId = signupData.empresaId;
+                  const plano = signupData.plano;
+                  const hoje = new Date();
+                  const proximaCobranca = new Date(hoje);
+                  proximaCobranca.setMonth(proximaCobranca.getMonth() + 1);
+                  
+                  // Verifica se ja existe assinatura
+                  const existingResult = await db.query(
+                    'SELECT id FROM assinaturas WHERE empresa_id = $1 LIMIT 1',
+                    [empresaId]
+                  );
+                  
+                  if (existingResult.rows.length > 0) {
+                    // Atualiza assinatura existente
+                    await db.query(`
+                      UPDATE assinaturas 
+                      SET status = 'authorized',
+                          plano = $1,
+                          mp_subscription_id = $2,
+                          data_proxima_cobranca = $3,
+                          updated_at = NOW()
+                      WHERE empresa_id = $4
+                    `, [plano, String(paymentCheck.id), proximaCobranca.toISOString(), empresaId]);
+                    
+                    console.log('[v0] Assinatura atualizada para empresa:', empresaId);
+                  } else {
+                    // Cria nova assinatura
+                    await db.query(`
+                      INSERT INTO assinaturas (
+                        empresa_id, plano, status, valor, 
+                        mp_subscription_id, mp_preapproval_plan_id,
+                        data_inicio, data_proxima_cobranca,
+                        cartao_ultimos_digitos, cartao_bandeira,
+                        created_at, updated_at
+                      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+                    `, [
+                      empresaId,
+                      plano,
+                      'authorized',
+                      paymentCheck.transaction_amount || 0,
+                      String(paymentCheck.id),
+                      plano,
+                      hoje.toISOString(),
+                      proximaCobranca.toISOString(),
+                      'PIX',
+                      'PIX'
+                    ]);
+                    
+                    console.log('[v0] Nova assinatura criada para empresa:', empresaId);
+                  }
+                  
+                  return NextResponse.json({ received: true, processed: 'pix_mensal' });
+                } catch (pixError) {
+                  console.error('[v0] Erro ao processar PIX mensal:', pixError);
+                }
+              }
             } catch (parseError) {
               console.log('[v0] Erro ao processar signup PIX:', parseError);
             }
