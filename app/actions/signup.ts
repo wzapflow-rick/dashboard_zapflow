@@ -422,6 +422,7 @@ export async function completeSignup(token: string, password: string) {
         
         const assinaturaData: Record<string, any> = {
           empresa_id: empresaId,
+          empresas: [empresaId], // Link field - NocoDB espera array de IDs
           plano: signup.plano || 'start',
           status: 'authorized',
           valor: planData?.price || 0,
