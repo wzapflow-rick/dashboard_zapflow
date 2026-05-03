@@ -189,44 +189,67 @@ async function handleSubscriptionPayment(paymentId: string) {
       empresaId = match ? Number(match[1]) : null;
     }
 
-    if (!empresaId || !FATURAS_ASSINATURA_TABLE_ID || !ASSINATURAS_TABLE_ID) {
-      return true; // E subscription mas nao pode processar
-    }
-
-    // Busca a assinatura
-    const subscription = await noco.findOne(ASSINATURAS_TABLE_ID, {
-      where: `(empresa_id,eq,${empresaId})`,
-    }) as any;
-
-    if (!subscription) {
-      console.log('[Webhook] Subscription nao encontrada para empresa', empresaId);
+    if (!empresaId) {
+      console.log('[Webhook] empresa_id nao encontrado no external_reference');
       return true;
     }
 
-    // Cria registro de fatura
-    await noco.create(FATURAS_ASSINATURA_TABLE_ID, {
-      assinatura_id: subscription.id || subscription.Id,
-      empresa_id: empresaId,
-      mp_payment_id: String(paymentData.id),
-      valor: paymentData.transaction_amount,
-      status: paymentData.status === 'approved' ? 'approved' : paymentData.status === 'rejected' ? 'rejected' : 'pending',
-      data_vencimento: paymentData.date_of_expiration || new Date().toISOString(),
-      data_pagamento: paymentData.status === 'approved' ? (paymentData.date_approved || new Date().toISOString()) : null,
-    });
-
-    console.log(`[Webhook] Fatura criada para empresa ${empresaId}, status: ${paymentData.status}`);
-
-    // Se pagamento aprovado e era PIX de primeira assinatura, cria a subscription
+    // Se pagamento aprovado, criar ou atualizar assinatura usando SQL direto
     if (paymentData.status === 'approved' && externalRef.startsWith('sub_')) {
       const planMatch = externalRef.match(/sub_\d+_(\w+)_/);
-      const plano = planMatch ? planMatch[1] : 'pro';
+      const plano = planMatch ? planMatch[1] : 'start';
       
-      // Atualiza subscription para ativa
-      await noco.update(ASSINATURAS_TABLE_ID, {
-        id: subscription.id || subscription.Id,
-        status: 'authorized',
-        data_proxima_cobranca: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      });
+      console.log(`[Webhook] Pagamento aprovado para empresa ${empresaId}, plano: ${plano}`);
+      
+      const db = (await import('@/lib/db')).default;
+      const hoje = new Date();
+      const proximaCobranca = new Date(hoje);
+      proximaCobranca.setMonth(proximaCobranca.getMonth() + 1);
+      
+      // Verifica se ja existe assinatura
+      const existingResult = await db.query(
+        'SELECT id FROM assinaturas WHERE empresa_id = $1 LIMIT 1',
+        [empresaId]
+      );
+      
+      if (existingResult.rows.length > 0) {
+        // Atualiza assinatura existente
+        await db.query(`
+          UPDATE assinaturas 
+          SET status = 'authorized',
+              plano = $1,
+              mp_subscription_id = $2,
+              data_proxima_cobranca = $3,
+              updated_at = NOW()
+          WHERE empresa_id = $4
+        `, [plano, String(paymentData.id), proximaCobranca.toISOString(), empresaId]);
+        
+        console.log(`[Webhook] Assinatura ATUALIZADA para empresa ${empresaId}`);
+      } else {
+        // Cria nova assinatura via SQL direto (evita problema do Link field do NocoDB)
+        await db.query(`
+          INSERT INTO assinaturas (
+            empresa_id, plano, status, valor, 
+            mp_subscription_id, mp_preapproval_plan_id,
+            data_inicio, data_proxima_cobranca,
+            cartao_ultimos_digitos, cartao_bandeira,
+            created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+        `, [
+          empresaId,
+          plano,
+          'authorized',
+          paymentData.transaction_amount || 0,
+          String(paymentData.id),
+          plano,
+          hoje.toISOString(),
+          proximaCobranca.toISOString(),
+          'PIX',
+          'PIX'
+        ]);
+        
+        console.log(`[Webhook] Nova assinatura CRIADA para empresa ${empresaId}`);
+      }
     }
 
     return true;
