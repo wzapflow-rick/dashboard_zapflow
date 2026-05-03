@@ -26,7 +26,6 @@ export async function POST(req: NextRequest) {
     
     const assinaturaData = {
       empresa_id: empresa_id,
-      empresas: [empresa_id], // Link field
       plano: plano,
       status: 'authorized',
       valor: 5,
