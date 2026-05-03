@@ -1,4 +1,5 @@
 import { noco } from '@/lib/nocodb';
+import db from '@/lib/db';
 import { 
     PRODUTOS_TABLE_ID, 
     CATEGORIAS_TABLE_ID, 
@@ -55,10 +56,49 @@ export async function getPublicMenu(slug: string) {
         
         console.log(`[MENU_DEBUG] Empresa: ${empresa.nome} (ID: ${empresaId})`);
         
-        // Verificar se empresa tem plano pago ativo
-        const planoEmpresa = empresa.planos || empresa.plano || 'iniciante';
-        if (!isPaidPlan(planoEmpresa)) {
-            console.log(`[MENU_DEBUG] Empresa sem plano pago: ${planoEmpresa}`);
+        // Verificar se empresa tem assinatura ativa na tabela assinaturas
+        let hasActiveSubscription = false;
+        let planoAtivo = 'iniciante';
+        
+        try {
+            const assinaturaResult = await db.query(
+                `SELECT plano, status, data_proxima_cobranca 
+                 FROM assinaturas 
+                 WHERE empresa_id = $1 
+                 AND status = 'authorized'
+                 LIMIT 1`,
+                [empresaId]
+            );
+            
+            if (assinaturaResult.rows.length > 0) {
+                const assinatura = assinaturaResult.rows[0];
+                planoAtivo = assinatura.plano;
+                
+                // Verificar se nao esta vencida (se data_proxima_cobranca > hoje)
+                const dataProxima = new Date(assinatura.data_proxima_cobranca);
+                const hoje = new Date();
+                
+                if (dataProxima > hoje && isPaidPlan(planoAtivo)) {
+                    hasActiveSubscription = true;
+                    console.log(`[MENU_DEBUG] Assinatura ativa: ${planoAtivo}, vence em ${dataProxima.toISOString()}`);
+                } else {
+                    console.log(`[MENU_DEBUG] Assinatura vencida ou plano invalido: ${planoAtivo}, venceu em ${dataProxima.toISOString()}`);
+                }
+            } else {
+                console.log(`[MENU_DEBUG] Nenhuma assinatura encontrada para empresa ${empresaId}`);
+            }
+        } catch (dbError) {
+            console.error(`[MENU_DEBUG] Erro ao verificar assinatura:`, dbError);
+            // Fallback: verificar campo plano da empresa
+            const planoEmpresa = empresa.planos || empresa.plano || 'iniciante';
+            if (isPaidPlan(planoEmpresa)) {
+                hasActiveSubscription = true;
+                planoAtivo = planoEmpresa;
+            }
+        }
+        
+        if (!hasActiveSubscription) {
+            console.log(`[MENU_DEBUG] Empresa sem plano pago ativo`);
             return {
                 blocked: true,
                 reason: 'no_subscription',
