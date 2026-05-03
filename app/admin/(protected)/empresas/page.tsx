@@ -521,13 +521,11 @@ function EditEmpresaModal({ empresa, onClose, onSuccess }: { empresa: Empresa; o
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  // Log para debug - ver o que vem na empresa
-  console.log('[v0] Empresa recebida no modal:', empresa);
-  
+  // Usa nome_fantasia como fallback principal ja que alguns registros nao tem campo 'nome'
   const [formData, setFormData] = useState({
-    nome: empresa.nome || empresa.razao_social || empresa.nome_fantasia || '',
+    nome: empresa.nome_fantasia || empresa.nome || '',
     nome_fantasia: empresa.nome_fantasia || '',
-    slug: empresa.slug || empresa.url_slug || '',
+    slug: empresa.slug || '',
     email: empresa.email || '',
     telefone: empresa.telefone || empresa.whatsapp || '',
   });

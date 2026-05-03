@@ -99,7 +99,6 @@ export async function getAdminStats() {
 
 export async function getEmpresas(page = 1, limit = 20, search = '') {
   try {
-    console.log('[Admin] Buscando empresas...');
     const offset = (page - 1) * limit;
     
     let query = `
@@ -119,12 +118,6 @@ export async function getEmpresas(page = 1, limit = 20, search = '') {
     params.push(limit, offset);
 
     const result = await db.query(query, params);
-    
-    // Log para debug - ver quais campos estao vindo
-    if (result.rows.length > 0) {
-      console.log('[Admin] Campos da empresa:', Object.keys(result.rows[0]));
-      console.log('[Admin] Primeira empresa:', JSON.stringify(result.rows[0], null, 2));
-    }
 
     // Total count
     let countQuery = 'SELECT COUNT(*) as total FROM empresas';
