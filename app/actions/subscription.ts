@@ -79,13 +79,13 @@ export async function getSubscription(): Promise<Subscription | null> {
       };
     }
 
-    console.log('[v0] Buscando assinatura para empresa_id:', me.empresaId);
+    console.log('[v0] Buscando assinatura para empresa_id:', me.empresaId, 'tabela:', ASSINATURAS_TABLE_ID);
     
     const subscription = await noco.findOne(ASSINATURAS_TABLE_ID, {
       where: `(empresa_id,eq,${me.empresaId})`,
     }) as any;
 
-    console.log('[v0] Assinatura encontrada:', subscription ? 'Sim' : 'Nao', subscription);
+    console.log('[v0] Assinatura encontrada:', JSON.stringify(subscription));
 
     if (!subscription) return null;
 
