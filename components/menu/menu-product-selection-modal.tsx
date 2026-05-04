@@ -320,7 +320,7 @@ export default function MenuProductSelectionModal({
                     animate={{ y: 0 }}
                     exit={{ y: '100%' }}
                     transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                    className="bg-white dark:bg-[#2d1b4e] w-full max-w-lg h-full sm:h-auto sm:max-h-[90vh] sm:rounded-3xl overflow-hidden flex flex-col shadow-2xl"
+                    className="bg-white dark:bg-[#121212] w-full max-w-lg h-full sm:h-auto sm:max-h-[90vh] sm:rounded-3xl overflow-hidden flex flex-col shadow-2xl"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header do Modal */}
@@ -342,14 +342,16 @@ export default function MenuProductSelectionModal({
                             <h2 className="text-xl sm:text-2xl font-black text-white leading-tight">
                                 {product.nome}
                             </h2>
-                            <p className="text-white/80 text-xs sm:text-sm mt-1 line-clamp-1">
-                                {product.descricao}
-                            </p>
+                            {product.descricao && !product.descricao.includes('[[SIZES:') && (
+                                <p className="text-white/80 text-xs sm:text-sm mt-1 line-clamp-1">
+                                    {product.descricao}
+                                </p>
+                            )}
                         </div>
                     </div>
 
-                    {/* Conteúdo com Steps */}
-                    <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+                    {/* Conteudo com Steps */}
+                    <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 bg-white dark:bg-[#121212]">
                         {/* Indicador de Progresso */}
                         <div className="flex items-center gap-2 mb-2 overflow-x-auto pb-2 no-scrollbar">
                             {hasSizes && (
@@ -395,8 +397,8 @@ export default function MenuProductSelectionModal({
                                                 onClick={() => setSelectedSize(size)}
                                                 className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${
                                                     selectedSize?.nome === size.nome
-                                                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                                                        : 'border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700'
+                                                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30'
+                                                : 'border-slate-100 dark:border-[#2a2a2a] hover:border-slate-200 dark:hover:border-[#3a3a3a]'
                                                 }`}
                                             >
                                                 <span className={`font-bold ${selectedSize?.nome === size.nome ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-700 dark:text-slate-300'}`}>
@@ -455,12 +457,12 @@ export default function MenuProductSelectionModal({
                                                                 onClick={() => toggleItem(grupo, item)}
                                                                 className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
                                                     isSelected
-                                                        ? 'border-emerald-200 bg-emerald-50 dark:bg-emerald-900/10 dark:border-emerald-800'
-                                                        : 'border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                                                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-700'
+                                                    : 'border-slate-100 dark:border-[#2a2a2a] hover:bg-slate-50 dark:hover:bg-[#1a1a1a]'
                                                                 }`}
                                                             >
                                                                 <div className="flex items-center gap-3">
-                                                                    <div className={`size-5 rounded border flex items-center justify-center transition-colors ${isSelected ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300 dark:border-slate-600'}`}>
+                                                                    <div className={`size-5 rounded border flex items-center justify-center transition-colors ${isSelected ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300 dark:border-[#3a3a3a]'}`}>
                                                                         {isSelected && <Check className="size-3 text-white" />}
                                                                     </div>
                                                                     <span className={`text-xs sm:text-sm font-medium ${isSelected ? 'text-emerald-700 dark:text-emerald-300 font-bold' : 'text-slate-700 dark:text-slate-300'}`}>
@@ -495,7 +497,7 @@ export default function MenuProductSelectionModal({
                                         value={observacao}
                                         onChange={(e) => setObservacao(e.target.value)}
                                         placeholder="Ex: Sem cebola, caprichar no queijo..."
-                                        className="w-full h-32 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none outline-none focus:ring-2 focus:ring-emerald-400 transition-all text-sm placeholder:text-slate-400"
+                                        className="w-full h-32 p-4 rounded-2xl bg-slate-50 dark:bg-[#1a1a1a] border border-transparent dark:border-[#2a2a2a] outline-none focus:ring-2 focus:ring-emerald-400 transition-all text-sm placeholder:text-slate-400 dark:text-white"
                                     />
                                 </motion.div>
                             )}
@@ -564,11 +566,11 @@ export default function MenuProductSelectionModal({
                     </div>
 
                     {/* Footer com Botão de Ação */}
-                    <div className="shrink-0 p-4 sm:p-6 bg-white dark:bg-[#2d1b4e] border-t border-slate-100 dark:border-slate-800 flex items-center gap-3">
+                    <div className="shrink-0 p-4 sm:p-6 bg-white dark:bg-[#121212] border-t border-slate-100 dark:border-[#1a1a1a] flex items-center gap-3">
                         {step !== (hasSizes ? 'size' : (hasFlavors ? 'flavors' : (hasAdditions ? 'additions' : 'observation'))) && step !== 'upsell' && (
                             <button
                                 onClick={prevStep}
-                                className="size-12 sm:size-14 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center hover:bg-slate-200 transition-colors"
+                                className="size-12 sm:size-14 rounded-2xl bg-slate-100 dark:bg-[#1a1a1a] text-slate-600 dark:text-slate-300 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-[#2a2a2a] transition-colors"
                             >
                                 <ChevronLeft className="size-6" />
                             </button>
