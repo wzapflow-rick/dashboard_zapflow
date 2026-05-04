@@ -320,25 +320,30 @@ async function processarCampanha(campanha: Campanha): Promise<{ enviados: number
     return { enviados, erros };
 }
 
-export async function GET(request: NextRequest) {
+/**
+ * Funcao principal de execucao de campanhas - pode ser chamada diretamente
+ */
+export async function executarDisparoCampanhas(ignorarHorario: boolean = true): Promise<{
+    success: boolean;
+    campanhas_processadas: number;
+    total_enviados: number;
+    total_erros: number;
+    resultados: any[];
+    error?: string;
+}> {
     try {
-        // Verificar autenticacao do CRON
-        const authHeader = request.headers.get('authorization');
-        if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
-            console.log('[CRON] Autorizacao invalida');
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
-        
-        console.log('[CRON] Iniciando processamento de campanhas');
+        console.log('[CAMPANHAS] Iniciando processamento de campanhas');
         
         if (!CAMPANHAS_TABLE_ID || !DISPAROS_TABLE_ID || !CLIENTES_TABLE_ID) {
-            console.error('[CRON] Tabelas nao configuradas');
-            return NextResponse.json({ 
-                error: 'Tabelas nao configuradas',
-                campanhas_table: !!CAMPANHAS_TABLE_ID,
-                disparos_table: !!DISPAROS_TABLE_ID,
-                clientes_table: !!CLIENTES_TABLE_ID
-            }, { status: 500 });
+            console.error('[CAMPANHAS] Tabelas nao configuradas');
+            return { 
+                success: false,
+                campanhas_processadas: 0,
+                total_enviados: 0,
+                total_erros: 0,
+                resultados: [],
+                error: 'Tabelas nao configuradas'
+            };
         }
         
         // Buscar todas as campanhas ativas
@@ -348,16 +353,16 @@ export async function GET(request: NextRequest) {
         });
         
         const campanhas = (campanhasData.list || []) as unknown as Campanha[];
-        console.log(`[CRON] ${campanhas.length} campanhas ativas encontradas`);
+        console.log(`[CAMPANHAS] ${campanhas.length} campanhas ativas encontradas`);
         
         let totalEnviados = 0;
         let totalErros = 0;
         const resultados: any[] = [];
         
         for (const campanha of campanhas) {
-            // Verificar se deve rodar agora
-            if (!shouldRunNow(campanha)) {
-                console.log(`[CRON] Campanha ${campanha.nome} nao esta no horario/dia configurado`);
+            // Verificar se deve rodar agora (ignorar se for disparo manual)
+            if (!ignorarHorario && !shouldRunNow(campanha)) {
+                console.log(`[CAMPANHAS] Campanha ${campanha.nome} nao esta no horario/dia configurado`);
                 resultados.push({
                     campanha: campanha.nome,
                     status: 'pulada',
@@ -378,22 +383,46 @@ export async function GET(request: NextRequest) {
             });
         }
         
-        console.log(`[CRON] Finalizado - Enviados: ${totalEnviados}, Erros: ${totalErros}`);
+        console.log(`[CAMPANHAS] Finalizado - Enviados: ${totalEnviados}, Erros: ${totalErros}`);
         
-        return NextResponse.json({
+        return {
             success: true,
-            timestamp: new Date().toISOString(),
             campanhas_processadas: campanhas.length,
             total_enviados: totalEnviados,
             total_erros: totalErros,
             resultados
-        });
+        };
         
     } catch (error: any) {
-        console.error('[CRON] Erro geral:', error);
-        return NextResponse.json({ 
+        console.error('[CAMPANHAS] Erro geral:', error);
+        return { 
             success: false,
+            campanhas_processadas: 0,
+            total_enviados: 0,
+            total_erros: 0,
+            resultados: [],
             error: error.message || 'Erro interno' 
-        }, { status: 500 });
+        };
     }
+}
+
+export async function GET(request: NextRequest) {
+    // Verificar autenticacao do CRON
+    const authHeader = request.headers.get('authorization');
+    if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
+        console.log('[CRON] Autorizacao invalida');
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    // No CRON automatico, verificar horario
+    const result = await executarDisparoCampanhas(false);
+    
+    if (!result.success) {
+        return NextResponse.json(result, { status: 500 });
+    }
+    
+    return NextResponse.json({
+        ...result,
+        timestamp: new Date().toISOString()
+    });
 }
