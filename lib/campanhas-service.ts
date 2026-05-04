@@ -84,6 +84,28 @@ function shouldRunNow(campanha: Campanha): boolean {
 }
 
 /**
+ * Busca todos os clientes de uma empresa
+ */
+async function getTodosClientes(empresaId: string): Promise<Cliente[]> {
+    try {
+        console.log(`[CAMPANHAS] Buscando todos os clientes da empresa ${empresaId}`);
+        
+        const data = await noco.list(CLIENTES_TABLE_ID!, {
+            where: `(empresa_id,eq,${empresaId})`,
+            limit: 100,
+        });
+        
+        const clientes = ((data.list || []) as unknown as Cliente[]).filter((c) => c.telefone);
+        console.log(`[CAMPANHAS] Encontrados ${clientes.length} clientes com telefone`);
+        
+        return clientes;
+    } catch (error) {
+        console.error('[CAMPANHAS] Erro ao buscar todos clientes:', error);
+        return [];
+    }
+}
+
+/**
  * Busca clientes elegiveis para reengajamento
  */
 async function getClientesReengajamento(empresaId: string, diasSemPedido: number): Promise<Cliente[]> {
@@ -92,14 +114,37 @@ async function getClientesReengajamento(empresaId: string, diasSemPedido: number
         dataLimite.setDate(dataLimite.getDate() - diasSemPedido);
         const dataLimiteStr = dataLimite.toISOString().split('T')[0];
         
-        const data = await noco.list(CLIENTES_TABLE_ID!, {
+        console.log(`[CAMPANHAS] Buscando clientes sem compra desde ${dataLimiteStr} para empresa ${empresaId}`);
+        
+        // Primeiro tenta buscar com filtro de data
+        let data = await noco.list(CLIENTES_TABLE_ID!, {
             where: `(empresa_id,eq,${empresaId})~and(ultima_compra,lt,${dataLimiteStr})`,
             limit: 100,
         });
         
-        return ((data.list || []) as unknown as Cliente[]).filter((c) => c.telefone);
+        let clientes = ((data.list || []) as unknown as Cliente[]).filter((c) => c.telefone);
+        
+        // Se nao encontrou nenhum, busca clientes sem ultima_compra preenchida
+        if (clientes.length === 0) {
+            console.log(`[CAMPANHAS] Nenhum cliente com filtro de data, buscando clientes sem ultima_compra`);
+            data = await noco.list(CLIENTES_TABLE_ID!, {
+                where: `(empresa_id,eq,${empresaId})`,
+                limit: 100,
+            });
+            
+            // Filtra clientes sem ultima_compra ou com ultima_compra antiga
+            clientes = ((data.list || []) as unknown as Cliente[]).filter((c) => {
+                if (!c.telefone) return false;
+                if (!c.ultima_compra) return true; // Cliente nunca comprou
+                const ultimaCompraDate = new Date(c.ultima_compra);
+                return ultimaCompraDate < dataLimite;
+            });
+        }
+        
+        console.log(`[CAMPANHAS] Encontrados ${clientes.length} clientes elegiveis para reengajamento`);
+        return clientes;
     } catch (error) {
-        console.error('Erro ao buscar clientes reengajamento:', error);
+        console.error('[CAMPANHAS] Erro ao buscar clientes reengajamento:', error);
         return [];
     }
 }
@@ -226,15 +271,26 @@ async function processarCampanha(campanha: Campanha): Promise<{ enviados: number
     let clientes: Cliente[] = [];
     const diasGatilho = campanha.gatilho_dias || 7;
     
+    console.log(`[CAMPANHAS] Tipo da campanha: ${campanha.tipo}, dias gatilho: ${diasGatilho}`);
+    
     switch (campanha.tipo) {
         case 'reengajamento':
+            // Reengajamento: clientes que nao compram ha X dias
             clientes = await getClientesReengajamento(campanha.empresa_id, diasGatilho);
             break;
+        case 'cupom':
+        case 'promocao':
+        case 'novidade':
+            // Cupom/Promocao/Novidade: enviar para todos os clientes
+            clientes = await getTodosClientes(campanha.empresa_id);
+            break;
         default:
-            clientes = await getClientesReengajamento(campanha.empresa_id, diasGatilho);
+            // Default: enviar para todos os clientes
+            console.log(`[CAMPANHAS] Tipo desconhecido '${campanha.tipo}', enviando para todos os clientes`);
+            clientes = await getTodosClientes(campanha.empresa_id);
     }
     
-    console.log(`[CAMPANHAS] ${clientes.length} clientes elegiveis encontrados`);
+    console.log(`[CAMPANHAS] ${clientes.length} clientes elegiveis encontrados para campanha ${campanha.nome}`);
     
     for (const cliente of clientes) {
         try {
@@ -333,13 +389,21 @@ export async function executarDisparoCampanhas(ignorarHorario: boolean = true): 
             };
         }
         
+        console.log(`[CAMPANHAS] Buscando campanhas ativas na tabela ${CAMPANHAS_TABLE_ID}`);
+        
         const campanhasData = await noco.list(CAMPANHAS_TABLE_ID, {
             where: '(ativo,eq,true)',
             limit: 100,
         });
         
+        console.log(`[CAMPANHAS] Resposta raw:`, JSON.stringify(campanhasData, null, 2));
+        
         const campanhas = (campanhasData.list || []) as unknown as Campanha[];
         console.log(`[CAMPANHAS] ${campanhas.length} campanhas ativas encontradas`);
+        
+        if (campanhas.length > 0) {
+            console.log(`[CAMPANHAS] Primeira campanha:`, JSON.stringify(campanhas[0], null, 2));
+        }
         
         let totalEnviados = 0;
         let totalErros = 0;
