@@ -155,11 +155,28 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
   // Fetch configs
   useEffect(() => {
     if (empresaId) {
-      getDeliveryConfig(empresaId).then(setDeliveryConfig);
+      getDeliveryConfig(empresaId).then((config) => {
+        console.log('[v0] Delivery config carregado:', config);
+        setDeliveryConfig(config);
+      });
       getLoyaltyConfig(empresaId).then(setLoyaltyConfig);
-      getAvailableBairros(empresaId).then(setAvailableBairros);
+      getAvailableBairros(empresaId).then((bairros) => {
+        console.log('[v0] Bairros disponiveis:', bairros);
+        setAvailableBairros(bairros);
+      });
     }
   }, [empresaId]);
+
+  // Calcular entrega automaticamente quando endereco/bairro mudar (para raio automatico)
+  useEffect(() => {
+    if (!isDelivery || !deliveryConfig) return;
+    
+    // Se usa raio automatico e tem endereco e bairro, calcula
+    if (deliveryConfig.auto_radius && customerData.endereco && customerData.bairro) {
+      console.log('[v0] Calculando delivery por raio automatico...');
+      calculateDelivery();
+    }
+  }, [customerData.endereco, customerData.bairro, isDelivery, deliveryConfig?.auto_radius]);
 
   const fetchClientPoints = async (phone: string) => {
     const cleanPhone = phone.replace(/\D/g, '');
@@ -184,7 +201,10 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
   }, [customerData.telefone, step, phoneChecked]);
 
   const calculateDelivery = async () => {
+    console.log('[v0] calculateDelivery iniciado:', { isDelivery, bairro: customerData.bairro, endereco: customerData.endereco, deliveryConfig });
+    
     if (!isDelivery || !customerData.bairro) {
+      console.log('[v0] Cancelando - isDelivery:', isDelivery, 'bairro:', customerData.bairro);
       setDeliveryFee(0);
       setDeliveryCoords(null);
       setDeliveryInfo(null);
@@ -195,6 +215,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
     try {
       // Se NAO usa raio automatico, calcula por bairro
       if (!deliveryConfig?.auto_radius && empresaId) {
+        console.log('[v0] Modo bairro - buscando taxa...');
         const bairroRate = await getDeliveryRateByBairro(empresaId, customerData.bairro);
         if (bairroRate) {
           setDeliveryFee(bairroRate.taxa);
@@ -215,16 +236,23 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
       }
 
       // Usa raio automatico (Google Maps)
+      console.log('[v0] Modo raio automatico');
       if (!customerData.endereco) {
+        console.log('[v0] Sem endereco, cancelando');
         setDeliveryFee(0);
         setDeliveryLoading(false);
         return;
       }
 
+      const fullAddress = `${customerData.endereco}, ${customerData.bairro}`;
+      console.log('[v0] Geocodificando endereco:', fullAddress);
+      
       const coords = await geocodeAddress(
-        `${customerData.endereco}, ${customerData.bairro}`,
+        fullAddress,
         customerData.cidade || undefined
       );
+
+      console.log('[v0] Coordenadas obtidas:', coords);
 
       if (!coords) {
         toast.error('Não foi possível localizar o endereço.');
@@ -233,15 +261,18 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
       }
 
       setDeliveryCoords(coords);
+      console.log('[v0] Chamando calculateDeliveryFee com coords:', coords, 'empresaId:', empresaId);
       const result = await calculateDeliveryFee(coords, empresaId);
+      console.log('[v0] Resultado calculateDeliveryFee:', result);
 
       if (result.success && result.taxa_entrega !== undefined) {
+        console.log('[v0] Sucesso! Taxa:', result.taxa_entrega);
         setDeliveryFee(result.taxa_entrega);
         setDeliveryInfo({
           distance: result.distance_km,
           duration: result.duration_min
         });
-        toast.success('Entrega calculada!');
+        toast.success(`Entrega: R$ ${result.taxa_entrega.toFixed(2).replace('.', ',')}`);
       } else {
         toast.warning(result.error || 'Não foi possível calcular a taxa.');
         setDeliveryFee(0);
@@ -622,8 +653,30 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                               className="w-full p-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#22c55e]/30 focus:border-[#22c55e] text-white placeholder:text-gray-600"
                             />
 
+                            {/* Botao para calcular entrega (raio automatico) */}
+                            {deliveryConfig?.auto_radius && customerData.endereco && customerData.bairro && deliveryFee === 0 && !deliveryLoading && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  console.log('[v0] Botao calcular entrega clicado');
+                                  calculateDelivery();
+                                }}
+                                className="w-full p-4 bg-blue-500/10 border border-blue-500/30 rounded-2xl text-blue-400 font-bold flex items-center justify-center gap-2 hover:bg-blue-500/20 transition-colors"
+                              >
+                                <MapPin className="size-5" />
+                                Calcular Taxa de Entrega
+                              </button>
+                            )}
+
+                            {deliveryLoading && (
+                              <div className="flex items-center justify-center gap-2 py-4 text-gray-500 bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl">
+                                <Loader2 className="size-5 animate-spin" />
+                                <span className="text-sm">Calculando entrega...</span>
+                              </div>
+                            )}
+
                             {/* Mostrar taxa de entrega calculada */}
-                            {deliveryFee > 0 && (
+                            {deliveryFee > 0 && !deliveryLoading && (
                               <div className="bg-[#22c55e]/10 border border-[#22c55e]/30 rounded-2xl p-4 flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                   <div className="size-10 bg-[#22c55e]/20 rounded-xl flex items-center justify-center">
@@ -632,6 +685,9 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                                   <div>
                                     <p className="text-xs text-gray-400">Taxa de Entrega</p>
                                     <p className="text-sm font-bold text-white">{customerData.bairro}</p>
+                                    {deliveryInfo?.distance && (
+                                      <p className="text-xs text-gray-500">{deliveryInfo.distance} km</p>
+                                    )}
                                   </div>
                                 </div>
                                 <div className="text-right">
@@ -639,14 +695,10 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                                   {deliveryInfo?.tempo_estimado && (
                                     <p className="text-xs text-gray-500">{deliveryInfo.tempo_estimado} min</p>
                                   )}
+                                  {deliveryInfo?.duration && (
+                                    <p className="text-xs text-gray-500">~{deliveryInfo.duration} min</p>
+                                  )}
                                 </div>
-                              </div>
-                            )}
-
-                            {deliveryLoading && (
-                              <div className="flex items-center justify-center gap-2 py-3 text-gray-500">
-                                <Loader2 className="size-4 animate-spin" />
-                                <span className="text-sm">Calculando entrega...</span>
                               </div>
                             )}
                           </>

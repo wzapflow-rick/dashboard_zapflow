@@ -122,14 +122,16 @@ export async function getDeliveryConfig(empresaId?: number): Promise<DeliveryCon
         const config = await noco.findById(EMPRESAS_TABLE_ID, targetEmpresaId) as any;
         if (!config) return null;
 
-        return {
+        const result = {
             auto_radius: !!config.raio_entrega_automatico,
             valor_por_km: Number(config.valor_por_km || 0),
             taxa_entrega_fixa: Number(config.taxa_entrega_fixa || 0),
-            lat_loja: Number(config.lat_loja || -23.5505),
-            lng_loja: Number(config.lng_loja || -46.6333),
-            raio_maximo_km: Number(config.raio_maximo_km || 0),
+            lat_loja: config.lat_loja ? Number(config.lat_loja) : 0,
+            lng_loja: config.lng_loja ? Number(config.lng_loja) : 0,
+            raio_maximo_km: Number(config.raio_maximo_km || 10),
         };
+        console.log('[v0] getDeliveryConfig result:', result);
+        return result;
     } catch (error) {
         console.error('getDeliveryConfig error:', error);
         return null;
@@ -236,15 +238,20 @@ export async function calculateDeliveryFee(
     empresaId?: number
 ): Promise<DeliveryCalculationResult> {
     try {
+        console.log('[v0] calculateDeliveryFee chamado:', { destination, empresaId });
+        
         if (!destination.lat || !destination.lng ||
             destination.lat < -90 || destination.lat > 90 ||
             destination.lng < -180 || destination.lng > 180) {
+            console.log('[v0] Coordenadas invalidas');
             return { success: false, error: 'Coordenadas inválidas' };
         }
 
         const config = await getDeliveryConfig(empresaId);
+        console.log('[v0] Config obtida:', config);
 
         if (!config) {
+            console.log('[v0] Config nao encontrada');
             return { success: false, error: 'Taxa de entrega não configurada' };
         }
 
@@ -255,6 +262,7 @@ export async function calculateDeliveryFee(
 
         // Se não usa raio automático, retorna taxa fixa (a taxa por bairro é calculada separadamente)
         if (!config.auto_radius) {
+            console.log('[v0] Auto radius desativado, usando taxa fixa:', config.taxa_entrega_fixa);
             if (config.taxa_entrega_fixa > 0) {
                 return { success: true, taxa_entrega: config.taxa_entrega_fixa };
             }
@@ -262,8 +270,16 @@ export async function calculateDeliveryFee(
             return { success: true, taxa_entrega: 0 };
         }
 
+        console.log('[v0] Usando raio automatico. Loja:', { lat: config.lat_loja, lng: config.lng_loja });
+        
+        if (!config.lat_loja || !config.lng_loja) {
+            console.log('[v0] Localizacao da loja nao configurada');
+            return { success: false, error: 'Localização da loja não configurada. Configure no painel.' };
+        }
+
         const origin = { lat: config.lat_loja, lng: config.lng_loja };
         const distance = await getDistanceFromGoogle(origin, destination);
+        console.log('[v0] Distancia calculada:', distance);
 
         if (distance.distance_km <= 0 || distance.distance_km > 500) {
             return { success: false, error: 'Distância inválida calculada' };
