@@ -37,12 +37,13 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
     const hasNeighborhood = bairro && bairro.length > 0;
 
     const isRetiradaExplicita = order.tipo_entrega === 'retirada';
+    const isMesa = order.tipo_entrega === 'mesa';
     const hasDeliveryItem = Array.isArray(order.itens) && order.itens.some((item: any) => {
         const nome = (item.produto || item.nome || '').toLowerCase();
         return nome.includes('taxa de entrega') || nome.includes('delivery');
     });
 
-    const isDelivery = !isRetiradaExplicita && (
+    const isDelivery = !isRetiradaExplicita && !isMesa && (
         order.tipo_entrega === 'delivery' ||
         hasAddress ||
         hasNeighborhood ||
@@ -196,9 +197,10 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
                     </p>
                     <span className={cn(
                         "text-[10px] font-bold px-2 py-0.5 rounded uppercase shrink-0 ml-2",
+                        isMesa ? "bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300" :
                         isDelivery ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300" : "bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300"
                     )}>
-                        {isDelivery ? "Delivery" : "Retirada"}
+                        {isMesa ? `Mesa ${order.numero_mesa || order.mesa_id || ''}` : isDelivery ? "Delivery" : "Retirada"}
                     </span>
                 </div>
             </div>
@@ -261,8 +263,8 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
                 </div>
             </div>
 
-            {/* Seleção de Entregador - apenas para delivery */}
-            {isDelivery && columnId !== 'finalizado' && columnId !== 'pagamento_pendente' && (
+            {/* Seleção de Entregador - apenas para delivery (não mesa) */}
+            {isDelivery && !isMesa && columnId !== 'finalizado' && columnId !== 'pagamento_pendente' && (
                 <div className="pt-2 border-t border-slate-100 dark:border-slate-700">
                     <div className="relative">
                         <button
@@ -332,8 +334,8 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
                 </div>
             )}
 
-            {/* Link de rastreamento para delivery */}
-            {isDelivery && (columnId === 'entrega' || columnId === 'preparando') && (
+            {/* Link de rastreamento para delivery (não mesa) */}
+            {isDelivery && !isMesa && (columnId === 'entrega' || columnId === 'preparando') && (
                 <div className="pt-2 border-t border-slate-100 dark:border-slate-700">
                     <a
                         href={`/track/${order.id}`}

@@ -186,3 +186,139 @@ export type DriverStatus = typeof DRIVER_STATUS[keyof typeof DRIVER_STATUS];
 /** Tabela de metadados de produtos (Upsell, Tamanhos, etc.) */
 export const PRODUTOS_METADADOS_TABLE_ID =
   process.env.NOCODB_TABLE_PRODUTOS_METADADOS || 'm97yi797b432f4q';
+
+// ============================================================
+// ASSINATURAS E FATURAS
+// ============================================================
+
+/** Tabela de cadastros pendentes (pos-pagamento) */
+export const PENDING_SIGNUPS_TABLE_ID =
+  process.env.NOCODB_TABLE_PENDING_SIGNUPS || 'm1hq56kbk1zhcrp';
+
+/** Tabela de assinaturas de planos */
+export const ASSINATURAS_TABLE_ID =
+  process.env.NOCODB_TABLE_ASSINATURAS || 'mhpkvk982298q8a';
+
+/** Tabela de faturas de assinaturas */
+export const FATURAS_ASSINATURA_TABLE_ID =
+  process.env.NOCODB_TABLE_FATURAS_ASSINATURA || 'msrjfeb28e07cwx';
+
+// ============================================================
+// PLANOS DISPONÍVEIS
+// ============================================================
+
+export const SUBSCRIPTION_PLANS = {
+  INICIANTE: {
+    id: 'iniciante',
+    name: 'Iniciante',
+    price: 0,
+    description: 'Configure sua loja antes de escolher um plano.',
+    trial: true,
+    features: [
+      'Acesso ao painel de configuracao',
+      'Cadastro de produtos',
+      'Configuracao do cardapio',
+      'Cardapio online bloqueado ate assinar',
+    ],
+  },
+  START: {
+    id: 'start',
+    name: 'Start',
+    price: 79.90,
+    description: 'Perfeito para comecar sua jornada no delivery.',
+    features: [
+      'Cardapio digital (Link + QrCode)',
+      'Painel Kanban basico',
+      'Pix + Cartoes',
+      'Taxa Fixa por bairro',
+    ],
+  },
+  PRO: {
+    id: 'pro',
+    name: 'PRO',
+    price: 149.90,
+    description: 'O plano ideal para escalar suas vendas.',
+    popular: true,
+    features: [
+      'Cardapio digital (Link + QrCode)',
+      'Painel Kanban com notificacao no WhatsApp',
+      'Pix + Cartoes',
+      'Taxa de entregas calculada pelo Google Maps',
+      'Agente de IA no WhatsApp',
+      'Cupons de desconto',
+    ],
+  },
+  ELITE: {
+    id: 'elite',
+    name: 'ELITE',
+    price: 297.90,
+    description: 'Solucao completa para operacoes avancadas.',
+    features: [
+      'Cardapio digital com Customizacao Total (Link + QrCode)',
+      'Painel Kanban com notificacao no WhatsApp',
+      'Pix + Cartoes',
+      'App para os entregadores',
+      'Agente de IA no WhatsApp',
+      'Cupons de desconto e Programa de pontos',
+      'Relatorios de Performance',
+    ],
+  },
+} as const;
+
+export type SubscriptionPlanId = 'iniciante' | 'start' | 'pro' | 'elite';
+
+/** Planos que permitem cardapio online ativo */
+export const PAID_PLANS: SubscriptionPlanId[] = ['start', 'pro', 'elite'];
+
+/** Verifica se o plano permite cardapio online */
+export function isPaidPlan(plan: string | null | undefined): boolean {
+  return PAID_PLANS.includes(plan as SubscriptionPlanId);
+}
+
+// ============================================================
+// MESAS E COMANDAS (CONSUMO LOCAL)
+// ============================================================
+
+/** Tabela de mesas do estabelecimento */
+export const MESAS_TABLE_ID =
+  process.env.NOCODB_TABLE_MESAS || 'mzft45xyoznab9k';
+
+/** Tabela de comandas (contas individuais por pessoa na mesa) */
+export const COMANDAS_TABLE_ID =
+  process.env.NOCODB_TABLE_COMANDAS || 'mkpep3jg6ri9d7x';
+
+// ============================================================
+// STATUS DE MESAS
+// ============================================================
+
+export const MESA_STATUS = {
+  LIVRE: 'livre',
+  OCUPADA: 'ocupada',
+  RESERVADA: 'reservada',
+} as const;
+
+export type MesaStatus = typeof MESA_STATUS[keyof typeof MESA_STATUS];
+
+// ============================================================
+// STATUS DE COMANDAS
+// ============================================================
+
+export const COMANDA_STATUS = {
+  ABERTA: 'aberta',
+  FECHADA: 'fechada',
+  PAGA: 'paga',
+} as const;
+
+export type ComandaStatus = typeof COMANDA_STATUS[keyof typeof COMANDA_STATUS];
+
+// ============================================================
+// TIPOS DE ENTREGA (ATUALIZADO COM MESA)
+// ============================================================
+
+export const DELIVERY_TYPE = {
+  DELIVERY: 'delivery',
+  RETIRADA: 'retirada',
+  MESA: 'mesa',
+} as const;
+
+export type DeliveryType = typeof DELIVERY_TYPE[keyof typeof DELIVERY_TYPE];

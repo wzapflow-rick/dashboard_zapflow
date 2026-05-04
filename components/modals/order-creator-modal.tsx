@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { X, Search, Plus, Minus, ShoppingCart, User, Phone, Check, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { getProducts } from '@/app/actions/products';
+import { getProducts, getCategories, type Category } from '@/app/actions/products';
 import { getCompositeProducts, type CompositeProduct, type CompositeItem } from '@/app/actions/grupos-slots';
 import { createManualOrder } from '@/app/actions/orders';
 import { toast } from 'sonner';
@@ -34,8 +34,10 @@ interface OrderCreatorModalProps {
 
 export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderCreatorModalProps) {
     const [products, setProducts] = useState<Product[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
     const [compositeProducts, setCompositeProducts] = useState<CompositeProduct[]>([]);
     const [search, setSearch] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
     const [cart, setCart] = useState<CartItem[]>([]);
     const [clienteNome, setClienteNome] = useState('');
     const [clienteTelefone, setClienteTelefone] = useState('');
@@ -75,11 +77,13 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
 
     const fetchProducts = async () => {
         try {
-            const [productsData, compositeData] = await Promise.all([
+            const [productsData, categoriesData, compositeData] = await Promise.all([
                 getProducts(),
+                getCategories(),
                 getCompositeProducts(),
             ]);
             setProducts(productsData);
+            setCategories(categoriesData.sort((a, b) => (a.ordem || 0) - (b.ordem || 0)));
             setCompositeProducts(compositeData);
         } catch (error) {
             toast.error('Erro ao buscar produtos');
@@ -216,8 +220,27 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
         }
     };
 
-    const filteredProducts = products.filter(p => p.nome.toLowerCase().includes(search.toLowerCase()));
+    const filteredProducts = products.filter(p => {
+        const matchesSearch = p.nome.toLowerCase().includes(search.toLowerCase());
+        const matchesCategory = selectedCategory === null || String(p.categoria_id) === String(selectedCategory);
+        return matchesSearch && matchesCategory;
+    });
     const filteredComposite = compositeProducts.filter(p => p.nome.toLowerCase().includes(search.toLowerCase()));
+
+    // Agrupar produtos por categoria
+    const productsByCategory = categories.reduce((acc, cat) => {
+        const catProducts = filteredProducts.filter(p => String(p.categoria_id) === String(cat.id));
+        if (catProducts.length > 0) {
+            acc[cat.id] = { nome: cat.nome, produtos: catProducts };
+        }
+        return acc;
+    }, {} as Record<number, { nome: string; produtos: Product[] }>);
+
+    // Produtos sem categoria
+    const uncategorizedProducts = filteredProducts.filter(p => !p.categoria_id || !categories.find(c => String(c.id) === String(p.categoria_id)));
+    if (uncategorizedProducts.length > 0) {
+        productsByCategory[0] = { nome: 'Outros', produtos: uncategorizedProducts };
+    }
 
     const openCompositeModal = (composite: CompositeProduct) => {
         setSelectedComposite(composite);
@@ -289,7 +312,7 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
 
     return (
         <AnimatePresence>
-            <div key="main-modal" className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+            <div key="main-modal" className="fixed inset-0 z-[150] flex items-end md:items-center justify-center md:p-4">
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -302,46 +325,76 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="relative w-full max-w-5xl h-[85vh] bg-white rounded-[32px] shadow-2xl overflow-hidden flex flex-col md:flex-row dark:bg-slate-800"
+                    className="relative w-full max-w-5xl h-[95dvh] md:h-[85vh] bg-white rounded-t-[32px] md:rounded-[32px] shadow-2xl overflow-hidden flex flex-col md:flex-row dark:bg-slate-800"
                 >
                     {/* Lista de Produtos */}
-                    <div className="flex-1 flex flex-col min-w-0 border-r border-slate-100 dark:border-slate-700">
-                        <header className="p-6 border-b border-slate-100 flex items-center justify-between dark:border-slate-700">
+                    <div className="flex-1 flex flex-col min-w-0 border-r border-slate-100 dark:border-slate-700 min-h-0">
+                        <header className="p-4 md:p-6 border-b border-slate-100 flex items-center justify-between dark:border-slate-700 shrink-0">
                             <div>
-                                <h2 className="text-2xl font-black text-slate-900 tracking-tight dark:text-white">Novo Pedido</h2>
-                                <p className="text-sm text-slate-500 font-bold uppercase tracking-wider dark:text-slate-400">Criação Manual • PDV</p>
+                                <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight dark:text-white">Novo Pedido</h2>
+                                <p className="text-xs md:text-sm text-slate-500 font-bold uppercase tracking-wider dark:text-slate-400">Criacao Manual</p>
                             </div>
                             <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors md:hidden dark:hover:bg-slate-700">
                                 <X className="size-6 text-slate-400" />
                             </button>
                         </header>
 
-                        <div className="p-4 bg-slate-50/50 dark:bg-slate-900/50">
+                        <div className="p-3 md:p-4 bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
                             <div className="relative">
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 size-5" />
                                 <input
                                     type="text"
-                                    placeholder="Buscar produto pelo nome..."
-                                    className="w-full h-12 pl-12 pr-4 bg-white border-2 border-slate-100 rounded-2xl text-sm font-bold focus:border-primary/30 outline-none transition-all dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:placeholder:text-slate-400"
+                                    placeholder="Buscar produto..."
+                                    className="w-full h-11 md:h-12 pl-12 pr-4 bg-white border-2 border-slate-100 rounded-2xl text-sm font-bold focus:border-primary/30 outline-none transition-all dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:placeholder:text-slate-400"
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                 />
                             </div>
+                            {/* Category Filter */}
+                            <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide mt-2">
+                                <button
+                                    onClick={() => setSelectedCategory(null)}
+                                    className={`px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors ${
+                                        selectedCategory === null
+                                            ? 'bg-primary text-white'
+                                            : 'bg-slate-200 text-slate-600 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-400 dark:hover:bg-slate-600'
+                                    }`}
+                                >
+                                    Todos
+                                </button>
+                                {categories.map((cat) => (
+                                    <button
+                                        key={cat.id}
+                                        onClick={() => setSelectedCategory(cat.id)}
+                                        className={`px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors ${
+                                            selectedCategory === cat.id
+                                                ? 'bg-primary text-white'
+                                                : 'bg-slate-200 text-slate-600 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-400 dark:hover:bg-slate-600'
+                                        }`}
+                                    >
+                                        {cat.nome}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
+                        <div className="flex-1 overflow-y-auto overscroll-contain p-3 md:p-4 space-y-4 md:space-y-6 custom-scrollbar touch-pan-y">
                             {isLoadingProducts ? (
                                 <div className="flex items-center justify-center py-20">
                                     <Loader2 className="size-10 text-primary animate-spin" />
                                 </div>
                             ) : (
                                 <>
-                                    {/* Produtos Normais */}
-                                    {filteredProducts.length > 0 && (
-                                        <div>
-                                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 px-1 dark:text-slate-500">Produtos</h3>
+                                    {/* Produtos organizados por categoria */}
+                                    {Object.entries(productsByCategory).map(([catId, { nome, produtos }]) => (
+                                        <div key={catId}>
+                                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 px-1 flex items-center gap-2 dark:text-slate-500">
+                                                <span className="w-2 h-2 bg-primary rounded-full"></span>
+                                                {nome}
+                                                <span className="text-slate-300 dark:text-slate-600">({produtos.length})</span>
+                                            </h3>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                {filteredProducts.map(p => (
+                                                {produtos.map(p => (
                                                     <button
                                                         key={p.id}
                                                         onClick={() => addToCart(p)}
@@ -349,12 +402,11 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                                                     >
                                                         <div>
                                                             <h4 className="font-black text-slate-900 group-hover:text-primary transition-colors line-clamp-1 dark:text-white dark:group-hover:text-primary">{p.nome}</h4>
-                                                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1 dark:text-slate-500">Ref: {p.id}</span>
-                                                        </div>
-                                                        <div className="flex items-center justify-between mt-auto">
-                                                            <span className="text-lg font-black text-slate-900 dark:text-white">
+                                                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1 dark:text-slate-500">
                                                                 {Number(p.preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                                             </span>
+                                                        </div>
+                                                        <div className="flex items-center justify-end mt-auto">
                                                             <div className="size-8 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400 group-hover:bg-primary group-hover:text-white transition-all dark:bg-slate-600 dark:text-slate-300">
                                                                 <Plus className="size-5" />
                                                             </div>
@@ -363,7 +415,7 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                                                 ))}
                                             </div>
                                         </div>
-                                    )}
+                                    ))}
 
                                     {/* Produtos Compostos (Grupos de Slots) */}
                                     {filteredComposite.length > 0 && (
@@ -396,7 +448,7 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                                         </div>
                                     )}
 
-                                    {filteredProducts.length === 0 && filteredComposite.length === 0 && (
+                                    {Object.keys(productsByCategory).length === 0 && filteredComposite.length === 0 && (
                                         <div className="col-span-full flex items-center justify-center py-20">
                                             <p className="text-slate-400 dark:text-slate-500">Nenhum produto encontrado</p>
                                         </div>
@@ -407,8 +459,8 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                     </div>
 
                     {/* Carrinho e Cliente */}
-                    <div className="w-full md:w-[380px] bg-slate-50 flex flex-col shrink-0 dark:bg-slate-900">
-                        <div className="p-6 bg-white border-b border-slate-100 hidden md:flex items-center justify-between dark:bg-slate-800 dark:border-slate-700">
+                    <div className="w-full md:w-[380px] bg-slate-50 flex flex-col shrink-0 dark:bg-slate-900 max-h-[40vh] md:max-h-none min-h-0">
+                        <div className="p-4 md:p-6 bg-white border-b border-slate-100 hidden md:flex items-center justify-between dark:bg-slate-800 dark:border-slate-700 shrink-0">
                             <div className="flex items-center gap-3">
                                 <div className="size-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
                                     <ShoppingCart className="size-5" />
@@ -420,7 +472,7 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                             </button>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+                        <div className="flex-1 overflow-y-auto overscroll-contain p-4 md:p-6 space-y-4 md:space-y-6 custom-scrollbar touch-pan-y min-h-0">
                             {/* Itens do Carrinho */}
                             <div className="space-y-3">
                                 <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1 dark:text-slate-500">Itens Selecionados</h4>
@@ -504,20 +556,20 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                         </div>
 
                         {/* Footer de Resumo */}
-                        <div className="p-6 bg-white border-t border-slate-100 space-y-4 dark:bg-slate-800 dark:border-slate-700">
+                        <div className="p-4 md:p-6 bg-white border-t border-slate-100 space-y-3 md:space-y-4 dark:bg-slate-800 dark:border-slate-700 shrink-0">
                             <div className="flex items-center justify-between">
-                                <span className="text-sm font-bold text-slate-400 uppercase tracking-widest dark:text-slate-500">Total do Pedido</span>
-                                <span className="text-2xl font-black text-slate-900 dark:text-white">
+                                <span className="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-widest dark:text-slate-500">Total</span>
+                                <span className="text-xl md:text-2xl font-black text-slate-900 dark:text-white">
                                     {total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                 </span>
                             </div>
                             <button
                                 onClick={handleSubmit}
                                 disabled={isSubmitting || cart.length === 0}
-                                className="w-full h-14 bg-primary text-white font-black rounded-2xl shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all active:scale-[0.98] disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-2"
+                                className="w-full h-12 md:h-14 bg-primary text-white font-black rounded-2xl shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all active:scale-[0.98] disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-2"
                             >
-                                {isSubmitting ? <Loader2 className="size-6 animate-spin" /> : <Check className="size-6" />}
-                                FINALIZAR E ENVIAR
+                                {isSubmitting ? <Loader2 className="size-5 md:size-6 animate-spin" /> : <Check className="size-5 md:size-6" />}
+                                <span className="text-sm md:text-base">FINALIZAR</span>
                             </button>
                         </div>
                     </div>

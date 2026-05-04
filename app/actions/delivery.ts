@@ -126,9 +126,9 @@ export async function getDeliveryConfig(empresaId?: number): Promise<DeliveryCon
             auto_radius: !!config.raio_entrega_automatico,
             valor_por_km: Number(config.valor_por_km || 0),
             taxa_entrega_fixa: Number(config.taxa_entrega_fixa || 0),
-            lat_loja: Number(config.lat_loja || -23.5505),
-            lng_loja: Number(config.lng_loja || -46.6333),
-            raio_maximo_km: Number(config.raio_maximo_km || 0),
+            lat_loja: config.lat_loja ? Number(config.lat_loja) : 0,
+            lng_loja: config.lng_loja ? Number(config.lng_loja) : 0,
+            raio_maximo_km: Number(config.raio_maximo_km || 10),
         };
     } catch (error) {
         console.error('getDeliveryConfig error:', error);
@@ -163,6 +163,74 @@ async function getDistanceFromGoogle(
     };
 }
 
+// Buscar taxa por bairro (usado quando auto_radius = false)
+export async function getDeliveryRateByBairro(empresaId: number, bairro: string): Promise<{ taxa: number; tempo_estimado: string } | null> {
+    try {
+        if (!bairro || !empresaId) return null;
+        
+        const bairroNormalizado = bairro.trim().toLowerCase();
+        console.log(`[Delivery] Buscando taxa para bairro: "${bairroNormalizado}" | Empresa: ${empresaId}`);
+        
+        const data = await noco.list(TAXAS_ENTREGA_TABLE_ID, {
+            where: `(empresa_id,eq,${empresaId})`,
+            limit: 1000,
+        });
+        
+        const taxas = data.list || [];
+        console.log(`[Delivery] Taxas encontradas: ${taxas.length}`);
+        
+        // Busca exata primeiro, depois parcial
+        let match = taxas.find((t: any) => 
+            t.bairro && t.bairro.trim().toLowerCase() === bairroNormalizado
+        );
+        
+        // Se não encontrou exato, tenta busca parcial
+        if (!match) {
+            match = taxas.find((t: any) => 
+                t.bairro && (
+                    t.bairro.trim().toLowerCase().includes(bairroNormalizado) ||
+                    bairroNormalizado.includes(t.bairro.trim().toLowerCase())
+                )
+            );
+        }
+        
+        if (match) {
+            console.log(`[Delivery] Taxa encontrada: R$ ${match.valor_taxa} | Tempo: ${match.tempo_estimado}`);
+            return {
+                taxa: Number(match.valor_taxa) || 0,
+                tempo_estimado: String(match.tempo_estimado || '')
+            };
+        }
+        
+        console.log(`[Delivery] Nenhuma taxa encontrada para o bairro: ${bairro}`);
+        return null;
+    } catch (error) {
+        console.error('getDeliveryRateByBairro error:', error);
+        return null;
+    }
+}
+
+// Listar todos os bairros disponíveis para uma empresa (usado no checkout)
+export async function getAvailableBairros(empresaId: number): Promise<Array<{ bairro: string; taxa: number; tempo_estimado: string }>> {
+    try {
+        if (!empresaId) return [];
+        
+        const data = await noco.list(TAXAS_ENTREGA_TABLE_ID, {
+            where: `(empresa_id,eq,${empresaId})`,
+            limit: 1000,
+        });
+        
+        return (data.list || []).map((t: any) => ({
+            bairro: String(t.bairro || ''),
+            taxa: Number(t.valor_taxa) || 0,
+            tempo_estimado: String(t.tempo_estimado || '')
+        })).filter((t: { bairro: string }) => t.bairro.trim() !== '');
+    } catch (error) {
+        console.error('getAvailableBairros error:', error);
+        return [];
+    }
+}
+
 export async function calculateDeliveryFee(
     destination: { lat: number; lng: number },
     empresaId?: number
@@ -185,11 +253,17 @@ export async function calculateDeliveryFee(
             return { success: false, error: 'Configuração de entrega inválida' };
         }
 
+        // Se não usa raio automático, retorna taxa fixa (a taxa por bairro é calculada separadamente)
         if (!config.auto_radius) {
             if (config.taxa_entrega_fixa > 0) {
                 return { success: true, taxa_entrega: config.taxa_entrega_fixa };
             }
-            return { success: false, error: 'Taxa de entrega não configurada' };
+            // Se não tem taxa fixa, retorna sucesso com taxa 0 (será calculada por bairro no checkout)
+            return { success: true, taxa_entrega: 0 };
+        }
+
+        if (!config.lat_loja || !config.lng_loja) {
+            return { success: false, error: 'Localização da loja não configurada. Configure no painel.' };
         }
 
         const origin = { lat: config.lat_loja, lng: config.lng_loja };

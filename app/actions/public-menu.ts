@@ -1,4 +1,5 @@
 import { noco } from '@/lib/nocodb';
+import db from '@/lib/db';
 import { 
     PRODUTOS_TABLE_ID, 
     CATEGORIAS_TABLE_ID, 
@@ -7,7 +8,8 @@ import {
     EMPRESAS_TABLE_ID, 
     CONFIGURACOES_LOJA_TABLE_ID, 
     LOYALTY_CONFIG_TABLE_ID,
-    PRODUTOS_METADADOS_TABLE_ID
+    PRODUTOS_METADADOS_TABLE_ID,
+    isPaidPlan
 } from '@/lib/constants';
 
 export async function getPublicMenu(slug: string) {
@@ -53,6 +55,60 @@ export async function getPublicMenu(slug: string) {
         empresa.nome = empresa.nome_fantasia || empresa.nome || 'ZapFlow';
         
         console.log(`[MENU_DEBUG] Empresa: ${empresa.nome} (ID: ${empresaId})`);
+        
+        // Verificar se empresa tem assinatura ativa na tabela assinaturas
+        let hasActiveSubscription = false;
+        let planoAtivo = 'iniciante';
+        
+        try {
+            const assinaturaResult = await db.query(
+                `SELECT plano, status, data_proxima_cobranca 
+                 FROM assinaturas 
+                 WHERE empresa_id = $1 
+                 AND status = 'authorized'
+                 LIMIT 1`,
+                [empresaId]
+            );
+            
+            if (assinaturaResult.rows.length > 0) {
+                const assinatura = assinaturaResult.rows[0];
+                planoAtivo = assinatura.plano;
+                
+                // Verificar se nao esta vencida (se data_proxima_cobranca > hoje)
+                const dataProxima = new Date(assinatura.data_proxima_cobranca);
+                const hoje = new Date();
+                
+                if (dataProxima > hoje && isPaidPlan(planoAtivo)) {
+                    hasActiveSubscription = true;
+                    console.log(`[MENU_DEBUG] Assinatura ativa: ${planoAtivo}, vence em ${dataProxima.toISOString()}`);
+                } else {
+                    console.log(`[MENU_DEBUG] Assinatura vencida ou plano invalido: ${planoAtivo}, venceu em ${dataProxima.toISOString()}`);
+                }
+            } else {
+                console.log(`[MENU_DEBUG] Nenhuma assinatura encontrada para empresa ${empresaId}`);
+            }
+        } catch (dbError) {
+            console.error(`[MENU_DEBUG] Erro ao verificar assinatura:`, dbError);
+            // Fallback: verificar campo plano da empresa
+            const planoEmpresa = empresa.planos || empresa.plano || 'iniciante';
+            if (isPaidPlan(planoEmpresa)) {
+                hasActiveSubscription = true;
+                planoAtivo = planoEmpresa;
+            }
+        }
+        
+        if (!hasActiveSubscription) {
+            console.log(`[MENU_DEBUG] Empresa sem plano pago ativo`);
+            return {
+                blocked: true,
+                reason: 'no_subscription',
+                empresa: {
+                    id: empresaId,
+                    nome: empresa.nome,
+                    logo: empresa.logo || null,
+                }
+            };
+        }
 
         // 2. BUSCA DE DADOS EM PARALELO
         const [configData, categorias, todosProdutos, todosGrupos, todosItens, loyaltyConfig, produtosMetadados] = await Promise.all([
@@ -76,8 +132,10 @@ export async function getPublicMenu(slug: string) {
             if (!empresa.banner && config.Banner) empresa.banner = config.Banner;
         }
 
-        // 3. ORGANIZAÇÃO DOS PRODUTOS
-        const grouped = (categorias || []).map((cat: any) => {
+        // 3. ORGANIZAÇÃO DOS PRODUTOS (ordenar categorias pela ordem)
+        const categoriasOrdenadas = [...(categorias || [])].sort((a: any, b: any) => (a.ordem || 0) - (b.ordem || 0));
+        
+        const grouped = categoriasOrdenadas.map((cat: any) => {
             const productsInCategory = (todosProdutos || []).filter((p: any) => 
                 (p.categoria_id === cat.id || p.categorias === cat.id) && p.tipo !== 'composto'
             );
@@ -148,6 +206,7 @@ export async function getPublicMenu(slug: string) {
                         imagem: p.imagem || null,
                         disponivel: p.disponivel !== false && p.disponivel !== 0,
                         destaque: p.destaque === true || p.destaque === 1,
+                        tag: p.tag || null,
                         ordem: Number(p.ordem ?? 0),
                         tamanhos: tamanhos || null,
                         recomendacoes: recomendacoes || null,
@@ -188,6 +247,7 @@ export async function getPublicMenu(slug: string) {
                         descricao: p.descricao || "",
                         preco: Number(p.preco ?? 0),
                         imagem: p.imagem || null,
+                        tag: p.tag || null,
                         tamanhos: tamanhos || null,
                         recomendacoes: recomendacoes || null,
                         tipo: 'composto'
@@ -205,7 +265,8 @@ export async function getPublicMenu(slug: string) {
                 nome: String(p.nome || ''),
                 preco: Number(p.preco ?? 0),
                 imagem: p.imagem || null,
-                descricao: p.descricao || ''
+                descricao: p.descricao || '',
+                tag: p.tag || null
             })),
             loyaltyConfig,
             allGroups: (todosGrupos || []).map((g: any) => ({

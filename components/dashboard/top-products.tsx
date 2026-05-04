@@ -12,7 +12,7 @@ interface TopProductsListProps {
 
 export function TopProductsList({ products }: TopProductsListProps) {
     return (
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm dark:bg-slate-800 dark:border-slate-600 ">
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm dark:bg-[#0f1f35] dark:border-[#1e3a5f] ">
             <h4 className="font-bold text-slate-800 mb-6 dark:text-slate-200">Top 5 Produtos</h4>
             <div className="space-y-4">
                 {products.map((product) => (

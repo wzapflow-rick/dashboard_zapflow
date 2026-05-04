@@ -5,7 +5,7 @@ import { getOrderCreatedMessage, getStatusMessage, WhatsAppMessages } from '@/ll
 const EVO_API_URL = process.env.EVOLUTION_API_URL || 'https://evo.wzapflow.com.br';
 const EVO_API_KEY = process.env.EVOLUTION_API_KEY || '';
 const EVO_INSTANCE = process.env.EVOLUTION_INSTANCE || 'zapflow_testes';
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://menu.wzapflow.com.br';
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://cardapio.wzapflow.com.br';
 
 // Verificar se a API key está configurada
 function checkApiKey() {
@@ -110,6 +110,50 @@ export async function sendOrderStatusMessage(
 }
 
 /**
+ * Enviar mensagem via Evolution API usando instancia especifica da empresa
+ * Cada empresa tem sua propria instancia: zapflow_{empresaId}
+ */
+export async function sendWhatsAppMessageWithInstance(
+    phone: string, 
+    message: string, 
+    empresaId: number | string
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        const formattedPhone = formatPhoneForEvolution(phone);
+        const instanceName = `zapflow_${empresaId}`;
+
+        const url = `${EVO_API_URL}/message/sendText/${instanceName}`;
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'apikey': EVO_API_KEY,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                number: formattedPhone,
+                text: message
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            console.error(`[WhatsApp] Erro ao enviar para ${instanceName}:`, result);
+            return { 
+                success: false, 
+                error: result.message || result.error || `HTTP ${response.status}` 
+            };
+        }
+
+        return { success: true };
+    } catch (error: any) {
+        console.error('[WhatsApp] Erro ao enviar:', error);
+        return { success: false, error: error.message || 'Erro desconhecido' };
+    }
+}
+
+/**
  * Testar envio de WhatsApp (para debug)
  */
 export async function testWhatsApp(phone: string): Promise<{ success: boolean; formattedPhone: string; error?: string }> {
@@ -158,4 +202,141 @@ export async function testWhatsApp(phone: string): Promise<{ success: boolean; f
             error: error.message || 'Erro desconhecido'
         };
     }
+}
+
+// ============================================================
+// MENSAGENS DE CADASTRO / SIGNUP
+// ============================================================
+
+/**
+ * Enviar mensagem de ativacao de conta (apos pagamento confirmado)
+ */
+export async function sendWelcomeSignupMessage(
+    phone: string, 
+    nome: string, 
+    token: string
+): Promise<boolean> {
+    const activationUrl = `${BASE_URL}/ativar/${token}`;
+    
+    const message = `🎉 Pagamento confirmado, ${nome}!
+
+Agora sua jornada para vender mais com o ZapFlow começou 🚀
+Para liberar seu acesso, finalize seu cadastro clicando no link abaixo:
+👉 ${activationUrl}
+
+⏳ Importante: esse link é válido por 24 horas.
+
+Assim que concluir, você já poderá acessar seu painel e começar a receber pedidos automaticamente no WhatsApp.
+
+Se precisar de ajuda em qualquer etapa, é só chamar — estamos aqui com você 🤝
+— Equipe ZapFlow`;
+
+    return sendWhatsAppMessage(phone, message);
+}
+
+/**
+ * Enviar mensagem de boas-vindas (apos ativacao da conta)
+ */
+export async function sendWelcomeMessage(
+    phone: string,
+    nome: string,
+    email: string,
+    plano: string
+): Promise<boolean> {
+    const planNames: Record<string, string> = {
+        start: 'Start',
+        pro: 'PRO',
+        elite: 'ELITE',
+    };
+    
+    const planName = planNames[plano] || plano;
+    
+    const message = `🎉 Bem-vindo ao ZapFlow, ${nome}!
+
+Sua conta foi ativada com sucesso — agora é hora de começar a vender mais 🚀
+
+📦 Plano: ${planName}
+📧 E-mail: ${email}
+
+🔗 Acesse seu painel:
+${BASE_URL}
+
+Agora é só configurar seu cardápio e começar a receber pedidos direto no WhatsApp.
+
+💡 Dica rápida: comece criando suas categorias e adicionando seus produtos no menu "Cardápio" — isso já deixa sua loja pronta para vender.
+
+Qualquer dúvida, estamos por aqui para te ajudar 🤝
+Boas vendas!
+— Equipe ZapFlow`;
+
+    return sendWhatsAppMessage(phone, message);
+}
+
+// ============================================================
+// MENSAGENS DE COBRANCA / INADIMPLENCIA
+// ============================================================
+
+const PAYMENT_MESSAGES: Record<number, (nome: string, link: string) => string> = {
+    1: (nome, link) => `Ola ${nome}! Sua assinatura ZapFlow vence hoje.
+
+Pague via PIX para continuar usando o sistema sem interrupcoes:
+${link}
+
+Qualquer duvida, estamos aqui!
+Equipe ZapFlow`,
+
+    2: (nome, link) => `Ola ${nome}, sua assinatura ZapFlow esta 1 dia atrasada.
+
+Regularize o pagamento para evitar o bloqueio do seu sistema:
+${link}
+
+Equipe ZapFlow`,
+
+    3: (nome, link) => `Atencao ${nome}!
+
+Sua assinatura esta 2 dias atrasada. Faltam apenas 2 dias para o bloqueio do seu sistema.
+
+Pague agora e evite a interrupcao:
+${link}
+
+Equipe ZapFlow`,
+
+    4: (nome, link) => `URGENTE ${nome}!
+
+Amanha seu sistema ZapFlow sera bloqueado por inadimplencia.
+
+Regularize AGORA para continuar recebendo pedidos:
+${link}
+
+Equipe ZapFlow`,
+
+    5: (nome, link) => `${nome}, seu sistema ZapFlow foi BLOQUEADO.
+
+Sua assinatura esta 5 dias atrasada e seu cardapio foi desativado.
+
+Para reativar imediatamente, pague aqui:
+${link}
+
+Equipe ZapFlow`,
+};
+
+/**
+ * Enviar lembrete de pagamento (cobranca)
+ */
+export async function sendPaymentReminder(
+    phone: string,
+    nome: string,
+    dia: number,
+    empresaId: number
+): Promise<boolean> {
+    const paymentLink = `${BASE_URL}/dashboard/subscription?pay=true&empresa=${empresaId}`;
+    
+    const getMessage = PAYMENT_MESSAGES[dia];
+    if (!getMessage) {
+        console.error('[WhatsApp] Dia de cobranca invalido:', dia);
+        return false;
+    }
+    
+    const message = getMessage(nome, paymentLink);
+    return sendWhatsAppMessage(phone, message);
 }

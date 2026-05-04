@@ -80,6 +80,7 @@ export async function getProducts() {
         tamanhos_json: tamanhos || null,
         recomendacoes: recomendacoes || null,
         criado_em: p.criado_em || null,
+        tag: p.tag || null,
       }));
     });
   } catch (error) {

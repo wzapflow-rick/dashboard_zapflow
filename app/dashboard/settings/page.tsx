@@ -235,6 +235,7 @@ export default function SettingsPage() {
           taxa_entrega_fixa: taxaEntregaFixa,
           lat_loja: deliveryData.lat_loja ? parseFloat(deliveryData.lat_loja as string) : undefined,
           lng_loja: deliveryData.lng_loja ? parseFloat(deliveryData.lng_loja as string) : undefined,
+          raio_maximo_km: deliveryData.raio_maximo_km ? parseFloat(deliveryData.raio_maximo_km as string) : 10,
         });
       }
 
@@ -416,16 +417,22 @@ export default function SettingsPage() {
                         <input name="cnpj" type="text" defaultValue={company?.cnpj || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white placeholder:text-slate-400" placeholder="00.000.000/0000-00" />
                       </div>
                       <div className="space-y-1.5 md:col-span-2">
-                        <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Endereço Completo</label>
+                        <label className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                          Endereço Completo <span className="text-orange-500 text-xs font-normal">(necessario para calcular entrega por raio)</span>
+                        </label>
                         <input name="endereco" type="text" defaultValue={company?.endereco || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white placeholder:text-slate-400" placeholder="Rua, Número, Bairro" />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Cidade</label>
-                        <input name="cidade" type="text" defaultValue={company?.cidade || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white placeholder:text-slate-400" placeholder="Sua Cidade" />
+                        <label className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                          Cidade <span className="text-red-500">*</span>
+                        </label>
+                        <input name="cidade" type="text" defaultValue={company?.cidade || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white placeholder:text-slate-400" placeholder="Ex: Aracaju" />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Estado (UF)</label>
-                        <input name="estado" type="text" defaultValue={company?.estado || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white placeholder:text-slate-400" placeholder="Ex: SP, RJ, MG" maxLength={2} />
+                        <label className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                          Estado (UF) <span className="text-red-500">*</span>
+                        </label>
+                        <input name="estado" type="text" defaultValue={company?.estado || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white placeholder:text-slate-400 uppercase" placeholder="Ex: SE" maxLength={2} />
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Instância Evolution API</label>
@@ -550,7 +557,7 @@ export default function SettingsPage() {
                           exit={{ opacity: 0, height: 0 }}
                           className="overflow-hidden"
                         >
-                          <div className="pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="pt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div className="space-y-1.5">
                               <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Valor por KM (R$)</label>
                               <CurrencyInput
@@ -567,14 +574,101 @@ export default function SettingsPage() {
                                 className="w-full pr-4 py-2 bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all dark:text-white"
                               />
                             </div>
-                            <form id="delivery-form" className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Latitude da Loja</label>
-                                <input name="lat_loja" type="number" step="any" defaultValue={company?.lat_loja || ''} className="w-full px-4 py-2 bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none dark:text-white" />
+                            <div className="space-y-1.5">
+                              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Raio Maximo (KM)</label>
+                              <input
+                                name="raio_maximo_km"
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                defaultValue={company?.raio_maximo_km || 10}
+                                className="w-full px-4 py-2 bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all dark:text-white"
+                                placeholder="Ex: 10"
+                              />
+                            </div>
+                            <form id="delivery-form" className="sm:col-span-2 space-y-4">
+                              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+                                <div className="flex items-start gap-3">
+                                  <Info className="size-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                                  <div className="space-y-3 flex-1">
+                                    <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+                                      Configure a localizacao da sua loja para calcular a distancia ate os clientes.
+                                    </p>
+                                    
+                                    {/* Status dos campos necessarios */}
+                                    <div className="space-y-1 text-xs">
+                                      <div className="flex items-center gap-2">
+                                        {company?.endereco ? (
+                                          <span className="size-4 rounded-full bg-green-500 flex items-center justify-center text-white text-[10px]">&#10003;</span>
+                                        ) : (
+                                          <span className="size-4 rounded-full bg-red-500 flex items-center justify-center text-white text-[10px]">!</span>
+                                        )}
+                                        <span className={company?.endereco ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                                          Endereco: {company?.endereco || 'Nao preenchido (aba Geral)'}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        {company?.cidade ? (
+                                          <span className="size-4 rounded-full bg-green-500 flex items-center justify-center text-white text-[10px]">&#10003;</span>
+                                        ) : (
+                                          <span className="size-4 rounded-full bg-red-500 flex items-center justify-center text-white text-[10px]">!</span>
+                                        )}
+                                        <span className={company?.cidade ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                                          Cidade: {company?.cidade || 'Nao preenchido (aba Geral)'}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        {company?.estado ? (
+                                          <span className="size-4 rounded-full bg-green-500 flex items-center justify-center text-white text-[10px]">&#10003;</span>
+                                        ) : (
+                                          <span className="size-4 rounded-full bg-yellow-500 flex items-center justify-center text-white text-[10px]">!</span>
+                                        )}
+                                        <span className={company?.estado ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}>
+                                          Estado: {company?.estado || 'Nao preenchido (aba Geral)'}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    <button
+                                      type="button"
+                                      disabled={!company?.endereco || !company?.cidade}
+                                      onClick={async () => {
+                                        if (!company?.endereco || !company?.cidade) {
+                                          toast.error('Preencha o endereco e cidade na aba Geral primeiro!');
+                                          return;
+                                        }
+                                        toast.loading('Buscando coordenadas...');
+                                        const { geocodeAddress } = await import('@/app/actions/delivery');
+                                        const coords = await geocodeAddress(`${company.endereco}, ${company.cidade}, ${company.estado || 'Brasil'}`);
+                                        toast.dismiss();
+                                        if (coords) {
+                                          const latInput = document.querySelector('input[name="lat_loja"]') as HTMLInputElement;
+                                          const lngInput = document.querySelector('input[name="lng_loja"]') as HTMLInputElement;
+                                          if (latInput) latInput.value = String(coords.lat);
+                                          if (lngInput) lngInput.value = String(coords.lng);
+                                          setCompany({ ...company, lat_loja: coords.lat, lng_loja: coords.lng });
+                                          toast.success(`Coordenadas encontradas! Lat: ${coords.lat.toFixed(6)}, Lng: ${coords.lng.toFixed(6)}`);
+                                        } else {
+                                          toast.error('Nao foi possivel encontrar as coordenadas. Verifique o endereco.');
+                                        }
+                                      }}
+                                      className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-slate-400 disabled:cursor-not-allowed text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2"
+                                    >
+                                      <MapPin className="size-4" />
+                                      Buscar Coordenadas do Endereco
+                                    </button>
+                                  </div>
+                                </div>
                               </div>
-                              <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Longitude da Loja</label>
-                                <input name="lng_loja" type="number" step="any" defaultValue={company?.lng_loja || ''} className="w-full px-4 py-2 bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none dark:text-white" />
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Latitude da Loja</label>
+                                  <input name="lat_loja" type="number" step="any" defaultValue={company?.lat_loja || ''} className="w-full px-4 py-2 bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none dark:text-white" placeholder="Ex: -10.9472" />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Longitude da Loja</label>
+                                  <input name="lng_loja" type="number" step="any" defaultValue={company?.lng_loja || ''} className="w-full px-4 py-2 bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none dark:text-white" placeholder="Ex: -37.0731" />
+                                </div>
                               </div>
                             </form>
                           </div>

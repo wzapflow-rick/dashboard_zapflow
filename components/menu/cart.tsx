@@ -32,7 +32,7 @@ import { cn } from '@/lib/utils';
 import { validateCoupon } from '@/app/actions/coupons';
 import { createPublicOrder } from '@/app/actions/public-orders';
 import { getClientPoints, getLoyaltyConfig } from '@/app/actions/loyalty';
-import { calculateDeliveryFee, geocodeAddress, getDeliveryConfig } from '@/app/actions/delivery';
+import { calculateDeliveryFee, geocodeAddress, getDeliveryConfig, getAvailableBairros, getDeliveryRateByBairro } from '@/app/actions/delivery';
 import { createPayment } from '@/app/actions/mercadopago';
 import { toast } from 'sonner';
 import dynamic from 'next/dynamic';
@@ -44,6 +44,8 @@ interface CartProps {
   whatsappNumber: string;
   empresaNome: string;
   empresaId?: number;
+  empresaCidade?: string | null;
+  empresaEstado?: string | null;
   clienteTelefone?: string;
   upsellProducts?: UpsellProduct[];
 }
@@ -62,7 +64,14 @@ const formatPrice = (price: number) => {
   return `R$ ${price.toFixed(2).replace('.', ',')}`;
 };
 
-export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTelefone, upsellProducts = [] }: CartProps) {
+const formatPhone = (value: string) => {
+  const numbers = value.replace(/\D/g, '').slice(0, 11);
+  if (numbers.length <= 2) return numbers;
+  if (numbers.length <= 7) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+  return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
+};
+
+export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCidade, empresaEstado, clienteTelefone, upsellProducts = [] }: CartProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState<CheckoutStep>('cart');
   const [cupomInput, setCupomInput] = useState('');
@@ -86,8 +95,9 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [deliveryCoords, setDeliveryCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [deliveryLoading, setDeliveryLoading] = useState(false);
-  const [deliveryInfo, setDeliveryInfo] = useState<{ distance?: number; duration?: number } | null>(null);
+  const [deliveryInfo, setDeliveryInfo] = useState<{ distance?: number; duration?: number; tempo_estimado?: string } | null>(null);
   const [deliveryConfig, setDeliveryConfig] = useState<{ auto_radius: boolean; taxa_entrega_fixa: number } | null>(null);
+  const [availableBairros, setAvailableBairros] = useState<Array<{ bairro: string; taxa: number; tempo_estimado: string }>>([]);
 
   // Client points
   const [clientPoints, setClientPoints] = useState<number | null>(null);
@@ -156,6 +166,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
     if (empresaId) {
       getDeliveryConfig(empresaId).then(setDeliveryConfig);
       getLoyaltyConfig(empresaId).then(setLoyaltyConfig);
+      getAvailableBairros(empresaId).then(setAvailableBairros);
     }
   }, [empresaId]);
 
@@ -182,7 +193,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
   }, [customerData.telefone, step, phoneChecked]);
 
   const calculateDelivery = async () => {
-    if (!isDelivery || !customerData.endereco || !customerData.bairro) {
+    if (!isDelivery || !customerData.bairro) {
       setDeliveryFee(0);
       setDeliveryCoords(null);
       setDeliveryInfo(null);
@@ -191,9 +202,43 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
 
     setDeliveryLoading(true);
     try {
+      // Se NAO usa raio automatico, calcula por bairro
+      if (!deliveryConfig?.auto_radius && empresaId) {
+        const bairroRate = await getDeliveryRateByBairro(empresaId, customerData.bairro);
+        if (bairroRate) {
+          setDeliveryFee(bairroRate.taxa);
+          setDeliveryInfo({ tempo_estimado: bairroRate.tempo_estimado });
+          toast.success(`Taxa de entrega: R$ ${bairroRate.taxa.toFixed(2).replace('.', ',')}`);
+        } else {
+          // Bairro nao encontrado - verifica se tem bairros cadastrados
+          if (availableBairros.length > 0) {
+            toast.error('Bairro não atendido. Selecione um bairro da lista.');
+            setDeliveryFee(0);
+          } else {
+            // Nenhum bairro cadastrado, usa taxa fixa se houver
+            setDeliveryFee(deliveryConfig?.taxa_entrega_fixa || 0);
+          }
+        }
+        setDeliveryLoading(false);
+        return;
+      }
+
+      // Usa raio automatico (Google Maps)
+      if (!customerData.endereco) {
+        setDeliveryFee(0);
+        setDeliveryLoading(false);
+        return;
+      }
+
+      // Usa a cidade/estado da empresa para precisao no geocoding
+      const cidadeParaGeocode = empresaCidade || customerData.cidade || '';
+      const estadoParaGeocode = empresaEstado || '';
+      const fullAddress = `${customerData.endereco}, ${customerData.bairro}, ${cidadeParaGeocode}`;
+      
       const coords = await geocodeAddress(
-        `${customerData.endereco}, ${customerData.bairro}`,
-        customerData.cidade || undefined
+        fullAddress,
+        cidadeParaGeocode || undefined,
+        estadoParaGeocode || undefined
       );
 
       if (!coords) {
@@ -211,7 +256,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
           distance: result.distance_km,
           duration: result.duration_min
         });
-        toast.success('Entrega calculada!');
+        toast.success(`Entrega: R$ ${result.taxa_entrega.toFixed(2).replace('.', ',')}`);
       } else {
         toast.warning(result.error || 'Não foi possível calcular a taxa.');
         setDeliveryFee(0);
@@ -395,7 +440,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
       {/* Cart Bottom Sheet - Estilo iFood */}
       <AnimatePresence>
         {isOpen && (
-          <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
+          <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-4 md:p-8">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -409,10 +454,15 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="relative w-full max-w-lg bg-[#0a0a0a] rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh]"
+              className="relative w-full sm:max-w-md md:max-w-lg bg-[#0a0a0a] rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[80vh] sm:my-auto"
             >
+              {/* Drag Handle - Mobile */}
+              <div className="sm:hidden flex justify-center pt-3 pb-1">
+                <div className="w-10 h-1 bg-[#2a2a2a] rounded-full" />
+              </div>
+
               {/* Header */}
-              <div className="p-4 sm:p-5 border-b border-[#1a1a1a] flex items-center justify-between shrink-0 bg-[#0a0a0a]">
+              <div className="px-5 py-4 sm:p-5 border-b border-[#1a1a1a] flex items-center justify-between shrink-0 bg-[#0a0a0a]">
                 <div className="flex items-center gap-3">
                   {step !== 'cart' && step !== 'success' && (
                     <button
@@ -424,7 +474,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                   )}
                   <h2 className="text-lg font-black text-white uppercase tracking-tight">
                     {step === 'cart' && 'Carrinho'}
-                    {step === 'customer' && 'Identificação'}
+                    {step === 'customer' && 'Identificacao'}
                     {step === 'payment' && 'Pagamento'}
                     {step === 'success' && 'Tudo Pronto!'}
                   </h2>
@@ -432,7 +482,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                 {step !== 'success' && (
                   <button
                     onClick={() => setIsOpen(false)}
-                    className="p-2 bg-[#1a1a1a] rounded-full text-gray-500 hover:text-white transition-colors"
+                    className="p-2.5 bg-[#1a1a1a] rounded-full text-gray-500 hover:text-white transition-colors"
                   >
                     <X className="size-5" />
                   </button>
@@ -440,17 +490,17 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
               </div>
 
               {/* Content */}
-              <div className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-6">
+              <div className="flex-1 overflow-y-auto custom-scrollbar px-5 py-4 sm:p-6">
                 {step === 'cart' && (
-                  <div className="space-y-6">
+                  <div className="space-y-5">
                     {items.length === 0 ? (
-                      <div className="py-12 text-center">
-                        <ShoppingCart className="size-16 text-[#1a1a1a] mx-auto mb-4" />
-                        <p className="text-gray-500 font-bold">Seu carrinho está vazio</p>
+                      <div className="py-10 text-center">
+                        <ShoppingCart className="size-14 text-[#1a1a1a] mx-auto mb-3" />
+                        <p className="text-gray-500 font-bold">Seu carrinho esta vazio</p>
                       </div>
                     ) : (
                       <>
-                        <div className="space-y-3">
+                        <div className="space-y-2.5">
                           {items.map((item) => (
                             <div key={item.id} className="bg-[#1a1a1a] rounded-2xl p-4 border border-[#2a2a2a]">
                               <div className="flex justify-between items-start gap-4">
@@ -474,7 +524,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                         </div>
 
                         {/* Totais */}
-                        <div className="bg-[#1a1a1a] rounded-2xl p-5 space-y-3 border border-[#2a2a2a]">
+                        <div className="bg-[#1a1a1a] rounded-2xl p-4 space-y-2.5 border border-[#2a2a2a]">
                           <div className="flex justify-between text-sm">
                             <span className="text-gray-500">Subtotal</span>
                             <span className="font-bold text-white">{formatPrice(subtotal)}</span>
@@ -485,9 +535,15 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                               <span className="font-bold">-{formatPrice(desconto)}</span>
                             </div>
                           )}
-                          <div className="pt-3 border-t border-[#2a2a2a] flex justify-between">
-                            <span className="font-black text-white uppercase tracking-wider">Total</span>
-                            <span className="text-xl font-black text-[#22c55e]">{formatPrice(totalFinal)}</span>
+                          {deliveryFee > 0 && isDelivery && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-500">Entrega</span>
+                              <span className="font-bold text-white">{formatPrice(deliveryFee)}</span>
+                            </div>
+                          )}
+                          <div className="pt-2.5 border-t border-[#2a2a2a] flex justify-between items-center">
+                            <span className="font-black text-white uppercase tracking-wider text-sm">Total</span>
+                            <span className="text-lg font-black text-[#22c55e]">{formatPrice(totalFinal)}</span>
                           </div>
                         </div>
                       </>
@@ -496,53 +552,141 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                 )}
 
                 {step === 'customer' && (
-                  <div className="space-y-5">
-                    <div className="bg-[#22c55e]/10 p-4 rounded-2xl border border-[#22c55e]/20">
-                      <p className="text-xs font-bold text-[#22c55e] uppercase mb-1">Passo 2 de 3</p>
+                  <div className="space-y-4">
+                    <div className="bg-[#22c55e]/10 p-3.5 rounded-xl border border-[#22c55e]/20">
+                      <p className="text-[10px] font-bold text-[#22c55e] uppercase mb-0.5">Passo 2 de 3</p>
                       <p className="text-sm font-black text-white">Onde vamos entregar?</p>
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       <div className="grid grid-cols-2 gap-2">
                         <button 
                           onClick={() => setIsDelivery(true)}
-                          className={cn("p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2", isDelivery ? "border-[#22c55e] bg-[#22c55e]/10" : "border-[#2a2a2a] bg-[#1a1a1a]")}
+                          className={cn("p-3.5 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5", isDelivery ? "border-[#22c55e] bg-[#22c55e]/10" : "border-[#2a2a2a] bg-[#1a1a1a]")}
                         >
-                          <span className="text-2xl">🛵</span>
+                          <span className="text-xl">🛵</span>
                           <span className="text-xs font-bold text-white">Delivery</span>
                         </button>
                         <button 
                           onClick={() => { setIsDelivery(false); setDeliveryFee(0); }}
-                          className={cn("p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2", !isDelivery ? "border-[#22c55e] bg-[#22c55e]/10" : "border-[#2a2a2a] bg-[#1a1a1a]")}
+                          className={cn("p-3.5 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5", !isDelivery ? "border-[#22c55e] bg-[#22c55e]/10" : "border-[#2a2a2a] bg-[#1a1a1a]")}
                         >
-                          <span className="text-2xl">🏪</span>
+                          <span className="text-xl">🏪</span>
                           <span className="text-xs font-bold text-white">Retirada</span>
                         </button>
                       </div>
 
-                      <div className="space-y-3">
+                      <div className="space-y-2.5">
                         <input
                           type="text"
-                          placeholder="Seu Nome"
+                          placeholder="Seu nome"
                           value={customerData.nome}
                           onChange={(e) => setCustomerData({ ...customerData, nome: e.target.value })}
-                          className="w-full p-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#22c55e]/30 focus:border-[#22c55e] text-white placeholder:text-gray-600"
+                          className="w-full p-3.5 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#22c55e]/30 focus:border-[#22c55e] text-white placeholder:text-gray-600"
                         />
                         <input
                           type="tel"
-                          placeholder="WhatsApp (DDD + Número)"
+                          placeholder="WhatsApp (com DDD)"
                           value={customerData.telefone}
-                          onChange={(e) => setCustomerData({ ...customerData, telefone: e.target.value })}
-                          className="w-full p-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#22c55e]/30 focus:border-[#22c55e] text-white placeholder:text-gray-600"
+                          onChange={(e) => setCustomerData({ ...customerData, telefone: formatPhone(e.target.value) })}
+                          className="w-full p-3.5 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#22c55e]/30 focus:border-[#22c55e] text-white placeholder:text-gray-600"
                         />
                         {isDelivery && (
-                          <input
-                            type="text"
-                            placeholder="Endereço Completo"
-                            value={customerData.endereco}
-                            onChange={(e) => setCustomerData({ ...customerData, endereco: e.target.value })}
-                            className="w-full p-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#22c55e]/30 focus:border-[#22c55e] text-white placeholder:text-gray-600"
-                          />
+                          <>
+                            {/* Seletor de Bairro */}
+                            {availableBairros.length > 0 ? (
+                              <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Bairro</label>
+                                <select
+                                  value={customerData.bairro}
+                                  onChange={(e) => {
+                                    const selectedBairro = e.target.value;
+                                    setCustomerData({ ...customerData, bairro: selectedBairro });
+                                    if (selectedBairro && empresaId) {
+                                      setDeliveryLoading(true);
+                                      getDeliveryRateByBairro(empresaId, selectedBairro).then((rate) => {
+                                        if (rate) {
+                                          setDeliveryFee(rate.taxa);
+                                          setDeliveryInfo({ tempo_estimado: rate.tempo_estimado });
+                                        }
+                                        setDeliveryLoading(false);
+                                      });
+                                    }
+                                  }}
+                                  className="w-full p-3.5 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#22c55e]/30 focus:border-[#22c55e] text-white"
+                                >
+                                  <option value="">Selecione seu bairro</option>
+                                  {availableBairros.map((b) => (
+                                    <option key={b.bairro} value={b.bairro}>
+                                      {b.bairro} - R$ {b.taxa.toFixed(2).replace('.', ',')} {b.tempo_estimado && `(${b.tempo_estimado} min)`}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            ) : (
+                              <input
+                                type="text"
+                                placeholder="Bairro"
+                                value={customerData.bairro}
+                                onChange={(e) => setCustomerData({ ...customerData, bairro: e.target.value })}
+                                className="w-full p-3.5 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#22c55e]/30 focus:border-[#22c55e] text-white placeholder:text-gray-600"
+                              />
+                            )}
+                            
+                            <input
+                              type="text"
+                              placeholder="Endereco (Rua, Numero, Complemento)"
+                              value={customerData.endereco}
+                              onChange={(e) => setCustomerData({ ...customerData, endereco: e.target.value })}
+                              className="w-full p-3.5 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#22c55e]/30 focus:border-[#22c55e] text-white placeholder:text-gray-600"
+                            />
+
+                            {/* Botao para calcular entrega (raio automatico) */}
+                            {deliveryConfig?.auto_radius && customerData.endereco && customerData.bairro && deliveryFee === 0 && !deliveryLoading && (
+                              <button
+                                type="button"
+                                onClick={() => calculateDelivery()}
+                                className="w-full p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl text-blue-400 text-sm font-bold flex items-center justify-center gap-2 hover:bg-blue-500/20 transition-colors"
+                              >
+                                <MapPin className="size-4" />
+                                Calcular Taxa de Entrega
+                              </button>
+                            )}
+
+                            {deliveryLoading && (
+                              <div className="flex items-center justify-center gap-2 py-3 text-gray-500 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl">
+                                <Loader2 className="size-4 animate-spin" />
+                                <span className="text-sm">Calculando entrega...</span>
+                              </div>
+                            )}
+
+                            {/* Mostrar taxa de entrega calculada */}
+                            {deliveryFee > 0 && !deliveryLoading && (
+                              <div className="bg-[#22c55e]/10 border border-[#22c55e]/30 rounded-xl p-3 flex items-center justify-between">
+                                <div className="flex items-center gap-2.5">
+                                  <div className="size-9 bg-[#22c55e]/20 rounded-lg flex items-center justify-center">
+                                    <MapPin className="size-4 text-[#22c55e]" />
+                                  </div>
+                                  <div>
+                                    <p className="text-[10px] text-gray-400">Taxa de Entrega</p>
+                                    <p className="text-sm font-bold text-white">{customerData.bairro}</p>
+                                    {deliveryInfo?.distance && (
+                                      <p className="text-[10px] text-gray-500">{deliveryInfo.distance} km</p>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-base font-black text-[#22c55e]">R$ {deliveryFee.toFixed(2).replace('.', ',')}</p>
+                                  {deliveryInfo?.tempo_estimado && (
+                                    <p className="text-[10px] text-gray-500">{deliveryInfo.tempo_estimado} min</p>
+                                  )}
+                                  {deliveryInfo?.duration && (
+                                    <p className="text-[10px] text-gray-500">~{deliveryInfo.duration} min</p>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
@@ -550,21 +694,21 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                 )}
 
                 {step === 'payment' && (
-                  <div className="space-y-5">
+                  <div className="space-y-4">
                     {mpQrCode ? (
-                      <div className="text-center space-y-6">
-                        <div className="bg-[#22c55e]/10 p-4 rounded-2xl border border-[#22c55e]/30">
+                      <div className="text-center space-y-4">
+                        <div className="bg-[#22c55e]/10 p-3 rounded-xl border border-[#22c55e]/30">
                           <p className="text-sm font-black text-[#22c55e]">PIX Gerado com Sucesso!</p>
                         </div>
                         {mpQrCodeBase64 && (
-                          <div className="bg-white p-4 rounded-3xl shadow-xl inline-block">
-                            <Image src={`data:image/png;base64,${mpQrCodeBase64}`} alt="PIX" width={200} height={200} />
+                          <div className="bg-white p-3 rounded-2xl shadow-xl inline-block">
+                            <Image src={`data:image/png;base64,${mpQrCodeBase64}`} alt="PIX" width={180} height={180} />
                           </div>
                         )}
-                        <button onClick={copyPixCode} className="w-full p-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl font-bold text-gray-300 flex items-center justify-center gap-2 hover:border-[#3a3a3a] transition-colors">
-                          <Copy className="size-5" /> Copiar Código PIX
+                        <button onClick={copyPixCode} className="w-full p-3.5 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl font-bold text-gray-300 text-sm flex items-center justify-center gap-2 hover:border-[#3a3a3a] transition-colors">
+                          <Copy className="size-4" /> Copiar Codigo PIX
                         </button>
-                        <button onClick={checkPixPayment} className="w-full p-5 bg-[#22c55e] text-white font-black rounded-2xl shadow-lg shadow-green-900/30 hover:bg-[#1ea34d] transition-colors">JÁ PAGUEI</button>
+                        <button onClick={checkPixPayment} className="w-full p-4 bg-[#22c55e] text-white font-black rounded-xl shadow-lg shadow-green-900/30 hover:bg-[#1ea34d] transition-colors">JA PAGUEI</button>
                       </div>
                     ) : (
                       <div className="space-y-3">
@@ -604,22 +748,22 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                 )}
               </div>
 
-              {/* Footer Button */}
-              {step !== 'success' && !mpQrCode && (
-                <div className="p-5 sm:p-6 border-t border-[#1a1a1a] bg-[#0a0a0a] pb-10 sm:pb-6">
-                  <button
-                    onClick={step === 'cart' ? () => setStep('customer') : step === 'customer' ? () => setStep('payment') : finishOrder}
-                    disabled={loading || items.length === 0}
-                    className="w-full p-5 bg-[#22c55e] hover:bg-[#1ea34d] disabled:bg-[#1a1a1a] disabled:text-gray-600 text-white font-black rounded-2xl shadow-xl shadow-green-900/30 transition-all flex items-center justify-center gap-3"
-                  >
-                    {loading ? <Loader2 className="animate-spin" /> : (
-                      <>
-                        {step === 'cart' && 'CONTINUAR'}
-                        {step === 'customer' && 'IR PARA PAGAMENTO'}
-                        {step === 'payment' && `CONFIRMAR ${formatPrice(totalFinal)}`}
-                      </>
-                    )}
-                  </button>
+  {/* Footer Button */}
+  {step !== 'success' && !mpQrCode && (
+    <div className="px-5 py-4 sm:p-5 border-t border-[#1a1a1a] bg-[#0a0a0a] pb-8 sm:pb-5">
+      <button
+        onClick={step === 'cart' ? () => setStep('customer') : step === 'customer' ? () => setStep('payment') : finishOrder}
+        disabled={loading || items.length === 0}
+        className="w-full p-4 bg-[#22c55e] hover:bg-[#1ea34d] disabled:bg-[#1a1a1a] disabled:text-gray-600 text-white font-black rounded-xl shadow-lg shadow-green-900/30 transition-all flex items-center justify-center gap-2"
+      >
+        {loading ? <Loader2 className="animate-spin size-5" /> : (
+          <>
+            {step === 'cart' && 'CONTINUAR'}
+            {step === 'customer' && 'IR PARA PAGAMENTO'}
+            {step === 'payment' && `CONFIRMAR ${formatPrice(totalFinal)}`}
+          </>
+        )}
+      </button>
                 </div>
               )}
             </motion.div>

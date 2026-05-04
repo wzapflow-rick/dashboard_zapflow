@@ -19,14 +19,14 @@ interface RecentOrdersTableProps {
 
 export function RecentOrdersTable({ orders, onOpenModal }: RecentOrdersTableProps) {
     return (
-        <section className="bg-gradient-to-br from-white to-slate-50 rounded-2xl border border-slate-200/50 shadow-sm overflow-hidden dark:from-slate-800 dark:to-slate-700 dark:border-slate-700/50">
-            <div className="p-6 border-b border-slate-200/50 flex justify-between items-center dark:border-slate-700/50 bg-gradient-to-r from-transparent to-primary/5">
+        <section className="bg-gradient-to-br from-white to-slate-50 rounded-2xl border border-slate-200/50 shadow-sm overflow-hidden dark:from-[#0f1f35] dark:to-[#0a1628] dark:border-[#1e3a5f]/50">
+            <div className="p-6 border-b border-slate-200/50 flex justify-between items-center dark:border-[#1e3a5f]/50 bg-gradient-to-r from-transparent to-primary/5">
                 <h4 className="font-bold text-lg text-slate-800 dark:text-white">Últimos Pedidos</h4>
                 <button className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors hover:underline">Ver todos</button>
             </div>
             <div className="overflow-x-auto no-scrollbar">
                 <table className="w-full text-left min-w-[700px]">
-                    <thead className="bg-gradient-to-r from-slate-50 to-slate-100 text-slate-600 text-xs uppercase tracking-wider font-semibold dark:from-slate-700/50 dark:to-slate-700 dark:text-slate-300">
+                    <thead className="bg-gradient-to-r from-slate-50 to-slate-100 text-slate-600 text-xs uppercase tracking-wider font-semibold dark:from-[#0f1f35] dark:to-[#162438] dark:text-slate-300">
                         <tr>
                             <th className="px-6 py-4">ID Pedido</th>
                             <th className="px-6 py-4">Cliente</th>
@@ -36,7 +36,7 @@ export function RecentOrdersTable({ orders, onOpenModal }: RecentOrdersTableProp
                             <th className="px-6 py-4 text-right">Ações</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
+                    <tbody className="divide-y divide-slate-100 dark:divide-[#1e3a5f]/50">
                         {orders.map((order, index) => (
                             <motion.tr 
                                 key={order.id} 

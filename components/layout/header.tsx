@@ -166,19 +166,19 @@ export function Header({ isOpen, setIsOpen, setIsMobileMenuOpen }: HeaderProps) 
     const isCozinheiro = user?.role === 'cozinheiro';
 
     return (
-        <header className="h-16 bg-gradient-to-r from-white to-slate-50 border-b border-slate-200/50 px-4 lg:px-8 flex items-center justify-between sticky top-0 z-40 dark:bg-gradient-to-r dark:from-slate-900 dark:to-slate-800 dark:border-slate-700/50 shadow-sm">
+        <header className="h-16 bg-gradient-to-r from-white to-slate-50 border-b border-slate-200/50 px-4 lg:px-8 flex items-center justify-between sticky top-0 z-40 dark:from-[#0f1f35] dark:to-[#0a1628] dark:border-[#1e3a5f]/50 shadow-sm">
             <div className="flex items-center gap-4">
                 {!isCozinheiro && (
                     <>
                         <button
                             onClick={() => setIsMobileMenuOpen(true)}
-                            className="lg:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-lg dark:text-slate-400 dark:hover:bg-slate-800"
+                            className="lg:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-lg dark:text-slate-400 dark:hover:bg-[#162438]"
                         >
                             <LayoutDashboard className="size-6" />
                         </button>
                         <button
                             onClick={() => setIsOpen(!isOpen)}
-                            className="hidden lg:flex p-2 text-slate-500 hover:bg-slate-100 rounded-lg dark:text-slate-400 dark:hover:bg-slate-800"
+                            className="hidden lg:flex p-2 text-slate-500 hover:bg-slate-100 rounded-lg dark:text-slate-400 dark:hover:bg-[#162438]"
                         >
                             <LayoutDashboard className="size-6" />
                         </button>
@@ -186,7 +186,7 @@ export function Header({ isOpen, setIsOpen, setIsMobileMenuOpen }: HeaderProps) 
                 )}
                 {isCozinheiro && (
                     <div className="flex items-center gap-3">
-                        <div className="size-10 bg-primary rounded-lg flex items-center justify-center text-white shrink-0">
+                        <div className="size-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center text-white shrink-0 shadow-lg shadow-orange-500/20">
                             <Truck className="size-6" />
                         </div>
                         <h1 className="font-bold text-slate-900 dark:text-white uppercase tracking-tight">Expedição</h1>
@@ -215,8 +215,8 @@ export function Header({ isOpen, setIsOpen, setIsMobileMenuOpen }: HeaderProps) 
                         )}
                     </button>
 
-                    <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white rounded-xl shadow-xl border border-slate-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 dark:bg-slate-800 dark:border-slate-700">
-                        <div className="p-4 border-b border-slate-100 flex justify-between items-center dark:border-slate-700">
+                    <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white rounded-xl shadow-xl border border-slate-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 dark:bg-[#0f1f35] dark:border-[#1e3a5f]">
+                        <div className="p-4 border-b border-slate-100 flex justify-between items-center dark:border-[#1e3a5f]">
                             <h3 className="font-bold text-slate-800 dark:text-white">Notificações</h3>
                             {totalBadge > 0 ? (
                                 <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">{totalBadge} Novas</span>
@@ -226,7 +226,7 @@ export function Header({ isOpen, setIsOpen, setIsMobileMenuOpen }: HeaderProps) 
                         </div>
                         <div className="max-h-[320px] overflow-y-auto">
                             {newPendingBadge > 0 && (
-                                <div className="p-4 hover:bg-amber-50 border-b border-slate-50 cursor-pointer transition-colors dark:hover:bg-amber-900/20 dark:border-slate-700">
+                                <div className="p-4 hover:bg-amber-50 border-b border-slate-50 cursor-pointer transition-colors dark:hover:bg-amber-900/20 dark:border-[#1e3a5f]">
                                     <div className="flex gap-3">
                                         <div className="size-8 rounded-lg flex items-center justify-center shrink-0 bg-amber-100 text-amber-600 dark:bg-amber-900/50 dark:text-amber-400">
                                             <ShoppingBag className="size-4" />
@@ -244,7 +244,7 @@ export function Header({ isOpen, setIsOpen, setIsMobileMenuOpen }: HeaderProps) 
                                 notifications.map((notif, i) => {
                                     const Icon = getIcon(notif.iconType);
                                     return (
-                                        <div key={i} className="p-4 hover:bg-slate-50 border-b border-slate-50 last:border-0 cursor-pointer transition-colors dark:hover:bg-slate-700 dark:border-slate-700">
+                                        <div key={i} className="p-4 hover:bg-slate-50 border-b border-slate-50 last:border-0 cursor-pointer transition-colors dark:hover:bg-[#162438] dark:border-[#1e3a5f]">
                                             <div className="flex gap-3">
                                                 <div className={cn("size-8 rounded-lg flex items-center justify-center shrink-0", notif.color)}>
                                                     <Icon className="size-4" />
@@ -264,7 +264,7 @@ export function Header({ isOpen, setIsOpen, setIsMobileMenuOpen }: HeaderProps) 
                                 </div>
                             ) : null}
                         </div>
-                        <div className="p-3 text-center border-t border-slate-100 dark:border-slate-700">
+                        <div className="p-3 text-center border-t border-slate-100 dark:border-[#1e3a5f]">
                             <a href="/dashboard/expedition" className="text-xs font-bold text-primary hover:underline">Ver todos os pedidos</a>
                         </div>
                     </div>
@@ -278,8 +278,8 @@ export function Header({ isOpen, setIsOpen, setIsMobileMenuOpen }: HeaderProps) 
                         <ChevronDown className="size-4" />
                     </button>
 
-                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 dark:bg-slate-800 dark:border-slate-700">
-                    <div className="p-4 border-b border-slate-100 dark:border-slate-700">
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 dark:bg-[#0f1f35] dark:border-[#1e3a5f]">
+                    <div className="p-4 border-b border-slate-100 dark:border-[#1e3a5f]">
                         <p className="font-bold text-slate-800 truncate dark:text-white">{user?.nome || 'Minha Loja'}</p>
                         <p className="text-xs text-slate-500 truncate dark:text-slate-400">{user?.email}</p>
                         {user?.role && !['admin', 'gerente'].includes(user.role) && (
@@ -296,7 +296,7 @@ export function Header({ isOpen, setIsOpen, setIsMobileMenuOpen }: HeaderProps) 
                         <div className="p-2">
                             <button
                                 onClick={() => setTheme(isDark ? 'light' : 'dark')}
-                                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50 rounded-lg transition-colors dark:text-slate-300 dark:hover:bg-slate-700"
+                                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50 rounded-lg transition-colors dark:text-slate-300 dark:hover:bg-[#162438]"
                             >
                                 {mounted ? (isDark ? <Sun className="size-4" /> : <Moon className="size-4" />) : <div className="size-4" />}
                                 <span>{mounted ? (isDark ? 'Modo Claro' : 'Modo Escuro') : 'Carregando...'}</span>

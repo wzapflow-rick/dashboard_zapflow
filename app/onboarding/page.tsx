@@ -74,19 +74,24 @@ function OnboardingContent() {
     }))
   );
 
-  // Buscar dados da empresa ao carregar
+  // Buscar dados da empresa ao carregar (e verificar sessao)
   useEffect(() => {
     async function loadCompany() {
       try {
         const company = await getCompanyDetails();
-        if (company?.id) {
-           setEmpresaId(Number(company.id));
-          if (company.nome_fantasia) {
-           setCompanyName(String(company.nome_fantasia));     
-          }
+        if (!company?.id) {
+          // Usuario nao logado, redireciona para login
+          window.location.href = '/login?from=/onboarding';
+          return;
+        }
+        setEmpresaId(Number(company.id));
+        if (company.nome_fantasia) {
+          setCompanyName(String(company.nome_fantasia));     
         }
       } catch (e) {
         console.error('Erro ao buscar empresa:', e);
+        // Em caso de erro, redireciona para login
+        window.location.href = '/login?from=/onboarding';
       }
     }
     loadCompany();

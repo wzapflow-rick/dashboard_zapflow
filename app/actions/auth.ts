@@ -56,7 +56,8 @@ export async function login(data: any) {
                 onboarded: !!empresa.nome_fantasia,
                 controle_estoque: !!empresa.controle_estoque,
                 role: 'admin',
-                source: 'empresa'
+                source: 'empresa',
+                bloqueado: !!empresa.bloqueado,
             });
 
             const isProduction = process.env.NODE_ENV === 'production';
@@ -68,7 +69,7 @@ export async function login(data: any) {
                 path: '/',
             });
             loginAttempts.delete(attemptKey);
-            return { success: true };
+            return { success: true, role: 'admin' };
         }
 
         // 2. Tentar login como usuário interno (atendente, cozinheiro, etc.)
@@ -108,7 +109,7 @@ export async function login(data: any) {
                 path: '/',
             });
             loginAttempts.delete(attemptKey);
-            return { success: true };
+            return { success: true, role: usuario.role || 'atendente' };
         }
 
         const currentAttempt = loginAttempts.get(attemptKey) || { count: 0, lastAttempt: now };
@@ -149,7 +150,8 @@ export async function register(formData: FormData) {
         nome_fantasia: nome,
         status: 'ativo',
         nincho: 'Outros',
-        instancia_evolution: ''
+        instancia_evolution: '',
+        planos: 'iniciante'
     }) as any;
 
     if (!empresa) return { error: 'Erro ao criar conta' };

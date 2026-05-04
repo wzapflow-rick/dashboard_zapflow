@@ -104,6 +104,11 @@ export default function ProductTable({
                                         </div>
                                         <div className="flex flex-col">
                                             <span className="text-sm font-semibold text-slate-900 dark:text-white border-b-0">{product.nome}</span>
+                                            {product.tag && (
+                                                <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded mt-0.5 w-fit ${product.tag === 'mais_pedido' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' : 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400'}`}>
+                                                    {product.tag === 'mais_pedido' ? 'Mais Pedido' : 'Recomendado'}
+                                                </span>
+                                            )}
                                             <span className="text-xs text-slate-500 dark:text-slate-400">Cod: {product.id}</span>
                                             {user?.controle_estoque && maxMakers !== -1 && (
                                                 <span className={cn("text-[10px] sm:text-xs font-bold mt-1 max-w-fit px-1.5 py-0.5 rounded-md flex items-center gap-1", isOutOfStock ? "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400" : "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400")}>

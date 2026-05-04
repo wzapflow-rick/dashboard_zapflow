@@ -2,22 +2,28 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getMe } from './lib/session-server'
 
-const protectedRoutes = ['/dashboard', '/onboarding']
+const protectedRoutes = ['/dashboard']
 const authRoutes = ['/login', '/register']
 
 const adminOnlyRoutes = ['/dashboard/users', '/dashboard/settings', '/dashboard/subscription', '/dashboard/testes']
 
 const roleRoutes = {
     admin: ['/dashboard'],
-    gerente: ['/dashboard', '/dashboard/menu', '/dashboard/expedition', '/dashboard/customers', '/dashboard/ratings', '/dashboard/acertos', '/dashboard/reports'],
-    atendente: ['/dashboard', '/dashboard/expedition', '/dashboard/customers'],
+    gerente: ['/dashboard', '/dashboard/menu', '/dashboard/expedition', '/dashboard/mesas', '/dashboard/customers', '/dashboard/ratings', '/dashboard/acertos', '/dashboard/reports'],
+    atendente: ['/dashboard/expedition', '/dashboard/mesas', '/dashboard/customers'],
     cozinheiro: ['/dashboard/expedition']
 }
 
 export async function middleware(req: NextRequest) {
     const path = req.nextUrl.pathname
+    
+    // Rotas que nao precisam de verificacao de sessao
+    if (path.startsWith('/ativar')) {
+        return NextResponse.next()
+    }
+    
     const isProtectedRoute = protectedRoutes.some(route => path.startsWith(route))
-    const isAuthRoute = authRoutes.some(route => path.startsWith(route))
+    const isAuthRoute = authRoutes.some(route => path.startsWith(route)) || path === '/'
 
     const session = await getMe()
 
@@ -28,11 +34,16 @@ export async function middleware(req: NextRequest) {
         return NextResponse.redirect(loginUrl)
     }
 
-    // 2. Se logado e tentar acessar login/register -> dashboard ou onboarding
+    // 2. Se logado e tentar acessar login/register/raiz -> dashboard ou onboarding
     if (isAuthRoute && session) {
-        return session.onboarded
-            ? NextResponse.redirect(new URL(session.role === 'cozinheiro' ? '/dashboard/expedition' : '/dashboard', req.nextUrl))
-            : NextResponse.redirect(new URL('/onboarding', req.nextUrl))
+        // Se onboarded for explicitamente false, vai pro onboarding
+        if (session.onboarded === false) {
+            return NextResponse.redirect(new URL('/onboarding', req.nextUrl))
+        }
+        // Caso contrario (true ou undefined), vai pro dashboard
+        const allowedRoutes = roleRoutes[session.role as keyof typeof roleRoutes] || ['/dashboard/expedition'];
+        const redirectTo = allowedRoutes[0] || '/dashboard/expedition';
+        return NextResponse.redirect(new URL(redirectTo, req.nextUrl))
     }
 
     // 3. Se logado mas NÃO onboarded -> obriga onboarding (exceto se já estiver lá)
@@ -46,7 +57,14 @@ export async function middleware(req: NextRequest) {
         }
     }
 
-    // 4. Controle de permissões por Role
+    // 4. Bloqueio por inadimplencia
+    // Se empresa esta bloqueada, redireciona para pagina de assinatura
+    // Exceto onboarding (usuarios novos que ainda nao configuraram)
+    if (session && session.bloqueado && !path.startsWith('/dashboard/subscription') && !path.startsWith('/api') && !path.startsWith('/onboarding')) {
+        return NextResponse.redirect(new URL('/dashboard/subscription?blocked=true', req.nextUrl))
+    }
+
+    // 5. Controle de permissões por Role
     if (session && session.role !== 'admin') {
         const allowed = roleRoutes[session.role as keyof typeof roleRoutes] || []
         
@@ -61,8 +79,8 @@ export async function middleware(req: NextRequest) {
         const isAllowedRoute = allowed.some(route => path.startsWith(route));
         const isDashboardHome = path === '/dashboard' || path === '/dashboard/';
         
-        // Se for cozinheiro e tentar acessar a home do dashboard, manda direto pra expedição
-        if (session.role === 'cozinheiro' && isDashboardHome) {
+        // Se for cozinheiro ou atendente e tentar acessar a home do dashboard, manda direto pra expedição
+        if ((session.role === 'cozinheiro' || session.role === 'atendente') && isDashboardHome) {
             return NextResponse.redirect(new URL('/dashboard/expedition', req.nextUrl))
         }
 

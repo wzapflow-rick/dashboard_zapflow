@@ -25,8 +25,8 @@ export function StatCard({ stat, index }: StatCardProps) {
             className={cn(
                 "p-6 rounded-2xl border backdrop-blur-sm transition-all cursor-pointer group",
                 stat.color === 'primary' 
-                    ? "bg-gradient-to-br from-primary to-primary/90 text-white border-primary/50 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30" 
-                    : "bg-gradient-to-br from-white to-slate-50 border-slate-200/50 dark:from-slate-800 dark:to-slate-700 dark:border-slate-700/50 shadow-sm hover:shadow-lg dark:shadow-lg/10"
+                    ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white border-orange-500/50 shadow-lg shadow-orange-500/20 hover:shadow-xl hover:shadow-orange-500/30" 
+                    : "bg-gradient-to-br from-white to-slate-50 border-slate-200/50 dark:from-[#0f1f35] dark:to-[#0a1628] dark:border-[#1e3a5f]/50 shadow-sm hover:shadow-lg dark:shadow-lg/10"
             )}
         >
             <div className="flex justify-between items-start mb-4">
@@ -34,7 +34,7 @@ export function StatCard({ stat, index }: StatCardProps) {
                     "p-3 rounded-xl transition-all group-hover:scale-110",
                     stat.color === 'primary' 
                         ? "bg-white/20 backdrop-blur-sm" 
-                        : "bg-slate-100 dark:bg-slate-700/50 group-hover:bg-primary/10"
+                        : "bg-slate-100 dark:bg-[#162438] group-hover:bg-primary/10"
                 )}>
                     <stat.icon className={cn(
                         "size-5 transition-colors",
