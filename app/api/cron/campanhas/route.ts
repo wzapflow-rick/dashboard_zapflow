@@ -102,7 +102,7 @@ async function getClientesReengajamento(empresaId: string, diasSemPedido: number
             limit: 100,
         });
         
-        return (data.list || []).filter((c: any) => c.telefone) as Cliente[];
+        return ((data.list || []) as unknown as Cliente[]).filter((c) => c.telefone);
     } catch (error) {
         console.error('Erro ao buscar clientes reengajamento:', error);
         return [];
