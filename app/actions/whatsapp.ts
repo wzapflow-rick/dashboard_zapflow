@@ -110,6 +110,50 @@ export async function sendOrderStatusMessage(
 }
 
 /**
+ * Enviar mensagem via Evolution API usando instancia especifica da empresa
+ * Cada empresa tem sua propria instancia: zapflow_{empresaId}
+ */
+export async function sendWhatsAppMessageWithInstance(
+    phone: string, 
+    message: string, 
+    empresaId: number | string
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        const formattedPhone = formatPhoneForEvolution(phone);
+        const instanceName = `zapflow_${empresaId}`;
+
+        const url = `${EVO_API_URL}/message/sendText/${instanceName}`;
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'apikey': EVO_API_KEY,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                number: formattedPhone,
+                text: message
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            console.error(`[WhatsApp] Erro ao enviar para ${instanceName}:`, result);
+            return { 
+                success: false, 
+                error: result.message || result.error || `HTTP ${response.status}` 
+            };
+        }
+
+        return { success: true };
+    } catch (error: any) {
+        console.error('[WhatsApp] Erro ao enviar:', error);
+        return { success: false, error: error.message || 'Erro desconhecido' };
+    }
+}
+
+/**
  * Testar envio de WhatsApp (para debug)
  */
 export async function testWhatsApp(phone: string): Promise<{ success: boolean; formattedPhone: string; error?: string }> {

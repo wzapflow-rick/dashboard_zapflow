@@ -6,7 +6,7 @@ import {
     CLIENTES_TABLE_ID,
     EMPRESAS_TABLE_ID 
 } from '@/lib/constants';
-import { sendWhatsAppMessage } from '@/app/actions/whatsapp';
+import { sendWhatsAppMessageWithInstance } from '@/app/actions/whatsapp';
 
 // Protege o endpoint para ser chamado apenas pelo Vercel Cron
 const CRON_SECRET = process.env.CRON_SECRET;
@@ -274,10 +274,14 @@ async function processarCampanha(campanha: Campanha): Promise<{ enviados: number
             // Substituir variaveis
             const mensagemFinal = substituirVariaveis(mensagem, cliente, empresa, diasAusente);
             
-            // Enviar mensagem
-            const sucesso = await sendWhatsAppMessage(cliente.telefone, mensagemFinal);
+            // Enviar mensagem usando a instancia da empresa
+            const result = await sendWhatsAppMessageWithInstance(
+                cliente.telefone, 
+                mensagemFinal, 
+                campanha.empresa_id
+            );
             
-            if (sucesso) {
+            if (result.success) {
                 enviados++;
                 await registrarDisparo(
                     campanha.empresa_id,
@@ -299,9 +303,9 @@ async function processarCampanha(campanha: Campanha): Promise<{ enviados: number
                     varianteNum,
                     mensagemFinal,
                     'erro',
-                    'Falha no envio via Evolution API'
+                    result.error || 'Falha no envio via Evolution API'
                 );
-                console.error(`[CRON] Erro ao enviar para ${cliente.telefone}`);
+                console.error(`[CRON] Erro ao enviar para ${cliente.telefone}: ${result.error}`);
             }
             
             // Delay entre envios (evitar rate limit)
