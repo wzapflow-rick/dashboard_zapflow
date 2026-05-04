@@ -64,6 +64,13 @@ const formatPrice = (price: number) => {
   return `R$ ${price.toFixed(2).replace('.', ',')}`;
 };
 
+const formatPhone = (value: string) => {
+  const numbers = value.replace(/\D/g, '').slice(0, 11);
+  if (numbers.length <= 2) return numbers;
+  if (numbers.length <= 7) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+  return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
+};
+
 export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCidade, empresaEstado, clienteTelefone, upsellProducts = [] }: CartProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState<CheckoutStep>('cart');
