@@ -298,10 +298,10 @@ export async function dispararCampanhasManual(): Promise<{
     error?: string 
 }> {
     try {
-        // Importar dinamicamente para evitar problemas de circular dependency
-        const { executarDisparoCampanhas } = await import('@/app/api/cron/campanhas/route');
+        const { executarDisparoCampanhas } = await import('@/lib/campanhas-service');
         
-        const result = await executarDisparoCampanhas();
+        // Disparo manual ignora horario (ignorarHorario = true)
+        const result = await executarDisparoCampanhas(true);
         
         revalidatePath('/dashboard/campanhas');
         return { 
