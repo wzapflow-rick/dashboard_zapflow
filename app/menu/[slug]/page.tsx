@@ -131,6 +131,7 @@ export default async function PublicMenuPage({
     const empresaLogo = typeof empresa.logo === 'string' ? empresa.logo : null;
     const empresaNincho = typeof empresa.nincho === 'string' ? empresa.nincho : null;
     const empresaCidade = typeof empresa.cidade === 'string' ? empresa.cidade : null;
+    const empresaEstado = typeof empresa.estado === 'string' ? empresa.estado : null;
     
     let empresaId: number | undefined = undefined;
     if (typeof empresa.id === 'number') empresaId = empresa.id;
@@ -174,6 +175,8 @@ export default async function PublicMenuPage({
             whatsappNumber={whatsappNumber}
             empresaNome={empresaNome}
             empresaId={empresaId}
+            empresaCidade={empresaCidade}
+            empresaEstado={empresaEstado}
             pontosPorReal={pontosPorReal}
             upsellProducts={safeUpsell}
         >

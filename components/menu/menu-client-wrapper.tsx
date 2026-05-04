@@ -16,6 +16,8 @@ interface MenuClientWrapperProps {
   whatsappNumber: string;
   empresaNome: string;
   empresaId?: number;
+  empresaCidade?: string | null;
+  empresaEstado?: string | null;
   pontosPorReal?: number;
   upsellProducts?: UpsellProduct[];
 }
@@ -25,6 +27,8 @@ export default function MenuClientWrapper({
   whatsappNumber, 
   empresaNome,
   empresaId,
+  empresaCidade,
+  empresaEstado,
   pontosPorReal = 1,
   upsellProducts = []
 }: MenuClientWrapperProps) {
@@ -35,6 +39,8 @@ export default function MenuClientWrapper({
         whatsappNumber={whatsappNumber} 
         empresaNome={empresaNome}
         empresaId={empresaId}
+        empresaCidade={empresaCidade}
+        empresaEstado={empresaEstado}
         upsellProducts={upsellProducts}
       />
     </CartProvider>
