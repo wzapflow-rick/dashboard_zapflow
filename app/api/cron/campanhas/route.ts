@@ -347,7 +347,7 @@ export async function GET(request: NextRequest) {
             limit: 100,
         });
         
-        const campanhas = campanhasData.list || [];
+        const campanhas = (campanhasData.list || []) as unknown as Campanha[];
         console.log(`[CRON] ${campanhas.length} campanhas ativas encontradas`);
         
         let totalEnviados = 0;
