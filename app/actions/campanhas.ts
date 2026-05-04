@@ -287,3 +287,42 @@ export async function registrarDisparo(data: {
         return { success: false, error: error.message || 'Erro ao registrar disparo' };
     }
 }
+
+/**
+ * Disparo manual de campanhas (chama o endpoint CRON internamente)
+ */
+export async function dispararCampanhasManual(): Promise<{ 
+    success: boolean; 
+    enviados?: number; 
+    erros?: number;
+    error?: string 
+}> {
+    try {
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL 
+            ? `https://${process.env.VERCEL_URL}` 
+            : 'http://localhost:3000';
+        
+        const response = await fetch(`${baseUrl}/api/cron/campanhas`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${process.env.CRON_SECRET || ''}`
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (!response.ok) {
+            return { success: false, error: result.error || 'Erro ao disparar campanhas' };
+        }
+        
+        revalidatePath('/dashboard/campanhas');
+        return { 
+            success: true, 
+            enviados: result.total_enviados || 0,
+            erros: result.total_erros || 0
+        };
+    } catch (error: any) {
+        console.error('dispararCampanhasManual error:', error);
+        return { success: false, error: error.message || 'Erro ao disparar campanhas' };
+    }
+}

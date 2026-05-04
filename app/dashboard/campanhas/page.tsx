@@ -38,6 +38,7 @@ import {
     toggleCampanha,
     getDisparos,
     getDisparosStats,
+    dispararCampanhasManual,
     type CampanhaConfig,
     type CampanhaFormData,
     type CampanhaTipo,
@@ -64,13 +65,13 @@ const VARS_POR_TIPO: Record<CampanhaTipo, string[]> = {
 };
 
 const DIAS_SEMANA = [
-    { value: 'seg', label: 'Seg' },
-    { value: 'ter', label: 'Ter' },
-    { value: 'qua', label: 'Qua' },
-    { value: 'qui', label: 'Qui' },
-    { value: 'sex', label: 'Sex' },
-    { value: 'sab', label: 'Sáb' },
-    { value: 'dom', label: 'Dom' },
+    { value: 'SEG', label: 'Seg' },
+    { value: 'TER', label: 'Ter' },
+    { value: 'QUA', label: 'Qua' },
+    { value: 'QUI', label: 'Qui' },
+    { value: 'SEX', label: 'Sex' },
+    { value: 'SAB', label: 'Sab' },
+    { value: 'DOM', label: 'Dom' },
 ];
 
 const STATUS_COLORS: Record<string, string> = {
@@ -85,7 +86,7 @@ const emptyFormData: CampanhaFormData = {
     nome: '',
     gatilho_dias: 7,
     horario_envio: '10:00',
-    dias_semana: ['seg', 'ter', 'qua', 'qui', 'sex'],
+    dias_semana: ['SEG', 'TER', 'QUA', 'QUI', 'SEX'],
     desconto_percentual: 0,
     variante_1: '',
     variante_2: '',
@@ -142,7 +143,7 @@ export default function CampanhasPage() {
                 nome: campanha.nome,
                 gatilho_dias: campanha.gatilho_dias || 7,
                 horario_envio: campanha.horario_envio || '10:00',
-                dias_semana: campanha.dias_semana || ['seg', 'ter', 'qua', 'qui', 'sex'],
+                dias_semana: campanha.dias_semana || ['SEG', 'TER', 'QUA', 'QUI', 'SEX'],
                 desconto_percentual: campanha.desconto_percentual || 0,
                 variante_1: campanha.variante_1 || '',
                 variante_2: campanha.variante_2 || '',
@@ -273,22 +274,55 @@ export default function CampanhasPage() {
 
     const truncate = (str: string, len: number) => str.length > len ? str.substring(0, len) + '...' : str;
 
+    const [disparando, setDisparando] = useState(false);
+
+    async function handleDispararManual() {
+        setDisparando(true);
+        try {
+            const result = await dispararCampanhasManual();
+            if (result.success) {
+                toast.success(`Campanhas disparadas! Enviados: ${result.enviados}, Erros: ${result.erros}`);
+                loadData();
+            } else {
+                toast.error(result.error || 'Erro ao disparar campanhas');
+            }
+        } catch (error) {
+            toast.error('Erro ao disparar campanhas');
+        } finally {
+            setDisparando(false);
+        }
+    }
+
     return (
         <SidebarProvider>
             <DashboardLayout>
                 <div className="space-y-8">
                     <header className="flex items-center justify-between">
                         <div>
-                            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Campanhas automáticas</h1>
-                            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Configure mensagens automáticas via WhatsApp para seus clientes.</p>
+                            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Campanhas automaticas</h1>
+                            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Configure mensagens automaticas via WhatsApp para seus clientes.</p>
                         </div>
-                        <button
-                            onClick={() => openModal()}
-                            className="px-4 py-2.5 bg-violet-600 text-white font-bold rounded-xl hover:bg-violet-700 transition-all flex items-center gap-2 text-sm"
-                        >
-                            <Plus className="size-4" />
-                            Nova campanha
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={handleDispararManual}
+                                disabled={disparando || campanhas.filter(c => c.ativo).length === 0}
+                                className="px-4 py-2.5 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 disabled:bg-slate-400 disabled:cursor-not-allowed transition-all flex items-center gap-2 text-sm"
+                            >
+                                {disparando ? (
+                                    <Loader2 className="size-4 animate-spin" />
+                                ) : (
+                                    <Send className="size-4" />
+                                )}
+                                {disparando ? 'Disparando...' : 'Disparar Agora'}
+                            </button>
+                            <button
+                                onClick={() => openModal()}
+                                className="px-4 py-2.5 bg-violet-600 text-white font-bold rounded-xl hover:bg-violet-700 transition-all flex items-center gap-2 text-sm"
+                            >
+                                <Plus className="size-4" />
+                                Nova campanha
+                            </button>
+                        </div>
                     </header>
 
                     {/* Metric Cards */}
