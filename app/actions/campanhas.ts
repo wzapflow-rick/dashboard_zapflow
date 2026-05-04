@@ -289,7 +289,7 @@ export async function registrarDisparo(data: {
 }
 
 /**
- * Disparo manual de campanhas (chama o endpoint CRON internamente)
+ * Disparo manual de campanhas (executa a logica diretamente)
  */
 export async function dispararCampanhasManual(): Promise<{ 
     success: boolean; 
@@ -298,22 +298,10 @@ export async function dispararCampanhasManual(): Promise<{
     error?: string 
 }> {
     try {
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL 
-            ? `https://${process.env.VERCEL_URL}` 
-            : 'http://localhost:3000';
+        const { executarDisparoCampanhas } = await import('@/lib/campanhas-service');
         
-        const response = await fetch(`${baseUrl}/api/cron/campanhas`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${process.env.CRON_SECRET || ''}`
-            }
-        });
-        
-        const result = await response.json();
-        
-        if (!response.ok) {
-            return { success: false, error: result.error || 'Erro ao disparar campanhas' };
-        }
+        // Disparo manual ignora horario (ignorarHorario = true)
+        const result = await executarDisparoCampanhas(true);
         
         revalidatePath('/dashboard/campanhas');
         return { 
