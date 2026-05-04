@@ -32,7 +32,7 @@ import { cn } from '@/lib/utils';
 import { validateCoupon } from '@/app/actions/coupons';
 import { createPublicOrder } from '@/app/actions/public-orders';
 import { getClientPoints, getLoyaltyConfig } from '@/app/actions/loyalty';
-import { calculateDeliveryFee, geocodeAddress, getDeliveryConfig } from '@/app/actions/delivery';
+import { calculateDeliveryFee, geocodeAddress, getDeliveryConfig, getAvailableBairros, getDeliveryRateByBairro } from '@/app/actions/delivery';
 import { createPayment } from '@/app/actions/mercadopago';
 import { toast } from 'sonner';
 import dynamic from 'next/dynamic';
@@ -86,8 +86,9 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [deliveryCoords, setDeliveryCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [deliveryLoading, setDeliveryLoading] = useState(false);
-  const [deliveryInfo, setDeliveryInfo] = useState<{ distance?: number; duration?: number } | null>(null);
+  const [deliveryInfo, setDeliveryInfo] = useState<{ distance?: number; duration?: number; tempo_estimado?: string } | null>(null);
   const [deliveryConfig, setDeliveryConfig] = useState<{ auto_radius: boolean; taxa_entrega_fixa: number } | null>(null);
+  const [availableBairros, setAvailableBairros] = useState<Array<{ bairro: string; taxa: number; tempo_estimado: string }>>([]);
 
   // Client points
   const [clientPoints, setClientPoints] = useState<number | null>(null);
@@ -156,6 +157,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
     if (empresaId) {
       getDeliveryConfig(empresaId).then(setDeliveryConfig);
       getLoyaltyConfig(empresaId).then(setLoyaltyConfig);
+      getAvailableBairros(empresaId).then(setAvailableBairros);
     }
   }, [empresaId]);
 
@@ -182,7 +184,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
   }, [customerData.telefone, step, phoneChecked]);
 
   const calculateDelivery = async () => {
-    if (!isDelivery || !customerData.endereco || !customerData.bairro) {
+    if (!isDelivery || !customerData.bairro) {
       setDeliveryFee(0);
       setDeliveryCoords(null);
       setDeliveryInfo(null);
@@ -191,6 +193,34 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
 
     setDeliveryLoading(true);
     try {
+      // Se NAO usa raio automatico, calcula por bairro
+      if (!deliveryConfig?.auto_radius && empresaId) {
+        const bairroRate = await getDeliveryRateByBairro(empresaId, customerData.bairro);
+        if (bairroRate) {
+          setDeliveryFee(bairroRate.taxa);
+          setDeliveryInfo({ tempo_estimado: bairroRate.tempo_estimado });
+          toast.success(`Taxa de entrega: R$ ${bairroRate.taxa.toFixed(2).replace('.', ',')}`);
+        } else {
+          // Bairro nao encontrado - verifica se tem bairros cadastrados
+          if (availableBairros.length > 0) {
+            toast.error('Bairro não atendido. Selecione um bairro da lista.');
+            setDeliveryFee(0);
+          } else {
+            // Nenhum bairro cadastrado, usa taxa fixa se houver
+            setDeliveryFee(deliveryConfig?.taxa_entrega_fixa || 0);
+          }
+        }
+        setDeliveryLoading(false);
+        return;
+      }
+
+      // Usa raio automatico (Google Maps)
+      if (!customerData.endereco) {
+        setDeliveryFee(0);
+        setDeliveryLoading(false);
+        return;
+      }
+
       const coords = await geocodeAddress(
         `${customerData.endereco}, ${customerData.bairro}`,
         customerData.cidade || undefined
@@ -485,6 +515,12 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                               <span className="font-bold">-{formatPrice(desconto)}</span>
                             </div>
                           )}
+                          {deliveryFee > 0 && isDelivery && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-500">Entrega</span>
+                              <span className="font-bold text-white">{formatPrice(deliveryFee)}</span>
+                            </div>
+                          )}
                           <div className="pt-3 border-t border-[#2a2a2a] flex justify-between">
                             <span className="font-black text-white uppercase tracking-wider">Total</span>
                             <span className="text-xl font-black text-[#22c55e]">{formatPrice(totalFinal)}</span>
@@ -536,13 +572,84 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, clienteTe
                           className="w-full p-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#22c55e]/30 focus:border-[#22c55e] text-white placeholder:text-gray-600"
                         />
                         {isDelivery && (
-                          <input
-                            type="text"
-                            placeholder="Endereço Completo"
-                            value={customerData.endereco}
-                            onChange={(e) => setCustomerData({ ...customerData, endereco: e.target.value })}
-                            className="w-full p-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#22c55e]/30 focus:border-[#22c55e] text-white placeholder:text-gray-600"
-                          />
+                          <>
+                            {/* Seletor de Bairro */}
+                            {availableBairros.length > 0 ? (
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Bairro</label>
+                                <select
+                                  value={customerData.bairro}
+                                  onChange={(e) => {
+                                    const selectedBairro = e.target.value;
+                                    setCustomerData({ ...customerData, bairro: selectedBairro });
+                                    // Calcular taxa automaticamente ao selecionar
+                                    if (selectedBairro && empresaId) {
+                                      setDeliveryLoading(true);
+                                      getDeliveryRateByBairro(empresaId, selectedBairro).then((rate) => {
+                                        if (rate) {
+                                          setDeliveryFee(rate.taxa);
+                                          setDeliveryInfo({ tempo_estimado: rate.tempo_estimado });
+                                        }
+                                        setDeliveryLoading(false);
+                                      });
+                                    }
+                                  }}
+                                  className="w-full p-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#22c55e]/30 focus:border-[#22c55e] text-white"
+                                >
+                                  <option value="">Selecione seu bairro</option>
+                                  {availableBairros.map((b) => (
+                                    <option key={b.bairro} value={b.bairro}>
+                                      {b.bairro} - R$ {b.taxa.toFixed(2).replace('.', ',')} {b.tempo_estimado && `(${b.tempo_estimado} min)`}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            ) : (
+                              <input
+                                type="text"
+                                placeholder="Bairro"
+                                value={customerData.bairro}
+                                onChange={(e) => setCustomerData({ ...customerData, bairro: e.target.value })}
+                                className="w-full p-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#22c55e]/30 focus:border-[#22c55e] text-white placeholder:text-gray-600"
+                              />
+                            )}
+                            
+                            <input
+                              type="text"
+                              placeholder="Endereço (Rua, Número, Complemento)"
+                              value={customerData.endereco}
+                              onChange={(e) => setCustomerData({ ...customerData, endereco: e.target.value })}
+                              className="w-full p-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#22c55e]/30 focus:border-[#22c55e] text-white placeholder:text-gray-600"
+                            />
+
+                            {/* Mostrar taxa de entrega calculada */}
+                            {deliveryFee > 0 && (
+                              <div className="bg-[#22c55e]/10 border border-[#22c55e]/30 rounded-2xl p-4 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div className="size-10 bg-[#22c55e]/20 rounded-xl flex items-center justify-center">
+                                    <MapPin className="size-5 text-[#22c55e]" />
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-gray-400">Taxa de Entrega</p>
+                                    <p className="text-sm font-bold text-white">{customerData.bairro}</p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-lg font-black text-[#22c55e]">R$ {deliveryFee.toFixed(2).replace('.', ',')}</p>
+                                  {deliveryInfo?.tempo_estimado && (
+                                    <p className="text-xs text-gray-500">{deliveryInfo.tempo_estimado} min</p>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {deliveryLoading && (
+                              <div className="flex items-center justify-center gap-2 py-3 text-gray-500">
+                                <Loader2 className="size-4 animate-spin" />
+                                <span className="text-sm">Calculando entrega...</span>
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
