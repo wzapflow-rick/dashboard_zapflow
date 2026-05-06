@@ -224,7 +224,7 @@ export const SUBSCRIPTION_PLANS = {
   START: {
     id: 'start',
     name: 'Start',
-    price: 5,
+    price: 29.90,
     description: 'Perfeito para comecar sua jornada no delivery.',
     features: [
       'Cardapio digital (Link + QrCode)',
