@@ -139,7 +139,7 @@ export async function createSubscription(planId: SubscriptionPlanId, cardToken?:
 
   try {
     // Validar cupom se fornecido
-    let precoFinal = plan.price;
+    let precoFinal: number = plan.price;
     let cupomId: number | null = null;
     let cupomCodigo: string | null = null;
     
@@ -451,7 +451,7 @@ export async function generatePixPayment(planId: SubscriptionPlanId, cupom?: str
 
   try {
     // Validar cupom se fornecido
-    let precoFinal = plan.price;
+    let precoFinal: number = plan.price;
     let cupomCodigo: string | null = null;
     
     if (cupom) {
