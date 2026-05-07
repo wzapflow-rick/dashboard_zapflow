@@ -545,9 +545,16 @@ export async function POST(req: NextRequest) {
 
       // Verificar se o pagamento foi aprovado
       if (paymentData.status === 'approved') {
-        await noco.update(PEDIDOS_TABLE_ID, { id: orderId, status_pagamento: 'aprovado' });
+        // IMPORTANTE: Atualiza AMBOS os campos:
+        // - status_pagamento: 'aprovado' (para controle interno)
+        // - status: 'pendente' (para mover no Kanban de "Aguardando Pagamento" para "Novo Pedido")
+        await noco.update(PEDIDOS_TABLE_ID, { 
+          id: orderId, 
+          status_pagamento: 'aprovado',
+          status: 'pendente' // Move para "Novo Pedido" no Kanban
+        });
 
-        console.log(`[MercadoPago Webhook] Pagamento aprovado para pedido ${orderId}`);
+        console.log(`[MercadoPago Webhook] Pagamento aprovado para pedido ${orderId} - status atualizado para 'pendente'`);
 
         try {
           const { sendOrderStatusMessage } = await import('@/app/actions/whatsapp');
@@ -564,7 +571,12 @@ export async function POST(req: NextRequest) {
           console.error('[MercadoPago Webhook] Erro ao enviar WhatsApp:', waError);
         }
       } else if (paymentData.status === 'rejected' || paymentData.status === 'cancelled') {
-        await noco.update(PEDIDOS_TABLE_ID, { id: orderId, status_pagamento: 'rejeitado' });
+        await noco.update(PEDIDOS_TABLE_ID, { 
+          id: orderId, 
+          status_pagamento: 'rejeitado',
+          status: 'cancelado' // Cancela o pedido
+        });
+        console.log(`[MercadoPago Webhook] Pagamento rejeitado/cancelado para pedido ${orderId}`);
       }
 
       return NextResponse.json({ received: true });
