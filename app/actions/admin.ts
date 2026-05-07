@@ -399,7 +399,7 @@ export async function getAssinaturas(page = 1, limit = 20, search = '') {
     const offset = (page - 1) * limit;
     
     let query = `
-      SELECT a.*, e.nome as empresa_nome, e.nome_fantasia, e.slug, e.email
+      SELECT a.*, e.nome_fantasia as empresa_nome, e.nome_fantasia, e.slug, e.email
       FROM assinaturas a
       LEFT JOIN empresas e ON a.empresa_id = e.id
     `;

@@ -1,9 +1,17 @@
 import { getMe } from '@/lib/session-server';
 import { noco } from '@/lib/nocodb';
 
-const AUDIT_TABLE_ID = 'm_audit_logs'; // Tabela de auditoria (criar no NocoDB se necessário)
+// Tabela de auditoria desativada temporariamente
+// Para ativar, criar tabela 'audit_logs' no NocoDB com colunas:
+// usuario (text), empresa_id (number), acao (text), detalhes (text), timestamp (datetime)
+const AUDIT_TABLE_ID = ''; // Deixar vazio para desativar
 
 export async function logAction(action: string, details: string) {
+    // Auditoria desativada - tabela nao existe no NocoDB
+    if (!AUDIT_TABLE_ID) {
+        return;
+    }
+    
     try {
         const user = await getMe();
         const payload = {
@@ -16,6 +24,6 @@ export async function logAction(action: string, details: string) {
 
         await noco.create(AUDIT_TABLE_ID, payload);
     } catch (error) {
-        console.warn('Erro ao registrar log de auditoria:', error);
+        // Silenciar erros de auditoria para nao impactar o usuario
     }
 }
