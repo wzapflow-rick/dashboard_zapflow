@@ -317,13 +317,31 @@ async function getEmpresa(empresaId: string): Promise<Empresa | null> {
             return null;
         }
         
-        console.log(`[CAMPANHAS] Empresa encontrada: ${data.nome_fantasia || data.nome}, instancia: ${data.instancia_evolution || 'NAO CONFIGURADA'}`);
+        // Se instancia_evolution estiver vazia, usa o padrao zapflow_{empresaId}
+        let instanciaEvolution = data.instancia_evolution;
+        if (!instanciaEvolution) {
+            instanciaEvolution = `zapflow_${empresaId}`;
+            console.log(`[CAMPANHAS] Empresa ${data.nome_fantasia} sem instancia configurada, usando fallback: ${instanciaEvolution}`);
+            
+            // Tenta atualizar a empresa com o valor padrao (nao bloqueia se falhar)
+            try {
+                await noco.update(EMPRESAS_TABLE_ID!, {
+                    id: data.id,
+                    instancia_evolution: instanciaEvolution
+                });
+                console.log(`[CAMPANHAS] Instancia ${instanciaEvolution} salva automaticamente para empresa ${empresaId}`);
+            } catch (updateErr) {
+                console.warn(`[CAMPANHAS] Nao foi possivel salvar instancia automaticamente:`, updateErr);
+            }
+        }
+        
+        console.log(`[CAMPANHAS] Empresa encontrada: ${data.nome_fantasia || data.nome}, instancia: ${instanciaEvolution}`);
         
         return { 
             id: data.id, 
             nome: data.nome_fantasia || data.nome || 'Loja',
             nome_fantasia: data.nome_fantasia,
-            instancia_evolution: data.instancia_evolution 
+            instancia_evolution: instanciaEvolution 
         };
     } catch (error) {
         console.error('[CAMPANHAS] Erro ao buscar empresa:', error);
@@ -346,12 +364,6 @@ async function processarCampanha(campanha: Campanha): Promise<{ enviados: number
     if (!empresa) {
         console.error(`[CAMPANHAS] Empresa ${campanha.empresa_id} nao encontrada`);
         return { enviados: 0, erros: 0, detalhes: 'Empresa nao encontrada' };
-    }
-    
-    // Verificar se a instancia Evolution esta configurada
-    if (!empresa.instancia_evolution) {
-        console.error(`[CAMPANHAS] ERRO: Empresa ${empresa.nome} nao tem instancia Evolution configurada!`);
-        return { enviados: 0, erros: 0, detalhes: 'Instancia Evolution nao configurada' };
     }
     
     console.log(`[CAMPANHAS] Instancia Evolution: ${empresa.instancia_evolution}`);
