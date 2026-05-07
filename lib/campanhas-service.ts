@@ -455,8 +455,11 @@ async function processarCampanha(campanha: Campanha): Promise<{ enviados: number
                 console.error(`[CAMPANHAS] Erro ao enviar para ${cliente.telefone}: ${result.error}`);
             }
             
-            // Delay entre envios (evitar rate limit)
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Delay entre envios (evitar rate limit e banimento do WhatsApp)
+            // Delay aleatorio entre 3-7 segundos para parecer mais natural/humano
+            const delayMs = 3000 + Math.floor(Math.random() * 4000);
+            console.log(`[CAMPANHAS] Aguardando ${(delayMs/1000).toFixed(1)}s antes do proximo envio...`);
+            await new Promise(resolve => setTimeout(resolve, delayMs));
             
         } catch (error: any) {
             erros++;
