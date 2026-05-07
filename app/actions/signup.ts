@@ -93,6 +93,7 @@ export async function createCheckoutSession(data: CheckoutData) {
       nome,
       telefone,
       plano,
+      tipo: 'cartao',
     });
     
     // Criar preferencia de pagamento no Mercado Pago

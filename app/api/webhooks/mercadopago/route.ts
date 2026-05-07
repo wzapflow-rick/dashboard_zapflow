@@ -78,8 +78,47 @@ async function handleSubscriptionEvent(subscriptionId: string) {
     const subData = await mpResponse.json();
     console.log('[Webhook] Subscription data:', JSON.stringify(subData));
 
-    // Extrai empresa_id do external_reference (formato: empresa_ID_plano)
     const externalRef = subData.external_reference || '';
+    
+    // ============================================================
+    // NOVO FLUXO: Verificar se external_reference e JSON (signup de cartao)
+    // ============================================================
+    if (externalRef.startsWith('{') && subData.status === 'authorized') {
+      console.log('[Webhook] Detectado signup de cartao!');
+      
+      try {
+        const signupData = JSON.parse(externalRef);
+        console.log('[Webhook] signupData cartao:', JSON.stringify(signupData));
+        
+        // Se tem token e email, e um signup novo (cartao)
+        if (signupData.token && signupData.email) {
+          const { createPendingSignup } = await import('@/app/actions/signup');
+          const { sendWelcomeSignupMessage } = await import('@/app/actions/whatsapp');
+          
+          console.log('[Webhook] Criando pending signup para cartao...');
+          await createPendingSignup({
+            token: signupData.token,
+            email: signupData.email,
+            nome: signupData.nome,
+            telefone: signupData.telefone,
+            plano: signupData.plano,
+            mp_subscription_id: String(subData.id),
+          });
+          
+          console.log('[Webhook] Enviando WhatsApp para:', signupData.telefone);
+          await sendWelcomeSignupMessage(signupData.telefone, signupData.nome, signupData.token);
+          
+          console.log('[Webhook] Signup de cartao processado com sucesso!');
+          return;
+        }
+      } catch (parseError) {
+        console.log('[Webhook] Erro ao processar signup cartao:', parseError);
+      }
+    }
+
+    // ============================================================
+    // FLUXO ANTIGO: Extrai empresa_id do external_reference (formato: empresa_ID_plano)
+    // ============================================================
     const match = externalRef.match(/empresa_(\d+)_/);
     const empresaId = match ? Number(match[1]) : null;
 
