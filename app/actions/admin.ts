@@ -452,6 +452,7 @@ export async function concederTrialGratuito(empresaId: number, dias: number, pla
 
     if (existing.rows.length === 0) {
       // Criar nova assinatura
+      // Nota: cartao_ultimos_digitos tem limite de 4 chars, usar '0000' para trial
       console.log('[Admin] Criando nova assinatura...');
       await db.query(`
         INSERT INTO assinaturas (
@@ -459,16 +460,17 @@ export async function concederTrialGratuito(empresaId: number, dias: number, pla
           data_inicio, data_proxima_cobranca,
           cartao_ultimos_digitos, cartao_bandeira,
           created_at, updated_at
-        ) VALUES ($1, $2, 'authorized', 0, NOW(), $3, 'TRIAL', 'TRIAL', NOW(), NOW())
+        ) VALUES ($1, $2, 'authorized', 0, NOW(), $3, '0000', 'TRIAL', NOW(), NOW())
       `, [empresaId, plano, dataProxima.toISOString()]);
       console.log('[Admin] Nova assinatura criada com sucesso');
     } else {
       // Atualizar existente
+      // Nota: cartao_ultimos_digitos tem limite de 4 chars, usar '0000' para trial
       console.log('[Admin] Atualizando assinatura existente...');
       await db.query(`
         UPDATE assinaturas 
         SET plano = $1, status = 'authorized', data_proxima_cobranca = $2, 
-            valor = 0, cartao_ultimos_digitos = 'TRIAL', cartao_bandeira = 'TRIAL',
+            valor = 0, cartao_ultimos_digitos = '0000', cartao_bandeira = 'TRIAL',
             updated_at = NOW()
         WHERE empresa_id = $3
       `, [plano, dataProxima.toISOString(), empresaId]);

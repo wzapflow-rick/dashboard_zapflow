@@ -736,6 +736,7 @@ export async function POST(req: NextRequest) {
 
     // Topic nao tratado
     console.log(`[MercadoPago Webhook] Topic ignorado: ${topic}`);
+    return NextResponse.json({ received: true, ignored: true });
   } catch (error: any) {
     console.error('[MercadoPago Webhook] Erro:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

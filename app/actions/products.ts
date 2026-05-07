@@ -304,20 +304,21 @@ export async function upsertProduct(productData: any, selectedInsumos?: { insumo
       };
 
       if (existingMetadata) {
-        // O campo ID pode ser 'id', 'Id', ou 'ID' dependendo da configuracao do NocoDB
-        const metadataId = existingMetadata.id || existingMetadata.Id || existingMetadata.ID;
-        console.log(`[UPSERT_PRODUCT] Atualizando metadados - NocoDB ID: ${metadataId}, existingMetadata:`, JSON.stringify(existingMetadata));
+        // O campo ID no NocoDB pode ter varios nomes dependendo da config
+        // Tentamos: Id, id, ID, nc_id, ncRecordId
+        const metadataId = existingMetadata.Id || existingMetadata.id || existingMetadata.ID || existingMetadata.nc_id || existingMetadata.ncRecordId;
+        console.log(`[UPSERT_PRODUCT] Metadata encontrado. ID: ${metadataId}. Keys:`, Object.keys(existingMetadata).join(', '));
         
         if (!metadataId) {
-          console.error('[UPSERT_PRODUCT] ERRO: ID do metadata nao encontrado! Chaves disponiveis:', Object.keys(existingMetadata));
-          // Tentar criar um novo ao inves de atualizar
-          console.log(`[UPSERT_PRODUCT] Criando novos metadados (fallback)`);
+          // Se nao encontrou ID, deletar o registro antigo (se possivel) e criar novo
+          console.error('[UPSERT_PRODUCT] ID nao encontrado, criando novo registro...');
           await noco.create(PRODUTOS_METADADOS_TABLE_ID, metadataPayload);
         } else {
+          // NocoDB espera 'id' minusculo no payload de update
           await noco.update(PRODUTOS_METADADOS_TABLE_ID, { id: metadataId, ...metadataPayload });
         }
       } else {
-        console.log(`[UPSERT_PRODUCT] Criando novos metadados`);
+        console.log(`[UPSERT_PRODUCT] Criando novos metadados para produto ${savedProduct.id}`);
         await noco.create(PRODUTOS_METADADOS_TABLE_ID, metadataPayload);
       }
     } catch (metaError: any) {
