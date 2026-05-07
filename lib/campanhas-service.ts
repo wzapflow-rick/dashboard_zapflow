@@ -456,8 +456,8 @@ async function processarCampanha(campanha: Campanha): Promise<{ enviados: number
             }
             
             // Delay entre envios (evitar rate limit e banimento do WhatsApp)
-            // Delay aleatorio entre 3-7 segundos para parecer mais natural/humano
-            const delayMs = 3000 + Math.floor(Math.random() * 4000);
+            // Delay aleatorio entre 8-15 segundos para maior seguranca
+            const delayMs = 8000 + Math.floor(Math.random() * 7000);
             console.log(`[CAMPANHAS] Aguardando ${(delayMs/1000).toFixed(1)}s antes do proximo envio...`);
             await new Promise(resolve => setTimeout(resolve, delayMs));
             
