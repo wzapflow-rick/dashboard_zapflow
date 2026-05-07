@@ -219,7 +219,7 @@ function getCardapioLink(empresa: any): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
   
-  return `https://cardapio.wzapflow.com.br/loja/${slug}`;
+  return `https://cardapio.wzapflow.com.br/menu/${slug}`;
 }
 
 // ============================================================
