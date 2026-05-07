@@ -9,6 +9,13 @@ import {
 const EVO_API_URL = process.env.EVOLUTION_API_URL || 'https://evo.wzapflow.com.br';
 const EVO_API_KEY = process.env.EVOLUTION_API_KEY || '';
 
+// Cache em memoria para evitar flood (chave: empresaId_phone, valor: timestamp)
+// Isso previne multiplas mensagens mesmo antes de salvar no banco
+const recentContactsCache = new Map<string, number>();
+
+// Tempo minimo entre saudacoes para o mesmo contato (em horas)
+const COOLDOWN_HOURS = 6;
+
 /**
  * Formatar numero de telefone para Evolution API
  */
@@ -70,27 +77,36 @@ function delay(ms: number): Promise<void> {
 }
 
 /**
- * Verificar se o cliente ja foi contatado recentemente (ultimas 24h)
+ * Verificar se o cliente ja foi contatado recentemente
  */
 async function wasRecentlyContacted(empresaId: number, phone: string): Promise<boolean> {
+  const cacheKey = `${empresaId}_${phone}`;
+  const now = Date.now();
+  
+  // 1. Primeiro verifica o cache em memoria (mais rapido, evita flood imediato)
+  const cachedTime = recentContactsCache.get(cacheKey);
+  if (cachedTime) {
+    const hoursDiff = (now - cachedTime) / (1000 * 60 * 60);
+    if (hoursDiff < COOLDOWN_HOURS) {
+      console.log(`[BOT] Cliente ${phone} no cache (${hoursDiff.toFixed(1)}h atras), ignorando`);
+      return true;
+    }
+  }
+  
+  // 2. Depois verifica no banco de dados
   try {
-    // Busca cliente pelo telefone
     const cliente = await noco.findOne(CLIENTES_TABLE_ID, {
       where: `(telefone,eq,${phone})~and(empresa_id,eq,${empresaId})`
     }) as any;
     
-    if (!cliente) {
-      return false; // Novo cliente, pode enviar saudacao
-    }
-    
-    // Se tem ultimo_contato_bot, verifica se foi nas ultimas 24h
-    if (cliente.ultimo_contato_bot) {
+    if (cliente?.ultimo_contato_bot) {
       const lastContact = new Date(cliente.ultimo_contato_bot);
-      const now = new Date();
-      const hoursDiff = (now.getTime() - lastContact.getTime()) / (1000 * 60 * 60);
+      const hoursDiff = (now - lastContact.getTime()) / (1000 * 60 * 60);
       
-      if (hoursDiff < 24) {
-        console.log(`[BOT] Cliente ${phone} ja foi contatado ha ${hoursDiff.toFixed(1)}h, ignorando`);
+      if (hoursDiff < COOLDOWN_HOURS) {
+        console.log(`[BOT] Cliente ${phone} contatado ha ${hoursDiff.toFixed(1)}h (banco), ignorando`);
+        // Atualiza o cache tambem
+        recentContactsCache.set(cacheKey, lastContact.getTime());
         return true;
       }
     }
@@ -98,14 +114,22 @@ async function wasRecentlyContacted(empresaId: number, phone: string): Promise<b
     return false;
   } catch (error) {
     console.error('[BOT] Erro ao verificar contato recente:', error);
-    return false;
+    // Em caso de erro, verifica so o cache para evitar flood
+    return cachedTime ? true : false;
   }
 }
 
 /**
- * Marcar cliente como contatado
+ * Marcar cliente como contatado (cache + banco)
  */
 async function markAsContacted(empresaId: number, phone: string): Promise<void> {
+  const cacheKey = `${empresaId}_${phone}`;
+  const now = Date.now();
+  
+  // 1. Sempre atualiza o cache primeiro (imediato)
+  recentContactsCache.set(cacheKey, now);
+  
+  // 2. Tenta atualizar no banco
   try {
     const cliente = await noco.findOne(CLIENTES_TABLE_ID, {
       where: `(telefone,eq,${phone})~and(empresa_id,eq,${empresaId})`
@@ -116,9 +140,21 @@ async function markAsContacted(empresaId: number, phone: string): Promise<void> 
         id: cliente.id,
         ultimo_contato_bot: new Date().toISOString()
       });
+      console.log(`[BOT] Contato ${phone} marcado no banco`);
+    } else {
+      console.log(`[BOT] Cliente ${phone} nao existe no banco, marcado apenas no cache`);
     }
   } catch (error) {
-    console.error('[BOT] Erro ao marcar contato:', error);
+    console.error('[BOT] Erro ao marcar contato no banco:', error);
+    // Cache ja foi atualizado, entao ainda temos protecao
+  }
+  
+  // 3. Limpa entradas antigas do cache (mais de 24h) para nao crescer infinitamente
+  const oneDayAgo = now - (24 * 60 * 60 * 1000);
+  for (const [key, timestamp] of recentContactsCache.entries()) {
+    if (timestamp < oneDayAgo) {
+      recentContactsCache.delete(key);
+    }
   }
 }
 
