@@ -300,8 +300,11 @@ export async function upsertProduct(productData: any, selectedInsumos?: { insumo
       );
       
       // Detectar o ID do registro - NocoDB pode usar diferentes nomes
-      const metadataId = existingMetadata?.id || existingMetadata?.Id || existingMetadata?.ID || 
-                         existingMetadata?.nc_id || Object.keys(existingMetadata || {}).find(k => k.toLowerCase() === 'id' && existingMetadata[k]);
+      let metadataId: any = null;
+      if (existingMetadata) {
+        metadataId = existingMetadata.id || existingMetadata.Id || existingMetadata.ID || 
+                     existingMetadata.nc_id || Object.keys(existingMetadata).find(k => k.toLowerCase() === 'id' && existingMetadata[k]);
+      }
       const actualId = metadataId ? (typeof metadataId === 'object' ? null : metadataId) : null;
       
       console.log(`[UPSERT_PRODUCT] Metadados existentes:`, existingMetadata ? `ID ${actualId} (keys: ${Object.keys(existingMetadata).join(', ')})` : 'Nenhum');
