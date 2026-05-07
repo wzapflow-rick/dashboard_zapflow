@@ -85,7 +85,7 @@ export async function createCheckoutSession(data: CheckoutData) {
     }
     
     // Calcular preco final (com cupom se houver)
-    let precoFinal = planData.price;
+    let precoFinal: number = planData.price;
     let cupomId: number | null = null;
     let cupomCodigo: string | null = null;
     
@@ -209,7 +209,7 @@ export async function createPixCheckoutSession(data: CheckoutData) {
     }
     
     // Calcular preco final (com cupom se houver)
-    let precoFinal = planData.price;
+    let precoFinal: number = planData.price;
     let cupomId: number | null = null;
     let cupomCodigo: string | null = null;
     
