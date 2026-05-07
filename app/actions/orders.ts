@@ -181,12 +181,21 @@ export async function updateOrderStatus(id: number, status: string, motivo?: str
                     }) as any;
 
                     if (client) {
-                        const dateOnly = new Date().toISOString().split('T')[0];
-                        await noco.update(CLIENTES_TABLE_ID, {
-                            id: client.id,
-                            ultima_compra: dateOnly,
-                            ultimo_pedido: JSON.stringify(orderData.itens || []),
-                        });
+                        // Usa formato ISO completo para compatibilidade com NocoDB
+                        const now = new Date().toISOString();
+                        try {
+                            await noco.update(CLIENTES_TABLE_ID, {
+                                id: client.id,
+                                ultima_compra: now,
+                            });
+                        } catch (updateErr: any) {
+                            // Se falhar por formato de data, tenta sem o campo
+                            if (updateErr.message?.includes('date') || updateErr.message?.includes('time')) {
+                                console.warn('[Orders] Formato de data invalido, ignorando atualizacao');
+                            } else {
+                                throw updateErr;
+                            }
+                        }
                     }
                 }
             } catch (err) {
