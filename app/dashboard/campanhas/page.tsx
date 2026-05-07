@@ -279,14 +279,30 @@ export default function CampanhasPage() {
     async function handleDispararManual() {
         setDisparando(true);
         try {
+            console.log('[v0] Iniciando disparo manual de campanhas...');
             const result = await dispararCampanhasManual();
+            console.log('[v0] Resultado do disparo:', result);
+            
             if (result.success) {
-                toast.success(`Campanhas disparadas! Enviados: ${result.enviados}, Erros: ${result.erros}`);
+                if (result.campanhas_processadas === 0) {
+                    toast.warning('Nenhuma campanha ativa encontrada para disparar');
+                } else if (result.enviados === 0 && result.erros === 0) {
+                    // Verificar se tem detalhes nos resultados
+                    const detalhes = result.resultados?.map(r => r.detalhes || r.motivo).filter(Boolean).join(', ');
+                    if (detalhes) {
+                        toast.warning(`Nenhuma mensagem enviada. Motivo: ${detalhes}`);
+                    } else {
+                        toast.warning('Nenhuma mensagem enviada. Verifique se ha clientes elegiveis.');
+                    }
+                } else {
+                    toast.success(`Campanhas disparadas! Enviados: ${result.enviados}, Erros: ${result.erros}`);
+                }
                 loadData();
             } else {
                 toast.error(result.error || 'Erro ao disparar campanhas');
             }
         } catch (error) {
+            console.error('[v0] Erro no disparo:', error);
             toast.error('Erro ao disparar campanhas');
         } finally {
             setDisparando(false);

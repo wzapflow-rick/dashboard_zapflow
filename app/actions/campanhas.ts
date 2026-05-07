@@ -295,22 +295,38 @@ export async function dispararCampanhasManual(): Promise<{
     success: boolean; 
     enviados?: number; 
     erros?: number;
+    campanhas_processadas?: number;
+    resultados?: any[];
     error?: string 
 }> {
     try {
+        console.log('[dispararCampanhasManual] Iniciando disparo manual...');
+        
         const { executarDisparoCampanhas } = await import('@/lib/campanhas-service');
         
         // Disparo manual ignora horario (ignorarHorario = true)
         const result = await executarDisparoCampanhas(true);
         
+        console.log('[dispararCampanhasManual] Resultado:', JSON.stringify(result, null, 2));
+        
         revalidatePath('/dashboard/campanhas');
+        
+        if (!result.success) {
+            return { 
+                success: false, 
+                error: result.error || 'Erro desconhecido no processamento'
+            };
+        }
+        
         return { 
             success: true, 
             enviados: result.total_enviados || 0,
-            erros: result.total_erros || 0
+            erros: result.total_erros || 0,
+            campanhas_processadas: result.campanhas_processadas || 0,
+            resultados: result.resultados || []
         };
     } catch (error: any) {
-        console.error('dispararCampanhasManual error:', error);
+        console.error('[dispararCampanhasManual] Erro:', error);
         return { success: false, error: error.message || 'Erro ao disparar campanhas' };
     }
 }
