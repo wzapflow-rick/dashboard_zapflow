@@ -299,7 +299,12 @@ export async function upsertProduct(productData: any, selectedInsumos?: { insumo
         Number(m['Produto ID'] || m.produto_id || m.Produto_ID) === Number(savedProduct.id)
       );
       
-      console.log(`[UPSERT_PRODUCT] Metadados existentes:`, existingMetadata ? `ID ${existingMetadata.id}` : 'Nenhum');
+      // Detectar o ID do registro - NocoDB pode usar diferentes nomes
+      const metadataId = existingMetadata?.id || existingMetadata?.Id || existingMetadata?.ID || 
+                         existingMetadata?.nc_id || Object.keys(existingMetadata || {}).find(k => k.toLowerCase() === 'id' && existingMetadata[k]);
+      const actualId = metadataId ? (typeof metadataId === 'object' ? null : metadataId) : null;
+      
+      console.log(`[UPSERT_PRODUCT] Metadados existentes:`, existingMetadata ? `ID ${actualId} (keys: ${Object.keys(existingMetadata).join(', ')})` : 'Nenhum');
       
       // Preparar o payload - tentar diferentes formatos de nome de coluna
       const tamanhosStr = tamanhos ? (typeof tamanhos === 'string' ? tamanhos : JSON.stringify(tamanhos)) : null;
@@ -308,7 +313,7 @@ export async function upsertProduct(productData: any, selectedInsumos?: { insumo
       // Verificar qual formato de coluna existe no registro existente
       let metadataPayload: any = {};
       
-      if (existingMetadata) {
+      if (existingMetadata && actualId) {
         // Detectar o formato de colunas usado
         const hasProdutoID = 'Produto ID' in existingMetadata;
         const hasProduto_id = 'produto_id' in existingMetadata;
@@ -318,7 +323,7 @@ export async function upsertProduct(productData: any, selectedInsumos?: { insumo
         console.log(`[UPSERT_PRODUCT] Formato detectado: Produto ID=${hasProdutoID}, produto_id=${hasProduto_id}, Tamanhos=${hasTamanhos}, tamanhos=${hasTamanhos_lower}`);
         
         metadataPayload = {
-          id: existingMetadata.id,
+          id: actualId,
         };
         
         // Usar o mesmo formato que ja existe
@@ -344,12 +349,19 @@ export async function upsertProduct(productData: any, selectedInsumos?: { insumo
         const updateResult = await noco.update(PRODUTOS_METADADOS_TABLE_ID, metadataPayload);
         console.log(`[UPSERT_PRODUCT] Resultado update:`, JSON.stringify(updateResult));
       } else {
-        console.log(`[UPSERT_PRODUCT] Criando novos metadados`);
+        // Criar novos metadados (ou se nao conseguiu encontrar o ID)
+        console.log(`[UPSERT_PRODUCT] Criando novos metadados (existingMetadata: ${!!existingMetadata}, actualId: ${actualId})`);
         metadataPayload = {
           'Produto ID': savedProduct.id,
           'Recomendacoes': recomendacoesStr,
           'Tamanhos': tamanhosStr,
         };
+        
+        // Se ja existe um registro mas nao conseguimos o ID, tentar deletar antes
+        if (existingMetadata && !actualId) {
+          console.log(`[UPSERT_PRODUCT] Registro existe mas ID nao encontrado, tentando criar novo...`);
+        }
+        
         const createResult = await noco.create(PRODUTOS_METADADOS_TABLE_ID, metadataPayload);
         console.log(`[UPSERT_PRODUCT] Resultado create:`, JSON.stringify(createResult));
       }
