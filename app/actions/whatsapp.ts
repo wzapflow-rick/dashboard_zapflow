@@ -75,24 +75,34 @@ function formatItensForWhatsApp(itens: any[]): string {
 
 /**
  * Enviar mensagem de confirmação de pedido criado
+ * IMPORTANTE: Usa a instancia da empresa para enviar pelo WhatsApp correto
  */
 export async function sendOrderCreatedMessage(
     phone: string, 
     orderId: number, 
     total: number, 
     dataAgendamento?: string | null,
-    itens?: any[]
+    itens?: any[],
+    empresaId?: number
 ): Promise<boolean> {
     const trackUrl = `${BASE_URL}/track/${orderId}`;
     const itensFormatados = itens ? formatItensForWhatsApp(itens) : '';
     const message = getOrderCreatedMessage(orderId, total, trackUrl, !!dataAgendamento, dataAgendamento || undefined, itensFormatados);
 
+    // Se tem empresaId, usa a instancia da empresa
+    if (empresaId) {
+        const result = await sendWhatsAppMessageWithInstance(phone, message, empresaId);
+        return result.success;
+    }
+    
+    // Fallback para instancia padrao (nao deveria acontecer)
     return sendWhatsAppMessage(phone, message);
 }
 
 /**
  * Enviar mensagem de atualização de status
  * tipoEntrega: 'delivery' = entrega, 'retirada' = retirada
+ * IMPORTANTE: Usa a instancia da empresa para enviar pelo WhatsApp correto
  */
 export async function sendOrderStatusMessage(
     phone: string,
@@ -106,6 +116,13 @@ export async function sendOrderStatusMessage(
     
     const message = getStatusMessage(status, orderId, isDelivery, trackUrl, empresaId);
 
+    // Se tem empresaId, usa a instancia da empresa
+    if (empresaId) {
+        const result = await sendWhatsAppMessageWithInstance(phone, message, empresaId);
+        return result.success;
+    }
+    
+    // Fallback para instancia padrao (nao deveria acontecer)
     return sendWhatsAppMessage(phone, message);
 }
 
@@ -228,7 +245,7 @@ Para liberar seu acesso, finalize seu cadastro clicando no link abaixo:
 
 Assim que concluir, você já poderá acessar seu painel e começar a receber pedidos automaticamente no WhatsApp.
 
-Se precisar de ajuda em qualquer etapa, é só chamar — estamos aqui com você 🤝
+Se precisar de ajuda em qualquer etapa, �� só chamar — estamos aqui com você 🤝
 — Equipe ZapFlow`;
 
     return sendWhatsAppMessage(phone, message);

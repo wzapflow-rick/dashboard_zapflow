@@ -221,7 +221,8 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
             ).catch(err => console.error('Erro ao deduzir pontos:', err));
         }
 
-        sendOrderCreatedMessage(data.clienteTelefone, order.id, data.total, data.dataAgendamento, itensFormatados)
+        // Envia WhatsApp usando a instancia da empresa (zapflow_{empresaId})
+        sendOrderCreatedMessage(data.clienteTelefone, order.id, data.total, data.dataAgendamento, itensFormatados, data.empresaId)
             .catch(err => console.error('Erro ao enviar mensagem WhatsApp:', err));
 
         revalidatePath('/dashboard/expedition');
