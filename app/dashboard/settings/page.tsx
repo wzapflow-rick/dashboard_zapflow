@@ -22,7 +22,13 @@ import {
   Truck,
   Sparkles,
   Upload,
-  Loader2
+  Loader2,
+  QrCode,
+  Wifi,
+  WifiOff,
+  RefreshCw,
+  CheckCircle2,
+  Smartphone
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -44,6 +50,7 @@ import DeliveryHistory from '@/components/delivery/delivery-history';
 import MercadoPagoConnection from '@/components/management/mercadopago-connection';
 import { CreditCard as PaymentIcon } from 'lucide-react';
 import { getBotConfig, saveBotConfig, getCardapioLink, BotConfig } from '@/app/actions/bot';
+import { createEvolutionInstance, getEvolutionQRCode, getInstanceStatus } from '@/app/actions/evolution';
 
 const sections = [
   { id: 'general', name: 'Geral', icon: Store },
@@ -87,6 +94,12 @@ export default function SettingsPage() {
   const [botConfig, setBotConfig] = React.useState<BotConfig | null>(null);
   const [cardapioLink, setCardapioLink] = React.useState<string>('');
   const [savingBot, setSavingBot] = React.useState(false);
+  
+  // Estados da Conexao WhatsApp
+  const [whatsappStatus, setWhatsappStatus] = React.useState<'checking' | 'connected' | 'disconnected' | 'connecting'>('checking');
+  const [qrCode, setQrCode] = React.useState<string | null>(null);
+  const [instanceName, setInstanceName] = React.useState<string>('');
+  const [loadingQr, setLoadingQr] = React.useState(false);
 
   React.useEffect(() => {
     async function loadData() {
@@ -124,6 +137,103 @@ export default function SettingsPage() {
     }
     loadData();
   }, []);
+
+  // Funcao para verificar status da conexao WhatsApp
+  const checkWhatsAppConnection = React.useCallback(async () => {
+    if (!company?.id) return;
+    
+    const instName = company.instancia_evolution || `zapflow_${company.id}`;
+    setInstanceName(instName);
+    setWhatsappStatus('checking');
+    
+    try {
+      const statusResult = await getInstanceStatus(instName);
+      
+      if (statusResult.error) {
+        setWhatsappStatus('disconnected');
+        return;
+      }
+      
+      if (statusResult.state === 'open' || statusResult.state === 'connected') {
+        setWhatsappStatus('connected');
+        setQrCode(null);
+      } else {
+        setWhatsappStatus('disconnected');
+      }
+    } catch (error) {
+      setWhatsappStatus('disconnected');
+    }
+  }, [company]);
+
+  // Funcao para gerar/reconectar WhatsApp
+  const handleConnectWhatsApp = async () => {
+    if (!company?.id) {
+      toast.error('Erro: empresa nao identificada');
+      return;
+    }
+    
+    setLoadingQr(true);
+    setWhatsappStatus('connecting');
+    setQrCode(null);
+    
+    try {
+      // 1. Criar instancia (ou verificar se ja existe)
+      const instName = company.instancia_evolution || `zapflow_${company.id}`;
+      setInstanceName(instName);
+      
+      const createResult = await createEvolutionInstance(company.id);
+      
+      if (createResult.error) {
+        toast.error(`Erro ao criar instancia: ${createResult.error}`);
+        setWhatsappStatus('disconnected');
+        setLoadingQr(false);
+        return;
+      }
+      
+      // 2. Buscar QR Code
+      const qrResult = await getEvolutionQRCode(instName);
+      
+      if (qrResult.error) {
+        toast.error(`Erro ao gerar QR Code: ${qrResult.error}`);
+        setWhatsappStatus('disconnected');
+        setLoadingQr(false);
+        return;
+      }
+      
+      if (qrResult.qrcode) {
+        setQrCode(qrResult.qrcode);
+        toast.success('QR Code gerado! Escaneie com seu WhatsApp.');
+        
+        // Atualizar instancia_evolution na empresa se ainda nao estiver salvo
+        if (!company.instancia_evolution) {
+          await updateCompany({ instancia_evolution: instName });
+          setCompany((prev: any) => ({ ...prev, instancia_evolution: instName }));
+        }
+      } else {
+        // Se nao retornou QR, pode ser que ja esteja conectado
+        const statusCheck = await getInstanceStatus(instName);
+        if (statusCheck.state === 'open' || statusCheck.state === 'connected') {
+          setWhatsappStatus('connected');
+          toast.success('WhatsApp ja esta conectado!');
+        } else {
+          toast.warning('Nao foi possivel gerar o QR Code. Tente novamente.');
+          setWhatsappStatus('disconnected');
+        }
+      }
+    } catch (error: any) {
+      toast.error(`Erro: ${error.message || 'Falha ao conectar'}`);
+      setWhatsappStatus('disconnected');
+    } finally {
+      setLoadingQr(false);
+    }
+  };
+
+  // Verificar conexao quando company carregar
+  React.useEffect(() => {
+    if (company?.id) {
+      checkWhatsAppConnection();
+    }
+  }, [company?.id, checkWhatsAppConnection]);
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -853,19 +963,127 @@ export default function SettingsPage() {
                 <div className="space-y-6">
                   <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <Bell className="size-5 text-primary" />
-                    Notificações WhatsApp
+                    Notificacoes WhatsApp
                   </h3>
 
+                  {/* Card de Conexao WhatsApp */}
+                  <div className="p-5 border border-slate-200 dark:border-slate-700 rounded-2xl bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "size-12 rounded-xl flex items-center justify-center",
+                          whatsappStatus === 'connected' ? "bg-green-500" : 
+                          whatsappStatus === 'checking' || whatsappStatus === 'connecting' ? "bg-amber-500" : "bg-slate-400"
+                        )}>
+                          <Smartphone className="size-6 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-800 dark:text-white">Conexao WhatsApp</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            {whatsappStatus === 'checking' && (
+                              <>
+                                <Loader2 className="size-3 animate-spin text-amber-600" />
+                                <span className="text-xs text-amber-600 dark:text-amber-400">Verificando...</span>
+                              </>
+                            )}
+                            {whatsappStatus === 'connecting' && (
+                              <>
+                                <Loader2 className="size-3 animate-spin text-amber-600" />
+                                <span className="text-xs text-amber-600 dark:text-amber-400">Gerando QR Code...</span>
+                              </>
+                            )}
+                            {whatsappStatus === 'connected' && (
+                              <>
+                                <Wifi className="size-3 text-green-600" />
+                                <span className="text-xs text-green-600 dark:text-green-400 font-medium">Conectado</span>
+                              </>
+                            )}
+                            {whatsappStatus === 'disconnected' && (
+                              <>
+                                <WifiOff className="size-3 text-red-500" />
+                                <span className="text-xs text-red-500 font-medium">Desconectado</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {whatsappStatus !== 'checking' && whatsappStatus !== 'connecting' && (
+                        <button
+                          onClick={handleConnectWhatsApp}
+                          disabled={loadingQr}
+                          className={cn(
+                            "px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all",
+                            whatsappStatus === 'connected' 
+                              ? "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200"
+                              : "bg-green-500 text-white hover:bg-green-600 shadow-lg shadow-green-500/20"
+                          )}
+                        >
+                          {loadingQr ? (
+                            <Loader2 className="size-4 animate-spin" />
+                          ) : whatsappStatus === 'connected' ? (
+                            <RefreshCw className="size-4" />
+                          ) : (
+                            <QrCode className="size-4" />
+                          )}
+                          {whatsappStatus === 'connected' ? 'Reconectar' : 'Gerar QR Code'}
+                        </button>
+                      )}
+                    </div>
+                    
+                    {instanceName && (
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Instancia: <code className="bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded font-mono">{instanceName}</code>
+                      </p>
+                    )}
+
+                    {/* QR Code Display */}
+                    {qrCode && whatsappStatus !== 'connected' && (
+                      <div className="flex flex-col items-center py-4 space-y-4">
+                        <div className="p-4 bg-white rounded-2xl shadow-lg">
+                          <img 
+                            src={qrCode.startsWith('data:') ? qrCode : `data:image/png;base64,${qrCode}`} 
+                            alt="QR Code WhatsApp" 
+                            className="w-56 h-56"
+                          />
+                        </div>
+                        <div className="text-center space-y-1">
+                          <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Escaneie o QR Code</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs">
+                            Abra o WhatsApp no celular, va em Dispositivos Conectados e escaneie este codigo
+                          </p>
+                        </div>
+                        <button
+                          onClick={checkWhatsAppConnection}
+                          className="text-sm text-primary hover:underline flex items-center gap-1"
+                        >
+                          <CheckCircle2 className="size-4" />
+                          Ja escaneei, verificar conexao
+                        </button>
+                      </div>
+                    )}
+
+                    {whatsappStatus === 'connected' && !qrCode && (
+                      <div className="flex items-center gap-3 p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
+                        <CheckCircle2 className="size-5 text-green-600" />
+                        <p className="text-sm text-green-700 dark:text-green-300">
+                          Seu WhatsApp esta conectado e pronto para enviar mensagens!
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Card de Teste */}
                   <div className="p-4 border border-slate-200 dark:border-slate-600 rounded-xl space-y-4">
                     <div>
-                      <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Testar Conexão</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Envie uma mensagem de teste para verificar se o WhatsApp está funcionando</p>
+                      <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Testar Conexao</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Envie uma mensagem de teste para verificar se o WhatsApp esta funcionando</p>
                     </div>
 
                     <div className="flex gap-3">
                       <input
                         type="tel"
-                        placeholder="Número com DDD (ex: 79998618874)"
+                        placeholder="Numero com DDD (ex: 79998618874)"
                         id="test-phone"
                         className="flex-1 px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
                       />
@@ -874,7 +1092,7 @@ export default function SettingsPage() {
                           const input = document.getElementById('test-phone') as HTMLInputElement;
                           const phone = input?.value;
                           if (!phone || phone.length < 10) {
-                            toast.error('Informe um número válido com DDD');
+                            toast.error('Informe um numero valido com DDD');
                             return;
                           }
                           toast.loading('Enviando mensagem de teste...', { id: 'whatsapp-test' });
@@ -890,18 +1108,20 @@ export default function SettingsPage() {
                             toast.error(`Erro: ${error.message}`, { id: 'whatsapp-test' });
                           }
                         }}
-                        className="px-6 py-2 bg-green-500 text-white rounded-lg text-sm font-bold hover:bg-green-600 transition-colors"
+                        disabled={whatsappStatus !== 'connected'}
+                        className="px-6 py-2 bg-green-500 text-white rounded-lg text-sm font-bold hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Enviar Teste
                       </button>
                     </div>
 
-                    <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg p-3">
-                      <p className="text-xs text-amber-700 dark:text-amber-300">
-                        <strong>Dica:</strong> Certifique-se de que a Evolution API está configurada corretamente nas variáveis de ambiente:
-                        <code className="block mt-1 bg-amber-100 dark:bg-amber-900/50 px-2 py-1 rounded text-[10px]">EVOLUTION_API_URL, EVOLUTION_API_KEY, EVOLUTION_INSTANCE</code>
-                      </p>
-                    </div>
+                    {whatsappStatus !== 'connected' && (
+                      <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg p-3">
+                        <p className="text-xs text-amber-700 dark:text-amber-300">
+                          <strong>Atencao:</strong> Conecte seu WhatsApp primeiro usando o botao acima para poder enviar mensagens de teste.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
