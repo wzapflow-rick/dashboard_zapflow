@@ -43,6 +43,7 @@ import DriversManagement from '@/components/management/drivers-management';
 import DeliveryHistory from '@/components/delivery/delivery-history';
 import MercadoPagoConnection from '@/components/management/mercadopago-connection';
 import { CreditCard as PaymentIcon } from 'lucide-react';
+import { getBotConfig, saveBotConfig, getCardapioLink, BotConfig } from '@/app/actions/bot';
 
 const sections = [
   { id: 'general', name: 'Geral', icon: Store },
@@ -81,20 +82,29 @@ export default function SettingsPage() {
   const [bannerUrl, setBannerUrl] = React.useState<string | null>(null);
   const [uploadingLogo, setUploadingLogo] = React.useState(false);
   const [uploadingBanner, setUploadingBanner] = React.useState(false);
+  
+  // Estados do Bot de Saudacao
+  const [botConfig, setBotConfig] = React.useState<BotConfig | null>(null);
+  const [cardapioLink, setCardapioLink] = React.useState<string>('');
+  const [savingBot, setSavingBot] = React.useState(false);
 
   React.useEffect(() => {
     async function loadData() {
       try {
-        const [compData, rates, hoursRes] = await Promise.all([
+        const [compData, rates, hoursRes, botConfigData, linkCardapio] = await Promise.all([
           getCompanyDetails(),
           getDeliveryRates(),
-          getHorariosFuncionamento()
+          getHorariosFuncionamento(),
+          getBotConfig(),
+          getCardapioLink()
         ]);
         setCompany(compData);
         setNeighborhoods(rates || []);
         if (hoursRes && 'horarios' in hoursRes) {
           setHorarios(hoursRes.horarios as HorarioItem[]);
         }
+        setBotConfig(botConfigData);
+        setCardapioLink(linkCardapio);
 
         if (compData) {
           setPackagingFeeEnabled(!!compData.cobra_embalagem);
@@ -949,24 +959,205 @@ export default function SettingsPage() {
 
               {activeSection === 'bot' && (
                 <div className="space-y-6">
-                  <div className="flex items-center gap-3">
-                    <div className="size-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
-                      <Bot className="size-6" />
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="size-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
+                        <Bot className="size-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white">Bot de Saudacao WhatsApp</h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Mensagens automaticas para novos clientes.</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-900 dark:text-white">ZapFlow AI Bot</h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">Configurações do assistente inteligente de vendas.</p>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={botConfig?.bot_ativo ?? true}
+                        onChange={(e) => setBotConfig(prev => prev ? { ...prev, bot_ativo: e.target.checked } : null)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-primary"></div>
+                      <span className="ms-3 text-sm font-bold text-slate-700 dark:text-slate-300">{botConfig?.bot_ativo ? 'Ativo' : 'Inativo'}</span>
+                    </label>
+                  </div>
+
+                  {cardapioLink && (
+                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+                      <div className="flex items-start gap-3">
+                        <Info className="size-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-bold text-blue-800 dark:text-blue-200">Link do Cardapio</p>
+                          <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                            Use <code className="bg-blue-100 dark:bg-blue-800 px-1 py-0.5 rounded">{'{LINK_CARDAPIO}'}</code> nas mensagens para inserir automaticamente:
+                          </p>
+                          <p className="text-xs text-blue-700 dark:text-blue-300 mt-1 font-mono break-all">{cardapioLink}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200">Mensagens de Saudacao</h4>
+                    
+                    {/* Mensagem 1 */}
+                    <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="size-6 bg-primary text-white rounded-lg flex items-center justify-center text-xs font-bold">1</span>
+                          <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Saudacao Inicial</span>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={botConfig?.mensagem_1_ativa ?? true}
+                            onChange={(e) => setBotConfig(prev => prev ? { ...prev, mensagem_1_ativa: e.target.checked } : null)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-600 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-500 peer-checked:bg-primary"></div>
+                        </label>
+                      </div>
+                      <textarea
+                        value={botConfig?.mensagem_1_texto ?? ''}
+                        onChange={(e) => setBotConfig(prev => prev ? { ...prev, mensagem_1_texto: e.target.value } : null)}
+                        placeholder="Ex: Ola! Bem-vindo(a) ao nosso estabelecimento!"
+                        rows={2}
+                        className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm dark:text-white resize-none"
+                      />
+                    </div>
+
+                    {/* Mensagem 2 */}
+                    <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="size-6 bg-primary text-white rounded-lg flex items-center justify-center text-xs font-bold">2</span>
+                          <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Apresentacao do Cardapio</span>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={botConfig?.mensagem_2_ativa ?? true}
+                            onChange={(e) => setBotConfig(prev => prev ? { ...prev, mensagem_2_ativa: e.target.checked } : null)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-600 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-500 peer-checked:bg-primary"></div>
+                        </label>
+                      </div>
+                      <textarea
+                        value={botConfig?.mensagem_2_texto ?? ''}
+                        onChange={(e) => setBotConfig(prev => prev ? { ...prev, mensagem_2_texto: e.target.value } : null)}
+                        placeholder="Ex: Temos um cardapio digital completo para voce!"
+                        rows={2}
+                        className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm dark:text-white resize-none"
+                      />
+                    </div>
+
+                    {/* Mensagem 3 */}
+                    <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="size-6 bg-primary text-white rounded-lg flex items-center justify-center text-xs font-bold">3</span>
+                          <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Link do Cardapio</span>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={botConfig?.mensagem_3_ativa ?? true}
+                            onChange={(e) => setBotConfig(prev => prev ? { ...prev, mensagem_3_ativa: e.target.checked } : null)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-600 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-500 peer-checked:bg-primary"></div>
+                        </label>
+                      </div>
+                      <textarea
+                        value={botConfig?.mensagem_3_texto ?? ''}
+                        onChange={(e) => setBotConfig(prev => prev ? { ...prev, mensagem_3_texto: e.target.value } : null)}
+                        placeholder="Ex: Acesse nosso cardapio: {LINK_CARDAPIO}"
+                        rows={2}
+                        className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm dark:text-white resize-none"
+                      />
                     </div>
                   </div>
 
-                  <div className="p-8 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-3xl text-center space-y-4">
-                    <div className="size-16 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center mx-auto">
-                      <Sparkles className="size-8 text-slate-300" />
+                  {/* Configuracoes Adicionais */}
+                  <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                    <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200">Configuracoes Adicionais</h4>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Delay entre mensagens (segundos)</label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={10}
+                          value={botConfig?.delay_entre_mensagens ?? 2}
+                          onChange={(e) => setBotConfig(prev => prev ? { ...prev, delay_entre_mensagens: parseInt(e.target.value) || 2 } : null)}
+                          className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white"
+                        />
+                      </div>
+                      
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Respeitar horario de funcionamento</label>
+                        <div className="flex items-center h-[42px]">
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={botConfig?.respeitar_horario_funcionamento ?? false}
+                              onChange={(e) => setBotConfig(prev => prev ? { ...prev, respeitar_horario_funcionamento: e.target.checked } : null)}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-primary"></div>
+                            <span className="ms-3 text-sm text-slate-600 dark:text-slate-400">{botConfig?.respeitar_horario_funcionamento ? 'Sim' : 'Nao'}</span>
+                          </label>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-bold text-slate-900 dark:text-white">Em Breve</p>
-                      <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs mx-auto">Estamos finalizando a integração do bot de IA para automatizar seus pedidos.</p>
-                    </div>
+
+                    {botConfig?.respeitar_horario_funcionamento && (
+                      <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Clock className="size-4 text-amber-600 dark:text-amber-400" />
+                          <span className="text-sm font-bold text-amber-800 dark:text-amber-200">Mensagem fora do horario</span>
+                        </div>
+                        <textarea
+                          value={botConfig?.mensagem_fora_horario ?? ''}
+                          onChange={(e) => setBotConfig(prev => prev ? { ...prev, mensagem_fora_horario: e.target.value } : null)}
+                          placeholder="Ex: Ola! No momento estamos fechados. Acesse nosso cardapio: {LINK_CARDAPIO}"
+                          rows={3}
+                          className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-700 rounded-xl focus:ring-2 focus:ring-amber-500/20 outline-none text-sm dark:text-white resize-none"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Botao Salvar */}
+                  <div className="flex justify-end pt-4">
+                    <button
+                      onClick={async () => {
+                        if (!botConfig) return;
+                        setSavingBot(true);
+                        const result = await saveBotConfig(botConfig);
+                        setSavingBot(false);
+                        if (result.success) {
+                          toast.success('Configuracoes do bot salvas com sucesso!');
+                        } else {
+                          toast.error(result.error || 'Erro ao salvar configuracoes');
+                        }
+                      }}
+                      disabled={savingBot}
+                      className="bg-primary hover:bg-primary/90 text-white px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-primary/20 transition-all disabled:opacity-50"
+                    >
+                      {savingBot ? (
+                        <>
+                          <Loader2 className="size-4 animate-spin" />
+                          Salvando...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="size-4" />
+                          Salvar Configuracoes do Bot
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
               )}

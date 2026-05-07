@@ -139,6 +139,10 @@ export const AVALIACOES_TABLE_ID =
 export const CONFIGURACOES_LOJA_TABLE_ID =
   process.env.NOCODB_TABLE_CONFIGURACOES_LOJA || 'mtkx66k8jacnezx';
 
+/** Tabela de configuração do bot de saudação WhatsApp */
+export const BOT_CONFIG_TABLE_ID =
+  process.env.NOCODB_TABLE_BOT_CONFIG || '';
+
 // ============================================================
 // RATE LIMITING - CONFIGURAÇÕES GLOBAIS
 // ============================================================
