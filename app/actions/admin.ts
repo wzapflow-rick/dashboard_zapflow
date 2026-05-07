@@ -436,18 +436,23 @@ export async function updateAssinatura(empresaId: number, data: {
 }
 
 export async function concederTrialGratuito(empresaId: number, dias: number, plano: string) {
+  console.log('[Admin] concederTrialGratuito chamado:', { empresaId, dias, plano });
+  
   try {
     const dataProxima = new Date();
     dataProxima.setDate(dataProxima.getDate() + dias);
+    console.log('[Admin] Data proxima cobranca:', dataProxima.toISOString());
 
     // Verificar se existe assinatura
     const existing = await db.query(
       'SELECT id FROM assinaturas WHERE empresa_id = $1',
       [empresaId]
     );
+    console.log('[Admin] Assinatura existente:', existing.rows.length > 0 ? 'Sim' : 'Nao');
 
     if (existing.rows.length === 0) {
       // Criar nova assinatura
+      console.log('[Admin] Criando nova assinatura...');
       await db.query(`
         INSERT INTO assinaturas (
           empresa_id, plano, status, valor, 
@@ -456,8 +461,10 @@ export async function concederTrialGratuito(empresaId: number, dias: number, pla
           created_at, updated_at
         ) VALUES ($1, $2, 'authorized', 0, NOW(), $3, 'TRIAL', 'TRIAL', NOW(), NOW())
       `, [empresaId, plano, dataProxima.toISOString()]);
+      console.log('[Admin] Nova assinatura criada com sucesso');
     } else {
       // Atualizar existente
+      console.log('[Admin] Atualizando assinatura existente...');
       await db.query(`
         UPDATE assinaturas 
         SET plano = $1, status = 'authorized', data_proxima_cobranca = $2, 
@@ -465,13 +472,15 @@ export async function concederTrialGratuito(empresaId: number, dias: number, pla
             updated_at = NOW()
         WHERE empresa_id = $3
       `, [plano, dataProxima.toISOString(), empresaId]);
+      console.log('[Admin] Assinatura atualizada com sucesso');
     }
 
     revalidatePath('/admin/assinaturas');
     revalidatePath('/admin/empresas');
+    console.log('[Admin] Trial concedido com sucesso!');
     return { success: true };
   } catch (error) {
-    console.error('Erro ao conceder trial:', error);
+    console.error('[Admin] Erro ao conceder trial:', error);
     return { success: false, error: 'Erro ao conceder trial' };
   }
 }

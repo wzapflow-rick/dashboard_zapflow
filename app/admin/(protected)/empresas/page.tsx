@@ -713,17 +713,29 @@ function EditEmpresaModal({ empresa, onClose, onSuccess }: { empresa: Empresa; o
 // Modal Conceder Trial
 function TrialModal({ empresa, onClose, onSuccess }: { empresa: Empresa; onClose: () => void; onSuccess: () => void }) {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [dias, setDias] = useState(30);
   const [plano, setPlano] = useState(empresa.assinatura_plano || empresa.plano || 'start');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
 
-    const result = await concederTrialGratuito(empresa.id, dias, plano);
+    console.log('[v0] Concedendo trial para empresa:', empresa.id, 'dias:', dias, 'plano:', plano);
     
-    if (result.success) {
-      onSuccess();
+    try {
+      const result = await concederTrialGratuito(empresa.id, dias, plano);
+      console.log('[v0] Resultado concederTrialGratuito:', result);
+      
+      if (result.success) {
+        onSuccess();
+      } else {
+        setError(result.error || 'Erro ao conceder trial');
+      }
+    } catch (err) {
+      console.error('[v0] Erro ao conceder trial:', err);
+      setError('Erro inesperado ao conceder trial');
     }
     setLoading(false);
   };
@@ -739,6 +751,13 @@ function TrialModal({ empresa, onClose, onSuccess }: { empresa: Empresa; onClose
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-red-400 text-sm flex items-center gap-2">
+              <AlertCircle className="size-4" />
+              {error}
+            </div>
+          )}
+
           <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
             <div className="flex items-center gap-3">
               <Gift className="size-6 text-green-400" />
