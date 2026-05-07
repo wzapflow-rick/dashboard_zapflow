@@ -31,32 +31,60 @@ interface NecessidadeInsumo {
 // Rate limiting para atualização de status
 const orderUpdateAttempts = new Map<string, { count: number; lastAttempt: number }>();
 
+// Helper para retry com delay
+async function withRetry<T>(fn: () => Promise<T>, retries = 2, delay = 1000): Promise<T> {
+    for (let i = 0; i <= retries; i++) {
+        try {
+            return await fn();
+        } catch (error: any) {
+            const isTimeout = error?.cause?.code === 'UND_ERR_CONNECT_TIMEOUT' || 
+                              error?.message?.includes('timeout') ||
+                              error?.message?.includes('ETIMEDOUT');
+            
+            if (i === retries || !isTimeout) {
+                throw error;
+            }
+            console.warn(`[Orders] Tentativa ${i + 1} falhou (timeout), tentando novamente em ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+    }
+    throw new Error('Max retries reached');
+}
+
 export async function getOrders() {
     try {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        const ordersData = await noco.list(PEDIDOS_TABLE_ID, {
+        // Usa retry para lidar com timeouts temporarios do NocoDB
+        const ordersData = await withRetry(() => noco.list(PEDIDOS_TABLE_ID, {
             where: `(empresa_id,eq,${user.empresaId})`,
             sort: '-id',
             limit: 1000,
-        });
+        }));
         const orders = ordersData.list || [];
 
         if (orders.length === 0) return [];
 
-        const clientsData = await noco.list(CLIENTES_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})`,
-            limit: 1000,
-        });
-        const clients = clientsData.list || [];
+        // Busca clientes com retry
+        let clients: any[] = [];
+        try {
+            const clientsData = await withRetry(() => noco.list(CLIENTES_TABLE_ID, {
+                where: `(empresa_id,eq,${user.empresaId})`,
+                limit: 1000,
+            }));
+            clients = clientsData.list || [];
+        } catch (err) {
+            console.warn('[Orders] Falha ao buscar clientes, continuando sem dados de cliente:', err);
+            clients = [];
+        }
 
         let drivers: any[] = [];
         try {
-            const driversData = await noco.list(ENTREGADORES_TABLE_ID, {
+            const driversData = await withRetry(() => noco.list(ENTREGADORES_TABLE_ID, {
                 where: `(empresa_id,eq,${user.empresaId})`,
                 limit: 1000,
-            });
+            }));
             drivers = driversData.list || [];
         } catch {
             drivers = [];
@@ -98,8 +126,14 @@ export async function getOrders() {
                 entregador_veiculo: driver?.veiculo || null,
             };
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error('API Error:', error);
+        // Mensagem mais amigavel para o usuario
+        const isTimeout = error?.cause?.code === 'UND_ERR_CONNECT_TIMEOUT' || 
+                          error?.message?.includes('timeout');
+        if (isTimeout) {
+            throw new Error('Servidor temporariamente indisponivel. Tente novamente em alguns segundos.');
+        }
         throw new Error('Failed to fetch orders with client data');
     }
 }
