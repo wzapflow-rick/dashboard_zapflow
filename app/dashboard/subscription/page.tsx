@@ -14,7 +14,9 @@ import {
   Copy,
   CheckCircle2,
   Calendar,
-  Receipt
+  Receipt,
+  Ticket,
+  Tag
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -30,6 +32,7 @@ import {
   type Invoice
 } from '@/app/actions/subscription';
 import { SUBSCRIPTION_PLANS, type SubscriptionPlanId } from '@/lib/constants';
+import { validarCupomPlataforma } from '@/app/actions/cupons-plataforma';
 
 // ============================================================
 // COMPONENTE PRINCIPAL
@@ -51,6 +54,16 @@ export default function SubscriptionPage() {
   // PIX
   const [pixData, setPixData] = useState<{ qrCode?: string; qrCodeBase64?: string; copyPaste?: string; expirationDate?: string } | null>(null);
   const [pixCopied, setPixCopied] = useState(false);
+  
+  // Cupom
+  const [cupomCodigo, setCupomCodigo] = useState('');
+  const [cupomValidando, setCupomValidando] = useState(false);
+  const [cupomValidado, setCupomValidado] = useState<{
+    valid: boolean;
+    desconto?: number;
+    precoFinal?: number;
+    mensagem?: string;
+  } | null>(null);
 
   // Carrega dados
   useEffect(() => {
@@ -103,9 +116,10 @@ export default function SubscriptionPage() {
     setShowChangePlanModal(false);
     
     try {
+      const cupomParaUsar = cupomValidado?.valid ? cupomCodigo : undefined;
       const result = subscription?.mp_subscription_id 
         ? await changePlan(selectedPlan)
-        : await createSubscription(selectedPlan);
+        : await createSubscription(selectedPlan, undefined, cupomParaUsar);
       
       if (result.success) {
         if ('initPoint' in result && typeof result.initPoint === 'string' && result.initPoint) {
@@ -131,7 +145,8 @@ export default function SubscriptionPage() {
     setProcessingPlan(planId);
     
     try {
-      const result = await generatePixPayment(planId);
+      const cupomParaUsar = cupomValidado?.valid ? cupomCodigo : undefined;
+      const result = await generatePixPayment(planId, cupomParaUsar);
       
       if (result.success && result.qrCode) {
         setPixData(result);
@@ -154,6 +169,40 @@ export default function SubscriptionPage() {
       toast.success('Codigo PIX copiado!');
       setTimeout(() => setPixCopied(false), 3000);
     }
+  }
+  
+  // Validar cupom
+  async function handleValidarCupom(planId: SubscriptionPlanId) {
+    if (!cupomCodigo.trim()) {
+      setCupomValidado(null);
+      return;
+    }
+    
+    setCupomValidando(true);
+    const planKey = planId.toUpperCase() as keyof typeof SUBSCRIPTION_PLANS;
+    const planData = SUBSCRIPTION_PLANS[planKey];
+    
+    try {
+      const result = await validarCupomPlataforma(cupomCodigo.trim(), planId, planData.price);
+      setCupomValidado(result);
+      
+      if (result.valid) {
+        toast.success(`Cupom aplicado! Desconto de R$ ${result.desconto?.toFixed(2)}`);
+      } else {
+        toast.error(result.mensagem || 'Cupom invalido');
+      }
+    } catch (error) {
+      toast.error('Erro ao validar cupom');
+      setCupomValidado({ valid: false, mensagem: 'Erro ao validar cupom' });
+    } finally {
+      setCupomValidando(false);
+    }
+  }
+  
+  // Limpar cupom
+  function handleLimparCupom() {
+    setCupomCodigo('');
+    setCupomValidado(null);
   }
 
   // Handler cancelar assinatura
@@ -295,6 +344,61 @@ export default function SubscriptionPage() {
                     ))}
                   </ul>
 
+                  {/* Campo de Cupom */}
+                  {!isCurrent && (
+                    <div className="mb-4 p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Ticket className="size-4 text-primary" />
+                        <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Tem um cupom?</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={cupomCodigo}
+                          onChange={(e) => setCupomCodigo(e.target.value.toUpperCase())}
+                          placeholder="Digite o codigo"
+                          className="flex-1 px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-slate-900 dark:text-white placeholder:text-slate-400"
+                        />
+                        <button
+                          onClick={() => handleValidarCupom(plan.id as SubscriptionPlanId)}
+                          disabled={cupomValidando || !cupomCodigo.trim()}
+                          className="px-4 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {cupomValidando ? <Loader2 className="size-4 animate-spin" /> : 'Aplicar'}
+                        </button>
+                      </div>
+                      
+                      {/* Feedback do cupom */}
+                      {cupomValidado && (
+                        <div className={cn(
+                          "mt-3 p-2 rounded-lg flex items-center gap-2 text-sm",
+                          cupomValidado.valid 
+                            ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300"
+                            : "bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300"
+                        )}>
+                          {cupomValidado.valid ? (
+                            <>
+                              <Tag className="size-4" />
+                              <span>
+                                Desconto de <strong>R$ {cupomValidado.desconto?.toFixed(2)}</strong> aplicado!
+                                <br />
+                                <span className="text-xs">Novo valor: R$ {cupomValidado.precoFinal?.toFixed(2)}</span>
+                              </span>
+                              <button onClick={handleLimparCupom} className="ml-auto">
+                                <X className="size-4" />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <AlertCircle className="size-4" />
+                              <span>{cupomValidado.mensagem}</span>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="space-y-3">
                     <button 
                       onClick={() => handleSelectPlan(plan.id as SubscriptionPlanId)}
@@ -313,6 +417,10 @@ export default function SubscriptionPage() {
                       ) : (
                         <>
                           Assinar com Cartao
+                          {cupomValidado?.valid && cupomValidado.precoFinal 
+                            ? ` - R$ ${cupomValidado.precoFinal.toFixed(2)}`
+                            : ''
+                          }
                           <ArrowRight className="size-4" />
                         </>
                       )}
@@ -326,6 +434,10 @@ export default function SubscriptionPage() {
                       >
                         <QrCode className="size-5" />
                         Pagar com PIX
+                        {cupomValidado?.valid && cupomValidado.precoFinal 
+                          ? ` - R$ ${cupomValidado.precoFinal.toFixed(2)}`
+                          : ''
+                        }
                       </button>
                     )}
                   </div>

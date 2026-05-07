@@ -122,7 +122,7 @@ export async function getInvoices(): Promise<Invoice[]> {
 // CRIAR ASSINATURA NO MERCADO PAGO
 // ============================================================
 
-export async function createSubscription(planId: SubscriptionPlanId, cardToken?: string): Promise<{
+export async function createSubscription(planId: SubscriptionPlanId, cardToken?: string, cupom?: string): Promise<{
   success: boolean;
   subscriptionId?: string;
   initPoint?: string;
@@ -138,6 +138,30 @@ export async function createSubscription(planId: SubscriptionPlanId, cardToken?:
   }
 
   try {
+    // Validar cupom se fornecido
+    let precoFinal = plan.price;
+    let cupomId: number | null = null;
+    let cupomCodigo: string | null = null;
+    
+    if (cupom) {
+      const { validarCupomPlataforma, incrementarUsoCupom } = await import('./cupons-plataforma');
+      const validacao = await validarCupomPlataforma(cupom, planId, plan.price);
+      
+      if (validacao.valid && validacao.precoFinal !== undefined) {
+        precoFinal = validacao.precoFinal;
+        cupomId = validacao.cupom?.id || null;
+        cupomCodigo = validacao.cupom?.codigo || null;
+        console.log('[Subscription] Cupom aplicado:', cupomCodigo, '- Preco final:', precoFinal);
+        
+        // Incrementa uso do cupom imediatamente (sera desfeito se falhar)
+        if (cupomId) {
+          await incrementarUsoCupom(cupomId);
+        }
+      } else {
+        return { success: false, error: validacao.mensagem || 'Cupom invalido' };
+      }
+    }
+    
     // Busca dados da empresa
     const empresa = await noco.findById(EMPRESAS_TABLE_ID, me.empresaId) as any;
     
@@ -145,11 +169,13 @@ export async function createSubscription(planId: SubscriptionPlanId, cardToken?:
     
     // Cria a assinatura no Mercado Pago
     const preapprovalPayload: Record<string, any> = {
-      reason: `Assinatura ZapFlow - Plano ${plan.name}`,
+      reason: cupomCodigo 
+        ? `Assinatura ZapFlow - Plano ${plan.name} (Cupom: ${cupomCodigo})`
+        : `Assinatura ZapFlow - Plano ${plan.name}`,
       auto_recurring: {
         frequency: 1,
         frequency_type: 'months',
-        transaction_amount: plan.price,
+        transaction_amount: precoFinal,
         currency_id: 'BRL',
       },
       payer_email: empresa?.email || `empresa${me.empresaId}@zapflow.com.br`,
@@ -408,7 +434,7 @@ export async function updatePaymentCard(cardToken: string): Promise<{
 // GERAR PIX PARA PAGAMENTO
 // ============================================================
 
-export async function generatePixPayment(planId: SubscriptionPlanId): Promise<{
+export async function generatePixPayment(planId: SubscriptionPlanId, cupom?: string): Promise<{
   success: boolean;
   qrCode?: string;
   qrCodeBase64?: string;
@@ -424,13 +450,37 @@ export async function generatePixPayment(planId: SubscriptionPlanId): Promise<{
   }
 
   try {
+    // Validar cupom se fornecido
+    let precoFinal = plan.price;
+    let cupomCodigo: string | null = null;
+    
+    if (cupom) {
+      const { validarCupomPlataforma, incrementarUsoCupom } = await import('./cupons-plataforma');
+      const validacao = await validarCupomPlataforma(cupom, planId, plan.price);
+      
+      if (validacao.valid && validacao.precoFinal !== undefined) {
+        precoFinal = validacao.precoFinal;
+        cupomCodigo = validacao.cupom?.codigo || null;
+        console.log('[Subscription PIX] Cupom aplicado:', cupomCodigo, '- Preco final:', precoFinal);
+        
+        // Incrementa uso do cupom
+        if (validacao.cupom?.id) {
+          await incrementarUsoCupom(validacao.cupom.id);
+        }
+      } else {
+        return { success: false, error: validacao.mensagem || 'Cupom invalido' };
+      }
+    }
+    
     const empresa = await noco.findById(EMPRESAS_TABLE_ID, me.empresaId) as any;
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://cardapio.wzapflow.com.br';
 
     // Cria pagamento PIX avulso (primeira cobranca)
     const paymentPayload = {
-      transaction_amount: plan.price,
-      description: `Assinatura ZapFlow - Plano ${plan.name}`,
+      transaction_amount: precoFinal,
+      description: cupomCodigo 
+        ? `Assinatura ZapFlow - Plano ${plan.name} (Cupom: ${cupomCodigo})`
+        : `Assinatura ZapFlow - Plano ${plan.name}`,
       payment_method_id: 'pix',
       payer: {
         email: empresa?.email || `empresa${me.empresaId}@zapflow.com.br`,
