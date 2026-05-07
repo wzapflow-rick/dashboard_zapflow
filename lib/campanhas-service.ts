@@ -226,16 +226,19 @@ async function clienteJaRecebeuRecentemente(
     try {
         const umaSemanaAtras = new Date();
         umaSemanaAtras.setDate(umaSemanaAtras.getDate() - 7);
+        // Usar formato apenas com data (YYYY-MM-DD) que o NocoDB aceita
+        const dataStr = umaSemanaAtras.toISOString().split('T')[0];
         
         const data = await noco.list(DISPAROS_TABLE_ID!, {
-            where: `(empresa_id,eq,${empresaId})~and(cliente_id,eq,${clienteId})~and(campanha_id,eq,${campanhaId})~and(enviado_em,gt,${umaSemanaAtras.toISOString()})~and(status,eq,enviado)`,
+            where: `(empresa_id,eq,${empresaId})~and(cliente_id,eq,${clienteId})~and(campanha_id,eq,${campanhaId})~and(enviado_em,gt,${dataStr})~and(status,eq,enviado)`,
             limit: maxEnviosSemana + 1,
         });
         
         return (data.list || []).length >= maxEnviosSemana;
     } catch (error) {
         console.error('Erro ao verificar disparos anteriores:', error);
-        return true;
+        // Em caso de erro, retorna false para permitir o envio (melhor experiencia)
+        return false;
     }
 }
 

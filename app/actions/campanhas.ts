@@ -202,9 +202,11 @@ export async function getDisparosStats(): Promise<DisparoStats> {
 
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        // Usar formato apenas com data (YYYY-MM-DD) que o NocoDB aceita
+        const dataStr = thirtyDaysAgo.toISOString().split('T')[0];
 
         const data = await noco.list(DISPAROS_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})~and(enviado_em,gt,${thirtyDaysAgo.toISOString()})`,
+            where: `(empresa_id,eq,${user.empresaId})~and(enviado_em,gt,${dataStr})`,
         });
 
         const disparos = data.list || [];
