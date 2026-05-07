@@ -121,8 +121,9 @@ export async function createPayment(input: CreatePaymentInput): Promise<CreatePa
         const firstName = nomePartes[0] || 'Cliente';
         const lastName = nomePartes.slice(1).join(' ') || 'Cardapio';
 
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://zap-order-sooty.vercel.app';
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://cardapio.wzapflow.com.br';
         const notificationUrl = `${baseUrl}/api/webhooks/mercadopago`;
+        console.log(`[MercadoPago] Notification URL configurada: ${notificationUrl}`);
 
         const paymentPayload: Record<string, unknown> = {
             transaction_amount: validAmount,
@@ -260,7 +261,7 @@ export async function getMPAuthorizationUrl() {
     }
 
     // Em produção, a Vercel fornece a URL base
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://zap-order-sooty.vercel.app';
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://cardapio.wzapflow.com.br';
     const redirectUri = encodeURIComponent(`${baseUrl}/api/auth/mercadopago/callback`);
     
     // O 'state' pode ser usado para passar o empresaId e validar no retorno

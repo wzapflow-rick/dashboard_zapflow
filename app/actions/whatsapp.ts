@@ -75,24 +75,34 @@ function formatItensForWhatsApp(itens: any[]): string {
 
 /**
  * Enviar mensagem de confirmação de pedido criado
+ * Usa a instancia da empresa para enviar (zapflow_{empresaId})
  */
 export async function sendOrderCreatedMessage(
     phone: string, 
     orderId: number, 
     total: number, 
     dataAgendamento?: string | null,
-    itens?: any[]
+    itens?: any[],
+    empresaId?: number
 ): Promise<boolean> {
     const trackUrl = `${BASE_URL}/track/${orderId}`;
     const itensFormatados = itens ? formatItensForWhatsApp(itens) : '';
     const message = getOrderCreatedMessage(orderId, total, trackUrl, !!dataAgendamento, dataAgendamento || undefined, itensFormatados);
 
+    // Se tiver empresaId, usa a instancia da empresa
+    if (empresaId) {
+        const result = await sendWhatsAppMessageWithInstance(phone, message, empresaId);
+        return result.success;
+    }
+    
+    // Fallback para instancia padrao (nao recomendado)
     return sendWhatsAppMessage(phone, message);
 }
 
 /**
  * Enviar mensagem de atualização de status
  * tipoEntrega: 'delivery' = entrega, 'retirada' = retirada
+ * Usa a instancia da empresa para enviar (zapflow_{empresaId})
  */
 export async function sendOrderStatusMessage(
     phone: string,
@@ -106,6 +116,13 @@ export async function sendOrderStatusMessage(
     
     const message = getStatusMessage(status, orderId, isDelivery, trackUrl, empresaId);
 
+    // Se tiver empresaId, usa a instancia da empresa
+    if (empresaId) {
+        const result = await sendWhatsAppMessageWithInstance(phone, message, empresaId);
+        return result.success;
+    }
+    
+    // Fallback para instancia padrao (nao recomendado)
     return sendWhatsAppMessage(phone, message);
 }
 
