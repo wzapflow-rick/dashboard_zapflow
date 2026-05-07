@@ -105,6 +105,17 @@ async function handleSubscriptionEvent(subscriptionId: string) {
             mp_subscription_id: String(subData.id),
           });
           
+          // Incrementar uso do cupom se houver
+          if (signupData.cupom_id) {
+            try {
+              const { incrementarUsoCupom } = await import('@/app/actions/cupons-plataforma');
+              await incrementarUsoCupom(signupData.cupom_id);
+              console.log('[Webhook] Uso do cupom incrementado:', signupData.cupom_codigo);
+            } catch (cupomError) {
+              console.error('[Webhook] Erro ao incrementar cupom:', cupomError);
+            }
+          }
+          
           console.log('[Webhook] Enviando WhatsApp para:', signupData.telefone);
           await sendWelcomeSignupMessage(signupData.telefone, signupData.nome, signupData.token);
           
@@ -395,6 +406,17 @@ export async function POST(req: NextRequest) {
                   mp_payment_id: String(paymentCheck.id),
                 });
                 
+                // Incrementar uso do cupom se houver
+                if (signupData.cupom_id) {
+                  try {
+                    const { incrementarUsoCupom } = await import('@/app/actions/cupons-plataforma');
+                    await incrementarUsoCupom(signupData.cupom_id);
+                    console.log('[v0] Uso do cupom PIX incrementado:', signupData.cupom_codigo);
+                  } catch (cupomError) {
+                    console.error('[v0] Erro ao incrementar cupom PIX:', cupomError);
+                  }
+                }
+                
                 console.log('[v0] Enviando WhatsApp para:', signupData.telefone);
                 await sendWelcomeSignupMessage(signupData.telefone, signupData.nome, signupData.token);
                 
@@ -549,6 +571,17 @@ export async function POST(req: NextRequest) {
               mp_payment_id: String(paymentData.id),
             });
             console.log('[v0] DEBUG - Pending signup criado');
+            
+            // Incrementar uso do cupom se houver
+            if (signupData.cupom_id) {
+              try {
+                const { incrementarUsoCupom } = await import('@/app/actions/cupons-plataforma');
+                await incrementarUsoCupom(signupData.cupom_id);
+                console.log('[v0] Uso do cupom PIX incrementado:', signupData.cupom_codigo);
+              } catch (cupomError) {
+                console.error('[v0] Erro ao incrementar cupom PIX:', cupomError);
+              }
+            }
             
             console.log('[v0] DEBUG - Enviando WhatsApp para:', signupData.telefone);
             // Enviar WhatsApp com link de ativacao
@@ -714,6 +747,17 @@ export async function POST(req: NextRequest) {
                       plano: signupData.plano,
                       mp_payment_id: String(approvedPayment.id),
                     });
+                    
+                    // Incrementar uso do cupom se houver
+                    if (signupData.cupom_id) {
+                      try {
+                        const { incrementarUsoCupom } = await import('@/app/actions/cupons-plataforma');
+                        await incrementarUsoCupom(signupData.cupom_id);
+                        console.log('[v0] Uso do cupom PIX incrementado via merchant_order:', signupData.cupom_codigo);
+                      } catch (cupomError) {
+                        console.error('[v0] Erro ao incrementar cupom PIX merchant_order:', cupomError);
+                      }
+                    }
                     
                     await sendWelcomeSignupMessage(signupData.telefone, signupData.nome, signupData.token);
                     

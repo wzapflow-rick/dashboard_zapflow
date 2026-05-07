@@ -11,7 +11,8 @@ import {
   LogOut,
   Shield,
   Menu,
-  X
+  X,
+  Ticket
 } from 'lucide-react';
 import { logoutAdmin } from '@/app/actions/admin-auth';
 import { cn } from '@/lib/utils';
@@ -24,6 +25,7 @@ const menuItems = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/empresas', label: 'Empresas', icon: Building2 },
   { href: '/admin/assinaturas', label: 'Assinaturas', icon: CreditCard },
+  { href: '/admin/cupons', label: 'Cupons', icon: Ticket },
 ];
 
 export default function AdminSidebar({ username }: AdminSidebarProps) {

@@ -29,6 +29,7 @@ interface CheckoutData {
   nome: string;
   telefone: string;
   plano: SubscriptionPlanId;
+  cupom?: string;
 }
 
 interface PendingSignup {
@@ -53,7 +54,7 @@ export async function createCheckoutSession(data: CheckoutData) {
   console.log('[v0] createCheckoutSession iniciado:', JSON.stringify(data));
   
   try {
-    const { email, nome, telefone, plano } = data;
+    const { email, nome, telefone, plano, cupom } = data;
     
     // Validacoes
     if (!email || !nome || !telefone || !plano) {
@@ -83,6 +84,26 @@ export async function createCheckoutSession(data: CheckoutData) {
       return { success: false, error: 'Plano invalido' };
     }
     
+    // Calcular preco final (com cupom se houver)
+    let precoFinal = planData.price;
+    let cupomId: number | null = null;
+    let cupomCodigo: string | null = null;
+    
+    if (cupom) {
+      const { validarCupomPlataforma } = await import('./cupons-plataforma');
+      const validacao = await validarCupomPlataforma(cupom, plano, planData.price);
+      
+      if (validacao.valid && validacao.precoFinal !== undefined) {
+        precoFinal = validacao.precoFinal;
+        cupomId = validacao.cupom?.id || null;
+        cupomCodigo = validacao.cupom?.codigo || null;
+        console.log('[v0] Cupom aplicado:', cupomCodigo, '- Desconto:', validacao.desconto, '- Preco final:', precoFinal);
+      } else {
+        console.log('[v0] Cupom invalido:', validacao.mensagem);
+        return { success: false, error: validacao.mensagem };
+      }
+    }
+    
     // Gerar token unico
     const token = uuidv4();
     
@@ -94,17 +115,21 @@ export async function createCheckoutSession(data: CheckoutData) {
       telefone,
       plano,
       tipo: 'cartao',
+      cupom_id: cupomId,
+      cupom_codigo: cupomCodigo,
     });
     
     // Criar preferencia de pagamento no Mercado Pago
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://cardapio.wzapflow.com.br';
     
     const preference = {
-      reason: `ZapFlow - Plano ${planData.name}`,
+      reason: cupomCodigo 
+        ? `ZapFlow - Plano ${planData.name} (Cupom: ${cupomCodigo})`
+        : `ZapFlow - Plano ${planData.name}`,
       auto_recurring: {
         frequency: 1,
         frequency_type: 'months',
-        transaction_amount: planData.price,
+        transaction_amount: precoFinal,
         currency_id: 'BRL',
       },
       back_url: `${baseUrl}/ativar/${token}`,
@@ -158,7 +183,7 @@ export async function createPixCheckoutSession(data: CheckoutData) {
   console.log('[v0] createPixCheckoutSession iniciado:', JSON.stringify(data));
   
   try {
-    const { email, nome, telefone, plano } = data;
+    const { email, nome, telefone, plano, cupom } = data;
     
     // Validacoes
     if (!email || !nome || !telefone || !plano) {
@@ -183,6 +208,26 @@ export async function createPixCheckoutSession(data: CheckoutData) {
       return { success: false, error: 'Plano invalido' };
     }
     
+    // Calcular preco final (com cupom se houver)
+    let precoFinal = planData.price;
+    let cupomId: number | null = null;
+    let cupomCodigo: string | null = null;
+    
+    if (cupom) {
+      const { validarCupomPlataforma } = await import('./cupons-plataforma');
+      const validacao = await validarCupomPlataforma(cupom, plano, planData.price);
+      
+      if (validacao.valid && validacao.precoFinal !== undefined) {
+        precoFinal = validacao.precoFinal;
+        cupomId = validacao.cupom?.id || null;
+        cupomCodigo = validacao.cupom?.codigo || null;
+        console.log('[v0] Cupom PIX aplicado:', cupomCodigo, '- Desconto:', validacao.desconto, '- Preco final:', precoFinal);
+      } else {
+        console.log('[v0] Cupom PIX invalido:', validacao.mensagem);
+        return { success: false, error: validacao.mensagem };
+      }
+    }
+    
     // Gerar token unico
     const token = uuidv4();
     
@@ -194,6 +239,8 @@ export async function createPixCheckoutSession(data: CheckoutData) {
       telefone,
       plano,
       tipo: 'pix',
+      cupom_id: cupomId,
+      cupom_codigo: cupomCodigo,
     });
     
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://cardapio.wzapflow.com.br';
@@ -202,9 +249,11 @@ export async function createPixCheckoutSession(data: CheckoutData) {
     const preference = {
       items: [
         {
-          title: `ZapFlow - Plano ${planData.name}`,
+          title: cupomCodigo 
+            ? `ZapFlow - Plano ${planData.name} (Cupom: ${cupomCodigo})`
+            : `ZapFlow - Plano ${planData.name}`,
           quantity: 1,
-          unit_price: planData.price,
+          unit_price: precoFinal,
           currency_id: 'BRL',
         },
       ],
