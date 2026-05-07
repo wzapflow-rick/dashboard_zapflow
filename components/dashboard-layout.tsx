@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState } from 'react';
 import { Sidebar } from './layout/sidebar';
 import { Header } from './layout/header';
 import { PaymentAlert } from './dashboard/payment-alert';
+import { OfflineIndicator } from './offline-indicator';
 import { cn } from '@/lib/utils';
 
 interface SidebarContextType {
@@ -74,6 +75,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {children}
         </div>
       </main>
+      
+      {/* Indicador global de status offline */}
+      <OfflineIndicator />
     </div>
   );
 }
