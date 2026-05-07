@@ -479,8 +479,9 @@ export async function concederTrialGratuito(empresaId: number, dias: number, pla
     revalidatePath('/admin/empresas');
     console.log('[Admin] Trial concedido com sucesso!');
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error('[Admin] Erro ao conceder trial:', error);
-    return { success: false, error: 'Erro ao conceder trial' };
+    const errorMessage = error?.message || 'Erro ao conceder trial';
+    return { success: false, error: errorMessage };
   }
 }
