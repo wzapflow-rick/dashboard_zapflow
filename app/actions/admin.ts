@@ -2,6 +2,14 @@
 
 import db from '@/lib/db';
 import { revalidatePath } from 'next/cache';
+import { v2 as cloudinary } from 'cloudinary';
+
+// Configurar Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 // ==================== DASHBOARD ====================
 
@@ -92,6 +100,85 @@ export async function getAdminStats() {
         empresasRecentes: 0,
       }
     };
+  }
+}
+
+// ==================== CLOUDINARY ====================
+
+export interface CloudinaryUsage {
+  credits: {
+    used: number;
+    limit: number;
+    percentage: number;
+  };
+  storage: {
+    used: number; // em bytes
+    usedFormatted: string;
+  };
+  bandwidth: {
+    used: number; // em bytes
+    usedFormatted: string;
+  };
+  transformations: {
+    used: number;
+  };
+  resources: {
+    images: number;
+  };
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+export async function getCloudinaryUsage(): Promise<{ success: boolean; usage?: CloudinaryUsage; error?: string }> {
+  try {
+    console.log('[Admin] Buscando uso do Cloudinary...');
+    
+    // Buscar uso via Admin API
+    const result = await cloudinary.api.usage();
+    
+    // Calcular creditos usados (aproximado)
+    // 1 credito = 1GB storage OU 1GB bandwidth OU 1000 transformations
+    const storageCredits = (result.storage?.usage || 0) / (1024 * 1024 * 1024); // bytes to GB
+    const bandwidthCredits = (result.bandwidth?.usage || 0) / (1024 * 1024 * 1024);
+    const transformationCredits = (result.transformations?.usage || 0) / 1000;
+    
+    const totalCreditsUsed = storageCredits + bandwidthCredits + transformationCredits;
+    const creditLimit = result.credits?.limit || 25; // Free plan = 25 credits
+    
+    const usage: CloudinaryUsage = {
+      credits: {
+        used: Math.round(totalCreditsUsed * 100) / 100,
+        limit: creditLimit,
+        percentage: Math.round((totalCreditsUsed / creditLimit) * 100),
+      },
+      storage: {
+        used: result.storage?.usage || 0,
+        usedFormatted: formatBytes(result.storage?.usage || 0),
+      },
+      bandwidth: {
+        used: result.bandwidth?.usage || 0,
+        usedFormatted: formatBytes(result.bandwidth?.usage || 0),
+      },
+      transformations: {
+        used: result.transformations?.usage || 0,
+      },
+      resources: {
+        images: result.resources || 0,
+      },
+    };
+    
+    console.log('[Admin] Cloudinary usage:', usage);
+    
+    return { success: true, usage };
+  } catch (error: any) {
+    console.error('[Admin] Erro ao buscar uso do Cloudinary:', error);
+    return { success: false, error: error.message || 'Erro ao buscar uso do Cloudinary' };
   }
 }
 

@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getAdminStats } from '@/app/actions/admin';
-import { Building2, CreditCard, TrendingUp, AlertCircle, Users, Clock } from 'lucide-react';
+import { getAdminStats, getCloudinaryUsage, type CloudinaryUsage } from '@/app/actions/admin';
+import { Building2, CreditCard, TrendingUp, AlertCircle, Users, Clock, Cloud, Image, HardDrive, Wifi } from 'lucide-react';
 
 interface Stats {
   totalEmpresas: number;
@@ -15,6 +15,7 @@ interface Stats {
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
+  const [cloudinaryUsage, setCloudinaryUsage] = useState<CloudinaryUsage | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,9 +23,16 @@ export default function AdminDashboardPage() {
   }, []);
 
   const loadStats = async () => {
-    const result = await getAdminStats();
-    if (result.success && result.stats) {
-      setStats(result.stats);
+    const [statsResult, cloudinaryResult] = await Promise.all([
+      getAdminStats(),
+      getCloudinaryUsage(),
+    ]);
+    
+    if (statsResult.success && statsResult.stats) {
+      setStats(statsResult.stats);
+    }
+    if (cloudinaryResult.success && cloudinaryResult.usage) {
+      setCloudinaryUsage(cloudinaryResult.usage);
     }
     setLoading(false);
   };
@@ -130,6 +138,90 @@ export default function AdminDashboardPage() {
           </div>
         </a>
       </div>
+
+      {/* Cloudinary Usage */}
+      {cloudinaryUsage && (
+        <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="size-10 bg-cyan-500/10 rounded-lg flex items-center justify-center">
+                <Cloud className="size-5 text-cyan-400" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-white">Cloudinary (Imagens)</h2>
+                <p className="text-slate-400 text-sm">Uso mensal do plano gratuito</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold text-white">{cloudinaryUsage.credits.used}</p>
+              <p className="text-slate-400 text-sm">de {cloudinaryUsage.credits.limit} creditos</p>
+            </div>
+          </div>
+
+          {/* Barra de Progresso */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-slate-400">Uso de Creditos</span>
+              <span className={`text-sm font-medium ${
+                cloudinaryUsage.credits.percentage > 80 ? 'text-red-400' : 
+                cloudinaryUsage.credits.percentage > 50 ? 'text-yellow-400' : 'text-green-400'
+              }`}>
+                {cloudinaryUsage.credits.percentage}%
+              </span>
+            </div>
+            <div className="h-3 bg-slate-700 rounded-full overflow-hidden">
+              <div 
+                className={`h-full rounded-full transition-all ${
+                  cloudinaryUsage.credits.percentage > 80 ? 'bg-red-500' : 
+                  cloudinaryUsage.credits.percentage > 50 ? 'bg-yellow-500' : 'bg-green-500'
+                }`}
+                style={{ width: `${Math.min(cloudinaryUsage.credits.percentage, 100)}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Detalhes */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-slate-800/50 rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <Image className="size-4 text-purple-400" />
+                <span className="text-xs text-slate-400">Imagens</span>
+              </div>
+              <p className="text-lg font-semibold text-white">{cloudinaryUsage.resources.images}</p>
+            </div>
+            <div className="bg-slate-800/50 rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <HardDrive className="size-4 text-blue-400" />
+                <span className="text-xs text-slate-400">Storage</span>
+              </div>
+              <p className="text-lg font-semibold text-white">{cloudinaryUsage.storage.usedFormatted}</p>
+            </div>
+            <div className="bg-slate-800/50 rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <Wifi className="size-4 text-green-400" />
+                <span className="text-xs text-slate-400">Bandwidth</span>
+              </div>
+              <p className="text-lg font-semibold text-white">{cloudinaryUsage.bandwidth.usedFormatted}</p>
+            </div>
+            <div className="bg-slate-800/50 rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <TrendingUp className="size-4 text-orange-400" />
+                <span className="text-xs text-slate-400">Transformacoes</span>
+              </div>
+              <p className="text-lg font-semibold text-white">{cloudinaryUsage.transformations.used}</p>
+            </div>
+          </div>
+
+          {cloudinaryUsage.credits.percentage > 80 && (
+            <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+              <p className="text-red-400 text-sm flex items-center gap-2">
+                <AlertCircle className="size-4" />
+                Atencao: Uso alto! Considere fazer upgrade do plano Cloudinary.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
