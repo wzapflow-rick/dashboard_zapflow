@@ -340,12 +340,15 @@ export async function upsertProduct(productData: any, selectedInsumos?: { insumo
           metadataPayload['tamanhos'] = tamanhosStr;
         }
         
-        if ('Recomendacoes' in existingMetadata) {
+        // Detectar o nome correto da coluna de recomendacoes (com ou sem acento)
+        if ('Recomendações' in existingMetadata) {
+          metadataPayload['Recomendações'] = recomendacoesStr;
+        } else if ('Recomendacoes' in existingMetadata) {
           metadataPayload['Recomendacoes'] = recomendacoesStr;
         } else if ('recomendacoes' in existingMetadata) {
           metadataPayload['recomendacoes'] = recomendacoesStr;
         } else {
-          metadataPayload['Recomendacoes'] = recomendacoesStr;
+          metadataPayload['Recomendações'] = recomendacoesStr;
         }
         
         console.log(`[UPSERT_PRODUCT] Payload de update:`, JSON.stringify(metadataPayload));
@@ -356,7 +359,7 @@ export async function upsertProduct(productData: any, selectedInsumos?: { insumo
         console.log(`[UPSERT_PRODUCT] Criando novos metadados (existingMetadata: ${!!existingMetadata}, actualId: ${actualId})`);
         metadataPayload = {
           'Produto ID': savedProduct.id,
-          'Recomendacoes': recomendacoesStr,
+          'Recomendações': recomendacoesStr,
           'Tamanhos': tamanhosStr,
         };
         
