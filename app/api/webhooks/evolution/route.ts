@@ -357,11 +357,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ received: true, ignored: 'parallel_request' });
     }
     
-    // 2. Verificar cache ANTES de qualquer coisa
+    // 2. Verificar cache de curto prazo (30 segundos - evita flood imediato)
     const cachedTime = recentContactsCache.get(lockKey);
     if (cachedTime) {
       const secondsDiff = (Date.now() - cachedTime) / 1000;
-      // Se foi contatado nos ultimos 30 segundos, ignora (evita flood imediato)
       if (secondsDiff < 30) {
         console.log(`[BOT] Cliente ${phone} no cache (${secondsDiff.toFixed(0)}s atras), ignorando`);
         return NextResponse.json({ received: true, recently_contacted: true });
@@ -369,8 +368,8 @@ export async function POST(req: NextRequest) {
     }
     
     // 3. ATIVAR LOCK IMEDIATAMENTE - antes de qualquer operacao async
+    // Mas NAO preenche o cache ainda - so apos verificacao completa no banco
     processingLock.set(lockKey, true);
-    recentContactsCache.set(lockKey, Date.now()); // Marca no cache tambem
     console.log(`[BOT] Lock ativado para ${phone}`);
     
     try {
@@ -382,12 +381,17 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ received: true, bot_disabled: true });
       }
       
-      // Verificar se ja foi contatado recentemente (verificacao completa no banco)
-      // Agora usa COOLDOWN_HOURS * 3600 segundos para verificacao longa
+      // 4. Verificar se ja foi contatado recentemente (verificacao completa no banco - 6 horas)
       const fullCheckResult = await wasRecentlyContacted(empresa.id, phone);
       if (fullCheckResult) {
+        // Preenche o cache para evitar consultas repetidas ao banco
+        recentContactsCache.set(lockKey, Date.now());
         return NextResponse.json({ received: true, recently_contacted: true });
       }
+      
+      // 5. Passou em todas as verificacoes - preenche o cache agora
+      recentContactsCache.set(lockKey, Date.now());
+      console.log(`[BOT] Cliente ${phone} liberado para receber saudacao`);
     
     // TODO: Verificar horario de funcionamento se configurado
     // (por enquanto ignora essa verificacao)
