@@ -120,6 +120,7 @@ export async function createManualOrder(data: {
             valor_total: data.valor_total,
             status: 'pendente',
             canal: 'Painel',
+            tipo_entrega: 'retirada', // Pedidos manuais da expedicao sao para retirada
             empresa_id: user.empresaId,
             criado_em: new Date().toISOString(),
         };
