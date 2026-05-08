@@ -280,6 +280,14 @@ async function getBotConfig(empresaId: number): Promise<any> {
       where: `(empresa_id,eq,${empresaId})`
     }) as any;
     
+    if (config) {
+      console.log(`[BOT] Config encontrada para empresa ${empresaId}:`, JSON.stringify(config));
+      // Normalizar o campo bot_ativo (pode vir com diferentes nomes)
+      const botAtivo = config.bot_ativo ?? config['Bot Ativo'] ?? config['bot ativo'] ?? config.Bot_Ativo ?? config.ativo ?? true;
+      config.bot_ativo = botAtivo === true || botAtivo === 'true' || botAtivo === 1 || botAtivo === '1';
+      console.log(`[BOT] bot_ativo normalizado: ${config.bot_ativo}`);
+    }
+    
     return config;
   } catch (error) {
     console.error('[BOT] Erro ao buscar config:', error);
