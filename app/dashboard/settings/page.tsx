@@ -1193,7 +1193,20 @@ export default function SettingsPage() {
                       <input
                         type="checkbox"
                         checked={botConfig?.bot_ativo ?? true}
-                        onChange={(e) => setBotConfig(prev => prev ? { ...prev, bot_ativo: e.target.checked } : null)}
+                        onChange={async (e) => {
+                          const newValue = e.target.checked;
+                          setBotConfig(prev => prev ? { ...prev, bot_ativo: newValue } : null);
+                          // Salvar automaticamente quando toggle e alterado
+                          if (botConfig) {
+                            try {
+                              await saveBotConfig({ ...botConfig, bot_ativo: newValue });
+                              toast.success(newValue ? 'Bot ativado!' : 'Bot desativado!');
+                            } catch (err) {
+                              toast.error('Erro ao salvar. Tente novamente.');
+                              setBotConfig(prev => prev ? { ...prev, bot_ativo: !newValue } : null);
+                            }
+                          }
+                        }}
                         className="sr-only peer"
                       />
                       <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-primary"></div>
