@@ -519,3 +519,67 @@ export async function getOrdersForReport(startDate: string, endDate: string) {
         throw new Error(error.message || 'Falha ao buscar relatório');
     }
 }
+
+/**
+ * Atualiza os itens de um pedido existente
+ * Permite adicionar, remover ou alterar quantidade de itens
+ */
+export async function updateOrderItems(
+    orderId: number, 
+    newItems: any[], 
+    novoTotal: number,
+    observacao?: string
+) {
+    try {
+        const user = await requireRole(['admin', 'gerente', 'atendente']);
+
+        // Busca o pedido atual
+        const orderData = await noco.findById(PEDIDOS_TABLE_ID, orderId) as any;
+
+        if (!orderData || Number(orderData.empresa_id) !== Number(user.empresaId)) {
+            logger.securityAccessDenied(user.empresaId, `order:${orderId}`, 'UPDATE_ITEMS');
+            throw new Error('Acesso negado: Pedido nao pertence a esta empresa');
+        }
+
+        // Verifica se o pedido pode ser editado (apenas pendente ou preparando)
+        const statusEditaveis = ['pendente', 'preparando', 'aguardando_pagamento'];
+        if (!statusEditaveis.includes(orderData.status)) {
+            throw new Error(`Pedido com status "${orderData.status}" nao pode ser editado`);
+        }
+
+        // Prepara o payload de atualizacao
+        const itensStr = JSON.stringify(newItems);
+        const updatePayload: any = { 
+            id: orderId, 
+            itens: itensStr,
+            valor_total: novoTotal
+        };
+
+        // Adiciona observacao se fornecida
+        if (observacao) {
+            const nowStr = new Date().toLocaleString('pt-BR');
+            updatePayload.observacoes = orderData.observacoes
+                ? `${orderData.observacoes}\n✏️ EDITADO (${nowStr}): ${observacao}`
+                : `✏️ EDITADO (${nowStr}): ${observacao}`;
+        }
+
+        // Atualiza o pedido
+        const result = await noco.update(PEDIDOS_TABLE_ID, updatePayload);
+
+        // Registra log de auditoria
+        const valorAntigo = Number(orderData.valor_total || 0).toFixed(2);
+        const valorNovo = novoTotal.toFixed(2);
+        await logAction(
+            'UPDATE_ORDER_ITEMS', 
+            `Pedido #${orderId} editado. Valor: R$ ${valorAntigo} -> R$ ${valorNovo}. Itens: ${newItems.length}`
+        );
+
+        // Revalida as paginas
+        revalidatePath('/dashboard/expedition');
+
+        return { success: true, order: result };
+    } catch (error: any) {
+        console.error('Erro ao atualizar itens do pedido:', error);
+        throw new Error(error.message || 'Falha ao atualizar pedido');
+    }
+}

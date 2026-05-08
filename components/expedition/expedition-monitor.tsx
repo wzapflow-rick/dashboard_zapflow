@@ -6,6 +6,7 @@ import { getOrders, updateOrderStatus, verificarEstoqueDoPedido } from '@/app/ac
 import RegisterCustomerModal from '@/components/expedition/register-customer-modal';
 import StockWarningModal from '@/components/expedition/stock-warning-modal';
 import OrderDetailsModal from '@/components/expedition/order-details-modal';
+import EditOrderModal from '@/components/expedition/edit-order-modal';
 import { toast } from 'sonner';
 import { Plus } from 'lucide-react';
 import OrderCreatorModal from '@/components/modals/order-creator-modal';
@@ -46,6 +47,8 @@ export default function ExpeditionMonitor() {
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [orderToCancel, setOrderToCancel] = useState<number | null>(null);
   const [usingCache, setUsingCache] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedOrderForEdit, setSelectedOrderForEdit] = useState<any>(null);
 
   // Hook de offline
   const { 
@@ -220,6 +223,11 @@ export default function ExpeditionMonitor() {
     setIsDetailsOpen(true);
   };
 
+  const openEditModal = (order: any) => {
+    setSelectedOrderForEdit(JSON.parse(JSON.stringify(order)));
+    setIsEditModalOpen(true);
+  };
+
   const handleCancelOrder = (orderId: number) => {
     setOrderToCancel(orderId);
     setIsCancelModalOpen(true);
@@ -317,6 +325,7 @@ export default function ExpeditionMonitor() {
               onRegisterCustomer={openRegisterModal}
               onOpenDetails={openDetailsModal}
               onCancelOrder={handleCancelOrder}
+              onEditOrder={openEditModal}
             />
           );
         })}
@@ -390,6 +399,18 @@ export default function ExpeditionMonitor() {
           }}
           onConfirm={handleConfirmCancel}
           orderId={orderToCancel || 0}
+        />
+      )}
+
+      {isEditModalOpen && (
+        <EditOrderModal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setSelectedOrderForEdit(null);
+          }}
+          order={selectedOrderForEdit}
+          onSuccess={loadOrders}
         />
       )}
     </div>
