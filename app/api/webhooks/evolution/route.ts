@@ -13,6 +13,9 @@ const EVO_API_KEY = process.env.EVOLUTION_API_KEY || '';
 // Isso previne multiplas mensagens mesmo antes de salvar no banco
 const recentContactsCache = new Map<string, number>();
 
+// Lock para requisicoes em andamento (chave: empresaId_phone, valor: true se processando)
+const processingLock = new Map<string, boolean>();
+
 // Tempo minimo entre saudacoes para o mesmo contato (em horas)
 const COOLDOWN_HOURS = 6;
 
@@ -345,18 +348,46 @@ export async function POST(req: NextRequest) {
     
     console.log(`[BOT] Empresa encontrada: ${empresa.nome_fantasia} (ID: ${empresa.id})`);
     
-    // Buscar configuracao do bot
-    const botConfig = await getBotConfig(empresa.id);
+    // ========== LOCK IMEDIATO PARA EVITAR PROCESSAMENTO PARALELO ==========
+    const lockKey = `${empresa.id}_${phone}`;
     
-    if (!botConfig || !botConfig.bot_ativo) {
-      console.log(`[BOT] Bot desativado ou nao configurado para empresa ${empresa.id}`);
-      return NextResponse.json({ received: true, bot_disabled: true });
+    // 1. Verificar se ja esta processando (lock ativo)
+    if (processingLock.get(lockKey)) {
+      console.log(`[BOT] Requisicao paralela detectada para ${phone}, ignorando`);
+      return NextResponse.json({ received: true, ignored: 'parallel_request' });
     }
     
-    // Verificar se ja foi contatado recentemente
-    if (await wasRecentlyContacted(empresa.id, phone)) {
-      return NextResponse.json({ received: true, recently_contacted: true });
+    // 2. Verificar cache ANTES de qualquer coisa
+    const cachedTime = recentContactsCache.get(lockKey);
+    if (cachedTime) {
+      const secondsDiff = (Date.now() - cachedTime) / 1000;
+      // Se foi contatado nos ultimos 30 segundos, ignora (evita flood imediato)
+      if (secondsDiff < 30) {
+        console.log(`[BOT] Cliente ${phone} no cache (${secondsDiff.toFixed(0)}s atras), ignorando`);
+        return NextResponse.json({ received: true, recently_contacted: true });
+      }
     }
+    
+    // 3. ATIVAR LOCK IMEDIATAMENTE - antes de qualquer operacao async
+    processingLock.set(lockKey, true);
+    recentContactsCache.set(lockKey, Date.now()); // Marca no cache tambem
+    console.log(`[BOT] Lock ativado para ${phone}`);
+    
+    try {
+      // Buscar configuracao do bot
+      const botConfig = await getBotConfig(empresa.id);
+      
+      if (!botConfig || !botConfig.bot_ativo) {
+        console.log(`[BOT] Bot desativado ou nao configurado para empresa ${empresa.id}`);
+        return NextResponse.json({ received: true, bot_disabled: true });
+      }
+      
+      // Verificar se ja foi contatado recentemente (verificacao completa no banco)
+      // Agora usa COOLDOWN_HOURS * 3600 segundos para verificacao longa
+      const fullCheckResult = await wasRecentlyContacted(empresa.id, phone);
+      if (fullCheckResult) {
+        return NextResponse.json({ received: true, recently_contacted: true });
+      }
     
     // TODO: Verificar horario de funcionamento se configurado
     // (por enquanto ignora essa verificacao)
@@ -400,16 +431,22 @@ export async function POST(req: NextRequest) {
       }
     }
     
-    // Marcar cliente como contatado
-    await markAsContacted(empresa.id, phone);
-    
-    console.log(`[BOT] Saudacao completa: ${enviadas}/${mensagens.length} mensagens enviadas`);
-    
-    return NextResponse.json({ 
-      received: true, 
-      messages_sent: enviadas,
-      total_messages: mensagens.length 
-    });
+      // Marcar cliente como contatado (persistir no banco)
+      await markAsContacted(empresa.id, phone);
+      
+      console.log(`[BOT] Saudacao completa: ${enviadas}/${mensagens.length} mensagens enviadas`);
+      
+      return NextResponse.json({ 
+        received: true, 
+        messages_sent: enviadas,
+        total_messages: mensagens.length 
+      });
+      
+    } finally {
+      // SEMPRE libera o lock de processamento (mas mantem o cache)
+      processingLock.delete(lockKey);
+      console.log(`[BOT] Lock liberado para ${phone}`);
+    }
     
   } catch (error: any) {
     console.error('[BOT] Erro no webhook:', error);
