@@ -200,47 +200,59 @@ export default function EditOrderModal({ isOpen, onClose, order, onSuccess }: Ed
                   {items.map((item, idx) => (
                     <div 
                       key={`${item.id}-${idx}`} 
-                      className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600"
+                      className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600"
                     >
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-slate-900 dark:text-white truncate">
-                          {item.produto}
-                        </p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                          {formatPrice(item.preco)} cada
-                        </p>
-                      </div>
-                      
-                      {/* Controles de quantidade */}
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleQuantityChange(idx, -1)}
-                          className="size-8 flex items-center justify-center bg-slate-100 dark:bg-slate-600 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-500 transition-colors"
-                        >
-                          <Minus className="size-4 text-slate-600 dark:text-slate-300" />
-                        </button>
-                        <span className="w-8 text-center font-bold text-slate-900 dark:text-white">
-                          {item.quantidade}
-                        </span>
-                        <button
-                          onClick={() => handleQuantityChange(idx, 1)}
-                          className="size-8 flex items-center justify-center bg-slate-100 dark:bg-slate-600 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-500 transition-colors"
-                        >
-                          <Plus className="size-4 text-slate-600 dark:text-slate-300" />
-                        </button>
-                      </div>
-
-                      {/* Subtotal e remover */}
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-900 dark:text-white min-w-[80px] text-right">
-                          {formatPrice(item.preco * item.quantidade)}
-                        </span>
+                      {/* Mobile: Layout empilhado */}
+                      <div className="flex items-start justify-between gap-2 mb-2 sm:mb-0">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-slate-900 dark:text-white truncate">
+                            {item.produto}
+                          </p>
+                          <p className="text-sm text-slate-500 dark:text-slate-400">
+                            {formatPrice(item.preco)} cada
+                          </p>
+                        </div>
+                        {/* Remover - visivel em mobile no topo */}
                         <button
                           onClick={() => handleRemoveItem(idx)}
-                          className="size-8 flex items-center justify-center text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                          className="size-8 flex items-center justify-center text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors sm:hidden"
                         >
                           <Trash2 className="size-4" />
                         </button>
+                      </div>
+                      
+                      {/* Controles de quantidade e subtotal */}
+                      <div className="flex items-center justify-between gap-2 sm:gap-3">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleQuantityChange(idx, -1)}
+                            className="size-9 sm:size-8 flex items-center justify-center bg-slate-100 dark:bg-slate-600 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-500 transition-colors"
+                          >
+                            <Minus className="size-4 text-slate-600 dark:text-slate-300" />
+                          </button>
+                          <span className="w-8 text-center font-bold text-slate-900 dark:text-white">
+                            {item.quantidade}
+                          </span>
+                          <button
+                            onClick={() => handleQuantityChange(idx, 1)}
+                            className="size-9 sm:size-8 flex items-center justify-center bg-slate-100 dark:bg-slate-600 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-500 transition-colors"
+                          >
+                            <Plus className="size-4 text-slate-600 dark:text-slate-300" />
+                          </button>
+                        </div>
+
+                        {/* Subtotal e remover (desktop) */}
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-900 dark:text-white text-right">
+                            {formatPrice(item.preco * item.quantidade)}
+                          </span>
+                          <button
+                            onClick={() => handleRemoveItem(idx)}
+                            className="size-8 items-center justify-center text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors hidden sm:flex"
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
