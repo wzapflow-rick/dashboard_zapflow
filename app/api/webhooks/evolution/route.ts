@@ -78,6 +78,7 @@ function delay(ms: number): Promise<void> {
 
 /**
  * Verificar se o cliente ja foi contatado recentemente
+ * Usa a tabela BOT_CONFIG para armazenar os contatos recentes de forma persistente
  */
 async function wasRecentlyContacted(empresaId: number, phone: string): Promise<boolean> {
   const cacheKey = `${empresaId}_${phone}`;
@@ -93,21 +94,53 @@ async function wasRecentlyContacted(empresaId: number, phone: string): Promise<b
     }
   }
   
-  // 2. Depois verifica no banco de dados
+  // 2. Verifica na tabela de clientes (campo ultimo_contato_bot)
   try {
     const cliente = await noco.findOne(CLIENTES_TABLE_ID, {
       where: `(telefone,eq,${phone})~and(empresa_id,eq,${empresaId})`
     }) as any;
     
-    if (cliente?.ultimo_contato_bot) {
-      const lastContact = new Date(cliente.ultimo_contato_bot);
-      const hoursDiff = (now - lastContact.getTime()) / (1000 * 60 * 60);
+    if (cliente) {
+      // Tenta varios nomes possiveis para o campo
+      const lastContactStr = cliente.ultimo_contato_bot || 
+                             cliente['ultimo_contato_bot'] || 
+                             cliente.ultimoContatoBot ||
+                             cliente.last_bot_contact;
       
-      if (hoursDiff < COOLDOWN_HOURS) {
-        console.log(`[BOT] Cliente ${phone} contatado ha ${hoursDiff.toFixed(1)}h (banco), ignorando`);
-        // Atualiza o cache tambem
-        recentContactsCache.set(cacheKey, lastContact.getTime());
-        return true;
+      if (lastContactStr) {
+        const lastContact = new Date(lastContactStr);
+        const hoursDiff = (now - lastContact.getTime()) / (1000 * 60 * 60);
+        
+        if (hoursDiff < COOLDOWN_HOURS) {
+          console.log(`[BOT] Cliente ${phone} contatado ha ${hoursDiff.toFixed(1)}h (banco), ignorando`);
+          recentContactsCache.set(cacheKey, lastContact.getTime());
+          return true;
+        }
+      }
+    }
+    
+    // 3. Verifica na config do bot (campo contatos_recentes como JSON)
+    const botConfig = await noco.findOne(BOT_CONFIG_TABLE_ID!, {
+      where: `(empresa_id,eq,${empresaId})`
+    }) as any;
+    
+    if (botConfig?.contatos_recentes) {
+      try {
+        const contatos = typeof botConfig.contatos_recentes === 'string' 
+          ? JSON.parse(botConfig.contatos_recentes) 
+          : botConfig.contatos_recentes;
+        
+        const lastContactTime = contatos[phone];
+        if (lastContactTime) {
+          const hoursDiff = (now - lastContactTime) / (1000 * 60 * 60);
+          if (hoursDiff < COOLDOWN_HOURS) {
+            console.log(`[BOT] Cliente ${phone} em contatos_recentes (${hoursDiff.toFixed(1)}h), ignorando`);
+            recentContactsCache.set(cacheKey, lastContactTime);
+            return true;
+          }
+        }
+      } catch (parseErr) {
+        console.warn('[BOT] Erro ao parsear contatos_recentes:', parseErr);
       }
     }
     
@@ -120,7 +153,7 @@ async function wasRecentlyContacted(empresaId: number, phone: string): Promise<b
 }
 
 /**
- * Marcar cliente como contatado (cache + banco)
+ * Marcar cliente como contatado (cache + banco + config)
  */
 async function markAsContacted(empresaId: number, phone: string): Promise<void> {
   const cacheKey = `${empresaId}_${phone}`;
@@ -128,28 +161,71 @@ async function markAsContacted(empresaId: number, phone: string): Promise<void> 
   
   // 1. Sempre atualiza o cache primeiro (imediato)
   recentContactsCache.set(cacheKey, now);
+  console.log(`[BOT] Cache atualizado para ${phone}`);
   
-  // 2. Tenta atualizar no banco
+  // 2. Tenta atualizar na tabela de clientes
   try {
     const cliente = await noco.findOne(CLIENTES_TABLE_ID, {
       where: `(telefone,eq,${phone})~and(empresa_id,eq,${empresaId})`
     }) as any;
     
-    if (cliente?.id) {
+    if (cliente?.id || cliente?.Id) {
+      const clienteId = cliente.id || cliente.Id;
       await noco.update(CLIENTES_TABLE_ID, {
-        id: cliente.id,
+        id: clienteId,
         ultimo_contato_bot: new Date().toISOString()
       });
-      console.log(`[BOT] Contato ${phone} marcado no banco`);
-    } else {
-      console.log(`[BOT] Cliente ${phone} nao existe no banco, marcado apenas no cache`);
+      console.log(`[BOT] Cliente ${phone} marcado no banco (ID: ${clienteId})`);
     }
-  } catch (error) {
-    console.error('[BOT] Erro ao marcar contato no banco:', error);
-    // Cache ja foi atualizado, entao ainda temos protecao
+  } catch (clienteError) {
+    console.warn('[BOT] Erro ao atualizar cliente:', clienteError);
   }
   
-  // 3. Limpa entradas antigas do cache (mais de 24h) para nao crescer infinitamente
+  // 3. Salva tambem na config do bot (contatos_recentes como JSON)
+  // Isso garante persistencia mesmo que a tabela de clientes nao tenha o campo
+  try {
+    const botConfig = await noco.findOne(BOT_CONFIG_TABLE_ID!, {
+      where: `(empresa_id,eq,${empresaId})`
+    }) as any;
+    
+    if (botConfig) {
+      const configId = botConfig.id || botConfig.Id;
+      let contatos: Record<string, number> = {};
+      
+      // Parse contatos existentes
+      if (botConfig.contatos_recentes) {
+        try {
+          contatos = typeof botConfig.contatos_recentes === 'string' 
+            ? JSON.parse(botConfig.contatos_recentes) 
+            : botConfig.contatos_recentes;
+        } catch (e) {
+          contatos = {};
+        }
+      }
+      
+      // Adiciona/atualiza este contato
+      contatos[phone] = now;
+      
+      // Remove contatos antigos (mais de 24h) para nao crescer infinitamente
+      const oneDayAgo = now - (24 * 60 * 60 * 1000);
+      for (const [p, t] of Object.entries(contatos)) {
+        if (t < oneDayAgo) {
+          delete contatos[p];
+        }
+      }
+      
+      // Salva de volta
+      await noco.update(BOT_CONFIG_TABLE_ID!, {
+        id: configId,
+        contatos_recentes: JSON.stringify(contatos)
+      });
+      console.log(`[BOT] Contatos recentes salvos na config (${Object.keys(contatos).length} contatos)`);
+    }
+  } catch (configError) {
+    console.warn('[BOT] Erro ao salvar contatos_recentes:', configError);
+  }
+  
+  // 4. Limpa entradas antigas do cache em memoria
   const oneDayAgo = now - (24 * 60 * 60 * 1000);
   for (const [key, timestamp] of recentContactsCache.entries()) {
     if (timestamp < oneDayAgo) {
