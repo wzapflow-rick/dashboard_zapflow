@@ -48,6 +48,13 @@ export default function EditOrderModal({ isOpen, onClose, order, onSuccess }: Ed
         parsedItems = [];
       }
       
+      // DEBUG: Ver estrutura real dos itens
+      console.log('[v0] Itens do pedido (raw):', JSON.stringify(parsedItems, null, 2));
+      if (parsedItems.length > 0) {
+        console.log('[v0] Primeiro item keys:', Object.keys(parsedItems[0]));
+        console.log('[v0] Primeiro item completo:', parsedItems[0]);
+      }
+      
       // Normalizar itens - tentar multiplos nomes de campos para preco
       const normalized = parsedItems.map((item: any, idx: number) => {
         // Tentar extrair preco de diferentes campos possiveis
@@ -57,6 +64,8 @@ export default function EditOrderModal({ isOpen, onClose, order, onSuccess }: Ed
                       Number(item.valor) ||
                       (item.subtotal && item.quantidade ? Number(item.subtotal) / Number(item.quantidade) : 0) ||
                       0;
+        
+        console.log(`[v0] Item ${idx}: ${item.produto || item.nome} - preco encontrado: ${preco}`, item);
         
         const quantidade = Number(item.quantidade) || Number(item.qtd) || 1;
         
