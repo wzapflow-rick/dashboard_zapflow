@@ -48,16 +48,28 @@ export default function EditOrderModal({ isOpen, onClose, order, onSuccess }: Ed
         parsedItems = [];
       }
       
-      // Normalizar itens
-      const normalized = parsedItems.map((item: any, idx: number) => ({
-        id: item.id || idx,
-        produto: item.produto || item.nome || 'Item',
-        nome: item.nome || item.produto,
-        preco: Number(item.preco) || 0,
-        quantidade: Number(item.quantidade) || 1,
-        subtotal: Number(item.subtotal) || (Number(item.preco) * (Number(item.quantidade) || 1)),
-        observacao: item.observacao || '',
-      }));
+      // Normalizar itens - tentar multiplos nomes de campos para preco
+      const normalized = parsedItems.map((item: any, idx: number) => {
+        // Tentar extrair preco de diferentes campos possiveis
+        const preco = Number(item.preco) || 
+                      Number(item.preco_unitario) || 
+                      Number(item.valor_unitario) || 
+                      Number(item.valor) ||
+                      (item.subtotal && item.quantidade ? Number(item.subtotal) / Number(item.quantidade) : 0) ||
+                      0;
+        
+        const quantidade = Number(item.quantidade) || Number(item.qtd) || 1;
+        
+        return {
+          id: item.id || item.produto_id || idx,
+          produto: item.produto || item.nome || item.name || 'Item',
+          nome: item.nome || item.produto || item.name,
+          preco: preco,
+          quantidade: quantidade,
+          subtotal: Number(item.subtotal) || (preco * quantidade),
+          observacao: item.observacao || item.obs || '',
+        };
+      });
       
       setItems(normalized);
       setObservacao('');
