@@ -4,9 +4,22 @@ import { getMe } from '@/lib/session-server';
 import { noco } from '@/lib/nocodb';
 import { PEDIDOS_TABLE_ID } from '@/lib/constants';
 
+// Helper para timeout em queries
+async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+    const timeout = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error(`Timeout: ${label} demorou mais de ${ms}ms`)), ms);
+    });
+    return Promise.race([promise, timeout]);
+}
+
 export async function getDashboardData(period: string = 'Hoje') {
+    const startTime = Date.now();
     try {
-        const user = await getMe();
+        console.log(`[Dashboard] Iniciando carregamento...`);
+        
+        const user = await withTimeout(getMe(), 5000, 'getMe');
+        console.log(`[Dashboard] Usuario carregado em ${Date.now() - startTime}ms`);
+        
         if (!user?.empresaId) {
             console.error('[Dashboard] User not found or no empresaId');
             throw new Error('Não autorizado');
@@ -27,14 +40,22 @@ export async function getDashboardData(period: string = 'Hoje') {
             startDate = new Date(1970, 0, 1);
         }
 
-        console.log(`[Dashboard] Period: ${period}, StartDate: ${startDate.toISOString()}`);
+        console.log(`[Dashboard] Period: ${period}, EmpresaId: ${user.empresaId}`);
 
-        const data = await noco.list(PEDIDOS_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})`,
-            sort: '-id',
-            limit: 1000,
-        });
+        // Limitar a 200 pedidos para evitar timeout em contas com muitos pedidos
+        const data = await withTimeout(
+            noco.list(PEDIDOS_TABLE_ID, {
+                where: `(empresa_id,eq,${user.empresaId})`,
+                sort: '-id',
+                limit: 200,
+            }),
+            10000,
+            'listar pedidos'
+        );
+        console.log(`[Dashboard] Pedidos carregados em ${Date.now() - startTime}ms`);
+        
         const allOrders = data.list || [];
+        console.log(`[Dashboard] Total de pedidos encontrados: ${allOrders.length}`);
 
         // Filtrar por data em memória (evita problemas de parsing de datas no NocoDB)
         const orders = allOrders.filter((o: any) => o.criado_em && new Date(o.criado_em) >= startDate);
@@ -81,13 +102,26 @@ export async function getDashboardData(period: string = 'Hoje') {
             });
         });
 
-        // Buscar imagens reais dos produtos para o Top 5
+        console.log(`[Dashboard] Stats calculadas em ${Date.now() - startTime}ms`);
+
+        // Buscar imagens reais dos produtos para o Top 5 (com timeout)
         const { PRODUTOS_TABLE_ID } = await import('@/lib/constants');
-        const productsData = await noco.list(PRODUTOS_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})`,
-            limit: 100,
-        });
-        const realProducts = productsData.list || [];
+        let realProducts: any[] = [];
+        try {
+            const productsData = await withTimeout(
+                noco.list(PRODUTOS_TABLE_ID, {
+                    where: `(empresa_id,eq,${user.empresaId})`,
+                    limit: 50,
+                }),
+                5000,
+                'listar produtos'
+            );
+            realProducts = productsData.list || [];
+            console.log(`[Dashboard] Produtos carregados em ${Date.now() - startTime}ms`);
+        } catch (prodErr) {
+            console.warn(`[Dashboard] Falha ao carregar produtos: ${prodErr}`);
+            // Continua sem imagens dos produtos
+        }
 
         const topProducts = Array.from(productStats.values())
             .sort((a, b) => b.sales - a.sales)
@@ -126,8 +160,11 @@ export async function getDashboardData(period: string = 'Hoje') {
             chartData: salesByHour,
             rawOrders: orders.slice(0, 5)
         };
+        
+        console.log(`[Dashboard] Carregamento completo em ${Date.now() - startTime}ms`);
+        return result;
     } catch (error: any) {
-        console.error('API Error (getDashboardData):', error.message);
+        console.error(`[Dashboard] ERRO apos ${Date.now() - startTime}ms:`, error.message);
         throw error;
     }
 }
