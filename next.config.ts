@@ -69,9 +69,33 @@ const nextConfig: NextConfig = {
   },
   output: 'standalone',
   transpilePackages: ['motion'],
+  // Gerar um ID unico por deploy para invalidar cache
+  generateBuildId: async () => {
+    return `build-${Date.now()}`;
+  },
   async headers() {
     const isProduction = process.env.NODE_ENV === 'production';
     return [
+      // Headers para assets estaticos - cache longo com revalidacao
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      // Headers para paginas - cache curto para evitar problemas de Server Actions
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate',
+          },
+        ],
+      },
       {
         source: '/(.*)',
         headers: [
