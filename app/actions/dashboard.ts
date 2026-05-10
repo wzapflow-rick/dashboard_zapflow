@@ -149,7 +149,7 @@ export async function getDashboardData(period: string = 'Hoje') {
             salesByHour[brasiliaHour]++;
         });
 
-        return {
+        const data = {
             stats: [
                 { label: 'Faturamento Bruto', value: `R$ ${totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, change: 'Real-time', trend: 'up', color: 'blue' },
                 { label: 'Total de Pedidos', value: totalValidOrdersCount.toString(), change: 'Real-time', trend: 'up', color: 'indigo' },
@@ -162,7 +162,7 @@ export async function getDashboardData(period: string = 'Hoje') {
         };
         
         console.log(`[Dashboard] Carregamento completo em ${Date.now() - startTime}ms`);
-        return result;
+        return data;
     } catch (error: any) {
         console.error(`[Dashboard] ERRO apos ${Date.now() - startTime}ms:`, error.message);
         throw error;
