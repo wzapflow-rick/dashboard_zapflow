@@ -43,7 +43,7 @@ export async function getDashboardData(period: string = 'Hoje') {
         console.log(`[Dashboard] Period: ${period}, EmpresaId: ${user.empresaId}`);
 
         // Limitar a 200 pedidos para evitar timeout em contas com muitos pedidos
-        const data = await withTimeout(
+        const ordersData = await withTimeout(
             noco.list(PEDIDOS_TABLE_ID, {
                 where: `(empresa_id,eq,${user.empresaId})`,
                 sort: '-id',
@@ -54,7 +54,7 @@ export async function getDashboardData(period: string = 'Hoje') {
         );
         console.log(`[Dashboard] Pedidos carregados em ${Date.now() - startTime}ms`);
         
-        const allOrders = data.list || [];
+        const allOrders = ordersData.list || [];
         console.log(`[Dashboard] Total de pedidos encontrados: ${allOrders.length}`);
 
         // Filtrar por data em memória (evita problemas de parsing de datas no NocoDB)
