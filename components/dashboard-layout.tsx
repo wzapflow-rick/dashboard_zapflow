@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Sidebar } from './layout/sidebar';
 import { Header } from './layout/header';
 import { PaymentAlert } from './dashboard/payment-alert';
+import { TrialWarningBanner } from './dashboard/trial-warning-banner';
 import { OfflineIndicator } from './offline-indicator';
 import { cn } from '@/lib/utils';
 import { RefreshCw, AlertTriangle } from 'lucide-react';
@@ -197,6 +198,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         />
         <div className="p-4 sm:p-6 lg:p-8 flex-1 dark:bg-[#0a1628]">
           {user?.empresaId && <PaymentAlert empresaId={user.empresaId} />}
+          {user && (
+            <TrialWarningBanner 
+              plano={user.plano} 
+              dataInicio={user.dataInicio || user.created_at} 
+              empresaId={user.empresaId} 
+            />
+          )}
           <DashboardErrorBoundary>
             {children}
           </DashboardErrorBoundary>

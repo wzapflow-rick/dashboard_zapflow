@@ -225,6 +225,25 @@ export const SUBSCRIPTION_PLANS = {
       'Cardapio online bloqueado ate assinar',
     ],
   },
+  PARCERIA: {
+    id: 'parceria',
+    name: 'Parceria',
+    price: 0,
+    description: 'Teste gratis por 7 dias com acesso total!',
+    trial: true,
+    trialDays: 7,
+    convertTo: 'start', // Plano para converter apos o trial
+    convertPrice: 29.90, // Preco promocional para conversao
+    features: [
+      'Cardapio digital (Link + QrCode)',
+      'Painel Kanban com notificacao no WhatsApp',
+      'Pix + Cartoes',
+      'Taxa de entregas calculada pelo Google Maps',
+      'Agente de IA no WhatsApp',
+      'Cupons de desconto',
+      '7 dias gratis - Acesso total',
+    ],
+  },
   START: {
     id: 'start',
     name: 'Start',
@@ -269,14 +288,36 @@ export const SUBSCRIPTION_PLANS = {
   },
 } as const;
 
-export type SubscriptionPlanId = 'iniciante' | 'start' | 'pro' | 'elite';
+export type SubscriptionPlanId = 'iniciante' | 'parceria' | 'start' | 'pro' | 'elite';
 
 /** Planos que permitem cardapio online ativo */
-export const PAID_PLANS: SubscriptionPlanId[] = ['start', 'pro', 'elite'];
+export const PAID_PLANS: SubscriptionPlanId[] = ['parceria', 'start', 'pro', 'elite'];
 
 /** Verifica se o plano permite cardapio online */
 export function isPaidPlan(plan: string | null | undefined): boolean {
   return PAID_PLANS.includes(plan as SubscriptionPlanId);
+}
+
+/** Verifica se o plano e um trial (parceria) */
+export function isTrialPlan(plan: string | null | undefined): boolean {
+  return plan === 'parceria';
+}
+
+/** Calcula dias restantes do trial */
+export function getTrialDaysRemaining(dataInicio: string | Date | null | undefined): number {
+  if (!dataInicio) return 0;
+  const inicio = new Date(dataInicio);
+  const agora = new Date();
+  const diffTime = agora.getTime() - inicio.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  const trialDays = SUBSCRIPTION_PLANS.PARCERIA.trialDays;
+  return Math.max(0, trialDays - diffDays);
+}
+
+/** Verifica se deve mostrar aviso de conversao (dia 6 em diante) */
+export function shouldShowTrialWarning(dataInicio: string | Date | null | undefined): boolean {
+  const remaining = getTrialDaysRemaining(dataInicio);
+  return remaining <= 1; // Mostrar no dia 6 (1 dia restante) ou dia 7 (0 dias)
 }
 
 // ============================================================
