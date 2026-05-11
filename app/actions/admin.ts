@@ -196,14 +196,20 @@ export async function createEmpresa(data: {
     };
     const planoCodigo = planoMap[data.plano || 'start'] || 'sta';
     
-    console.log('[v0] createEmpresa - plano:', data.plano, '-> codigo:', planoCodigo);
+    console.log('[v0] createEmpresa - todos os valores:', {
+      nome_fantasia: data.nome_fantasia || data.nome,
+      email: data.email,
+      telefone: data.telefone,
+      nome_admin: data.nome,
+      planos: planoCodigo,
+    });
 
-    // Criar empresa - gerar instancia_evolution automaticamente
+    // Criar empresa - sem o campo planos para evitar erro varchar(4)
     const empresaResult = await db.query(`
-      INSERT INTO empresas (nome_fantasia, email, telefone_loja, nome_admin, planos, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+      INSERT INTO empresas (nome_fantasia, email, telefone_loja, nome_admin, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, NOW(), NOW())
       RETURNING id
-    `, [data.nome_fantasia || data.nome, data.email, data.telefone, data.nome, planoCodigo]);
+    `, [data.nome_fantasia || data.nome, data.email, data.telefone, data.nome]);
     
     const empresaId = empresaResult.rows[0].id;
     
