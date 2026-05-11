@@ -275,29 +275,25 @@ export async function updateEmpresa(id: number, data: {
     const params: any[] = [];
     let paramIndex = 1;
 
-    if (data.nome !== undefined) {
-      updates.push(`nome = $${paramIndex++}`);
-      params.push(data.nome);
-    }
     if (data.nome_fantasia !== undefined) {
       updates.push(`nome_fantasia = $${paramIndex++}`);
       params.push(data.nome_fantasia);
-    }
-    if (data.slug !== undefined) {
-      updates.push(`slug = $${paramIndex++}`);
-      params.push(data.slug);
     }
     if (data.email !== undefined) {
       updates.push(`email = $${paramIndex++}`);
       params.push(data.email);
     }
     if (data.telefone !== undefined) {
-      updates.push(`telefone = $${paramIndex++}`);
+      updates.push(`telefone_loja = $${paramIndex++}`);
       params.push(data.telefone);
     }
-    if (data.status !== undefined) {
-      updates.push(`status = $${paramIndex++}`);
-      params.push(data.status);
+    if (data.ativo !== undefined) {
+      updates.push(`ativo = $${paramIndex++}`);
+      params.push(data.ativo);
+    }
+    if (data.planos !== undefined) {
+      updates.push(`planos = $${paramIndex++}`);
+      params.push(data.planos);
     }
 
     updates.push(`updated_at = NOW()`);
