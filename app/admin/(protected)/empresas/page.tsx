@@ -436,12 +436,12 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
   const [formData, setFormData] = useState({
     nome: '',
     nome_fantasia: '',
-    slug: '',
     email: '',
     telefone: '',
     plano: 'parceria',
     dias_trial: 7,
     senha: '',
+    nicho: '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -482,14 +482,7 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
     setLoading(false);
   };
 
-  const generateSlug = (nome: string) => {
-    return nome
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
-  };
+
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -510,17 +503,12 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
           )}
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Nome da Empresa *</label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Nome do Responsavel *</label>
             <input
               type="text"
               value={formData.nome}
-              onChange={(e) => {
-                setFormData({
-                  ...formData,
-                  nome: e.target.value,
-                  slug: generateSlug(e.target.value),
-                });
-              }}
+              onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+              placeholder="Ex: Joao Silva"
               className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
               required
             />
@@ -537,15 +525,23 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Slug (URL) *</label>
-            <input
-              type="text"
-              value={formData.slug}
-              onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+            <label className="block text-sm font-medium text-slate-300 mb-2">Nicho</label>
+            <select
+              value={formData.nicho}
+              onChange={(e) => setFormData({ ...formData, nicho: e.target.value })}
               className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
-              required
-            />
-            <p className="text-xs text-slate-500 mt-1">cardapio.wzapflow.com.br/menu/{formData.slug}</p>
+            >
+              <option value="">Selecione...</option>
+              <option value="pizzaria">Pizzaria</option>
+              <option value="hamburgueria">Hamburgueria</option>
+              <option value="restaurante">Restaurante</option>
+              <option value="lanchonete">Lanchonete</option>
+              <option value="cafeteria">Cafeteria</option>
+              <option value="doceria">Doceria</option>
+              <option value="padaria">Padaria</option>
+              <option value="acaiteria">Acaiteria</option>
+              <option value="outro">Outro</option>
+            </select>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

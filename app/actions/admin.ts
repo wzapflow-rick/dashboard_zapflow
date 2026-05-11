@@ -171,37 +171,36 @@ export async function getEmpresaById(id: number) {
 export async function createEmpresa(data: {
   nome: string;
   nome_fantasia?: string;
-  slug: string;
   email?: string;
   telefone?: string;
   plano?: string;
   dias_trial?: number;
   senha?: string;
   enviar_link_ativacao?: boolean;
+  nicho?: string;
 }) {
   try {
-    // Verificar se slug ja existe
-    const existingSlug = await db.query('SELECT id FROM empresas WHERE slug = $1', [data.slug]);
-    if (existingSlug.rows.length > 0) {
-      return { success: false, error: 'Slug ja existe' };
-    }
-
     // Verificar se email ja existe (se fornecido)
     if (data.email) {
-      const existingEmail = await db.query('SELECT id FROM usuarios WHERE email = $1', [data.email]);
+      const existingEmail = await db.query('SELECT email FROM empresas WHERE email = $1', [data.email]);
       if (existingEmail.rows.length > 0) {
         return { success: false, error: 'Email ja cadastrado' };
       }
     }
 
-    // Criar empresa
+    // Criar empresa - gerar instancia_evolution automaticamente
     const empresaResult = await db.query(`
-      INSERT INTO empresas (nome, nome_fantasia, slug, email, telefone, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+      INSERT INTO empresas (nome_fantasia, email, telefone_loja, nome_admin, nicho, planos, ativo, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, true, NOW(), NOW())
       RETURNING id
-    `, [data.nome, data.nome_fantasia || data.nome, data.slug, data.email, data.telefone]);
-
+    `, [data.nome_fantasia || data.nome, data.email, data.telefone, data.nome, data.nicho || '', data.plano || 'parceria']);
+    
     const empresaId = empresaResult.rows[0].id;
+    
+    // Atualizar instancia_evolution com o ID da empresa
+    await db.query(`
+      UPDATE empresas SET instancia_evolution = $1 WHERE id = $2
+    `, [`zapflow_${empresaId}`, empresaId]);
 
     // Criar assinatura se plano foi especificado
     if (data.plano) {
@@ -219,28 +218,33 @@ export async function createEmpresa(data: {
       `, [empresaId, data.plano, dataProxima.toISOString()]);
     }
 
-    // Criar usuario se email foi fornecido
+    // Definir senha ou enviar link de ativacao
     if (data.email) {
       if (data.senha) {
-        // Criar usuario com senha definida
+        // Definir senha diretamente na empresa
         const bcrypt = await import('bcryptjs');
         const hashedPassword = await bcrypt.hash(data.senha, 10);
         
         await db.query(`
-          INSERT INTO usuarios (nome, email, telefone, senha, empresa_id, role, created_at, updated_at)
-          VALUES ($1, $2, $3, $4, $5, 'admin', NOW(), NOW())
-        `, [data.nome, data.email, data.telefone, hashedPassword, empresaId]);
+          UPDATE empresas SET senha_hash = $1, login = $2 WHERE id = $3
+        `, [hashedPassword, data.email, empresaId]);
         
-        console.log('[Admin] Usuario criado com senha definida para empresa:', empresaId);
+        console.log('[Admin] Senha definida para empresa:', empresaId);
       } else if (data.enviar_link_ativacao && data.telefone) {
-        // Criar pending_signup e enviar link via WhatsApp
+        // Enviar link de ativacao via WhatsApp
         const crypto = await import('crypto');
         const token = crypto.randomBytes(32).toString('hex');
         
+        // Salvar token temporario na empresa
+        await db.query(`
+          UPDATE empresas SET login = $1 WHERE id = $2
+        `, [data.email, empresaId]);
+        
+        // Criar pending_signup para ativacao
         await db.query(`
           INSERT INTO pending_signups (token, email, nome, telefone, plano, empresa_id, created_at, expires_at)
           VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW() + INTERVAL '7 days')
-        `, [token, data.email, data.nome, data.telefone, data.plano || 'start', empresaId]);
+        `, [token, data.email, data.nome, data.telefone, data.plano || 'parceria', empresaId]);
         
         // Enviar link de ativacao via WhatsApp
         const { sendWelcomeSignupMessage } = await import('./whatsapp');
@@ -259,24 +263,13 @@ export async function createEmpresa(data: {
 }
 
 export async function updateEmpresa(id: number, data: {
-  nome?: string;
   nome_fantasia?: string;
-  slug?: string;
   email?: string;
   telefone?: string;
-  status?: string;
+  ativo?: boolean;
+  planos?: string;
 }) {
   try {
-    // Se mudou slug, verificar se ja existe
-    if (data.slug) {
-      const existingSlug = await db.query(
-        'SELECT id FROM empresas WHERE slug = $1 AND id != $2', 
-        [data.slug, id]
-      );
-      if (existingSlug.rows.length > 0) {
-        return { success: false, error: 'Slug ja existe' };
-      }
-    }
 
     const updates: string[] = [];
     const params: any[] = [];
