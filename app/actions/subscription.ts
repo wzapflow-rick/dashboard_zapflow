@@ -1,9 +1,9 @@
 'use server';
 
 import { noco } from '@/lib/nocodb';
-import db from '@/lib/db';
 import { 
   EMPRESAS_TABLE_ID,
+  ASSINATURAS_TABLE_ID,
   SUBSCRIPTION_PLANS,
   type SubscriptionPlanId 
 } from '@/lib/constants';
@@ -61,29 +61,21 @@ export async function getSubscription(): Promise<Subscription | null> {
   const me = await getCurrentUser();
 
   try {
-    console.log('[Subscription] Buscando assinatura PostgreSQL para empresa_id:', me.empresaId);
+    console.log('[Subscription] Buscando assinatura NocoDB para empresa_id:', me.empresaId);
     
-    const result = await db.query(
-      `SELECT id, empresa_id, mp_subscription_id, mp_preapproval_plan_id, 
-              plano, status, valor, data_inicio, data_proxima_cobranca,
-              cartao_ultimos_digitos, cartao_bandeira
-       FROM assinaturas 
-       WHERE empresa_id = $1 
-       ORDER BY created_at DESC 
-       LIMIT 1`,
-      [me.empresaId]
-    );
+    const subscription = await noco.findOne(ASSINATURAS_TABLE_ID, {
+      where: `(empresa_id,eq,${me.empresaId})`,
+    }) as any;
 
-    if (result.rows.length === 0) {
+    if (!subscription) {
       console.log('[Subscription] Nenhuma assinatura encontrada');
       return null;
     }
 
-    const subscription = result.rows[0];
     console.log('[Subscription] Assinatura encontrada:', subscription.plano, subscription.status);
 
     return {
-      id: subscription.id,
+      id: subscription.id || subscription.Id,
       empresa_id: subscription.empresa_id,
       mp_subscription_id: subscription.mp_subscription_id,
       mp_preapproval_plan_id: subscription.mp_preapproval_plan_id,

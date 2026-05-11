@@ -1,5 +1,4 @@
 import { noco } from '@/lib/nocodb';
-import db from '@/lib/db';
 import { 
     PRODUTOS_TABLE_ID, 
     CATEGORIAS_TABLE_ID, 
@@ -9,6 +8,7 @@ import {
     CONFIGURACOES_LOJA_TABLE_ID, 
     LOYALTY_CONFIG_TABLE_ID,
     PRODUTOS_METADADOS_TABLE_ID,
+    ASSINATURAS_TABLE_ID,
     isPaidPlan
 } from '@/lib/constants';
 
@@ -56,23 +56,16 @@ export async function getPublicMenu(slug: string) {
         
         console.log(`[MENU_DEBUG] Empresa: ${empresa.nome} (ID: ${empresaId})`);
         
-        // Verificar se empresa tem assinatura ativa na tabela assinaturas (PostgreSQL)
+        // Verificar se empresa tem assinatura ativa na tabela assinaturas (NocoDB)
         let hasActiveSubscription = false;
         let planoAtivo = 'iniciante';
         
         try {
-            const assinaturaResult = await db.query(
-                `SELECT plano, status, data_proxima_cobranca 
-                 FROM assinaturas 
-                 WHERE empresa_id = $1 
-                 AND status = 'authorized'
-                 ORDER BY created_at DESC
-                 LIMIT 1`,
-                [empresaId]
-            );
+            const assinatura = await noco.findOne(ASSINATURAS_TABLE_ID, {
+                where: `(empresa_id,eq,${empresaId})`,
+            }) as any;
             
-            if (assinaturaResult.rows.length > 0) {
-                const assinatura = assinaturaResult.rows[0];
+            if (assinatura && assinatura.status === 'authorized') {
                 planoAtivo = assinatura.plano || 'iniciante';
                 
                 // Verificar se nao esta vencida (se data_proxima_cobranca > hoje)
@@ -92,8 +85,8 @@ export async function getPublicMenu(slug: string) {
             } else {
                 console.log(`[MENU_DEBUG] Nenhuma assinatura ativa encontrada para empresa ${empresaId}`);
             }
-        } catch (dbError) {
-            console.error(`[MENU_DEBUG] Erro ao verificar assinatura no PostgreSQL:`, dbError);
+        } catch (nocoError) {
+            console.error(`[MENU_DEBUG] Erro ao verificar assinatura no NocoDB:`, nocoError);
             // Fallback: verificar campo plano da empresa
             const planoEmpresa = empresa.planos || empresa.plano || 'iniciante';
             if (isPaidPlan(planoEmpresa)) {
