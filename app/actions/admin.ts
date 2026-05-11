@@ -194,7 +194,9 @@ export async function createEmpresa(data: {
       'pro': 'pro',
       'elite': 'eli',
     };
-    const planoCodigo = planoMap[data.plano || 'parceria'] || 'pcr';
+    const planoCodigo = planoMap[data.plano || 'start'] || 'sta';
+    
+    console.log('[v0] createEmpresa - plano:', data.plano, '-> codigo:', planoCodigo);
 
     // Criar empresa - gerar instancia_evolution automaticamente
     const empresaResult = await db.query(`
