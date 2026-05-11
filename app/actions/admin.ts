@@ -229,8 +229,8 @@ export async function createEmpresa(data: {
           empresa_id, plano, status, valor, 
           data_inicio, data_proxima_cobranca,
           created_at, updated_at
-        ) VALUES ($1, $2, 'ativ', 0, NOW(), $3, NOW(), NOW())
-      `, [empresaId, planoCodigo, dataProxima.toISOString()]);
+        ) VALUES ($1, $2, 'authorized', 0, NOW(), $3, NOW(), NOW())
+      `, [empresaId, data.plano, dataProxima.toISOString()]);
     }
 
     // Definir senha ou enviar link de ativacao
