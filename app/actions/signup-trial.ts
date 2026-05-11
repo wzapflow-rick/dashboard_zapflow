@@ -91,8 +91,9 @@ export async function createTrialAccount(data: TrialAccountData) {
       
       console.log('[TrialSignup] Criando assinatura para empresa_id:', empresaId, 'TABLE_ID:', ASSINATURAS_TABLE_ID);
       
+      // No NocoDB, campos de Link usam o nome da tabela relacionada, nao empresa_id
       const assinaturaData = {
-        empresa_id: empresaId,
+        empresas: empresaId, // Campo de Link para tabela empresas
         plano: 'parceria',
         status: 'authorized',
         valor: 0,
