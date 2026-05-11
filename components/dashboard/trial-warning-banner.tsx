@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, Clock, Sparkles, ArrowRight } from 'lucide-react';
-import { getTrialDaysRemaining, shouldShowTrialWarning, SUBSCRIPTION_PLANS } from '@/lib/constants';
+import { getTrialDaysRemaining, shouldShowTrialWarning, SUBSCRIPTION_PLANS, isTrialPlan } from '@/lib/constants';
 import Link from 'next/link';
 
 interface TrialWarningBannerProps {
@@ -26,8 +26,8 @@ export function TrialWarningBanner({ plano, dataInicio, empresaId }: TrialWarnin
 
   if (!mounted) return null;
   
-  // So mostrar para plano parceria
-  if (plano !== 'parceria') return null;
+  // So mostrar para plano parceria (ou codigo curto pcr)
+  if (!isTrialPlan(plano)) return null;
   
   // So mostrar se estiver no dia 6 ou 7
   if (!shouldShowTrialWarning(dataInicio)) return null;

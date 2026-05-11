@@ -290,23 +290,34 @@ export const SUBSCRIPTION_PLANS = {
 
 export type SubscriptionPlanId = 'iniciante' | 'parceria' | 'start' | 'pro' | 'elite';
 
-/** Planos que permitem cardapio online ativo */
-export const PAID_PLANS: SubscriptionPlanId[] = ['parceria', 'start', 'pro', 'elite'];
+/** Planos que permitem cardapio online ativo (incluindo codigos curtos do banco) */
+export const PAID_PLANS = ['parceria', 'pcr', 'start', 'sta', 'pro', 'elite', 'eli'];
+
+/** Mapeia codigos curtos para nomes completos */
+export function normalizePlanName(plan: string | null | undefined): string {
+  const map: Record<string, string> = {
+    'pcr': 'parceria',
+    'sta': 'start',
+    'eli': 'elite',
+  };
+  return map[plan || ''] || plan || 'iniciante';
+}
 
 /** Verifica se o plano permite cardapio online */
 export function isPaidPlan(plan: string | null | undefined): boolean {
-  return PAID_PLANS.includes(plan as SubscriptionPlanId);
+  return PAID_PLANS.includes(plan || '');
 }
 
 /** Verifica se o plano e um trial (parceria) */
 export function isTrialPlan(plan: string | null | undefined): boolean {
-  return plan === 'parceria';
+  return plan === 'parceria' || plan === 'pcr';
 }
 
 /** Calcula dias restantes do trial */
 export function getTrialDaysRemaining(dataInicio: string | Date | null | undefined): number {
-  if (!dataInicio) return 0;
+  if (!dataInicio) return 7; // Se nao tem data, assume que acabou de comecar
   const inicio = new Date(dataInicio);
+  if (isNaN(inicio.getTime())) return 7; // Data invalida, assume que acabou de comecar
   const agora = new Date();
   const diffTime = agora.getTime() - inicio.getTime();
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -314,8 +325,11 @@ export function getTrialDaysRemaining(dataInicio: string | Date | null | undefin
   return Math.max(0, trialDays - diffDays);
 }
 
-/** Verifica se deve mostrar aviso de conversao (dia 6 em diante) */
+/** Verifica se deve mostrar aviso de conversao (apenas dia 6 e 7) */
 export function shouldShowTrialWarning(dataInicio: string | Date | null | undefined): boolean {
+  if (!dataInicio) return false; // Sem data de inicio, nao mostrar
+  const inicio = new Date(dataInicio);
+  if (isNaN(inicio.getTime())) return false; // Data invalida, nao mostrar
   const remaining = getTrialDaysRemaining(dataInicio);
   return remaining <= 1; // Mostrar no dia 6 (1 dia restante) ou dia 7 (0 dias)
 }
