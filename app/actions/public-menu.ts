@@ -1,4 +1,5 @@
 import { noco } from '@/lib/nocodb';
+import db from '@/lib/db';
 import { 
     PRODUTOS_TABLE_ID, 
     CATEGORIAS_TABLE_ID, 
@@ -8,7 +9,6 @@ import {
     CONFIGURACOES_LOJA_TABLE_ID, 
     LOYALTY_CONFIG_TABLE_ID,
     PRODUTOS_METADADOS_TABLE_ID,
-    ASSINATURAS_TABLE_ID,
     isPaidPlan
 } from '@/lib/constants';
 
@@ -56,25 +56,30 @@ export async function getPublicMenu(slug: string) {
         
         console.log(`[MENU_DEBUG] Empresa: ${empresa.nome} (ID: ${empresaId})`);
         
-        // Verificar se empresa tem assinatura ativa na tabela assinaturas (NocoDB)
+        // Verificar se empresa tem assinatura ativa na tabela assinaturas (PostgreSQL)
         let hasActiveSubscription = false;
         let planoAtivo = 'iniciante';
         
         try {
-            // Buscar assinatura no NocoDB
-            const assinatura = await noco.findOne(ASSINATURAS_TABLE_ID, {
-                where: `(empresa_id,eq,${empresaId})`,
-            }) as any;
+            const assinaturaResult = await db.query(
+                `SELECT plano, status, data_proxima_cobranca 
+                 FROM assinaturas 
+                 WHERE empresa_id = $1 
+                 AND status = 'authorized'
+                 ORDER BY created_at DESC
+                 LIMIT 1`,
+                [empresaId]
+            );
             
-            if (assinatura) {
+            if (assinaturaResult.rows.length > 0) {
+                const assinatura = assinaturaResult.rows[0];
                 planoAtivo = assinatura.plano || 'iniciante';
                 
                 // Verificar se nao esta vencida (se data_proxima_cobranca > hoje)
                 const dataProxima = assinatura.data_proxima_cobranca ? new Date(assinatura.data_proxima_cobranca) : null;
                 const hoje = new Date();
                 
-                // Se status e authorized e plano e pago, verificar vencimento
-                if (assinatura.status === 'authorized' && isPaidPlan(planoAtivo)) {
+                if (isPaidPlan(planoAtivo)) {
                     if (!dataProxima || dataProxima > hoje) {
                         hasActiveSubscription = true;
                         console.log(`[MENU_DEBUG] Assinatura ativa: ${planoAtivo}, vence em ${dataProxima?.toISOString() || 'N/A'}`);
@@ -82,13 +87,13 @@ export async function getPublicMenu(slug: string) {
                         console.log(`[MENU_DEBUG] Assinatura vencida: ${planoAtivo}, venceu em ${dataProxima.toISOString()}`);
                     }
                 } else {
-                    console.log(`[MENU_DEBUG] Assinatura com status ${assinatura.status} ou plano ${planoAtivo} nao autorizado`);
+                    console.log(`[MENU_DEBUG] Plano ${planoAtivo} nao e um plano pago`);
                 }
             } else {
-                console.log(`[MENU_DEBUG] Nenhuma assinatura encontrada para empresa ${empresaId}`);
+                console.log(`[MENU_DEBUG] Nenhuma assinatura ativa encontrada para empresa ${empresaId}`);
             }
-        } catch (nocoError) {
-            console.error(`[MENU_DEBUG] Erro ao verificar assinatura no NocoDB:`, nocoError);
+        } catch (dbError) {
+            console.error(`[MENU_DEBUG] Erro ao verificar assinatura no PostgreSQL:`, dbError);
             // Fallback: verificar campo plano da empresa
             const planoEmpresa = empresa.planos || empresa.plano || 'iniciante';
             if (isPaidPlan(planoEmpresa)) {

@@ -1,9 +1,8 @@
 'use server';
 
 import { noco } from '@/lib/nocodb';
+import db from '@/lib/db';
 import { 
-  ASSINATURAS_TABLE_ID, 
-  FATURAS_ASSINATURA_TABLE_ID, 
   EMPRESAS_TABLE_ID,
   SUBSCRIPTION_PLANS,
   type SubscriptionPlanId 
@@ -62,39 +61,33 @@ export async function getSubscription(): Promise<Subscription | null> {
   const me = await getCurrentUser();
 
   try {
-    if (!ASSINATURAS_TABLE_ID) {
-      // Tabela nao configurada ainda - retorna dados mock para desenvolvimento
-      return {
-        id: 0,
-        empresa_id: me.empresaId,
-        mp_subscription_id: null,
-        mp_preapproval_plan_id: null,
-        plano: 'pro',
-        status: 'authorized',
-        valor: SUBSCRIPTION_PLANS.PRO.price,
-        data_inicio: new Date().toISOString(),
-        data_proxima_cobranca: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        cartao_ultimos_digitos: null,
-        cartao_bandeira: null,
-      };
+    console.log('[Subscription] Buscando assinatura PostgreSQL para empresa_id:', me.empresaId);
+    
+    const result = await db.query(
+      `SELECT id, empresa_id, mp_subscription_id, mp_preapproval_plan_id, 
+              plano, status, valor, data_inicio, data_proxima_cobranca,
+              cartao_ultimos_digitos, cartao_bandeira
+       FROM assinaturas 
+       WHERE empresa_id = $1 
+       ORDER BY created_at DESC 
+       LIMIT 1`,
+      [me.empresaId]
+    );
+
+    if (result.rows.length === 0) {
+      console.log('[Subscription] Nenhuma assinatura encontrada');
+      return null;
     }
 
-    console.log('[v0] Buscando assinatura para empresa_id:', me.empresaId, 'tabela:', ASSINATURAS_TABLE_ID);
-    
-    const subscription = await noco.findOne(ASSINATURAS_TABLE_ID, {
-      where: `(empresa_id,eq,${me.empresaId})`,
-    }) as any;
-
-    console.log('[v0] Assinatura encontrada:', JSON.stringify(subscription));
-
-    if (!subscription) return null;
+    const subscription = result.rows[0];
+    console.log('[Subscription] Assinatura encontrada:', subscription.plano, subscription.status);
 
     return {
-      id: subscription.id || subscription.Id,
+      id: subscription.id,
       empresa_id: subscription.empresa_id,
       mp_subscription_id: subscription.mp_subscription_id,
       mp_preapproval_plan_id: subscription.mp_preapproval_plan_id,
-      plano: subscription.plano || subscription.mp_preapproval_plan_id || 'start',
+      plano: subscription.plano || 'start',
       status: subscription.status || 'pending',
       valor: Number(subscription.valor || 0),
       data_inicio: subscription.data_inicio,
