@@ -289,6 +289,38 @@ Boas vendas!
     return sendWhatsAppMessage(phone, message);
 }
 
+/**
+ * Enviar mensagem de boas-vindas para conta trial (Plano Parceria)
+ */
+export async function sendTrialWelcomeMessage(
+    phone: string,
+    nome: string,
+    email: string
+): Promise<boolean> {
+    const message = `🎉 Bem-vindo ao ZapFlow, ${nome}!
+
+Sua conta TRIAL foi criada com sucesso — você tem 7 dias GRÁTIS para testar tudo! 🚀
+
+📦 Plano: Parceria (Trial)
+📧 E-mail: ${email}
+⏰ Período: 7 dias grátis
+
+🔗 Acesse seu painel:
+${BASE_URL}
+
+Agora é só configurar seu cardápio e começar a receber pedidos direto no WhatsApp.
+
+💡 Dica rápida: comece criando suas categorias e adicionando seus produtos no menu "Cardápio" — isso já deixa sua loja pronta para vender.
+
+Após os 7 dias, você pode assinar o plano Start por apenas R$ 29,90/mês para continuar usando.
+
+Qualquer dúvida, estamos por aqui para te ajudar 🤝
+Boas vendas!
+— Equipe ZapFlow`;
+
+    return sendWhatsAppMessage(phone, message);
+}
+
 // ============================================================
 // MENSAGENS DE COBRANCA / INADIMPLENCIA
 // ============================================================
