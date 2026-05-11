@@ -92,6 +92,7 @@ export async function createTrialAccount(data: TrialAccountData) {
       console.log('[TrialSignup] Criando assinatura para empresa_id:', empresaId, 'TABLE_ID:', ASSINATURAS_TABLE_ID);
       
       // No NocoDB, campos de Link usam o nome da tabela relacionada, nao empresa_id
+      // Incluindo todos os campos que podem ser NOT NULL
       const assinaturaData = {
         empresas: empresaId, // Campo de Link para tabela empresas
         plano: 'parceria',
@@ -99,6 +100,10 @@ export async function createTrialAccount(data: TrialAccountData) {
         valor: 0,
         data_inicio: hoje.toISOString().split('T')[0],
         data_proxima_cobranca: fimTrial.toISOString().split('T')[0],
+        mp_subscription_id: `trial_${empresaId}_${Date.now()}`,
+        mp_preapproval_plan_id: 'parceria',
+        cartao_ultimos_digitos: '0000',
+        cartao_bandeira: 'TRIAL',
       };
       
       console.log('[TrialSignup] Dados da assinatura:', JSON.stringify(assinaturaData));
