@@ -176,12 +176,22 @@ export async function createEmpresa(data: {
   telefone?: string;
   plano?: string;
   dias_trial?: number;
+  senha?: string;
+  enviar_link_ativacao?: boolean;
 }) {
   try {
     // Verificar se slug ja existe
     const existingSlug = await db.query('SELECT id FROM empresas WHERE slug = $1', [data.slug]);
     if (existingSlug.rows.length > 0) {
       return { success: false, error: 'Slug ja existe' };
+    }
+
+    // Verificar se email ja existe (se fornecido)
+    if (data.email) {
+      const existingEmail = await db.query('SELECT id FROM usuarios WHERE email = $1', [data.email]);
+      if (existingEmail.rows.length > 0) {
+        return { success: false, error: 'Email ja cadastrado' };
+      }
     }
 
     // Criar empresa
@@ -207,6 +217,38 @@ export async function createEmpresa(data: {
           created_at, updated_at
         ) VALUES ($1, $2, 'authorized', 0, NOW(), $3, 'ADMIN', 'ADMIN', NOW(), NOW())
       `, [empresaId, data.plano, dataProxima.toISOString()]);
+    }
+
+    // Criar usuario se email foi fornecido
+    if (data.email) {
+      if (data.senha) {
+        // Criar usuario com senha definida
+        const bcrypt = await import('bcryptjs');
+        const hashedPassword = await bcrypt.hash(data.senha, 10);
+        
+        await db.query(`
+          INSERT INTO usuarios (nome, email, telefone, senha, empresa_id, role, created_at, updated_at)
+          VALUES ($1, $2, $3, $4, $5, 'admin', NOW(), NOW())
+        `, [data.nome, data.email, data.telefone, hashedPassword, empresaId]);
+        
+        console.log('[Admin] Usuario criado com senha definida para empresa:', empresaId);
+      } else if (data.enviar_link_ativacao && data.telefone) {
+        // Criar pending_signup e enviar link via WhatsApp
+        const crypto = await import('crypto');
+        const token = crypto.randomBytes(32).toString('hex');
+        
+        await db.query(`
+          INSERT INTO pending_signups (token, email, nome, telefone, plano, empresa_id, created_at, expires_at)
+          VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW() + INTERVAL '7 days')
+        `, [token, data.email, data.nome, data.telefone, data.plano || 'start', empresaId]);
+        
+        // Enviar link de ativacao via WhatsApp
+        const { sendWelcomeSignupMessage } = await import('./whatsapp');
+        const linkAtivacao = `${process.env.NEXT_PUBLIC_APP_URL || 'https://cardapio.wzapflow.com.br'}/ativar/${token}`;
+        await sendWelcomeSignupMessage(data.telefone, data.nome, linkAtivacao, data.plano || 'start');
+        
+        console.log('[Admin] Link de ativacao enviado para:', data.telefone);
+      }
     }
 
     revalidatePath('/admin/empresas');

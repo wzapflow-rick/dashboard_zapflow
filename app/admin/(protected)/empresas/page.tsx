@@ -432,14 +432,16 @@ export default function EmpresasAdminPage() {
 function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [modoSenha, setModoSenha] = useState<'definir' | 'enviar_link'>('enviar_link');
   const [formData, setFormData] = useState({
     nome: '',
     nome_fantasia: '',
     slug: '',
     email: '',
     telefone: '',
-    plano: 'start',
-    dias_trial: 30,
+    plano: 'parceria',
+    dias_trial: 7,
+    senha: '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -447,7 +449,30 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
     setLoading(true);
     setError('');
 
-    const result = await createEmpresa(formData);
+    // Validacoes
+    if (!formData.email) {
+      setError('Email e obrigatorio para criar a conta');
+      setLoading(false);
+      return;
+    }
+
+    if (modoSenha === 'definir' && !formData.senha) {
+      setError('Defina uma senha para o usuario');
+      setLoading(false);
+      return;
+    }
+
+    if (modoSenha === 'enviar_link' && !formData.telefone) {
+      setError('Telefone e obrigatorio para enviar o link de ativacao');
+      setLoading(false);
+      return;
+    }
+
+    const result = await createEmpresa({
+      ...formData,
+      senha: modoSenha === 'definir' ? formData.senha : undefined,
+      enviar_link_ativacao: modoSenha === 'enviar_link',
+    });
     
     if (result.success) {
       onSuccess();
@@ -549,9 +574,17 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
               <label className="block text-sm font-medium text-slate-300 mb-2">Plano</label>
               <select
                 value={formData.plano}
-                onChange={(e) => setFormData({ ...formData, plano: e.target.value })}
+                onChange={(e) => {
+                  const plano = e.target.value;
+                  setFormData({ 
+                    ...formData, 
+                    plano,
+                    dias_trial: plano === 'parceria' ? 7 : 30 
+                  });
+                }}
                 className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
               >
+                <option value="parceria">Parceria (7 dias gratis)</option>
                 <option value="start">Start</option>
                 <option value="pro">Pro</option>
                 <option value="elite">Elite</option>
@@ -567,6 +600,54 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
                 min="1"
               />
             </div>
+          </div>
+
+          {/* Modo de criacao de senha */}
+          <div className="space-y-3 pt-2 border-t border-[#1e3a5f]">
+            <label className="block text-sm font-medium text-slate-300">Como definir a senha?</label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="modoSenha"
+                  checked={modoSenha === 'enviar_link'}
+                  onChange={() => setModoSenha('enviar_link')}
+                  className="text-orange-500 focus:ring-orange-500"
+                />
+                <span className="text-sm text-slate-300">Enviar link de ativacao via WhatsApp</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="modoSenha"
+                  checked={modoSenha === 'definir'}
+                  onChange={() => setModoSenha('definir')}
+                  className="text-orange-500 focus:ring-orange-500"
+                />
+                <span className="text-sm text-slate-300">Definir senha agora</span>
+              </label>
+            </div>
+
+            {modoSenha === 'definir' && (
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Senha *</label>
+                <input
+                  type="password"
+                  value={formData.senha}
+                  onChange={(e) => setFormData({ ...formData, senha: e.target.value })}
+                  placeholder="Digite a senha do usuario"
+                  className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
+                />
+              </div>
+            )}
+
+            {modoSenha === 'enviar_link' && (
+              <p className="text-xs text-slate-500">
+                Um link sera enviado via WhatsApp para o usuario definir sua propria senha.
+                <br />
+                <strong className="text-orange-400">Telefone e obrigatorio</strong> para esta opcao.
+              </p>
+            )}
           </div>
 
           <div className="flex gap-3 pt-4">
