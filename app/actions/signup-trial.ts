@@ -89,19 +89,28 @@ export async function createTrialAccount(data: TrialAccountData) {
       const fimTrial = new Date(hoje);
       fimTrial.setDate(fimTrial.getDate() + 7); // 7 dias de trial
       
-      await noco.create(ASSINATURAS_TABLE_ID, {
+      console.log('[TrialSignup] Criando assinatura para empresa_id:', empresaId, 'TABLE_ID:', ASSINATURAS_TABLE_ID);
+      
+      const assinaturaData = {
         empresa_id: empresaId,
         plano: 'parceria',
         status: 'authorized',
         valor: 0,
-        data_inicio: hoje.toISOString().split('T')[0], // Formato YYYY-MM-DD
-        data_proxima_cobranca: fimTrial.toISOString().split('T')[0], // Formato YYYY-MM-DD
-      });
+        data_inicio: hoje.toISOString().split('T')[0],
+        data_proxima_cobranca: fimTrial.toISOString().split('T')[0],
+      };
       
-      console.log('[TrialSignup] Assinatura trial criada no NocoDB para empresa:', empresaId);
+      console.log('[TrialSignup] Dados da assinatura:', JSON.stringify(assinaturaData));
+      
+      const assinaturaCriada = await noco.create(ASSINATURAS_TABLE_ID, assinaturaData);
+      
+      console.log('[TrialSignup] Assinatura criada com sucesso:', JSON.stringify(assinaturaCriada));
     } catch (subError: any) {
-      console.error('[TrialSignup] Erro ao criar assinatura trial:', subError?.message || subError);
-      // Continua mesmo se falhar - a empresa ja foi criada
+      console.error('[TrialSignup] ERRO ao criar assinatura:', subError?.message || subError);
+      console.error('[TrialSignup] Stack:', subError?.stack);
+      console.error('[TrialSignup] Resposta completa:', JSON.stringify(subError?.response?.data || subError));
+      // NAO continua - lanca erro para debugar
+      throw new Error(`Falha ao criar assinatura trial: ${subError?.message || 'Erro desconhecido'}`);
     }
     
     // Criar sessao (login automatico)
