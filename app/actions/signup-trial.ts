@@ -89,22 +89,25 @@ export async function createTrialAccount(data: TrialAccountData) {
       const fimTrial = new Date(hoje);
       fimTrial.setDate(fimTrial.getDate() + 7); // 7 dias de trial
       
-      await noco.create(ASSINATURAS_TABLE_ID, {
+      console.log('[TrialSignup] Criando assinatura no NocoDB, table ID:', ASSINATURAS_TABLE_ID, 'empresa_id:', empresaId);
+      
+      const assinaturaData = {
         empresa_id: empresaId,
         plano: 'parceria',
-        status: 'authorized', // Status ativo para trial
+        status: 'authorized',
         valor: 0,
-        mp_subscription_id: 'trial_' + Date.now(),
-        mp_preapproval_plan_id: 'parceria',
-        data_inicio: hoje.toISOString(),
-        data_proxima_cobranca: fimTrial.toISOString(),
-        cartao_ultimos_digitos: 'TRIA',
-        cartao_bandeira: 'TRIA',
-      });
+        data_inicio: hoje.toISOString().split('T')[0], // Formato YYYY-MM-DD
+        data_proxima_cobranca: fimTrial.toISOString().split('T')[0], // Formato YYYY-MM-DD
+      };
       
-      console.log('[TrialSignup] Assinatura trial criada no NocoDB para empresa:', empresaId);
-    } catch (subError) {
-      console.error('[TrialSignup] Erro ao criar assinatura trial:', subError);
+      console.log('[TrialSignup] Dados da assinatura:', JSON.stringify(assinaturaData));
+      
+      const assinaturaCriada = await noco.create(ASSINATURAS_TABLE_ID, assinaturaData);
+      
+      console.log('[TrialSignup] Assinatura trial criada com sucesso:', JSON.stringify(assinaturaCriada));
+    } catch (subError: any) {
+      console.error('[TrialSignup] Erro ao criar assinatura trial:', subError?.message || subError);
+      console.error('[TrialSignup] Stack:', subError?.stack);
       // Continua mesmo se falhar - a empresa ja foi criada
     }
     
