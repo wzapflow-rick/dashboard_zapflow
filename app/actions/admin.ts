@@ -228,9 +228,8 @@ export async function createEmpresa(data: {
         INSERT INTO assinaturas (
           empresa_id, plano, status, valor, 
           data_inicio, data_proxima_cobranca,
-          cartao_ultimos_digitos, cartao_bandeira,
           created_at, updated_at
-        ) VALUES ($1, $2, 'authorized', 0, NOW(), $3, 'ADMIN', 'ADMIN', NOW(), NOW())
+        ) VALUES ($1, $2, 'ativ', 0, NOW(), $3, NOW(), NOW())
       `, [empresaId, planoCodigo, dataProxima.toISOString()]);
     }
 
