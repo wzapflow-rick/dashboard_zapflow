@@ -438,8 +438,8 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
     nome_fantasia: '',
     email: '',
     telefone: '',
-    plano: 'parceria',
-    dias_trial: 7,
+    plano: 'start',
+    dias_trial: 30,
     senha: '',
   });
 
@@ -549,17 +549,9 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
               <label className="block text-sm font-medium text-slate-300 mb-2">Plano</label>
               <select
                 value={formData.plano}
-                onChange={(e) => {
-                  const plano = e.target.value;
-                  setFormData({ 
-                    ...formData, 
-                    plano,
-                    dias_trial: plano === 'parceria' ? 7 : 30 
-                  });
-                }}
+                onChange={(e) => setFormData({ ...formData, plano: e.target.value })}
                 className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
               >
-                <option value="parceria">Parceria (7 dias gratis)</option>
                 <option value="start">Start</option>
                 <option value="pro">Pro</option>
                 <option value="elite">Elite</option>
