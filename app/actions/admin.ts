@@ -244,8 +244,7 @@ export async function createEmpresa(data: {
         
         // Enviar link de ativacao via WhatsApp
         const { sendWelcomeSignupMessage } = await import('./whatsapp');
-        const linkAtivacao = `${process.env.NEXT_PUBLIC_APP_URL || 'https://cardapio.wzapflow.com.br'}/ativar/${token}`;
-        await sendWelcomeSignupMessage(data.telefone, data.nome, linkAtivacao, data.plano || 'start');
+        await sendWelcomeSignupMessage(data.telefone, data.nome, token);
         
         console.log('[Admin] Link de ativacao enviado para:', data.telefone);
       }
