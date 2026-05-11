@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X, Clock, Sparkles, ArrowRight } from 'lucide-react';
 import { getTrialDaysRemaining, shouldShowTrialWarning, SUBSCRIPTION_PLANS, isTrialPlan } from '@/lib/constants';
+import { getSubscription } from '@/app/actions/subscription';
 import Link from 'next/link';
 
 interface TrialWarningBannerProps {
@@ -11,9 +12,11 @@ interface TrialWarningBannerProps {
   empresaId?: number;
 }
 
-export function TrialWarningBanner({ plano, dataInicio, empresaId }: TrialWarningBannerProps) {
+export function TrialWarningBanner({ plano, dataInicio: dataInicioProp, empresaId }: TrialWarningBannerProps) {
   const [dismissed, setDismissed] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [dataInicio, setDataInicio] = useState<string | Date | null | undefined>(dataInicioProp);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setMounted(true);
@@ -22,9 +25,21 @@ export function TrialWarningBanner({ plano, dataInicio, empresaId }: TrialWarnin
     if (dismissedDate === new Date().toDateString()) {
       setDismissed(true);
     }
-  }, [empresaId]);
+    
+    // Buscar data_inicio da assinatura se nao foi passada
+    if (!dataInicioProp && isTrialPlan(plano)) {
+      getSubscription().then(sub => {
+        if (sub?.data_inicio) {
+          setDataInicio(sub.data_inicio);
+        }
+        setLoading(false);
+      }).catch(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, [empresaId, dataInicioProp, plano]);
 
-  if (!mounted) return null;
+  if (!mounted || loading) return null;
   
   // So mostrar para plano parceria (ou codigo curto pcr)
   if (!isTrialPlan(plano)) return null;
