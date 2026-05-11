@@ -441,7 +441,6 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
     plano: 'parceria',
     dias_trial: 7,
     senha: '',
-    nicho: '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -522,26 +521,6 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
               onChange={(e) => setFormData({ ...formData, nome_fantasia: e.target.value })}
               className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Nicho</label>
-            <select
-              value={formData.nicho}
-              onChange={(e) => setFormData({ ...formData, nicho: e.target.value })}
-              className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
-            >
-              <option value="">Selecione...</option>
-              <option value="pizzaria">Pizzaria</option>
-              <option value="hamburgueria">Hamburgueria</option>
-              <option value="restaurante">Restaurante</option>
-              <option value="lanchonete">Lanchonete</option>
-              <option value="cafeteria">Cafeteria</option>
-              <option value="doceria">Doceria</option>
-              <option value="padaria">Padaria</option>
-              <option value="acaiteria">Acaiteria</option>
-              <option value="outro">Outro</option>
-            </select>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
