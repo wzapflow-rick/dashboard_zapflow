@@ -189,10 +189,10 @@ export async function createEmpresa(data: {
 
     // Criar empresa - gerar instancia_evolution automaticamente
     const empresaResult = await db.query(`
-      INSERT INTO empresas (nome_fantasia, email, telefone_loja, nome_admin, planos, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+      INSERT INTO empresas (nome_fantasia, email, telefone_loja, nome_admin, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, NOW(), NOW())
       RETURNING id
-    `, [data.nome_fantasia || data.nome, data.email, data.telefone, data.nome, data.plano || 'parceria']);
+    `, [data.nome_fantasia || data.nome, data.email, data.telefone, data.nome]);
     
     const empresaId = empresaResult.rows[0].id;
     
