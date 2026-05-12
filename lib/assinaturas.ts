@@ -1,6 +1,6 @@
 'use server';
 
-import db from '@/lib/db';
+import db, { query } from '@/lib/db';
 
 /**
  * Interface para assinatura

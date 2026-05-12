@@ -1,4 +1,4 @@
-import db from '@/lib/db';
+import db, { query } from '@/lib/db';
 
 interface RateLimitConfig {
   maxAttempts: number;      // Numero maximo de tentativas
