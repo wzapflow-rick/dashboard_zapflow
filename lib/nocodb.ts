@@ -308,6 +308,46 @@ async function listAll<T = Record<string, unknown>>(
   return all;
 }
 
+/**
+ * Cria um link entre dois registros (relacionamento).
+ * @param tableId - ID da tabela que contem o campo de Link
+ * @param linkFieldId - ID do campo de Link (ex: 'empresa_id' ou o ID interno do campo)
+ * @param recordId - ID do registro na tabela atual
+ * @param linkedRecordId - ID do registro na tabela relacionada
+ */
+async function link(
+  tableId: string,
+  linkFieldId: string,
+  recordId: number | string,
+  linkedRecordId: number | string,
+): Promise<void> {
+  const { url, token } = getConfig();
+
+  // A API de links do NocoDB usa um endpoint diferente
+  const fullUrl = `${url}/api/v2/tables/${tableId}/links/${linkFieldId}/records/${recordId}`;
+
+  const res = await fetch(fullUrl, {
+    method: 'POST',
+    headers: {
+      'xc-token': token,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify([{ Id: linkedRecordId }]),
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    let errorBody = '';
+    try {
+      errorBody = await res.text();
+    } catch {
+      errorBody = 'Nao foi possivel ler o corpo do erro.';
+    }
+    console.error('[NocoDB Link] Error:', res.status, errorBody);
+    throw new NocoDBError(`NocoDB Link Error: ${res.status} ${errorBody}`, res.status, tableId);
+  }
+}
+
 // ============================================================
 // EXPORTAÇÃO DO CLIENTE
 // ============================================================
@@ -332,6 +372,7 @@ export const noco = {
   delete: remove,
   count,
   listAll,
+  link,
 } as const;
 
 export default noco;
