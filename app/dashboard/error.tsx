@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { AlertCircle, RefreshCw, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -11,10 +11,29 @@ export default function DashboardError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const [isReloading, setIsReloading] = useState(false);
+
   useEffect(() => {
-    // Log do erro para monitoramento
     console.error('[Dashboard Error]', error);
+    
+    // Detecta erro de Server Action desatualizada (deploy novo)
+    const isStaleDeployError = 
+      error?.message?.includes('Failed to find Server Action') ||
+      error?.message?.includes('failed to find server action') ||
+      error?.message?.includes('older or newer deployment');
+    
+    if (isStaleDeployError) {
+      // Forca reload completo da pagina para pegar o novo deploy
+      console.log('[Dashboard Error] Deploy desatualizado detectado, recarregando...');
+      window.location.reload();
+      return;
+    }
   }, [error]);
+
+  const handleReload = () => {
+    setIsReloading(true);
+    window.location.reload();
+  };
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -34,11 +53,12 @@ export default function DashboardError({
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Button 
-            onClick={reset}
+            onClick={handleReload}
+            disabled={isReloading}
             className="gap-2"
           >
-            <RefreshCw className="size-4" />
-            Tentar novamente
+            <RefreshCw className={`size-4 ${isReloading ? 'animate-spin' : ''}`} />
+            {isReloading ? 'Recarregando...' : 'Tentar novamente'}
           </Button>
           
           <Button 
