@@ -93,13 +93,13 @@ export async function createTrialAccount(data: TrialAccountData) {
       
       console.log('[TrialSignup] Criando assinatura para empresa_id:', empresaId);
       
-      // Criar assinatura SEM o campo empresa_id (que e coluna de sistema)
+      // Usar plano 'start' que ja funciona, com 7 dias gratis e valor 0
       const assinaturaData = {
-        plano: 'parceria',
+        plano: 'start',
         status: 'authorized',
         valor: 0,
         mp_subscription_id: `trial_${empresaId}_${Date.now()}`,
-        mp_preapproval_plan_id: 'parceria',
+        mp_preapproval_plan_id: 'start',
         data_inicio: hoje.toISOString(),
         data_proxima_cobranca: fimTrial.toISOString(),
         cartao_ultimos_digitos: 'TRIA',
