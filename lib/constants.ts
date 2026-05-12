@@ -234,7 +234,6 @@ export const SUBSCRIPTION_PLANS = {
     trial: true,
     trialDays: 7,
     convertTo: 'start', // Plano para converter apos o trial
-    convertPrice: 29.90, // Preco promocional para conversao
     features: [
       'Cardapio digital (Link + QrCode)',
       'Painel Kanban com notificacao no WhatsApp',
