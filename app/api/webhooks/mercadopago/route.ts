@@ -4,10 +4,14 @@ import crypto from 'crypto';
 import { 
   PEDIDOS_TABLE_ID, 
   PAGAMENTOS_CONFIG_TABLE_ID,
-  ASSINATURAS_TABLE_ID,
   FATURAS_ASSINATURA_TABLE_ID,
   EMPRESAS_TABLE_ID
 } from '@/lib/constants';
+import {
+  getAssinaturaByMpSubscriptionId,
+  createAssinatura,
+  updateAssinaturaByMpSubscriptionId,
+} from '@/lib/assinaturas';
 
 const MP_ACCESS_TOKEN_FALLBACK = process.env.MP_ACCESS_TOKEN || '';
 const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET || '';
@@ -159,15 +163,8 @@ async function handleSubscriptionEvent(subscriptionId: string) {
       return;
     }
 
-    if (!ASSINATURAS_TABLE_ID) {
-      console.log('[Webhook] ASSINATURAS_TABLE_ID nao configurado');
-      return;
-    }
-
-    // Busca ou cria a assinatura no NocoDB
-    const existing = await noco.findOne(ASSINATURAS_TABLE_ID, {
-      where: `(empresa_id,eq,${empresaId})`,
-    }) as any;
+    // Busca ou cria a assinatura no PostgreSQL
+    const existing = await getAssinaturaByMpSubscriptionId(subData.id);
 
     const subscriptionData = {
       empresa_id: empresaId,
@@ -181,17 +178,14 @@ async function handleSubscriptionEvent(subscriptionId: string) {
     };
 
     if (existing) {
-      await noco.update(ASSINATURAS_TABLE_ID, {
-        id: existing.id || existing.Id,
-        ...subscriptionData,
-      });
+      await updateAssinaturaByMpSubscriptionId(subData.id, subscriptionData);
       console.log(`[Webhook] Subscription ${subscriptionId} atualizada para empresa ${empresaId}`);
     } else {
       // Extrai plano do external_reference
       const planMatch = externalRef.match(/empresa_\d+_(\w+)/);
       const plano = planMatch ? planMatch[1] : 'pro';
       
-      await noco.create(ASSINATURAS_TABLE_ID, {
+      await createAssinatura({
         ...subscriptionData,
         plano,
         data_inicio: subData.date_created || new Date().toISOString(),

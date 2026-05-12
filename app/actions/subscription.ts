@@ -3,10 +3,15 @@
 import { noco } from '@/lib/nocodb';
 import { 
   EMPRESAS_TABLE_ID,
-  ASSINATURAS_TABLE_ID,
   SUBSCRIPTION_PLANS,
   type SubscriptionPlanId 
 } from '@/lib/constants';
+import {
+  getAssinaturaByEmpresaId,
+  createAssinatura,
+  updateAssinaturaByEmpresaId,
+  updateAssinaturaByMpSubscriptionId,
+} from '@/lib/assinaturas';
 
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN || '';
 const MP_PUBLIC_KEY = process.env.MP_PUBLIC_KEY || '';
@@ -61,11 +66,9 @@ export async function getSubscription(): Promise<Subscription | null> {
   const me = await getCurrentUser();
 
   try {
-    console.log('[Subscription] Buscando assinatura NocoDB para empresa_id:', me.empresaId);
+    console.log('[Subscription] Buscando assinatura PostgreSQL para empresa_id:', me.empresaId);
     
-    const subscription = await noco.findOne(ASSINATURAS_TABLE_ID, {
-      where: `(empresa_id,eq,${me.empresaId})`,
-    }) as any;
+    const subscription = await getAssinaturaByEmpresaId(me.empresaId);
 
     if (!subscription) {
       console.log('[Subscription] Nenhuma assinatura encontrada');
@@ -75,17 +78,17 @@ export async function getSubscription(): Promise<Subscription | null> {
     console.log('[Subscription] Assinatura encontrada:', subscription.plano, subscription.status);
 
     return {
-      id: subscription.id || subscription.Id,
+      id: subscription.id,
       empresa_id: subscription.empresa_id,
-      mp_subscription_id: subscription.mp_subscription_id,
-      mp_preapproval_plan_id: subscription.mp_preapproval_plan_id,
-      plano: subscription.plano || 'start',
-      status: subscription.status || 'pending',
+      mp_subscription_id: subscription.mp_subscription_id || null,
+      mp_preapproval_plan_id: subscription.mp_preapproval_plan_id || null,
+      plano: (subscription.plano || 'start') as SubscriptionPlanId,
+      status: (subscription.status || 'pending') as Subscription['status'],
       valor: Number(subscription.valor || 0),
-      data_inicio: subscription.data_inicio,
-      data_proxima_cobranca: subscription.data_proxima_cobranca,
-      cartao_ultimos_digitos: subscription.cartao_ultimos_digitos,
-      cartao_bandeira: subscription.cartao_bandeira,
+      data_inicio: subscription.data_inicio || null,
+      data_proxima_cobranca: subscription.data_proxima_cobranca || null,
+      cartao_ultimos_digitos: subscription.cartao_ultimos_digitos || null,
+      cartao_bandeira: subscription.cartao_bandeira || null,
     };
   } catch (error) {
     console.error('[Subscription] Erro ao buscar assinatura:', error);
@@ -167,41 +170,34 @@ export async function createSubscription(planId: SubscriptionPlanId, cardToken?:
       };
     }
 
-    // Salva a assinatura no NocoDB
-    if (ASSINATURAS_TABLE_ID) {
-      // Verifica se ja existe assinatura
-      const existing = await noco.findOne(ASSINATURAS_TABLE_ID, {
-        where: `(empresa_id,eq,${me.empresaId})`,
-      }) as any;
+    // Salva a assinatura no PostgreSQL
+    const subscriptionData = {
+      empresa_id: me.empresaId,
+      mp_subscription_id: mpData.id,
+      mp_preapproval_plan_id: mpData.preapproval_plan_id || null,
+      plano: planId,
+      status: mpData.status || 'pending',
+      valor: plan.price,
+      data_inicio: mpData.date_created || new Date().toISOString(),
+      data_proxima_cobranca: mpData.next_payment_date || null,
+      cartao_ultimos_digitos: mpData.payment_method_id ? mpData.last_four_digits : null,
+      cartao_bandeira: mpData.payment_method_id || null,
+    };
 
-      const subscriptionData = {
-        empresa_id: me.empresaId,
-        mp_subscription_id: mpData.id,
-        mp_preapproval_plan_id: mpData.preapproval_plan_id || null,
-        plano: planId,
-        status: mpData.status || 'pending',
-        valor: plan.price,
-        data_inicio: mpData.date_created || new Date().toISOString(),
-        data_proxima_cobranca: mpData.next_payment_date || null,
-        cartao_ultimos_digitos: mpData.payment_method_id ? mpData.last_four_digits : null,
-        cartao_bandeira: mpData.payment_method_id || null,
-      };
+    // Verifica se ja existe assinatura
+    const existing = await getAssinaturaByEmpresaId(me.empresaId);
 
-      if (existing) {
-        await noco.update(ASSINATURAS_TABLE_ID, {
-          id: existing.id || existing.Id,
-          ...subscriptionData,
-        });
-      } else {
-        await noco.create(ASSINATURAS_TABLE_ID, subscriptionData);
-      }
-      
-      // Atualiza o plano na tabela de empresas para liberar o cardapio
-      await noco.update(EMPRESAS_TABLE_ID, {
-        id: me.empresaId,
-        planos: planId,
-      });
+    if (existing) {
+      await updateAssinaturaByEmpresaId(me.empresaId, subscriptionData);
+    } else {
+      await createAssinatura(subscriptionData);
     }
+    
+    // Atualiza o plano na tabela de empresas para liberar o cardapio
+    await noco.update(EMPRESAS_TABLE_ID, {
+      id: me.empresaId,
+      planos: planId,
+    });
 
     return {
       success: true,
@@ -259,20 +255,17 @@ export async function changePlan(newPlanId: SubscriptionPlanId): Promise<{
       return { success: false, error: 'Erro ao alterar plano no Mercado Pago' };
     }
 
-    // Atualiza no NocoDB
-    if (ASSINATURAS_TABLE_ID && subscription.id) {
-      await noco.update(ASSINATURAS_TABLE_ID, {
-        id: subscription.id,
-        plano: newPlanId,
-        valor: plan.price,
-      });
-      
-      // Atualiza o plano na tabela de empresas
-      await noco.update(EMPRESAS_TABLE_ID, {
-        id: me.empresaId,
-        planos: newPlanId,
-      });
-    }
+    // Atualiza no PostgreSQL
+    await updateAssinaturaByEmpresaId(me.empresaId, {
+      plano: newPlanId,
+      valor: plan.price,
+    });
+    
+    // Atualiza o plano na tabela de empresas
+    await noco.update(EMPRESAS_TABLE_ID, {
+      id: me.empresaId,
+      planos: newPlanId,
+    });
 
     return { success: true };
   } catch (error: any) {
@@ -316,19 +309,16 @@ export async function cancelSubscription(): Promise<{
       return { success: false, error: 'Erro ao cancelar assinatura' };
     }
 
-    // Atualiza no NocoDB
-    if (ASSINATURAS_TABLE_ID && subscription.id) {
-      await noco.update(ASSINATURAS_TABLE_ID, {
-        id: subscription.id,
-        status: 'cancelled',
-      });
-      
-      // Volta o plano da empresa para iniciante (bloqueia cardapio)
-      await noco.update(EMPRESAS_TABLE_ID, {
-        id: me.empresaId,
-        planos: 'iniciante',
-      });
-    }
+    // Atualiza no PostgreSQL
+    await updateAssinaturaByEmpresaId(me.empresaId, {
+      status: 'cancelled',
+    });
+    
+    // Volta o plano da empresa para iniciante (bloqueia cardapio)
+    await noco.update(EMPRESAS_TABLE_ID, {
+      id: me.empresaId,
+      planos: 'iniciante',
+    });
 
     return { success: true };
   } catch (error: any) {
@@ -373,14 +363,11 @@ export async function updatePaymentCard(cardToken: string): Promise<{
       return { success: false, error: 'Erro ao atualizar cartao' };
     }
 
-    // Atualiza no NocoDB
-    if (ASSINATURAS_TABLE_ID && subscription.id) {
-      await noco.update(ASSINATURAS_TABLE_ID, {
-        id: subscription.id,
-        cartao_ultimos_digitos: mpData.last_four_digits || null,
-        cartao_bandeira: mpData.payment_method_id || null,
-      });
-    }
+    // Atualiza no PostgreSQL
+    await updateAssinaturaByEmpresaId(me.empresaId, {
+      cartao_ultimos_digitos: mpData.last_four_digits || null,
+      cartao_bandeira: mpData.payment_method_id || null,
+    });
 
     return { success: true };
   } catch (error: any) {

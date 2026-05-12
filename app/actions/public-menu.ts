@@ -8,9 +8,9 @@ import {
     CONFIGURACOES_LOJA_TABLE_ID, 
     LOYALTY_CONFIG_TABLE_ID,
     PRODUTOS_METADADOS_TABLE_ID,
-    ASSINATURAS_TABLE_ID,
     isPaidPlan
 } from '@/lib/constants';
+import { getAssinaturaByEmpresaId } from '@/lib/assinaturas';
 
 export async function getPublicMenu(slug: string) {
     console.log(`[MENU_DEBUG] Iniciando busca para slug: ${slug}`);
@@ -56,14 +56,12 @@ export async function getPublicMenu(slug: string) {
         
         console.log(`[MENU_DEBUG] Empresa: ${empresa.nome} (ID: ${empresaId})`);
         
-        // Verificar se empresa tem assinatura ativa na tabela assinaturas (NocoDB)
+        // Verificar se empresa tem assinatura ativa na tabela assinaturas (PostgreSQL)
         let hasActiveSubscription = false;
         let planoAtivo = 'iniciante';
         
         try {
-            const assinatura = await noco.findOne(ASSINATURAS_TABLE_ID, {
-                where: `(empresa_id,eq,${empresaId})`,
-            }) as any;
+            const assinatura = await getAssinaturaByEmpresaId(empresaId);
             
             if (assinatura && assinatura.status === 'authorized') {
                 planoAtivo = assinatura.plano || 'iniciante';

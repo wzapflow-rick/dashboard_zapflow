@@ -1,11 +1,11 @@
 'use server';
 
 import { noco } from '@/lib/nocodb';
-import db from '@/lib/db';
 import { EMPRESAS_TABLE_ID, SUBSCRIPTION_PLANS } from '@/lib/constants';
 import bcrypt from 'bcryptjs';
 import { encrypt } from '@/lib/session';
 import { cookies } from 'next/headers';
+import { createAssinatura } from '@/lib/assinaturas';
 
 // Helper para hash de senha
 function hashPassword(password: string): string {
@@ -84,36 +84,28 @@ export async function createTrialAccount(data: TrialAccountData) {
     
     const empresaId = empresa.id || empresa.Id;
     
-    // Criar assinatura trial diretamente no PostgreSQL (tabela assinaturas esta no DB)
+    // Criar assinatura trial usando modulo centralizado
     try {
       const hoje = new Date();
       const fimTrial = new Date(hoje);
       fimTrial.setDate(fimTrial.getDate() + 7); // 7 dias de trial
       
-      console.log('[TrialSignup] Criando assinatura PostgreSQL para empresa_id:', empresaId);
+      console.log('[TrialSignup] Criando assinatura para empresa_id:', empresaId);
       
-      await db.query(`
-        INSERT INTO assinaturas (
-          empresa_id, plano, status, valor,
-          mp_subscription_id, mp_preapproval_plan_id,
-          data_inicio, data_proxima_cobranca,
-          cartao_ultimos_digitos, cartao_bandeira,
-          created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
-      `, [
-        empresaId,
-        'start',
-        'authorized',
-        0,
-        `trial_${empresaId}_${Date.now()}`,
-        'start',
-        hoje.toISOString(),
-        fimTrial.toISOString(),
-        'TRIA',
-        'TRIA'
-      ]);
+      await createAssinatura({
+        empresa_id: empresaId,
+        plano: 'start',
+        status: 'authorized',
+        valor: 0,
+        mp_subscription_id: `trial_${empresaId}_${Date.now()}`,
+        mp_preapproval_plan_id: 'start',
+        data_inicio: hoje.toISOString(),
+        data_proxima_cobranca: fimTrial.toISOString(),
+        cartao_ultimos_digitos: 'TRIA',
+        cartao_bandeira: 'TRIA',
+      });
       
-      console.log('[TrialSignup] Assinatura trial criada com sucesso no PostgreSQL');
+      console.log('[TrialSignup] Assinatura trial criada com sucesso');
     } catch (subError: any) {
       console.error('[TrialSignup] ERRO ao criar assinatura:', subError?.message || subError);
       // Continua mesmo se falhar - a empresa ja foi criada e o usuario pode assinar depois
