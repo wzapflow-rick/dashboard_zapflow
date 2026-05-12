@@ -229,6 +229,7 @@ export const SUBSCRIPTION_PLANS = {
     id: 'parceria',
     name: 'Parceria',
     price: 0,
+    convertPrice: 29.90, // Preco promocional para conversao do trial
     description: 'Teste gratis por 7 dias com acesso total!',
     trial: true,
     trialDays: 7,
@@ -247,7 +248,8 @@ export const SUBSCRIPTION_PLANS = {
   START: {
     id: 'start',
     name: 'Start',
-    price: 5,
+    price: 79.90,
+    promoPrice: 29.90, // Preco promocional para quem veio do trial Parceria
     description: 'Perfeito para comecar sua jornada no delivery.',
     features: [
       'Cardapio digital (Link + QrCode)',
