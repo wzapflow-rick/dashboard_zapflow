@@ -75,17 +75,72 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET para verificar status das tabelas
+// GET para criar tabelas (mais facil de usar pelo navegador)
+// Use: /api/setup/create-tables?action=create&key=zapflow2026
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const secretParam = searchParams.get('secret');
+    const action = searchParams.get('action');
+    const key = searchParams.get('key');
     
-    if (secretParam !== SETUP_SECRET) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Chave simples para criar tabelas (temporaria)
+    const TEMP_KEY = 'zapflow2026';
+    
+    if (key !== TEMP_KEY && key !== SETUP_SECRET) {
+      return NextResponse.json({ 
+        error: 'Unauthorized', 
+        hint: 'Use ?action=create&key=zapflow2026 para criar as tabelas' 
+      }, { status: 401 });
     }
 
-    // Listar tabelas existentes
+    // Se action=create, criar as tabelas
+    if (action === 'create') {
+      const results: { table: string; status: string; error?: string }[] = [];
+
+      // Criar tabela rate_limit_attempts
+      try {
+        await db.query(`
+          CREATE TABLE IF NOT EXISTS rate_limit_attempts (
+            id SERIAL PRIMARY KEY,
+            identifier VARCHAR(255) NOT NULL,
+            action VARCHAR(100) NOT NULL,
+            attempted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            blocked_until TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+          )
+        `);
+        
+        try {
+          await db.query(`CREATE INDEX IF NOT EXISTS idx_rate_limit_identifier_action ON rate_limit_attempts(identifier, action)`);
+          await db.query(`CREATE INDEX IF NOT EXISTS idx_rate_limit_attempted_at ON rate_limit_attempts(attempted_at)`);
+        } catch {
+          // Indices ja existem
+        }
+        
+        results.push({ table: 'rate_limit_attempts', status: 'created' });
+      } catch (error: any) {
+        results.push({ table: 'rate_limit_attempts', status: 'error', error: error.message });
+      }
+
+      // Listar tabelas existentes
+      const tablesResult = await db.query(`
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        ORDER BY table_name
+      `);
+      
+      const existingTables = tablesResult.rows.map((r: any) => r.table_name);
+
+      return NextResponse.json({
+        success: true,
+        message: 'Tabelas criadas com sucesso!',
+        results,
+        existingTables,
+      });
+    }
+
+    // Apenas listar tabelas existentes
     const tablesResult = await db.query(`
       SELECT table_name 
       FROM information_schema.tables 
@@ -94,8 +149,6 @@ export async function GET(req: NextRequest) {
     `);
     
     const existingTables = tablesResult.rows.map((r: any) => r.table_name);
-
-    // Verificar se rate_limit_attempts existe
     const rateLimitExists = existingTables.includes('rate_limit_attempts');
 
     return NextResponse.json({
@@ -104,6 +157,7 @@ export async function GET(req: NextRequest) {
       required: {
         rate_limit_attempts: rateLimitExists ? 'exists' : 'missing',
       },
+      hint: rateLimitExists ? 'Todas as tabelas existem!' : 'Use ?action=create&key=zapflow2026 para criar as tabelas faltantes',
     });
 
   } catch (error: any) {
