@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { noco } from '@/lib/nocodb';
+import crypto from 'crypto';
 import { 
   PEDIDOS_TABLE_ID, 
   PAGAMENTOS_CONFIG_TABLE_ID,
@@ -9,6 +10,76 @@ import {
 } from '@/lib/constants';
 
 const MP_ACCESS_TOKEN_FALLBACK = process.env.MP_ACCESS_TOKEN || '';
+const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET || '';
+
+/**
+ * Valida a assinatura do webhook do MercadoPago
+ * Retorna true se valido, false se invalido
+ * Se MP_WEBHOOK_SECRET nao estiver configurado, pula a validacao (modo desenvolvimento)
+ */
+function validateWebhookSignature(
+  xSignature: string | null,
+  xRequestId: string | null,
+  dataId: string | null
+): { valid: boolean; reason?: string } {
+  // Se nao tiver secret configurado, pular validacao (modo dev)
+  if (!MP_WEBHOOK_SECRET) {
+    console.log('[Webhook] MP_WEBHOOK_SECRET nao configurado, pulando validacao de assinatura');
+    return { valid: true, reason: 'no_secret_configured' };
+  }
+
+  // Se nao tiver x-signature, rejeitar
+  if (!xSignature) {
+    return { valid: false, reason: 'missing_x_signature_header' };
+  }
+
+  // Extrair ts e hash do header x-signature
+  // Formato: ts=1704908010,v1=618c85345248dd820d5fd456117c2ab2ef8eda45a0282ff693eac24131a5e839
+  const parts = xSignature.split(',');
+  let ts: string | null = null;
+  let hash: string | null = null;
+
+  for (const part of parts) {
+    const [key, value] = part.split('=');
+    if (key?.trim() === 'ts') {
+      ts = value?.trim();
+    } else if (key?.trim() === 'v1') {
+      hash = value?.trim();
+    }
+  }
+
+  if (!ts || !hash) {
+    return { valid: false, reason: 'invalid_x_signature_format' };
+  }
+
+  // Montar o manifest para validacao
+  // Formato: id:[data.id];request-id:[x-request-id];ts:[ts];
+  let manifest = '';
+  if (dataId) {
+    manifest += `id:${dataId};`;
+  }
+  if (xRequestId) {
+    manifest += `request-id:${xRequestId};`;
+  }
+  manifest += `ts:${ts};`;
+
+  // Gerar HMAC SHA256
+  const hmac = crypto.createHmac('sha256', MP_WEBHOOK_SECRET);
+  hmac.update(manifest);
+  const calculatedHash = hmac.digest('hex');
+
+  // Comparar hashes
+  if (calculatedHash === hash) {
+    return { valid: true };
+  }
+
+  console.error('[Webhook] Assinatura invalida');
+  console.error('[Webhook] Manifest:', manifest);
+  console.error('[Webhook] Hash recebido:', hash);
+  console.error('[Webhook] Hash calculado:', calculatedHash);
+
+  return { valid: false, reason: 'signature_mismatch' };
+}
 
 interface MPPaymentData {
   id: number;
@@ -264,25 +335,46 @@ async function handleSubscriptionPayment(paymentId: string) {
 // ============================================================
 
 export async function POST(req: NextRequest) {
-  console.log('[v0] Webhook POST iniciado');
+  console.log('[Webhook] POST iniciado');
   
   try {
-    console.log('[MercadoPago Webhook] Recebendo notificacao...');
+    console.log('[Webhook] Recebendo notificacao...');
+    
+    // Extrair headers para validacao de assinatura
+    const xSignature = req.headers.get('x-signature');
+    const xRequestId = req.headers.get('x-request-id');
+    
+    // Extrair data.id da query string (MercadoPago envia assim)
+    const url = new URL(req.url);
+    const dataIdFromQuery = url.searchParams.get('data.id');
     
     // Ler o body como texto primeiro para debug
     const bodyText = await req.text();
-    console.log('[v0] Body texto bruto:', bodyText);
     
     // Parsear o JSON
     let body;
     try {
       body = JSON.parse(bodyText);
     } catch (parseError) {
-      console.error('[v0] Erro ao parsear JSON:', parseError);
+      console.error('[Webhook] Erro ao parsear JSON:', parseError);
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
     }
     
-    console.log('[MercadoPago Webhook] Body:', JSON.stringify(body));
+    // Obter data.id do body se nao veio na query
+    const dataId = dataIdFromQuery || body?.data?.id?.toString() || null;
+    
+    // Validar assinatura do webhook
+    const signatureValidation = validateWebhookSignature(xSignature, xRequestId, dataId);
+    if (!signatureValidation.valid) {
+      console.error('[Webhook] Assinatura invalida:', signatureValidation.reason);
+      return NextResponse.json(
+        { error: 'Invalid webhook signature', reason: signatureValidation.reason },
+        { status: 401 }
+      );
+    }
+    
+    console.log('[Webhook] Assinatura validada com sucesso');
+    console.log('[Webhook] Body:', JSON.stringify(body));
 
     const topic = body.topic || body.action || body.type;
     
