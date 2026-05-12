@@ -263,7 +263,7 @@ export async function cancelarAssinatura(empresaId: number): Promise<boolean> {
       [empresaId]
     );
     console.log('[Assinaturas] Cancelada para empresa:', empresaId);
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   } catch (error) {
     console.error('[Assinaturas] Erro ao cancelar:', error);
     return false;
