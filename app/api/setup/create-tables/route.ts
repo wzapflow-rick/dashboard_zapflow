@@ -75,21 +75,18 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET para criar tabelas (mais facil de usar pelo navegador)
-// Use: /api/setup/create-tables?action=create&key=zapflow2026
+// GET para verificar tabelas existentes
+// Requer CRON_SECRET para qualquer operacao
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const action = searchParams.get('action');
-    const key = searchParams.get('key');
+    const key = searchParams.get('key') || searchParams.get('secret');
     
-    // Chave simples para criar tabelas (temporaria)
-    const TEMP_KEY = 'zapflow2026';
-    
-    if (key !== TEMP_KEY && key !== SETUP_SECRET) {
+    // Apenas CRON_SECRET e aceito (chave temporaria removida)
+    if (key !== SETUP_SECRET) {
       return NextResponse.json({ 
-        error: 'Unauthorized', 
-        hint: 'Use ?action=create&key=zapflow2026 para criar as tabelas' 
+        error: 'Unauthorized'
       }, { status: 401 });
     }
 
@@ -157,7 +154,7 @@ export async function GET(req: NextRequest) {
       required: {
         rate_limit_attempts: rateLimitExists ? 'exists' : 'missing',
       },
-      hint: rateLimitExists ? 'Todas as tabelas existem!' : 'Use ?action=create&key=zapflow2026 para criar as tabelas faltantes',
+      hint: rateLimitExists ? 'Todas as tabelas existem!' : 'Use ?action=create para criar as tabelas faltantes',
     });
 
   } catch (error: any) {
