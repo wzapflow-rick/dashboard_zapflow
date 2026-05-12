@@ -145,7 +145,7 @@ export async function register(formData: FormData) {
         senha_hash: hashedPassword,
         login: email,
         senha: hashedPassword,
-        password: password,
+        // password removido - nunca salvar senha em texto plano
         nome_admin: nome,
         nome_fantasia: nome,
         status: 'ativo',
