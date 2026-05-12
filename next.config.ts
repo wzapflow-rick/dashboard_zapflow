@@ -129,7 +129,7 @@ const nextConfig: NextConfig = {
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.google.com https://*.gstatic.com https://sdk.mercadopago.com https://www.mercadopago.com.br https://vercel.live https://*.vercel.live",
               "style-src 'self' 'unsafe-inline' https://*.googleapis.com",
-              "img-src 'self' data: https: blob: *.ibb.co res.cloudinary.com",
+              "img-src 'self' data: https: blob:",
               "font-src 'self' https://*.gstatic.com https://*.googleapis.com",
               "connect-src 'self' https://db.wzapflow.com.br https://*.evolution-api.com https://api.mercadopago.com https://*.mercadopago.com https://*.mercadolibre.com https://vercel.live https://*.vercel.live wss://*.vercel.live",
               "frame-src 'self' https://*.mercadopago.com.br https://*.mercadopago.com https://vercel.live",

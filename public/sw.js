@@ -1,6 +1,6 @@
 // ZapFlow Service Worker - Offline First Strategy
-const CACHE_NAME = 'zapflow-v1';
-const OFFLINE_CACHE = 'zapflow-offline-v1';
+const CACHE_NAME = 'zapflow-v2';
+const OFFLINE_CACHE = 'zapflow-offline-v2';
 
 // Recursos estaticos para cache inicial
 const STATIC_ASSETS = [
@@ -54,6 +54,21 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
+  // Ignorar requests de extensoes e chrome-extension
+  if (url.protocol === 'chrome-extension:' || url.protocol === 'moz-extension:') {
+    return;
+  }
+
+  // Ignorar requests externos (imagens do Wikipedia, etc)
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+
+  // Ignorar requests de navegacao (HTML pages) - deixa o browser lidar com redirects
+  if (request.mode === 'navigate') {
+    return;
+  }
+
   // Ignorar requests nao-GET para cache (mas permitir que passem)
   if (request.method !== 'GET') {
     // Para POST/PUT/DELETE, tenta enviar e, se falhar, salva na sync queue
@@ -63,14 +78,22 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Ignorar Server Actions (podem ter redirects)
+  if (url.pathname.includes('_next/') || request.headers.get('Next-Action')) {
+    return;
+  }
+
   // Estrategia Network First para APIs
   if (isApiRequest(url.pathname)) {
     event.respondWith(networkFirstStrategy(request));
     return;
   }
 
-  // Estrategia Cache First para assets estaticos
-  event.respondWith(cacheFirstStrategy(request));
+  // Estrategia Cache First para assets estaticos (apenas JS/CSS/imagens)
+  if (url.pathname.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2)$/)) {
+    event.respondWith(cacheFirstStrategy(request));
+    return;
+  }
 });
 
 // Verifica se e uma request de API
