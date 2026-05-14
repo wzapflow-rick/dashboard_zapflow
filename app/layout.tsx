@@ -11,6 +11,11 @@ export const metadata: Metadata = {
   title: "ZapFlow - WhatsApp Delivery Automation",
   description: "Transforme seu WhatsApp em uma máquina de vendas.",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
