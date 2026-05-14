@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Phone, MapPin, Printer, CheckCircle2, UserPlus, CreditCard, Banknote, QrCode, Eye, Truck, ChevronDown, User, X, ExternalLink, Ban, Pencil } from 'lucide-react';
+import { Phone, MapPin, Printer, CheckCircle2, UserPlus, CreditCard, Banknote, QrCode, Eye, Truck, ChevronDown, User, X, ExternalLink, Ban, Pencil, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getAvailableDrivers, assignDriverToOrder, Driver } from '@/app/actions/drivers';
+import { AddExtraValueModal } from './add-extra-value-modal';
 
 interface OrderCardProps {
     order: any;
@@ -21,6 +22,8 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
     const [selectedDriver, setSelectedDriver] = useState<number | null>(order.entregador_id || null);
     const [assigning, setAssigning] = useState(false);
     const [showDriverDropdown, setShowDriverDropdown] = useState(false);
+    const [showAddValueModal, setShowAddValueModal] = useState(false);
+    const [displayTotal, setDisplayTotal] = useState(Number(order.valor_total || order.total || 0));
 
     const loadDrivers = async () => {
         try {
@@ -229,9 +232,20 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
 	                    )}>
 	                        {order.forma_pagamento || order.tipo_pagamento || 'Pagar na Entrega'}
 	                    </span>
-                    <span className="text-base font-bold text-slate-900 dark:text-white">
-                        R$ {Number(order.valor_total || order.total || 0).toFixed(2).replace('.', ',')}
-                    </span>
+                    <div className="flex items-center gap-2">
+                        {columnId !== 'finalizado' && columnId !== 'cancelado' && (
+                            <button
+                                onClick={() => setShowAddValueModal(true)}
+                                className="size-7 flex items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                                title="Adicionar valor extra"
+                            >
+                                <PlusCircle className="size-4" />
+                            </button>
+                        )}
+                        <span className="text-base font-bold text-slate-900 dark:text-white">
+                            R$ {displayTotal.toFixed(2).replace('.', ',')}
+                        </span>
+                    </div>
                 </div>
                 
                 {/* Linha com taxa de entrega, desconto e troco */}
@@ -465,6 +479,17 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
                     Concluído com Sucesso
                 </div>
             )}
+
+            {/* Modal para adicionar valor extra */}
+            <AddExtraValueModal
+                isOpen={showAddValueModal}
+                onClose={() => setShowAddValueModal(false)}
+                orderId={order.id}
+                orderNumber={order.id}
+                onSuccess={(novoTotal) => {
+                    setDisplayTotal(novoTotal);
+                }}
+            />
         </div>
     );
 }

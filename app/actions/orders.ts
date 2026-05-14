@@ -584,3 +584,81 @@ export async function updateOrderItems(
         throw new Error(error.message || 'Falha ao atualizar pedido');
     }
 }
+
+/**
+ * Adiciona um valor extra ao pedido (ex: açaí por peso, item avulso)
+ * O valor é somado ao total e o item é adicionado à lista de itens
+ */
+export async function addExtraValueToOrder(
+    orderId: number,
+    nome: string,
+    valor: number
+) {
+    try {
+        const user = await requireRole(['admin', 'gerente', 'atendente', 'cozinheiro']);
+
+        if (!nome?.trim()) {
+            throw new Error('Nome do item é obrigatório');
+        }
+
+        if (!valor || valor <= 0) {
+            throw new Error('Valor deve ser maior que zero');
+        }
+
+        // Busca o pedido atual
+        const orderData = await noco.findById(PEDIDOS_TABLE_ID, orderId) as any;
+
+        if (!orderData || Number(orderData.empresa_id) !== Number(user.empresaId)) {
+            logger.securityAccessDenied(user.empresaId, `order:${orderId}`, 'ADD_EXTRA_VALUE');
+            throw new Error('Acesso negado: Pedido não pertence a esta empresa');
+        }
+
+        // Parse dos itens existentes
+        let itensAtuais: any[] = [];
+        try {
+            itensAtuais = typeof orderData.itens === 'string' 
+                ? JSON.parse(orderData.itens) 
+                : (orderData.itens || []);
+        } catch {
+            itensAtuais = [];
+        }
+
+        // Adiciona o novo item extra
+        const novoItem = {
+            id: `extra_${Date.now()}`,
+            produto: nome.trim(),
+            nome: nome.trim(),
+            quantidade: 1,
+            preco_unitario: valor,
+            subtotal: valor,
+            isExtra: true, // Marca como item extra/avulso
+        };
+
+        itensAtuais.push(novoItem);
+
+        // Calcula o novo total
+        const valorAtual = Number(orderData.valor_total) || 0;
+        const novoTotal = valorAtual + valor;
+
+        // Atualiza o pedido
+        const result = await noco.update(PEDIDOS_TABLE_ID, {
+            id: orderId,
+            itens: JSON.stringify(itensAtuais),
+            valor_total: novoTotal,
+        });
+
+        await logAction('ADD_EXTRA_VALUE', `Valor extra adicionado ao pedido #${orderId}: ${nome} - R$ ${valor.toFixed(2)}`);
+
+        revalidatePath('/dashboard/expedition');
+        revalidatePath('/dashboard/tables');
+        
+        return { 
+            success: true, 
+            novoTotal,
+            itemAdicionado: novoItem,
+        };
+    } catch (error: any) {
+        console.error('Erro ao adicionar valor extra:', error);
+        throw new Error(error.message || 'Falha ao adicionar valor extra');
+    }
+}
