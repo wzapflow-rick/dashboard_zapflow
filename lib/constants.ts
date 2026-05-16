@@ -208,6 +208,22 @@ export const FATURAS_ASSINATURA_TABLE_ID =
 // ============================================================
 
 export const SUBSCRIPTION_PLANS = {
+  PARCERIA: {
+    id: 'parceria',
+    name: 'Parceria',
+    price: 29.90,
+    description: '7 dias gratis para testar todas as funcoes.',
+    trialDays: 7,
+    features: [
+      'Cardapio digital (Link + QrCode)',
+      'Painel Kanban com notificacao WhatsApp',
+      'Pix + Cartoes (pagamento online)',
+      'Taxa de entregas pelo Google Maps',
+      'Agente de IA no WhatsApp',
+      'Cupons de desconto',
+      'Acesso total a todas as funcoes',
+    ],
+  },
   INICIANTE: {
     id: 'iniciante',
     name: 'Iniciante',
@@ -265,10 +281,10 @@ export const SUBSCRIPTION_PLANS = {
   },
 } as const;
 
-export type SubscriptionPlanId = 'iniciante' | 'start' | 'pro' | 'elite';
+export type SubscriptionPlanId = 'parceria' | 'iniciante' | 'start' | 'pro' | 'elite';
 
 /** Planos que permitem cardapio online ativo */
-export const PAID_PLANS: SubscriptionPlanId[] = ['start', 'pro', 'elite'];
+export const PAID_PLANS: SubscriptionPlanId[] = ['parceria', 'start', 'pro', 'elite'];
 
 /** Verifica se o plano permite cardapio online */
 export function isPaidPlan(plan: string | null | undefined): boolean {

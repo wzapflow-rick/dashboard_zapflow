@@ -2,7 +2,8 @@
 
 import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { createCheckoutSession, createPixCheckoutSession } from '@/app/actions/signup';
+import { createCheckoutSession, createPixCheckoutSession, createTrialAccount } from '@/app/actions/signup';
+import { useRouter } from 'next/navigation';
 import { Loader2, Zap, Mail, User, Phone, CreditCard, QrCode, Check } from 'lucide-react';
 import Link from 'next/link';
 
@@ -61,15 +62,19 @@ const planDetails: Record<string, { name: string; price: number; trialDays?: num
 
 function SignupContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const planoParam = searchParams.get('plano')?.toLowerCase() || 'start';
   
   const [plano, setPlano] = useState(planoParam);
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [telefone, setTelefone] = useState('');
+  const [senha, setSenha] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'cartao' | 'pix'>('cartao');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  const isParceria = plano === 'parceria';
   
   const plan = planDetails[plano] || planDetails.start;
   
@@ -90,11 +95,38 @@ function SignupContent() {
       const cleanPhone = telefone.replace(/\D/g, '');
       
       if (cleanPhone.length < 10) {
-        setError('Telefone inválido');
+        setError('Telefone invalido');
         setLoading(false);
         return;
       }
       
+      // Plano PARCERIA = criar conta trial direto (sem pagamento)
+      if (isParceria) {
+        if (!senha || senha.length < 6) {
+          setError('Senha deve ter no minimo 6 caracteres');
+          setLoading(false);
+          return;
+        }
+        
+        const result = await createTrialAccount({
+          email,
+          nome,
+          telefone: cleanPhone,
+          senha,
+        });
+        
+        if (!result.success) {
+          setError(result.error || 'Erro ao criar conta');
+          setLoading(false);
+          return;
+        }
+        
+        // Conta criada com sucesso - redirecionar para onboarding
+        router.push('/onboarding');
+        return;
+      }
+      
+      // Planos pagos = checkout Mercado Pago
       const data = {
         email,
         nome,
@@ -208,36 +240,57 @@ function SignupContent() {
                   </div>
                 </div>
                 
-                {/* Método de Pagamento */}
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">Forma de pagamento</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod('cartao')}
-                      className={`flex items-center justify-center gap-2 p-4 rounded-xl border transition-all ${
-                        paymentMethod === 'cartao'
-                          ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400'
-                          : 'bg-[#0a0a0a] border-white/10 text-gray-400 hover:border-white/20'
-                      }`}
-                    >
-                      <CreditCard className="size-5" />
-                      <span className="font-semibold">Cartão</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod('pix')}
-                      className={`flex items-center justify-center gap-2 p-4 rounded-xl border transition-all ${
-                        paymentMethod === 'pix'
-                          ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400'
-                          : 'bg-[#0a0a0a] border-white/10 text-gray-400 hover:border-white/20'
-                      }`}
-                    >
-                      <QrCode className="size-5" />
-                      <span className="font-semibold">Pix</span>
-                    </button>
+                {/* Senha - apenas para plano Parceria */}
+                {isParceria && (
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">Crie sua senha</label>
+                    <div className="relative">
+                      <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-gray-500" />
+                      <input
+                        type="password"
+                        value={senha}
+                        onChange={(e) => setSenha(e.target.value)}
+                        placeholder="Minimo 6 caracteres"
+                        className="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-12 py-3.5 text-white placeholder:text-gray-600 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-colors"
+                        required
+                        minLength={6}
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
+                
+                {/* Método de Pagamento - apenas para planos pagos */}
+                {!isParceria && (
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">Forma de pagamento</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod('cartao')}
+                        className={`flex items-center justify-center gap-2 p-4 rounded-xl border transition-all ${
+                          paymentMethod === 'cartao'
+                            ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400'
+                            : 'bg-[#0a0a0a] border-white/10 text-gray-400 hover:border-white/20'
+                        }`}
+                      >
+                        <CreditCard className="size-5" />
+                        <span className="font-semibold">Cartao</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod('pix')}
+                        className={`flex items-center justify-center gap-2 p-4 rounded-xl border transition-all ${
+                          paymentMethod === 'pix'
+                            ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400'
+                            : 'bg-[#0a0a0a] border-white/10 text-gray-400 hover:border-white/20'
+                        }`}
+                      >
+                        <QrCode className="size-5" />
+                        <span className="font-semibold">Pix</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
                 
                 {/* Erro */}
                 {error && (
@@ -255,11 +308,11 @@ function SignupContent() {
                   {loading ? (
                     <>
                       <Loader2 className="size-5 animate-spin" />
-                      Processando...
+                      {isParceria ? 'Criando sua conta...' : 'Processando...'}
                     </>
                   ) : (
                     <>
-                      Continuar para pagamento
+                      {isParceria ? 'Comecar meu teste gratis' : 'Continuar para pagamento'}
                     </>
                   )}
                 </button>
