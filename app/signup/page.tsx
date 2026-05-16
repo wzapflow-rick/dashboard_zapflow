@@ -1,12 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { createCheckoutSession, createPixCheckoutSession } from '@/app/actions/signup';
-import { Loader2, Zap, Mail, User, Phone, CreditCard, QrCode, Check, ArrowLeft } from 'lucide-react';
-import Image from 'next/image';
+import { Loader2, Zap, Mail, User, Phone, CreditCard, QrCode, Check } from 'lucide-react';
 import Link from 'next/link';
-import { SUBSCRIPTION_PLANS } from '@/lib/constants';
 
 const planDetails: Record<string, { name: string; price: number; trialDays?: number; features: string[] }> = {
   parceria: {
@@ -61,9 +59,8 @@ const planDetails: Record<string, { name: string; price: number; trialDays?: num
   },
 };
 
-export default function SignupPage() {
+function SignupContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const planoParam = searchParams.get('plano')?.toLowerCase() || 'start';
   
   const [plano, setPlano] = useState(planoParam);
@@ -352,5 +349,21 @@ export default function SignupPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+function SignupLoading() {
+  return (
+    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+      <Loader2 className="size-8 text-emerald-500 animate-spin" />
+    </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<SignupLoading />}>
+      <SignupContent />
+    </Suspense>
   );
 }
