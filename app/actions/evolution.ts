@@ -17,6 +17,16 @@ async function evoFetch(path: string, method: string = 'GET', body?: any) {
         const data = await res.json();
         if (!res.ok) {
             console.error(`Evolution API Error [${method} ${path}]:`, data);
+            
+            // Detecta erros específicos do Prisma/banco de dados
+            const errorMsg = JSON.stringify(data);
+            if (errorMsg.includes('PrismaClient') || errorMsg.includes('database') || res.status === 500) {
+                return { 
+                    error: 'Servidor WhatsApp temporariamente indisponível. Tente novamente em alguns minutos.', 
+                    data: null 
+                };
+            }
+            
             return { error: data.message || 'Erro na Evolution API', data: null };
         }
         return { error: null, data };
