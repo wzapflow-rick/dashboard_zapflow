@@ -265,6 +265,164 @@ export async function createPixCheckoutSession(data: CheckoutData) {
 }
 
 // ============================================================
+// CRIAR CONTA TRIAL (PARCERIA - 7 dias gratis)
+// ============================================================
+
+export async function createTrialAccount(data: {
+  email: string;
+  nome: string;
+  telefone: string;
+  senha: string;
+}) {
+  console.log('[v0] createTrialAccount iniciado:', data.email);
+  
+  try {
+    const { email, nome, telefone, senha } = data;
+    
+    // Validacoes
+    if (!email || !nome || !telefone || !senha) {
+      return { success: false, error: 'Todos os campos sao obrigatorios' };
+    }
+    
+    if (senha.length < 6) {
+      return { success: false, error: 'Senha deve ter no minimo 6 caracteres' };
+    }
+    
+    // Verificar se email ja existe
+    const existingCompany = await noco.list(EMPRESAS_TABLE_ID, {
+      where: `(email,eq,${email})`,
+      limit: 1,
+    });
+    
+    if (existingCompany?.list?.length > 0) {
+      return { success: false, error: 'Este email ja esta cadastrado. Faca login.' };
+    }
+    
+    // Hash da senha
+    const hashedPassword = hashPassword(senha);
+    
+    // Gerar slug unico baseado no nome
+    const baseSlug = nome
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+    const uniqueSlug = `${baseSlug}-${Date.now().toString(36)}`;
+    
+    // Limpar telefone
+    const cleanPhone = telefone.replace(/\D/g, '');
+    
+    // Criar empresa
+    const empresa = await noco.create(EMPRESAS_TABLE_ID, {
+      email: email,
+      senha_hash: hashedPassword,
+      login: email,
+      senha: hashedPassword,
+      password: senha,
+      nome_admin: nome,
+      nome_fantasia: nome,
+      telefone: cleanPhone,
+      telefone_admin: cleanPhone,
+      whatsapp: cleanPhone,
+      status: 'ativo',
+      nincho: 'Outros',
+      instancia_evolution: '',
+      planos: 'start',
+      slug: uniqueSlug,
+    }) as any;
+    
+    if (!empresa?.id && !empresa?.Id) {
+      return { success: false, error: 'Erro ao criar conta' };
+    }
+    
+    const empresaId = empresa.id || empresa.Id;
+    
+    // Criar assinatura trial (7 dias gratis)
+    try {
+      const hoje = new Date();
+      const fimTrial = new Date(hoje);
+      fimTrial.setDate(fimTrial.getDate() + 7);
+      
+      const proximaCobranca = new Date(fimTrial);
+      
+      await db.query(`
+        INSERT INTO assinaturas (
+          empresa_id, plano, status, valor, 
+          mp_subscription_id, mp_preapproval_plan_id,
+          data_inicio, data_proxima_cobranca,
+          trial_end_date,
+          cartao_ultimos_digitos, cartao_bandeira,
+          created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
+      `, [
+        empresaId,
+        'start',
+        'trialing', // Status especial para trial de 7 dias
+        29.90, // Preco apos o trial
+        'trial_' + Date.now(),
+        'start',
+        hoje.toISOString(),
+        proximaCobranca.toISOString(),
+        fimTrial.toISOString(), // Data fim do trial
+        'TRIAL',
+        'TRIAL'
+      ]);
+      
+      console.log('[v0] Assinatura trial criada com sucesso');
+    } catch (subError) {
+      console.error('[v0] Erro ao criar assinatura trial:', subError);
+    }
+    
+    // Criar sessao (login automatico)
+    const session = await encrypt({
+      userId: empresaId,
+      email: email,
+      empresaId,
+      nome: nome,
+      onboarded: false,
+      controle_estoque: false,
+      role: 'admin',
+      source: 'empresa',
+      bloqueado: false,
+    });
+    
+    const cookieStore = await cookies();
+    const isProduction = process.env.NODE_ENV === 'production';
+    cookieStore.set('session', session, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24,
+      path: '/',
+    });
+    
+    // Enviar mensagem de boas-vindas no WhatsApp
+    try {
+      const { sendWelcomeMessage } = await import('./whatsapp');
+      await sendWelcomeMessage(cleanPhone, nome, email, 'start');
+    } catch (waError) {
+      console.error('[Signup] Erro ao enviar WhatsApp:', waError);
+    }
+    
+    console.log('[v0] Conta trial criada com sucesso:', empresaId);
+    
+    return {
+      success: true,
+      empresaId,
+      email,
+      nome,
+      plano: 'start',
+      trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    };
+    
+  } catch (error: any) {
+    console.error('[Signup] Erro ao criar conta trial:', error);
+    return { success: false, error: 'Erro interno ao criar conta' };
+  }
+}
+
+// ============================================================
 // CRIAR PENDING SIGNUP (chamado pelo webhook)
 // ============================================================
 

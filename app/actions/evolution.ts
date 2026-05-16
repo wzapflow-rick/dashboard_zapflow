@@ -17,6 +17,16 @@ async function evoFetch(path: string, method: string = 'GET', body?: any) {
         const data = await res.json();
         if (!res.ok) {
             console.error(`Evolution API Error [${method} ${path}]:`, data);
+            
+            // Detecta erros específicos do Prisma/banco de dados
+            const errorMsg = JSON.stringify(data);
+            if (errorMsg.includes('PrismaClient') || errorMsg.includes('database') || res.status === 500) {
+                return { 
+                    error: 'Servidor WhatsApp temporariamente indisponível. Tente novamente em alguns minutos.', 
+                    data: null 
+                };
+            }
+            
             return { error: data.message || 'Erro na Evolution API', data: null };
         }
         return { error: null, data };
@@ -28,26 +38,39 @@ async function evoFetch(path: string, method: string = 'GET', body?: any) {
 
 export async function createEvolutionInstance(empresaId: string | number) {
     const instanceName = `zapflow_${empresaId}`;
+    console.log('[v0] createEvolutionInstance - empresaId:', empresaId, 'instanceName:', instanceName);
+    console.log('[v0] EVO_URL:', EVO_URL, 'EVO_KEY exists:', !!EVO_KEY);
 
     // Verifica se já existe
     const existing = await evoFetch(`/instance/fetchInstances`);
+    console.log('[v0] fetchInstances response:', JSON.stringify(existing).slice(0, 500));
+    
     if (existing.data) {
         const instances = Array.isArray(existing.data) ? existing.data : [];
+        console.log('[v0] Total instances found:', instances.length);
         const found = instances.find((i: any) =>
             i.instance?.instanceName === instanceName || i.name === instanceName
         );
         if (found) {
-            console.log('Instance already exists:', instanceName);
+            console.log('[v0] Instance already exists:', instanceName);
             return { instanceName, alreadyExists: true };
         }
     }
 
+    // Se houve erro ao buscar instâncias (ex: Evolution API com problema)
+    if (existing.error) {
+        console.error('[v0] Erro ao buscar instâncias existentes:', existing.error);
+        return { error: existing.error };
+    }
+
     // Cria a instância
+    console.log('[v0] Creating new instance:', instanceName);
     const result = await evoFetch('/instance/create', 'POST', {
         instanceName,
         qrcode: true,
         integration: 'WHATSAPP-BAILEYS',
     });
+    console.log('[v0] Create instance response:', JSON.stringify(result).slice(0, 500));
 
     if (result.error) return { error: result.error };
     return { instanceName, data: result.data };
