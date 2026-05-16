@@ -10,7 +10,7 @@ import Link from 'next/link';
 const planDetails: Record<string, { name: string; price: number; trialDays?: number; features: string[] }> = {
   parceria: {
     name: 'PARCERIA',
-    price: 79.90, // Mesmo preco do Start apos o trial
+    price: 29.90,
     trialDays: 7,
     features: [
       'Cardapio digital (Link + QrCode)',

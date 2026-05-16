@@ -359,7 +359,7 @@ export async function createTrialAccount(data: {
         empresaId,
         'start',
         'trialing', // Status especial para trial de 7 dias
-        79.90, // Preco do plano Start
+        29.90, // Preco apos o trial
         'trial_' + Date.now(),
         'start',
         hoje.toISOString(),
