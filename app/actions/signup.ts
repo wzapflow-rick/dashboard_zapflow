@@ -328,7 +328,7 @@ export async function createTrialAccount(data: {
       status: 'ativo',
       nincho: 'Outros',
       instancia_evolution: '',
-      planos: 'parceria',
+      planos: 'start',
       slug: uniqueSlug,
     }) as any;
     
@@ -357,11 +357,11 @@ export async function createTrialAccount(data: {
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
       `, [
         empresaId,
-        'parceria',
-        'trialing', // Status especial para trial
-        29.90,
+        'start',
+        'trialing', // Status especial para trial de 7 dias
+        79.90, // Preco do plano Start
         'trial_' + Date.now(),
-        'parceria',
+        'start',
         hoje.toISOString(),
         proximaCobranca.toISOString(),
         fimTrial.toISOString(), // Data fim do trial
@@ -400,7 +400,7 @@ export async function createTrialAccount(data: {
     // Enviar mensagem de boas-vindas no WhatsApp
     try {
       const { sendWelcomeMessage } = await import('./whatsapp');
-      await sendWelcomeMessage(cleanPhone, nome, email, 'parceria');
+      await sendWelcomeMessage(cleanPhone, nome, email, 'start');
     } catch (waError) {
       console.error('[Signup] Erro ao enviar WhatsApp:', waError);
     }
@@ -412,7 +412,7 @@ export async function createTrialAccount(data: {
       empresaId,
       email,
       nome,
-      plano: 'parceria',
+      plano: 'start',
       trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     };
     

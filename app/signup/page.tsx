@@ -10,16 +10,15 @@ import Link from 'next/link';
 const planDetails: Record<string, { name: string; price: number; trialDays?: number; features: string[] }> = {
   parceria: {
     name: 'PARCERIA',
-    price: 29.90,
+    price: 79.90, // Mesmo preco do Start apos o trial
     trialDays: 7,
     features: [
-      'Cardápio digital (Link + QrCode)',
-      'Painel Kanban com notificação WhatsApp',
-      'Pix + Cartões (pagamento online)',
-      'Taxa de entregas pelo Google Maps',
-      'Agente de IA no WhatsApp',
-      'Cupons de desconto',
-      'Acesso total a todas as funções',
+      'Cardapio digital (Link + QrCode)',
+      'Painel Kanban basico',
+      'Pix + Cartoes',
+      'Taxa Fixa por bairro',
+      'Suporte por email',
+      '7 dias gratis para testar',
     ],
   },
   start: {
