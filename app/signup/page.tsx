@@ -8,7 +8,21 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { SUBSCRIPTION_PLANS } from '@/lib/constants';
 
-const planDetails: Record<string, { name: string; price: number; features: string[] }> = {
+const planDetails: Record<string, { name: string; price: number; trialDays?: number; features: string[] }> = {
+  parceria: {
+    name: 'PARCERIA',
+    price: 29.90,
+    trialDays: 7,
+    features: [
+      'Cardápio digital (Link + QrCode)',
+      'Painel Kanban com notificação WhatsApp',
+      'Pix + Cartões (pagamento online)',
+      'Taxa de entregas pelo Google Maps',
+      'Agente de IA no WhatsApp',
+      'Cupons de desconto',
+      'Acesso total a todas as funções',
+    ],
+  },
   start: {
     name: 'Start',
     price: 79.90,
@@ -274,29 +288,40 @@ export default function SignupPage() {
               </div>
               
               {/* Seletor de plano */}
-              <div className="flex gap-2 mb-6">
+              <div className="grid grid-cols-2 gap-2 mb-6">
                 {Object.entries(planDetails).map(([key, p]) => (
                   <button
                     key={key}
                     onClick={() => setPlano(key)}
-                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-all ${
+                    className={`py-2 px-3 rounded-lg text-sm font-semibold transition-all ${
                       plano === key
                         ? 'bg-emerald-500 text-white'
                         : 'bg-white/5 text-gray-400 hover:bg-white/10'
                     }`}
                   >
                     {p.name}
+                    {p.trialDays && <span className="ml-1 text-xs opacity-75">(Grátis)</span>}
                   </button>
                 ))}
               </div>
               
               {/* Preço */}
               <div className="bg-[#0a0a0a] rounded-2xl p-4 mb-6">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-gray-400">R$</span>
-                  <span className="text-4xl font-black">{plan.price.toFixed(2).replace('.', ',')}</span>
-                  <span className="text-gray-400">/mês</span>
-                </div>
+                {plan.trialDays ? (
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-2xl font-black text-emerald-400">GRÁTIS</span>
+                      <span className="text-gray-400">por {plan.trialDays} dias</span>
+                    </div>
+                    <p className="text-sm text-gray-500">Depois R$ {plan.price.toFixed(2).replace('.', ',')}/mês</p>
+                  </div>
+                ) : (
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-gray-400">R$</span>
+                    <span className="text-4xl font-black">{plan.price.toFixed(2).replace('.', ',')}</span>
+                    <span className="text-gray-400">/mês</span>
+                  </div>
+                )}
               </div>
               
               {/* Features */}
