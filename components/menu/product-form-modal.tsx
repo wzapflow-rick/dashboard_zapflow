@@ -380,32 +380,43 @@ export default function ProductFormModal({
                                         exit={{ height: 0, opacity: 0 }}
                                         className="overflow-hidden"
                                     >
-                                        <div className="bg-slate-50 dark:bg-slate-700 rounded-xl p-4 border border-slate-100 dark:border-slate-600 space-y-3">
+                                        <div className="bg-slate-50 dark:bg-slate-700 rounded-xl p-3 sm:p-4 border border-slate-100 dark:border-slate-600 space-y-3">
                                             {sizes.map((size, index) => (
-                                                <div key={index} className="flex gap-2 items-center">
-                                                    <input
-                                                        type="text"
-                                                        value={size.nome}
-                                                        onChange={(e) => updateSize(index, 'nome', e.target.value)}
-                                                        placeholder="Ex: Grande"
-                                                        className="flex-1 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
-                                                        required
-                                                    />
-                                                    <div className="w-32">
-                                                        <CurrencyInput
-                                                            defaultValue={size.preco}
-                                                            onValueChange={(val) => updateSize(index, 'preco', val)}
-                                                            className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
+                                                <div key={index} className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                                                    <div className="flex gap-2 items-center flex-1">
+                                                        <input
+                                                            type="text"
+                                                            value={size.nome}
+                                                            onChange={(e) => updateSize(index, 'nome', e.target.value)}
+                                                            placeholder="Ex: Grande"
+                                                            className="flex-1 min-w-0 px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
                                                             required
                                                         />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeSize(index)}
+                                                            className="p-2 text-slate-400 hover:text-red-500 transition-colors sm:hidden"
+                                                        >
+                                                            <Trash2 className="size-4" />
+                                                        </button>
                                                     </div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeSize(index)}
-                                                        className="p-2 text-slate-400 hover:text-red-500 transition-colors"
-                                                    >
-                                                        <Trash2 className="size-4" />
-                                                    </button>
+                                                    <div className="flex gap-2 items-center">
+                                                        <div className="flex-1 sm:w-36">
+                                                            <CurrencyInput
+                                                                defaultValue={size.preco}
+                                                                onValueChange={(val) => updateSize(index, 'preco', val)}
+                                                                className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
+                                                                required
+                                                            />
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeSize(index)}
+                                                            className="p-2 text-slate-400 hover:text-red-500 transition-colors hidden sm:block"
+                                                        >
+                                                            <Trash2 className="size-4" />
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             ))}
                                             <button

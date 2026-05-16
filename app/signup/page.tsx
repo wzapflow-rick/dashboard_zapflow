@@ -2,7 +2,8 @@
 
 import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { createCheckoutSession, createPixCheckoutSession, createTrialAccount } from '@/app/actions/signup';
+import { createCheckoutSession, createPixCheckoutSession } from '@/app/actions/signup';
+import { createTrialAccount } from '@/app/actions/signup-trial';
 import { useRouter } from 'next/navigation';
 import { Loader2, Zap, Mail, User, Phone, CreditCard, QrCode, Check } from 'lucide-react';
 import Link from 'next/link';
@@ -176,7 +177,7 @@ function SignupContent() {
               href="/login" 
               className="text-sm text-gray-400 hover:text-white transition-colors"
             >
-              Já tem conta? <span className="text-emerald-400 font-semibold">Entrar</span>
+              {"Já tem conta? "}<span className="text-emerald-400 font-semibold">Entrar</span>
             </Link>
           </div>
         </div>
@@ -317,7 +318,7 @@ function SignupContent() {
                 </button>
                 
                 <p className="text-xs text-gray-500 text-center">
-                  Ao continuar, você concorda com nossos Termos de Uso e Política de Privacidade.
+                  {"Ao continuar, você concorda com nossos Termos de Uso e Política de Privacidade."}
                 </p>
               </form>
             </div>
@@ -359,16 +360,16 @@ function SignupContent() {
                 {plan.trialDays ? (
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-2xl font-black text-emerald-400">GRÁTIS</span>
+                      <span className="text-2xl font-black text-emerald-400">{"GRÁTIS"}</span>
                       <span className="text-gray-400">por {plan.trialDays} dias</span>
                     </div>
-                    <p className="text-sm text-gray-500">Depois R$ {plan.price.toFixed(2).replace('.', ',')}/mês</p>
+                    <p className="text-sm text-gray-500">{"Depois R$ "}{plan.price.toFixed(2).replace('.', ',')}{"/mês"}</p>
                   </div>
                 ) : (
                   <div className="flex items-baseline gap-1">
-                    <span className="text-gray-400">R$</span>
+                    <span className="text-gray-400">{"R$"}</span>
                     <span className="text-4xl font-black">{plan.price.toFixed(2).replace('.', ',')}</span>
-                    <span className="text-gray-400">/mês</span>
+                    <span className="text-gray-400">{"/mês"}</span>
                   </div>
                 )}
               </div>

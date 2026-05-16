@@ -171,27 +171,52 @@ export async function getEmpresaById(id: number) {
 export async function createEmpresa(data: {
   nome: string;
   nome_fantasia?: string;
-  slug: string;
   email?: string;
   telefone?: string;
   plano?: string;
   dias_trial?: number;
+  senha?: string;
+  enviar_link_ativacao?: boolean;
 }) {
   try {
-    // Verificar se slug ja existe
-    const existingSlug = await db.query('SELECT id FROM empresas WHERE slug = $1', [data.slug]);
-    if (existingSlug.rows.length > 0) {
-      return { success: false, error: 'Slug ja existe' };
+    // Verificar se email ja existe (se fornecido)
+    if (data.email) {
+      const existingEmail = await db.query('SELECT email FROM empresas WHERE email = $1', [data.email]);
+      if (existingEmail.rows.length > 0) {
+        return { success: false, error: 'Email ja cadastrado' };
+      }
     }
 
-    // Criar empresa
-    const empresaResult = await db.query(`
-      INSERT INTO empresas (nome, nome_fantasia, slug, email, telefone, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
-      RETURNING id
-    `, [data.nome, data.nome_fantasia || data.nome, data.slug, data.email, data.telefone]);
+    // Mapear plano para codigo curto (limite de 4 caracteres no campo planos)
+    const planoMap: Record<string, string> = {
+      'parceria': 'pcr',
+      'start': 'sta',
+      'pro': 'pro',
+      'elite': 'eli',
+    };
+    const planoCodigo = planoMap[data.plano || 'start'] || 'sta';
+    
+    console.log('[v0] createEmpresa - todos os valores:', {
+      nome_fantasia: data.nome_fantasia || data.nome,
+      email: data.email,
+      telefone: data.telefone,
+      nome_admin: data.nome,
+      planos: planoCodigo,
+    });
 
+    // Criar empresa - sem o campo planos para evitar erro varchar(4)
+    const empresaResult = await db.query(`
+      INSERT INTO empresas (nome_fantasia, email, telefone_loja, nome_admin, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, NOW(), NOW())
+      RETURNING id
+    `, [data.nome_fantasia || data.nome, data.email, data.telefone, data.nome]);
+    
     const empresaId = empresaResult.rows[0].id;
+    
+    // Atualizar instancia_evolution com o ID da empresa
+    await db.query(`
+      UPDATE empresas SET instancia_evolution = $1 WHERE id = $2
+    `, [`zapflow_${empresaId}`, empresaId]);
 
     // Criar assinatura se plano foi especificado
     if (data.plano) {
@@ -203,10 +228,45 @@ export async function createEmpresa(data: {
         INSERT INTO assinaturas (
           empresa_id, plano, status, valor, 
           data_inicio, data_proxima_cobranca,
-          cartao_ultimos_digitos, cartao_bandeira,
           created_at, updated_at
-        ) VALUES ($1, $2, 'authorized', 0, NOW(), $3, 'ADMIN', 'ADMIN', NOW(), NOW())
+        ) VALUES ($1, $2, 'authorized', 0, NOW(), $3, NOW(), NOW())
       `, [empresaId, data.plano, dataProxima.toISOString()]);
+    }
+
+    // Definir senha ou enviar link de ativacao
+    if (data.email) {
+      if (data.senha) {
+        // Definir senha diretamente na empresa
+        const bcrypt = await import('bcryptjs');
+        const hashedPassword = await bcrypt.hash(data.senha, 10);
+        
+        await db.query(`
+          UPDATE empresas SET senha_hash = $1, login = $2 WHERE id = $3
+        `, [hashedPassword, data.email, empresaId]);
+        
+        console.log('[Admin] Senha definida para empresa:', empresaId);
+      } else if (data.enviar_link_ativacao && data.telefone) {
+        // Enviar link de ativacao via WhatsApp
+        const crypto = await import('crypto');
+        const token = crypto.randomBytes(32).toString('hex');
+        
+        // Salvar token temporario na empresa
+        await db.query(`
+          UPDATE empresas SET login = $1 WHERE id = $2
+        `, [data.email, empresaId]);
+        
+        // Criar pending_signup para ativacao
+        await db.query(`
+          INSERT INTO pending_signups (token, email, nome, telefone, plano, empresa_id, created_at, expires_at)
+          VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW() + INTERVAL '7 days')
+        `, [token, data.email, data.nome, data.telefone, data.plano || 'parceria', empresaId]);
+        
+        // Enviar link de ativacao via WhatsApp
+        const { sendWelcomeSignupMessage } = await import('./whatsapp');
+        await sendWelcomeSignupMessage(data.telefone, data.nome, token);
+        
+        console.log('[Admin] Link de ativacao enviado para:', data.telefone);
+      }
     }
 
     revalidatePath('/admin/empresas');
@@ -218,52 +278,37 @@ export async function createEmpresa(data: {
 }
 
 export async function updateEmpresa(id: number, data: {
-  nome?: string;
   nome_fantasia?: string;
-  slug?: string;
   email?: string;
   telefone?: string;
-  status?: string;
+  ativo?: boolean;
+  planos?: string;
 }) {
   try {
-    // Se mudou slug, verificar se ja existe
-    if (data.slug) {
-      const existingSlug = await db.query(
-        'SELECT id FROM empresas WHERE slug = $1 AND id != $2', 
-        [data.slug, id]
-      );
-      if (existingSlug.rows.length > 0) {
-        return { success: false, error: 'Slug ja existe' };
-      }
-    }
 
     const updates: string[] = [];
     const params: any[] = [];
     let paramIndex = 1;
 
-    if (data.nome !== undefined) {
-      updates.push(`nome = $${paramIndex++}`);
-      params.push(data.nome);
-    }
     if (data.nome_fantasia !== undefined) {
       updates.push(`nome_fantasia = $${paramIndex++}`);
       params.push(data.nome_fantasia);
-    }
-    if (data.slug !== undefined) {
-      updates.push(`slug = $${paramIndex++}`);
-      params.push(data.slug);
     }
     if (data.email !== undefined) {
       updates.push(`email = $${paramIndex++}`);
       params.push(data.email);
     }
     if (data.telefone !== undefined) {
-      updates.push(`telefone = $${paramIndex++}`);
+      updates.push(`telefone_loja = $${paramIndex++}`);
       params.push(data.telefone);
     }
-    if (data.status !== undefined) {
-      updates.push(`status = $${paramIndex++}`);
-      params.push(data.status);
+    if (data.ativo !== undefined) {
+      updates.push(`ativo = $${paramIndex++}`);
+      params.push(data.ativo);
+    }
+    if (data.planos !== undefined) {
+      updates.push(`planos = $${paramIndex++}`);
+      params.push(data.planos);
     }
 
     updates.push(`updated_at = NOW()`);

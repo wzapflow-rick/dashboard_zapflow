@@ -7,9 +7,8 @@ import { encrypt, decrypt } from '@/lib/session';
 import { logger } from '@/lib/logger';
 import { LoginSchema } from '@/lib/validations';
 import { noco } from '@/lib/nocodb';
-import { EMPRESAS_TABLE_ID, USUARIOS_TABLE_ID, RATE_LIMIT } from '@/lib/constants';
-
-const loginAttempts = new Map<string, { count: number; lastAttempt: number }>();
+import { EMPRESAS_TABLE_ID, USUARIOS_TABLE_ID } from '@/lib/constants';
+import { checkRateLimit, clearRateLimitAttempts } from '@/lib/rate-limit';
 
 export async function login(data: any) {
     try {
@@ -22,19 +21,17 @@ export async function login(data: any) {
 
         const { email, password } = validated.data;
 
-        const now = Date.now();
-        const attemptKey = email.toLowerCase();
-        const attempt = loginAttempts.get(attemptKey);
+        // Rate limiting distribuido usando PostgreSQL
+        const rateLimitResult = await checkRateLimit(email.toLowerCase(), 'login', {
+            maxAttempts: 5,
+            windowMs: 15 * 60 * 1000,      // 15 minutos
+            blockDurationMs: 30 * 60 * 1000, // 30 minutos de bloqueio
+        });
 
-        if (attempt && attempt.count >= RATE_LIMIT.LOGIN_MAX_ATTEMPTS) {
-            const timeSinceLast = now - attempt.lastAttempt;
-            if (timeSinceLast < RATE_LIMIT.LOGIN_WINDOW_MS) {
-                const remainingTime = Math.ceil((RATE_LIMIT.LOGIN_WINDOW_MS - timeSinceLast) / 1000 / 60);
-                logger.securityLoginFailure(email, 'RATE_LIMIT_EXCEEDED', `Blocked for ${remainingTime} minutes`);
-                return { error: `Muitas tentativas de login. Tente novamente em ${remainingTime} minutos.` };
-            } else {
-                loginAttempts.delete(attemptKey);
-            }
+        if (!rateLimitResult.allowed) {
+            const remainingTime = Math.ceil((rateLimitResult.retryAfterMs || 0) / 1000 / 60);
+            logger.securityLoginFailure(email, 'RATE_LIMIT_EXCEEDED', `Blocked for ${remainingTime} minutes`);
+            return { error: `Muitas tentativas de login. Tente novamente em ${remainingTime} minutos.` };
         }
 
         // 1. Tentar login como empresa/admin
@@ -68,7 +65,8 @@ export async function login(data: any) {
                 sameSite: 'strict',
                 path: '/',
             });
-            loginAttempts.delete(attemptKey);
+            // Limpar tentativas apos login bem-sucedido
+            await clearRateLimitAttempts(email.toLowerCase(), 'login');
             return { success: true, role: 'admin' };
         }
 
@@ -108,15 +106,12 @@ export async function login(data: any) {
                 sameSite: 'strict',
                 path: '/',
             });
-            loginAttempts.delete(attemptKey);
+            // Limpar tentativas apos login bem-sucedido
+            await clearRateLimitAttempts(email.toLowerCase(), 'login');
             return { success: true, role: usuario.role || 'atendente' };
         }
 
-        const currentAttempt = loginAttempts.get(attemptKey) || { count: 0, lastAttempt: now };
-        currentAttempt.count += 1;
-        currentAttempt.lastAttempt = now;
-        loginAttempts.set(attemptKey, currentAttempt);
-
+        // Login falhou - o rate limit ja foi registrado em checkRateLimit
         logger.securityLoginFailure(email, 'INVALID_CREDENTIALS');
 
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -145,7 +140,7 @@ export async function register(formData: FormData) {
         senha_hash: hashedPassword,
         login: email,
         senha: hashedPassword,
-        password: password,
+        // password removido - nunca salvar senha em texto plano
         nome_admin: nome,
         nome_fantasia: nome,
         status: 'ativo',

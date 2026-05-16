@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Phone, MapPin, Printer, CheckCircle2, UserPlus, CreditCard, Banknote, QrCode, Eye, Truck, ChevronDown, User, X, ExternalLink, Ban } from 'lucide-react';
+import { Phone, MapPin, Printer, CheckCircle2, UserPlus, CreditCard, Banknote, QrCode, Eye, Truck, ChevronDown, User, X, ExternalLink, Ban, Pencil, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getAvailableDrivers, assignDriverToOrder, Driver } from '@/app/actions/drivers';
+import { AddExtraValueModal } from './add-extra-value-modal';
 
 interface OrderCardProps {
     order: any;
@@ -13,13 +14,16 @@ interface OrderCardProps {
     onRegisterCustomer: (order: any) => void;
     onOpenDetails?: (order: any) => void;
     onCancelOrder?: (orderId: number) => void;
+    onEditOrder?: (order: any) => void;
 }
 
-export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRegisterCustomer, onOpenDetails, onCancelOrder }: OrderCardProps) {
+export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRegisterCustomer, onOpenDetails, onCancelOrder, onEditOrder }: OrderCardProps) {
     const [drivers, setDrivers] = useState<Driver[]>([]);
     const [selectedDriver, setSelectedDriver] = useState<number | null>(order.entregador_id || null);
     const [assigning, setAssigning] = useState(false);
     const [showDriverDropdown, setShowDriverDropdown] = useState(false);
+    const [showAddValueModal, setShowAddValueModal] = useState(false);
+    const [displayTotal, setDisplayTotal] = useState(Number(order.valor_total || order.total || 0));
 
     const loadDrivers = async () => {
         try {
@@ -228,9 +232,20 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
 	                    )}>
 	                        {order.forma_pagamento || order.tipo_pagamento || 'Pagar na Entrega'}
 	                    </span>
-                    <span className="text-base font-bold text-slate-900 dark:text-white">
-                        R$ {Number(order.valor_total || order.total || 0).toFixed(2).replace('.', ',')}
-                    </span>
+                    <div className="flex items-center gap-2">
+                        {columnId !== 'finalizado' && columnId !== 'cancelado' && (
+                            <button
+                                onClick={() => setShowAddValueModal(true)}
+                                className="size-7 flex items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                                title="Adicionar valor extra"
+                            >
+                                <PlusCircle className="size-4" />
+                            </button>
+                        )}
+                        <span className="text-base font-bold text-slate-900 dark:text-white">
+                            R$ {displayTotal.toFixed(2).replace('.', ',')}
+                        </span>
+                    </div>
                 </div>
                 
                 {/* Linha com taxa de entrega, desconto e troco */}
@@ -415,7 +430,7 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
             )}
 
             {columnId !== 'finalizado' && columnId !== 'pagamento_pendente' && columnId !== 'agendado' && (
-                <div className="grid grid-cols-6 gap-2 pt-1">
+                <div className="grid grid-cols-7 gap-2 pt-1">
                     <button
                         onClick={() => onOpenDetails?.(order)}
                         className="col-span-1 h-9 flex items-center justify-center rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
@@ -423,6 +438,15 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
                     >
                         <Eye className="size-4" />
                     </button>
+                    {onEditOrder && (columnId === 'pendente' || columnId === 'preparando') && (
+                        <button
+                            onClick={() => onEditOrder(order)}
+                            className="col-span-1 h-9 flex items-center justify-center rounded bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
+                            title="Editar Pedido"
+                        >
+                            <Pencil className="size-4" />
+                        </button>
+                    )}
                     <button
                         onClick={() => onOpenPrintModal(order)}
                         className="col-span-1 h-9 flex items-center justify-center rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
@@ -440,7 +464,7 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
                     )}
                     <button
                         onClick={() => onMoveOrder(order.id, order.status)}
-                        className={`${onCancelOrder ? 'col-span-3' : 'col-span-4'} h-9 bg-primary text-white text-xs font-bold rounded uppercase tracking-wider hover:opacity-90 transition-all shadow-sm active:scale-95 transition-transform`}
+                        className={`${onCancelOrder && onEditOrder && (columnId === 'pendente' || columnId === 'preparando') ? 'col-span-3' : onCancelOrder || (onEditOrder && (columnId === 'pendente' || columnId === 'preparando')) ? 'col-span-4' : 'col-span-5'} h-9 bg-primary text-white text-xs font-bold rounded uppercase tracking-wider hover:opacity-90 transition-all shadow-sm active:scale-95 transition-transform`}
                     >
                         {columnId === 'pendente' ? 'Mover para Preparando' :
                             columnId === 'preparando' ? 'Finalizar Preparo' :
@@ -455,6 +479,17 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
                     Concluído com Sucesso
                 </div>
             )}
+
+            {/* Modal para adicionar valor extra */}
+            <AddExtraValueModal
+                isOpen={showAddValueModal}
+                onClose={() => setShowAddValueModal(false)}
+                orderId={order.id}
+                orderNumber={order.id}
+                onSuccess={(novoTotal) => {
+                    setDisplayTotal(novoTotal);
+                }}
+            />
         </div>
     );
 }

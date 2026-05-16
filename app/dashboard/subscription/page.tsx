@@ -29,7 +29,7 @@ import {
   type Subscription,
   type Invoice
 } from '@/app/actions/subscription';
-import { SUBSCRIPTION_PLANS, type SubscriptionPlanId } from '@/lib/constants';
+import { SUBSCRIPTION_PLANS, type SubscriptionPlanId, isTrialPlan } from '@/lib/constants';
 
 // ============================================================
 // COMPONENTE PRINCIPAL
@@ -180,6 +180,17 @@ export default function SubscriptionPage() {
   // Plans array (apenas planos pagos, exclui o iniciante)
   const plans = Object.values(SUBSCRIPTION_PLANS).filter(p => p.id !== 'iniciante');
   const currentPlan = subscription?.plano || null;
+  
+  // Verifica se usuario veio do trial para mostrar preco promocional
+  const isFromTrial = isTrialPlan(currentPlan) || subscription?.cartao_bandeira === 'TRIA';
+  
+  // Retorna o preco correto (promocional para usuarios trial no plano Start)
+  function getDisplayPrice(plan: typeof plans[0]): number {
+    if (isFromTrial && plan.id === 'start' && 'promoPrice' in plan) {
+      return (plan as any).promoPrice;
+    }
+    return plan.price;
+  }
 
   if (isLoading) {
     return (
@@ -279,9 +290,15 @@ export default function SubscriptionPage() {
 
                   <div className="mb-6 md:mb-8">
                     <div className="flex items-baseline gap-1">
-                      <span className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white">{formatCurrency(plan.price)}</span>
+                      <span className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white">{formatCurrency(getDisplayPrice(plan))}</span>
                       <span className="text-slate-400 font-bold">/mes</span>
                     </div>
+                    {isFromTrial && plan.id === 'start' && 'promoPrice' in plan && (
+                      <div className="mt-2">
+                        <span className="text-xs text-slate-400 line-through">{formatCurrency(plan.price)}</span>
+                        <span className="ml-2 text-xs font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-900/40 px-2 py-0.5 rounded">Preco Promocional</span>
+                      </div>
+                    )}
                   </div>
 
                   <ul className="space-y-3 md:space-y-4 mb-8 md:mb-12 flex-1">
@@ -415,13 +432,22 @@ export default function SubscriptionPage() {
               </button>
               <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Confirmar Alteracao</h3>
               <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">
-                {selectedPlan && (
-                  <>
-                    Voce esta prestes a {subscription?.mp_subscription_id ? 'migrar para' : 'assinar'} o plano{' '}
-                    <strong>{SUBSCRIPTION_PLANS[selectedPlan.toUpperCase() as keyof typeof SUBSCRIPTION_PLANS]?.name}</strong> por{' '}
-                    <strong>{formatCurrency(SUBSCRIPTION_PLANS[selectedPlan.toUpperCase() as keyof typeof SUBSCRIPTION_PLANS]?.price || 0)}/mes</strong>.
-                  </>
-                )}
+                {selectedPlan && (() => {
+                  const planData = SUBSCRIPTION_PLANS[selectedPlan.toUpperCase() as keyof typeof SUBSCRIPTION_PLANS];
+                  const displayPrice = isFromTrial && selectedPlan === 'start' && planData && 'promoPrice' in planData
+                    ? (planData as any).promoPrice
+                    : planData?.price || 0;
+                  return (
+                    <>
+                      Voce esta prestes a {subscription?.mp_subscription_id ? 'migrar para' : 'assinar'} o plano{' '}
+                      <strong>{planData?.name}</strong> por{' '}
+                      <strong>{formatCurrency(displayPrice)}/mes</strong>.
+                      {isFromTrial && selectedPlan === 'start' && (
+                        <span className="block mt-2 text-emerald-600 font-medium">Preco promocional exclusivo para parceiros!</span>
+                      )}
+                    </>
+                  );
+                })()}
               </p>
               <div className="flex gap-3">
                 <button 

@@ -5,7 +5,70 @@ import {
     CLIENTES_TABLE_ID,
     EMPRESAS_TABLE_ID 
 } from '@/lib/constants';
-import { sendWhatsAppMessageWithInstance } from '@/app/actions/whatsapp';
+
+const EVO_API_URL = process.env.EVOLUTION_API_URL || 'https://evo.wzapflow.com.br';
+const EVO_API_KEY = process.env.EVOLUTION_API_KEY || '';
+
+/**
+ * Formatar numero de telefone para Evolution API
+ */
+function formatPhoneForEvolution(phone: string): string {
+    let cleaned = phone.replace(/\D/g, '');
+    if (cleaned.length === 11) {
+        cleaned = '55' + cleaned;
+    }
+    return `${cleaned}@s.whatsapp.net`;
+}
+
+/**
+ * Enviar mensagem via Evolution API usando instancia especifica
+ */
+async function enviarMensagemEvolution(
+    phone: string, 
+    message: string, 
+    instanceName: string
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        if (!EVO_API_KEY) {
+            console.error('[CAMPANHAS] EVOLUTION_API_KEY nao configurada!');
+            return { success: false, error: 'EVOLUTION_API_KEY nao configurada' };
+        }
+        
+        const formattedPhone = formatPhoneForEvolution(phone);
+        const url = `${EVO_API_URL}/message/sendText/${instanceName}`;
+
+        console.log(`[CAMPANHAS] Enviando para ${formattedPhone} via instancia ${instanceName}`);
+        console.log(`[CAMPANHAS] URL: ${url}`);
+        console.log(`[CAMPANHAS] Mensagem: ${message.substring(0, 100)}...`);
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'apikey': EVO_API_KEY,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                number: formattedPhone,
+                text: message
+            })
+        });
+
+        const result = await response.json();
+        console.log(`[CAMPANHAS] Resposta Evolution (${response.status}):`, JSON.stringify(result).substring(0, 300));
+
+        if (!response.ok) {
+            return { 
+                success: false, 
+                error: result.message || result.error || `HTTP ${response.status}` 
+            };
+        }
+
+        return { success: true };
+    } catch (error: any) {
+        console.error('[CAMPANHAS] Erro ao enviar via Evolution:', error);
+        return { success: false, error: error.message || 'Erro desconhecido' };
+    }
+}
 
 interface Campanha {
     id: number;
@@ -34,6 +97,8 @@ interface Cliente {
 interface Empresa {
     id: number;
     nome: string;
+    nome_fantasia?: string;
+    instancia_evolution?: string;
 }
 
 // Dias da semana em portugues
@@ -161,16 +226,19 @@ async function clienteJaRecebeuRecentemente(
     try {
         const umaSemanaAtras = new Date();
         umaSemanaAtras.setDate(umaSemanaAtras.getDate() - 7);
+        // Usar formato apenas com data (YYYY-MM-DD) que o NocoDB aceita
+        const dataStr = umaSemanaAtras.toISOString().split('T')[0];
         
         const data = await noco.list(DISPAROS_TABLE_ID!, {
-            where: `(empresa_id,eq,${empresaId})~and(cliente_id,eq,${clienteId})~and(campanha_id,eq,${campanhaId})~and(enviado_em,gt,${umaSemanaAtras.toISOString()})~and(status,eq,enviado)`,
+            where: `(empresa_id,eq,${empresaId})~and(cliente_id,eq,${clienteId})~and(campanha_id,eq,${campanhaId})~and(enviado_em,gt,${dataStr})~and(status,eq,enviado)`,
             limit: maxEnviosSemana + 1,
         });
         
         return (data.list || []).length >= maxEnviosSemana;
     } catch (error) {
         console.error('Erro ao verificar disparos anteriores:', error);
-        return true;
+        // Em caso de erro, retorna false para permitir o envio (melhor experiencia)
+        return false;
     }
 }
 
@@ -246,9 +314,40 @@ async function getEmpresa(empresaId: string): Promise<Empresa | null> {
         const data = await noco.findOne(EMPRESAS_TABLE_ID!, {
             where: `(id,eq,${empresaId})`,
         }) as any;
-        return data ? { id: data.id, nome: data.nome } : null;
+        
+        if (!data) {
+            console.error(`[CAMPANHAS] Empresa ${empresaId} nao encontrada no banco`);
+            return null;
+        }
+        
+        // Se instancia_evolution estiver vazia, usa o padrao zapflow_{empresaId}
+        let instanciaEvolution = data.instancia_evolution;
+        if (!instanciaEvolution) {
+            instanciaEvolution = `zapflow_${empresaId}`;
+            console.log(`[CAMPANHAS] Empresa ${data.nome_fantasia} sem instancia configurada, usando fallback: ${instanciaEvolution}`);
+            
+            // Tenta atualizar a empresa com o valor padrao (nao bloqueia se falhar)
+            try {
+                await noco.update(EMPRESAS_TABLE_ID!, {
+                    id: data.id,
+                    instancia_evolution: instanciaEvolution
+                });
+                console.log(`[CAMPANHAS] Instancia ${instanciaEvolution} salva automaticamente para empresa ${empresaId}`);
+            } catch (updateErr) {
+                console.warn(`[CAMPANHAS] Nao foi possivel salvar instancia automaticamente:`, updateErr);
+            }
+        }
+        
+        console.log(`[CAMPANHAS] Empresa encontrada: ${data.nome_fantasia || data.nome}, instancia: ${instanciaEvolution}`);
+        
+        return { 
+            id: data.id, 
+            nome: data.nome_fantasia || data.nome || 'Loja',
+            nome_fantasia: data.nome_fantasia,
+            instancia_evolution: instanciaEvolution 
+        };
     } catch (error) {
-        console.error('Erro ao buscar empresa:', error);
+        console.error('[CAMPANHAS] Erro ao buscar empresa:', error);
         return null;
     }
 }
@@ -256,17 +355,21 @@ async function getEmpresa(empresaId: string): Promise<Empresa | null> {
 /**
  * Processa uma campanha
  */
-async function processarCampanha(campanha: Campanha): Promise<{ enviados: number; erros: number }> {
+async function processarCampanha(campanha: Campanha): Promise<{ enviados: number; erros: number; detalhes?: string }> {
     let enviados = 0;
     let erros = 0;
     
+    console.log(`[CAMPANHAS] ========================================`);
     console.log(`[CAMPANHAS] Processando campanha: ${campanha.nome} (${campanha.tipo})`);
+    console.log(`[CAMPANHAS] Empresa ID: ${campanha.empresa_id}`);
     
     const empresa = await getEmpresa(campanha.empresa_id);
     if (!empresa) {
         console.error(`[CAMPANHAS] Empresa ${campanha.empresa_id} nao encontrada`);
-        return { enviados: 0, erros: 0 };
+        return { enviados: 0, erros: 0, detalhes: 'Empresa nao encontrada' };
     }
+    
+    console.log(`[CAMPANHAS] Instancia Evolution: ${empresa.instancia_evolution}`);
     
     let clientes: Cliente[] = [];
     const diasGatilho = campanha.gatilho_dias || 7;
@@ -318,10 +421,11 @@ async function processarCampanha(campanha: Campanha): Promise<{ enviados: number
             
             const mensagemFinal = substituirVariaveis(mensagem, cliente, empresa, diasAusente);
             
-            const result = await sendWhatsAppMessageWithInstance(
+            // Usa a instancia Evolution configurada na empresa
+            const result = await enviarMensagemEvolution(
                 cliente.telefone, 
                 mensagemFinal, 
-                campanha.empresa_id
+                empresa.instancia_evolution!
             );
             
             if (result.success) {
@@ -351,8 +455,11 @@ async function processarCampanha(campanha: Campanha): Promise<{ enviados: number
                 console.error(`[CAMPANHAS] Erro ao enviar para ${cliente.telefone}: ${result.error}`);
             }
             
-            // Delay entre envios (evitar rate limit)
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Delay entre envios (evitar rate limit e banimento do WhatsApp)
+            // Delay aleatorio entre 8-15 segundos para maior seguranca
+            const delayMs = 8000 + Math.floor(Math.random() * 7000);
+            console.log(`[CAMPANHAS] Aguardando ${(delayMs/1000).toFixed(1)}s antes do proximo envio...`);
+            await new Promise(resolve => setTimeout(resolve, delayMs));
             
         } catch (error: any) {
             erros++;

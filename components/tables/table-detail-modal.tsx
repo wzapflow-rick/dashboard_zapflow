@@ -14,6 +14,7 @@ import {
   Clock,
   AlertCircle,
   Printer,
+  PlusCircle,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -29,6 +30,7 @@ import {
 } from '@/app/actions/tables';
 import TableOrderModal from './table-order-modal';
 import TablePrintModal from './table-print-modal';
+import { AddExtraValueModal } from '@/components/expedition/add-extra-value-modal';
 
 interface TableDetailModalProps {
   mesa: MesaComDetalhes;
@@ -327,6 +329,7 @@ export default function TableDetailModal({
                         }}
                         isLoading={isLoading}
                         mesaNumero={mesa.numero}
+                        onRefresh={onUpdate}
                       />
                     ))}
                   </div>
@@ -502,6 +505,7 @@ function ComandaCard({
   onPrint,
   isLoading,
   mesaNumero,
+  onRefresh,
 }: {
   comanda: ComandaComPedidos;
   onNovoPedido: () => void;
@@ -509,8 +513,13 @@ function ComandaCard({
   onPrint: () => void;
   isLoading: boolean;
   mesaNumero: number;
+  onRefresh?: () => void;
 }) {
   const [showItens, setShowItens] = useState(false);
+  const [showAddValueModal, setShowAddValueModal] = useState(false);
+  
+  // Pega o primeiro pedido ativo da comanda para adicionar valor
+  const pedidoAtivo = comanda.pedidos.find(p => p.status !== 'finalizado' && p.status !== 'cancelado') || comanda.pedidos[0];
   
   const totalComanda = comanda.pedidos.reduce(
     (acc, p) => acc + (Number(p.valor_total) || 0),
@@ -545,9 +554,20 @@ function ComandaCard({
             </span>
           )}
         </div>
-        <span className="text-sm font-semibold text-primary">
-          R$ {totalComanda.toFixed(2).replace('.', ',')}
-        </span>
+        <div className="flex items-center gap-2">
+          {pedidoAtivo && comanda.status === 'aberta' && (
+            <button
+              onClick={() => setShowAddValueModal(true)}
+              className="size-6 flex items-center justify-center rounded-full bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
+              title="Adicionar valor extra"
+            >
+              <PlusCircle className="size-3.5" />
+            </button>
+          )}
+          <span className="text-sm font-semibold text-primary">
+            R$ {totalComanda.toFixed(2).replace('.', ',')}
+          </span>
+        </div>
       </div>
 
       {/* Itens da comanda (expandível) */}
@@ -645,6 +665,19 @@ function ComandaCard({
           Pagar
         </button>
       </div>
+
+      {/* Modal para adicionar valor extra */}
+      {pedidoAtivo && (
+        <AddExtraValueModal
+          isOpen={showAddValueModal}
+          onClose={() => setShowAddValueModal(false)}
+          orderId={pedidoAtivo.id}
+          orderNumber={`Mesa ${mesaNumero} - ${comanda.nome_cliente || 'Comanda'}`}
+          onSuccess={() => {
+            onRefresh?.();
+          }}
+        />
+      )}
     </div>
   );
 }

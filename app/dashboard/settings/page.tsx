@@ -22,7 +22,13 @@ import {
   Truck,
   Sparkles,
   Upload,
-  Loader2
+  Loader2,
+  QrCode,
+  Wifi,
+  WifiOff,
+  RefreshCw,
+  CheckCircle2,
+  Smartphone
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -43,6 +49,8 @@ import DriversManagement from '@/components/management/drivers-management';
 import DeliveryHistory from '@/components/delivery/delivery-history';
 import MercadoPagoConnection from '@/components/management/mercadopago-connection';
 import { CreditCard as PaymentIcon } from 'lucide-react';
+import { getBotConfig, saveBotConfig, getCardapioLink, BotConfig } from '@/app/actions/bot';
+import { createEvolutionInstance, getEvolutionQRCode, getInstanceStatus } from '@/app/actions/evolution';
 
 const sections = [
   { id: 'general', name: 'Geral', icon: Store },
@@ -81,20 +89,35 @@ export default function SettingsPage() {
   const [bannerUrl, setBannerUrl] = React.useState<string | null>(null);
   const [uploadingLogo, setUploadingLogo] = React.useState(false);
   const [uploadingBanner, setUploadingBanner] = React.useState(false);
+  
+  // Estados do Bot de Saudacao
+  const [botConfig, setBotConfig] = React.useState<BotConfig | null>(null);
+  const [cardapioLink, setCardapioLink] = React.useState<string>('');
+  const [savingBot, setSavingBot] = React.useState(false);
+  
+  // Estados da Conexao WhatsApp
+  const [whatsappStatus, setWhatsappStatus] = React.useState<'checking' | 'connected' | 'disconnected' | 'connecting'>('checking');
+  const [qrCode, setQrCode] = React.useState<string | null>(null);
+  const [instanceName, setInstanceName] = React.useState<string>('');
+  const [loadingQr, setLoadingQr] = React.useState(false);
 
   React.useEffect(() => {
     async function loadData() {
       try {
-        const [compData, rates, hoursRes] = await Promise.all([
+        const [compData, rates, hoursRes, botConfigData, linkCardapio] = await Promise.all([
           getCompanyDetails(),
           getDeliveryRates(),
-          getHorariosFuncionamento()
+          getHorariosFuncionamento(),
+          getBotConfig(),
+          getCardapioLink()
         ]);
         setCompany(compData);
         setNeighborhoods(rates || []);
         if (hoursRes && 'horarios' in hoursRes) {
           setHorarios(hoursRes.horarios as HorarioItem[]);
         }
+        setBotConfig(botConfigData);
+        setCardapioLink(linkCardapio);
 
         if (compData) {
           setPackagingFeeEnabled(!!compData.cobra_embalagem);
@@ -114,6 +137,103 @@ export default function SettingsPage() {
     }
     loadData();
   }, []);
+
+  // Funcao para verificar status da conexao WhatsApp
+  const checkWhatsAppConnection = React.useCallback(async () => {
+    if (!company?.id) return;
+    
+    const instName = company.instancia_evolution || `zapflow_${company.id}`;
+    setInstanceName(instName);
+    setWhatsappStatus('checking');
+    
+    try {
+      const statusResult = await getInstanceStatus(instName);
+      
+      if (statusResult.error) {
+        setWhatsappStatus('disconnected');
+        return;
+      }
+      
+      if (statusResult.state === 'open' || statusResult.state === 'connected') {
+        setWhatsappStatus('connected');
+        setQrCode(null);
+      } else {
+        setWhatsappStatus('disconnected');
+      }
+    } catch (error) {
+      setWhatsappStatus('disconnected');
+    }
+  }, [company]);
+
+  // Funcao para gerar/reconectar WhatsApp
+  const handleConnectWhatsApp = async () => {
+    if (!company?.id) {
+      toast.error('Erro: empresa nao identificada');
+      return;
+    }
+    
+    setLoadingQr(true);
+    setWhatsappStatus('connecting');
+    setQrCode(null);
+    
+    try {
+      // 1. Criar instancia (ou verificar se ja existe)
+      const instName = company.instancia_evolution || `zapflow_${company.id}`;
+      setInstanceName(instName);
+      
+      const createResult = await createEvolutionInstance(company.id);
+      
+      if (createResult.error) {
+        toast.error(`Erro ao criar instancia: ${createResult.error}`);
+        setWhatsappStatus('disconnected');
+        setLoadingQr(false);
+        return;
+      }
+      
+      // 2. Buscar QR Code
+      const qrResult = await getEvolutionQRCode(instName);
+      
+      if (qrResult.error) {
+        toast.error(`Erro ao gerar QR Code: ${qrResult.error}`);
+        setWhatsappStatus('disconnected');
+        setLoadingQr(false);
+        return;
+      }
+      
+      if (qrResult.qrcode) {
+        setQrCode(qrResult.qrcode);
+        toast.success('QR Code gerado! Escaneie com seu WhatsApp.');
+        
+        // Atualizar instancia_evolution na empresa se ainda nao estiver salvo
+        if (!company.instancia_evolution) {
+          await updateCompany({ instancia_evolution: instName });
+          setCompany((prev: any) => ({ ...prev, instancia_evolution: instName }));
+        }
+      } else {
+        // Se nao retornou QR, pode ser que ja esteja conectado
+        const statusCheck = await getInstanceStatus(instName);
+        if (statusCheck.state === 'open' || statusCheck.state === 'connected') {
+          setWhatsappStatus('connected');
+          toast.success('WhatsApp ja esta conectado!');
+        } else {
+          toast.warning('Nao foi possivel gerar o QR Code. Tente novamente.');
+          setWhatsappStatus('disconnected');
+        }
+      }
+    } catch (error: any) {
+      toast.error(`Erro: ${error.message || 'Falha ao conectar'}`);
+      setWhatsappStatus('disconnected');
+    } finally {
+      setLoadingQr(false);
+    }
+  };
+
+  // Verificar conexao quando company carregar
+  React.useEffect(() => {
+    if (company?.id) {
+      checkWhatsAppConnection();
+    }
+  }, [company?.id, checkWhatsAppConnection]);
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -843,19 +963,127 @@ export default function SettingsPage() {
                 <div className="space-y-6">
                   <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <Bell className="size-5 text-primary" />
-                    Notificações WhatsApp
+                    Notificacoes WhatsApp
                   </h3>
 
+                  {/* Card de Conexao WhatsApp */}
+                  <div className="p-5 border border-slate-200 dark:border-slate-700 rounded-2xl bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "size-12 rounded-xl flex items-center justify-center",
+                          whatsappStatus === 'connected' ? "bg-green-500" : 
+                          whatsappStatus === 'checking' || whatsappStatus === 'connecting' ? "bg-amber-500" : "bg-slate-400"
+                        )}>
+                          <Smartphone className="size-6 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-800 dark:text-white">Conexao WhatsApp</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            {whatsappStatus === 'checking' && (
+                              <>
+                                <Loader2 className="size-3 animate-spin text-amber-600" />
+                                <span className="text-xs text-amber-600 dark:text-amber-400">Verificando...</span>
+                              </>
+                            )}
+                            {whatsappStatus === 'connecting' && (
+                              <>
+                                <Loader2 className="size-3 animate-spin text-amber-600" />
+                                <span className="text-xs text-amber-600 dark:text-amber-400">Gerando QR Code...</span>
+                              </>
+                            )}
+                            {whatsappStatus === 'connected' && (
+                              <>
+                                <Wifi className="size-3 text-green-600" />
+                                <span className="text-xs text-green-600 dark:text-green-400 font-medium">Conectado</span>
+                              </>
+                            )}
+                            {whatsappStatus === 'disconnected' && (
+                              <>
+                                <WifiOff className="size-3 text-red-500" />
+                                <span className="text-xs text-red-500 font-medium">Desconectado</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {whatsappStatus !== 'checking' && whatsappStatus !== 'connecting' && (
+                        <button
+                          onClick={handleConnectWhatsApp}
+                          disabled={loadingQr}
+                          className={cn(
+                            "px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all",
+                            whatsappStatus === 'connected' 
+                              ? "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200"
+                              : "bg-green-500 text-white hover:bg-green-600 shadow-lg shadow-green-500/20"
+                          )}
+                        >
+                          {loadingQr ? (
+                            <Loader2 className="size-4 animate-spin" />
+                          ) : whatsappStatus === 'connected' ? (
+                            <RefreshCw className="size-4" />
+                          ) : (
+                            <QrCode className="size-4" />
+                          )}
+                          {whatsappStatus === 'connected' ? 'Reconectar' : 'Gerar QR Code'}
+                        </button>
+                      )}
+                    </div>
+                    
+                    {instanceName && (
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Instancia: <code className="bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded font-mono">{instanceName}</code>
+                      </p>
+                    )}
+
+                    {/* QR Code Display */}
+                    {qrCode && whatsappStatus !== 'connected' && (
+                      <div className="flex flex-col items-center py-4 space-y-4">
+                        <div className="p-4 bg-white rounded-2xl shadow-lg">
+                          <img 
+                            src={qrCode.startsWith('data:') ? qrCode : `data:image/png;base64,${qrCode}`} 
+                            alt="QR Code WhatsApp" 
+                            className="w-56 h-56"
+                          />
+                        </div>
+                        <div className="text-center space-y-1">
+                          <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Escaneie o QR Code</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs">
+                            Abra o WhatsApp no celular, va em Dispositivos Conectados e escaneie este codigo
+                          </p>
+                        </div>
+                        <button
+                          onClick={checkWhatsAppConnection}
+                          className="text-sm text-primary hover:underline flex items-center gap-1"
+                        >
+                          <CheckCircle2 className="size-4" />
+                          Ja escaneei, verificar conexao
+                        </button>
+                      </div>
+                    )}
+
+                    {whatsappStatus === 'connected' && !qrCode && (
+                      <div className="flex items-center gap-3 p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
+                        <CheckCircle2 className="size-5 text-green-600" />
+                        <p className="text-sm text-green-700 dark:text-green-300">
+                          Seu WhatsApp esta conectado e pronto para enviar mensagens!
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Card de Teste */}
                   <div className="p-4 border border-slate-200 dark:border-slate-600 rounded-xl space-y-4">
                     <div>
-                      <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Testar Conexão</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Envie uma mensagem de teste para verificar se o WhatsApp está funcionando</p>
+                      <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Testar Conexao</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Envie uma mensagem de teste para verificar se o WhatsApp esta funcionando</p>
                     </div>
 
                     <div className="flex gap-3">
                       <input
                         type="tel"
-                        placeholder="Número com DDD (ex: 79998618874)"
+                        placeholder="Numero com DDD (ex: 79998618874)"
                         id="test-phone"
                         className="flex-1 px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
                       />
@@ -864,7 +1092,7 @@ export default function SettingsPage() {
                           const input = document.getElementById('test-phone') as HTMLInputElement;
                           const phone = input?.value;
                           if (!phone || phone.length < 10) {
-                            toast.error('Informe um número válido com DDD');
+                            toast.error('Informe um numero valido com DDD');
                             return;
                           }
                           toast.loading('Enviando mensagem de teste...', { id: 'whatsapp-test' });
@@ -880,18 +1108,20 @@ export default function SettingsPage() {
                             toast.error(`Erro: ${error.message}`, { id: 'whatsapp-test' });
                           }
                         }}
-                        className="px-6 py-2 bg-green-500 text-white rounded-lg text-sm font-bold hover:bg-green-600 transition-colors"
+                        disabled={whatsappStatus !== 'connected'}
+                        className="px-6 py-2 bg-green-500 text-white rounded-lg text-sm font-bold hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Enviar Teste
                       </button>
                     </div>
 
-                    <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg p-3">
-                      <p className="text-xs text-amber-700 dark:text-amber-300">
-                        <strong>Dica:</strong> Certifique-se de que a Evolution API está configurada corretamente nas variáveis de ambiente:
-                        <code className="block mt-1 bg-amber-100 dark:bg-amber-900/50 px-2 py-1 rounded text-[10px]">EVOLUTION_API_URL, EVOLUTION_API_KEY, EVOLUTION_INSTANCE</code>
-                      </p>
-                    </div>
+                    {whatsappStatus !== 'connected' && (
+                      <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg p-3">
+                        <p className="text-xs text-amber-700 dark:text-amber-300">
+                          <strong>Atencao:</strong> Conecte seu WhatsApp primeiro usando o botao acima para poder enviar mensagens de teste.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -949,24 +1179,218 @@ export default function SettingsPage() {
 
               {activeSection === 'bot' && (
                 <div className="space-y-6">
-                  <div className="flex items-center gap-3">
-                    <div className="size-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
-                      <Bot className="size-6" />
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="size-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
+                        <Bot className="size-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white">Bot de Saudacao WhatsApp</h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Mensagens automaticas para novos clientes.</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-900 dark:text-white">ZapFlow AI Bot</h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">Configurações do assistente inteligente de vendas.</p>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={botConfig?.bot_ativo ?? true}
+                        onChange={async (e) => {
+                          const newValue = e.target.checked;
+                          setBotConfig(prev => prev ? { ...prev, bot_ativo: newValue } : null);
+                          // Salvar automaticamente quando toggle e alterado
+                          if (botConfig) {
+                            try {
+                              await saveBotConfig({ ...botConfig, bot_ativo: newValue });
+                              toast.success(newValue ? 'Bot ativado!' : 'Bot desativado!');
+                            } catch (err) {
+                              toast.error('Erro ao salvar. Tente novamente.');
+                              setBotConfig(prev => prev ? { ...prev, bot_ativo: !newValue } : null);
+                            }
+                          }
+                        }}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-primary"></div>
+                      <span className="ms-3 text-sm font-bold text-slate-700 dark:text-slate-300">{botConfig?.bot_ativo ? 'Ativo' : 'Inativo'}</span>
+                    </label>
+                  </div>
+
+                  {cardapioLink && (
+                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+                      <div className="flex items-start gap-3">
+                        <Info className="size-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-bold text-blue-800 dark:text-blue-200">Link do Cardapio</p>
+                          <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                            Use <code className="bg-blue-100 dark:bg-blue-800 px-1 py-0.5 rounded">{'{LINK_CARDAPIO}'}</code> nas mensagens para inserir automaticamente:
+                          </p>
+                          <p className="text-xs text-blue-700 dark:text-blue-300 mt-1 font-mono break-all">{cardapioLink}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200">Mensagens de Saudacao</h4>
+                    
+                    {/* Mensagem 1 */}
+                    <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="size-6 bg-primary text-white rounded-lg flex items-center justify-center text-xs font-bold">1</span>
+                          <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Saudacao Inicial</span>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={botConfig?.mensagem_1_ativa ?? true}
+                            onChange={(e) => setBotConfig(prev => prev ? { ...prev, mensagem_1_ativa: e.target.checked } : null)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-600 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-500 peer-checked:bg-primary"></div>
+                        </label>
+                      </div>
+                      <textarea
+                        value={botConfig?.mensagem_1_texto ?? ''}
+                        onChange={(e) => setBotConfig(prev => prev ? { ...prev, mensagem_1_texto: e.target.value } : null)}
+                        placeholder="Ex: Ola! Bem-vindo(a) ao nosso estabelecimento!"
+                        rows={2}
+                        className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm dark:text-white resize-none"
+                      />
+                    </div>
+
+                    {/* Mensagem 2 */}
+                    <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="size-6 bg-primary text-white rounded-lg flex items-center justify-center text-xs font-bold">2</span>
+                          <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Apresentacao do Cardapio</span>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={botConfig?.mensagem_2_ativa ?? true}
+                            onChange={(e) => setBotConfig(prev => prev ? { ...prev, mensagem_2_ativa: e.target.checked } : null)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-600 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-500 peer-checked:bg-primary"></div>
+                        </label>
+                      </div>
+                      <textarea
+                        value={botConfig?.mensagem_2_texto ?? ''}
+                        onChange={(e) => setBotConfig(prev => prev ? { ...prev, mensagem_2_texto: e.target.value } : null)}
+                        placeholder="Ex: Temos um cardapio digital completo para voce!"
+                        rows={2}
+                        className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm dark:text-white resize-none"
+                      />
+                    </div>
+
+                    {/* Mensagem 3 */}
+                    <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="size-6 bg-primary text-white rounded-lg flex items-center justify-center text-xs font-bold">3</span>
+                          <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Link do Cardapio</span>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={botConfig?.mensagem_3_ativa ?? true}
+                            onChange={(e) => setBotConfig(prev => prev ? { ...prev, mensagem_3_ativa: e.target.checked } : null)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-600 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-500 peer-checked:bg-primary"></div>
+                        </label>
+                      </div>
+                      <textarea
+                        value={botConfig?.mensagem_3_texto ?? ''}
+                        onChange={(e) => setBotConfig(prev => prev ? { ...prev, mensagem_3_texto: e.target.value } : null)}
+                        placeholder="Ex: Acesse nosso cardapio: {LINK_CARDAPIO}"
+                        rows={2}
+                        className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm dark:text-white resize-none"
+                      />
                     </div>
                   </div>
 
-                  <div className="p-8 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-3xl text-center space-y-4">
-                    <div className="size-16 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center mx-auto">
-                      <Sparkles className="size-8 text-slate-300" />
+                  {/* Configuracoes Adicionais */}
+                  <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                    <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200">Configuracoes Adicionais</h4>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Delay entre mensagens (segundos)</label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={10}
+                          value={botConfig?.delay_entre_mensagens ?? 2}
+                          onChange={(e) => setBotConfig(prev => prev ? { ...prev, delay_entre_mensagens: parseInt(e.target.value) || 2 } : null)}
+                          className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white"
+                        />
+                      </div>
+                      
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Respeitar horario de funcionamento</label>
+                        <div className="flex items-center h-[42px]">
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={botConfig?.respeitar_horario_funcionamento ?? false}
+                              onChange={(e) => setBotConfig(prev => prev ? { ...prev, respeitar_horario_funcionamento: e.target.checked } : null)}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-primary"></div>
+                            <span className="ms-3 text-sm text-slate-600 dark:text-slate-400">{botConfig?.respeitar_horario_funcionamento ? 'Sim' : 'Nao'}</span>
+                          </label>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-bold text-slate-900 dark:text-white">Em Breve</p>
-                      <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs mx-auto">Estamos finalizando a integração do bot de IA para automatizar seus pedidos.</p>
-                    </div>
+
+                    {botConfig?.respeitar_horario_funcionamento && (
+                      <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Clock className="size-4 text-amber-600 dark:text-amber-400" />
+                          <span className="text-sm font-bold text-amber-800 dark:text-amber-200">Mensagem fora do horario</span>
+                        </div>
+                        <textarea
+                          value={botConfig?.mensagem_fora_horario ?? ''}
+                          onChange={(e) => setBotConfig(prev => prev ? { ...prev, mensagem_fora_horario: e.target.value } : null)}
+                          placeholder="Ex: Ola! No momento estamos fechados. Acesse nosso cardapio: {LINK_CARDAPIO}"
+                          rows={3}
+                          className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-700 rounded-xl focus:ring-2 focus:ring-amber-500/20 outline-none text-sm dark:text-white resize-none"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Botao Salvar */}
+                  <div className="flex justify-end pt-4">
+                    <button
+                      onClick={async () => {
+                        if (!botConfig) return;
+                        setSavingBot(true);
+                        const result = await saveBotConfig(botConfig);
+                        setSavingBot(false);
+                        if (result.success) {
+                          toast.success('Configuracoes do bot salvas com sucesso!');
+                        } else {
+                          toast.error(result.error || 'Erro ao salvar configuracoes');
+                        }
+                      }}
+                      disabled={savingBot}
+                      className="bg-primary hover:bg-primary/90 text-white px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-primary/20 transition-all disabled:opacity-50"
+                    >
+                      {savingBot ? (
+                        <>
+                          <Loader2 className="size-4 animate-spin" />
+                          Salvando...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="size-4" />
+                          Salvar Configuracoes do Bot
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
               )}

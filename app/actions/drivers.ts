@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { getMe } from '@/lib/session-server';
-import { sendWhatsAppMessage } from './whatsapp';
+import { sendWhatsAppMessage, sendWhatsAppMessageWithInstance } from './whatsapp';
 import { noco } from '@/lib/nocodb';
 import {
   ENTREGADORES_TABLE_ID,
@@ -330,6 +330,7 @@ export async function getAllDeliveries(limit = 200) {
 
 async function sendDriverNotification(driverId: number, orderId: number) {
     try {
+        const user = await getMe();
         const driver = await noco.findById(ENTREGADORES_TABLE_ID, driverId) as any;
 
         if (!driver?.telefone) {
@@ -348,12 +349,20 @@ Total: R$ ${Number(order?.valor_total || 0).toFixed(2)}
 
 Acesse o painel para mais detalhes.`;
 
-        const success = await sendWhatsAppMessage(driver.telefone, mensagem);
-
-        if (success) {
-            console.log(`[Driver Notification] Notificação enviada para ${driver.nome}`);
+        // Usa a instancia da empresa para enviar
+        if (user?.empresaId) {
+            const result = await sendWhatsAppMessageWithInstance(driver.telefone, mensagem, user.empresaId);
+            if (result.success) {
+                console.log(`[Driver Notification] Notificacao enviada para ${driver.nome}`);
+            } else {
+                console.error(`[Driver Notification] Falha ao enviar para ${driver.nome}: ${result.error}`);
+            }
         } else {
-            console.error(`[Driver Notification] Falha ao enviar para ${driver.nome}`);
+            // Fallback
+            const success = await sendWhatsAppMessage(driver.telefone, mensagem);
+            if (success) {
+                console.log(`[Driver Notification] Notificacao enviada para ${driver.nome} (fallback)`);
+            }
         }
     } catch (error) {
         console.error('[Driver Notification] Erro:', error);

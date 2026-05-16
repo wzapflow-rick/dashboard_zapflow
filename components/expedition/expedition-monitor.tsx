@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Printer, Eye } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Search, Printer, Eye, WifiOff, RefreshCw, CloudOff, Cloud } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { KanbanColumn } from '@/components/expedition/kanban-column';
 import { getOrders, updateOrderStatus, verificarEstoqueDoPedido } from '@/app/actions/orders';
 import RegisterCustomerModal from '@/components/expedition/register-customer-modal';
 import StockWarningModal from '@/components/expedition/stock-warning-modal';
 import OrderDetailsModal from '@/components/expedition/order-details-modal';
+import EditOrderModal from '@/components/expedition/edit-order-modal';
 import { toast } from 'sonner';
 import { Plus } from 'lucide-react';
 import OrderCreatorModal from '@/components/modals/order-creator-modal';
+import { useOffline } from '@/hooks/use-offline';
 
 const PrintModal = dynamic(() => import('@/components/expedition/print-modal'), {
   ssr: false,
@@ -44,17 +46,63 @@ export default function ExpeditionMonitor() {
   const [selectedOrderForDetails, setSelectedOrderForDetails] = useState<any>(null);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [orderToCancel, setOrderToCancel] = useState<number | null>(null);
+  const [usingCache, setUsingCache] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedOrderForEdit, setSelectedOrderForEdit] = useState<any>(null);
 
-  const loadOrders = async () => {
+  // Hook de offline
+  const { 
+    isOnline, 
+    isOfflineReady, 
+    pendingCount, 
+    getCachedOrders, 
+    cacheOrders: saveOrdersToCache,
+    forceSync,
+    isSyncing 
+  } = useOffline();
+
+  const loadOrders = useCallback(async () => {
     try {
+      // Tenta buscar do servidor
       const data = await getOrders();
       setOrders(data || []);
+      setUsingCache(false);
+      
+      // Salva no cache para uso offline
+      if (isOfflineReady && data && data.length > 0) {
+        await saveOrdersToCache(data.map((o: any) => ({
+          id: o.id,
+          codigo: o.codigo,
+          status: o.status,
+          cliente_nome: o.cliente_nome,
+          cliente_telefone: o.cliente_telefone,
+          total: o.total,
+          created_at: o.created_at,
+          items: o.items,
+          endereco: o.endereco,
+          observacao: o.observacao,
+        })));
+      }
     } catch (err) {
       console.error('Erro ao carregar pedidos:', err);
+      
+      // Se falhar e tivermos cache, usa os dados do cache
+      if (isOfflineReady) {
+        try {
+          const cachedData = await getCachedOrders();
+          if (cachedData && cachedData.length > 0) {
+            setOrders(cachedData);
+            setUsingCache(true);
+            toast.warning('Usando dados offline. Algumas informacoes podem estar desatualizadas.');
+          }
+        } catch (cacheErr) {
+          console.error('Erro ao buscar cache:', cacheErr);
+        }
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [isOfflineReady, getCachedOrders, saveOrdersToCache]);
 
   const playNotificationSound = () => {
     try {
@@ -81,13 +129,28 @@ export default function ExpeditionMonitor() {
   useEffect(() => {
     loadOrders();
 
-    // Polling para novos pedidos a cada 10 segundos
+    // Polling para novos pedidos a cada 10 segundos (apenas se online)
     const interval = setInterval(() => {
-      loadOrders();
+      if (isOnline) {
+        loadOrders();
+      }
     }, 10000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [loadOrders, isOnline]);
+
+  // Tenta sincronizar quando voltar online
+  useEffect(() => {
+    if (isOnline && pendingCount > 0) {
+      toast.info(`Sincronizando ${pendingCount} operacao(oes) pendente(s)...`);
+      forceSync().then((result) => {
+        if (result.processed > 0) {
+          toast.success(`${result.processed} operacao(oes) sincronizada(s)!`);
+          loadOrders(); // Recarrega para pegar dados atualizados
+        }
+      });
+    }
+  }, [isOnline, pendingCount, forceSync, loadOrders]);
 
   const handleMoveOrder = async (orderId: number, currentStatus: string) => {
     const statusFlow: { [key: string]: string } = {
@@ -160,6 +223,11 @@ export default function ExpeditionMonitor() {
     setIsDetailsOpen(true);
   };
 
+  const openEditModal = (order: any) => {
+    setSelectedOrderForEdit(JSON.parse(JSON.stringify(order)));
+    setIsEditModalOpen(true);
+  };
+
   const handleCancelOrder = (orderId: number) => {
     setOrderToCancel(orderId);
     setIsCancelModalOpen(true);
@@ -195,9 +263,28 @@ export default function ExpeditionMonitor() {
             <h2 className="text-lg sm:text-xl font-bold text-slate-950 dark:text-white dark:font-extrabold">
               Monitor de Expedição
             </h2>
-            <span className="px-3 py-1.5 rounded-full bg-slate-100 dark:bg-gradient-to-r dark:from-emerald-900/75 dark:to-teal-500/25 text-[10px] sm:text-xs font-bold text-slate-700 dark:text-emerald-900 uppercase tracking-wide border border-slate-200 dark:border-emerald-500/50 backdrop-blur-sm">
-              ● Live
-            </span>
+            {isOnline ? (
+              <span className="px-3 py-1.5 rounded-full bg-slate-100 dark:bg-gradient-to-r dark:from-emerald-900/75 dark:to-teal-500/25 text-[10px] sm:text-xs font-bold text-slate-700 dark:text-emerald-300 uppercase tracking-wide border border-slate-200 dark:border-emerald-500/50 backdrop-blur-sm flex items-center gap-1.5">
+                <Cloud className="size-3" />
+                Live
+              </span>
+            ) : (
+              <span className="px-3 py-1.5 rounded-full bg-amber-100 dark:bg-gradient-to-r dark:from-amber-900/75 dark:to-orange-500/25 text-[10px] sm:text-xs font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wide border border-amber-200 dark:border-amber-500/50 backdrop-blur-sm flex items-center gap-1.5 animate-pulse">
+                <CloudOff className="size-3" />
+                Offline
+              </span>
+            )}
+            {usingCache && (
+              <span className="px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900/50 text-[10px] font-medium text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-500/50">
+                Cache
+              </span>
+            )}
+            {pendingCount > 0 && (
+              <span className="px-2 py-1 rounded-full bg-orange-100 dark:bg-orange-900/50 text-[10px] font-medium text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-500/50 flex items-center gap-1">
+                <RefreshCw className={`size-3 ${isSyncing ? 'animate-spin' : ''}`} />
+                {pendingCount} pendente{pendingCount > 1 ? 's' : ''}
+              </span>
+            )}
           </div>
           <button className="sm:hidden size-9 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-200 hover:shadow-lg">
             <Printer className="size-5" />
@@ -238,6 +325,7 @@ export default function ExpeditionMonitor() {
               onRegisterCustomer={openRegisterModal}
               onOpenDetails={openDetailsModal}
               onCancelOrder={handleCancelOrder}
+              onEditOrder={openEditModal}
             />
           );
         })}
@@ -311,6 +399,18 @@ export default function ExpeditionMonitor() {
           }}
           onConfirm={handleConfirmCancel}
           orderId={orderToCancel || 0}
+        />
+      )}
+
+      {isEditModalOpen && (
+        <EditOrderModal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setSelectedOrderForEdit(null);
+          }}
+          order={selectedOrderForEdit}
+          onSuccess={loadOrders}
         />
       )}
     </div>

@@ -432,14 +432,15 @@ export default function EmpresasAdminPage() {
 function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [modoSenha, setModoSenha] = useState<'definir' | 'enviar_link'>('enviar_link');
   const [formData, setFormData] = useState({
     nome: '',
     nome_fantasia: '',
-    slug: '',
     email: '',
     telefone: '',
     plano: 'start',
     dias_trial: 30,
+    senha: '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -447,7 +448,30 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
     setLoading(true);
     setError('');
 
-    const result = await createEmpresa(formData);
+    // Validacoes
+    if (!formData.email) {
+      setError('Email e obrigatorio para criar a conta');
+      setLoading(false);
+      return;
+    }
+
+    if (modoSenha === 'definir' && !formData.senha) {
+      setError('Defina uma senha para o usuario');
+      setLoading(false);
+      return;
+    }
+
+    if (modoSenha === 'enviar_link' && !formData.telefone) {
+      setError('Telefone e obrigatorio para enviar o link de ativacao');
+      setLoading(false);
+      return;
+    }
+
+    const result = await createEmpresa({
+      ...formData,
+      senha: modoSenha === 'definir' ? formData.senha : undefined,
+      enviar_link_ativacao: modoSenha === 'enviar_link',
+    });
     
     if (result.success) {
       onSuccess();
@@ -457,14 +481,7 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
     setLoading(false);
   };
 
-  const generateSlug = (nome: string) => {
-    return nome
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
-  };
+
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -485,17 +502,12 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
           )}
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Nome da Empresa *</label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Nome do Responsavel *</label>
             <input
               type="text"
               value={formData.nome}
-              onChange={(e) => {
-                setFormData({
-                  ...formData,
-                  nome: e.target.value,
-                  slug: generateSlug(e.target.value),
-                });
-              }}
+              onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+              placeholder="Ex: Joao Silva"
               className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
               required
             />
@@ -509,18 +521,6 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
               onChange={(e) => setFormData({ ...formData, nome_fantasia: e.target.value })}
               className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Slug (URL) *</label>
-            <input
-              type="text"
-              value={formData.slug}
-              onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-              className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
-              required
-            />
-            <p className="text-xs text-slate-500 mt-1">cardapio.wzapflow.com.br/menu/{formData.slug}</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -567,6 +567,54 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
                 min="1"
               />
             </div>
+          </div>
+
+          {/* Modo de criacao de senha */}
+          <div className="space-y-3 pt-2 border-t border-[#1e3a5f]">
+            <label className="block text-sm font-medium text-slate-300">Como definir a senha?</label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="modoSenha"
+                  checked={modoSenha === 'enviar_link'}
+                  onChange={() => setModoSenha('enviar_link')}
+                  className="text-orange-500 focus:ring-orange-500"
+                />
+                <span className="text-sm text-slate-300">Enviar link de ativacao via WhatsApp</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="modoSenha"
+                  checked={modoSenha === 'definir'}
+                  onChange={() => setModoSenha('definir')}
+                  className="text-orange-500 focus:ring-orange-500"
+                />
+                <span className="text-sm text-slate-300">Definir senha agora</span>
+              </label>
+            </div>
+
+            {modoSenha === 'definir' && (
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Senha *</label>
+                <input
+                  type="password"
+                  value={formData.senha}
+                  onChange={(e) => setFormData({ ...formData, senha: e.target.value })}
+                  placeholder="Digite a senha do usuario"
+                  className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
+                />
+              </div>
+            )}
+
+            {modoSenha === 'enviar_link' && (
+              <p className="text-xs text-slate-500">
+                Um link sera enviado via WhatsApp para o usuario definir sua propria senha.
+                <br />
+                <strong className="text-orange-400">Telefone e obrigatorio</strong> para esta opcao.
+              </p>
+            )}
           </div>
 
           <div className="flex gap-3 pt-4">

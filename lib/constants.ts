@@ -139,6 +139,10 @@ export const AVALIACOES_TABLE_ID =
 export const CONFIGURACOES_LOJA_TABLE_ID =
   process.env.NOCODB_TABLE_CONFIGURACOES_LOJA || 'mtkx66k8jacnezx';
 
+/** Tabela de configuração do bot de saudação WhatsApp */
+export const BOT_CONFIG_TABLE_ID =
+  process.env.NOCODB_TABLE_BOT_CONFIG || '';
+
 // ============================================================
 // RATE LIMITING - CONFIGURAÇÕES GLOBAIS
 // ============================================================
@@ -237,10 +241,30 @@ export const SUBSCRIPTION_PLANS = {
       'Cardapio online bloqueado ate assinar',
     ],
   },
+  PARCERIA: {
+    id: 'parceria',
+    name: 'Parceria',
+    price: 0,
+    convertPrice: 29.90, // Preco promocional para conversao do trial
+    description: 'Teste gratis por 7 dias com acesso total!',
+    trial: true,
+    trialDays: 7,
+    convertTo: 'start', // Plano para converter apos o trial
+    features: [
+      'Cardapio digital (Link + QrCode)',
+      'Painel Kanban com notificacao no WhatsApp',
+      'Pix + Cartoes',
+      'Taxa de entregas calculada pelo Google Maps',
+      'Agente de IA no WhatsApp',
+      'Cupons de desconto',
+      '7 dias gratis - Acesso total',
+    ],
+  },
   START: {
     id: 'start',
     name: 'Start',
     price: 79.90,
+    promoPrice: 29.90, // Preco promocional para quem veio do trial Parceria
     description: 'Perfeito para comecar sua jornada no delivery.',
     features: [
       'Cardapio digital (Link + QrCode)',
@@ -282,14 +306,50 @@ export const SUBSCRIPTION_PLANS = {
   },
 } as const;
 
-export type SubscriptionPlanId = 'parceria' | 'iniciante' | 'start' | 'pro' | 'elite';
+export type SubscriptionPlanId = 'iniciante' | 'parceria' | 'start' | 'pro' | 'elite';
 
-/** Planos que permitem cardapio online ativo */
-export const PAID_PLANS: SubscriptionPlanId[] = ['parceria', 'start', 'pro', 'elite'];
+/** Planos que permitem cardapio online ativo (incluindo codigos curtos do banco) */
+export const PAID_PLANS = ['parceria', 'pcr', 'start', 'sta', 'pro', 'elite', 'eli'];
+
+/** Mapeia codigos curtos para nomes completos */
+export function normalizePlanName(plan: string | null | undefined): string {
+  const map: Record<string, string> = {
+    'pcr': 'parceria',
+    'sta': 'start',
+    'eli': 'elite',
+  };
+  return map[plan || ''] || plan || 'iniciante';
+}
 
 /** Verifica se o plano permite cardapio online */
 export function isPaidPlan(plan: string | null | undefined): boolean {
-  return PAID_PLANS.includes(plan as SubscriptionPlanId);
+  return PAID_PLANS.includes(plan || '');
+}
+
+/** Verifica se o plano e um trial (parceria) */
+export function isTrialPlan(plan: string | null | undefined): boolean {
+  return plan === 'parceria' || plan === 'pcr';
+}
+
+/** Calcula dias restantes do trial */
+export function getTrialDaysRemaining(dataInicio: string | Date | null | undefined): number {
+  if (!dataInicio) return 7; // Se nao tem data, assume que acabou de comecar
+  const inicio = new Date(dataInicio);
+  if (isNaN(inicio.getTime())) return 7; // Data invalida, assume que acabou de comecar
+  const agora = new Date();
+  const diffTime = agora.getTime() - inicio.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  const trialDays = SUBSCRIPTION_PLANS.PARCERIA.trialDays;
+  return Math.max(0, trialDays - diffDays);
+}
+
+/** Verifica se deve mostrar aviso de conversao (apenas dia 6 e 7) */
+export function shouldShowTrialWarning(dataInicio: string | Date | null | undefined): boolean {
+  if (!dataInicio) return false; // Sem data de inicio, nao mostrar
+  const inicio = new Date(dataInicio);
+  if (isNaN(inicio.getTime())) return false; // Data invalida, nao mostrar
+  const remaining = getTrialDaysRemaining(dataInicio);
+  return remaining <= 1; // Mostrar no dia 6 (1 dia restante) ou dia 7 (0 dias)
 }
 
 // ============================================================

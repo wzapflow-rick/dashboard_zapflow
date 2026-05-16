@@ -290,6 +290,8 @@ export async function upsertProduct(productData: any, selectedInsumos?: { insumo
     // SALVAMENTO DE METADADOS (UPSell e Tamanhos)
     try {
       console.log(`[UPSERT_PRODUCT] Salvando metadados para produto ID: ${savedProduct.id}`);
+      console.log(`[UPSERT_PRODUCT] Tamanhos recebidos:`, JSON.stringify(tamanhos));
+      console.log(`[UPSERT_PRODUCT] Recomendacoes recebidas:`, JSON.stringify(recomendacoes));
       
       // Tentar encontrar metadados existentes
       const metadataList = await noco.listAll(PRODUTOS_METADADOS_TABLE_ID).catch(() => []);
@@ -297,21 +299,81 @@ export async function upsertProduct(productData: any, selectedInsumos?: { insumo
         Number(m['Produto ID'] || m.produto_id || m.Produto_ID) === Number(savedProduct.id)
       );
       
-      const metadataPayload: any = {
-        'Produto ID': savedProduct.id,
-        'Recomendacoes': recomendacoes ? (typeof recomendacoes === 'string' ? recomendacoes : JSON.stringify(recomendacoes)) : null,
-        'Tamanhos': tamanhos ? (typeof tamanhos === 'string' ? tamanhos : JSON.stringify(tamanhos)) : null,
-      };
-
+      // Detectar o ID do registro - NocoDB pode usar diferentes nomes
+      let metadataId: any = null;
       if (existingMetadata) {
-        console.log(`[UPSERT_PRODUCT] Atualizando metadados ID: ${existingMetadata.id}`);
-        await noco.update(PRODUTOS_METADADOS_TABLE_ID, { id: existingMetadata.id, ...metadataPayload });
+        metadataId = existingMetadata.id || existingMetadata.Id || existingMetadata.ID || 
+                     existingMetadata.nc_id || Object.keys(existingMetadata).find(k => k.toLowerCase() === 'id' && existingMetadata[k]);
+      }
+      const actualId = metadataId ? (typeof metadataId === 'object' ? null : metadataId) : null;
+      
+      console.log(`[UPSERT_PRODUCT] Metadados existentes:`, existingMetadata ? `ID ${actualId} (keys: ${Object.keys(existingMetadata).join(', ')})` : 'Nenhum');
+      
+      // Preparar o payload - tentar diferentes formatos de nome de coluna
+      const tamanhosStr = tamanhos ? (typeof tamanhos === 'string' ? tamanhos : JSON.stringify(tamanhos)) : null;
+      const recomendacoesStr = recomendacoes ? (typeof recomendacoes === 'string' ? recomendacoes : JSON.stringify(recomendacoes)) : null;
+      
+      // Verificar qual formato de coluna existe no registro existente
+      let metadataPayload: any = {};
+      
+      if (existingMetadata && actualId) {
+        // Detectar o formato de colunas usado
+        const hasProdutoID = 'Produto ID' in existingMetadata;
+        const hasProduto_id = 'produto_id' in existingMetadata;
+        const hasTamanhos = 'Tamanhos' in existingMetadata;
+        const hasTamanhos_lower = 'tamanhos' in existingMetadata;
+        
+        console.log(`[UPSERT_PRODUCT] Formato detectado: Produto ID=${hasProdutoID}, produto_id=${hasProduto_id}, Tamanhos=${hasTamanhos}, tamanhos=${hasTamanhos_lower}`);
+        
+        metadataPayload = {
+          id: actualId,
+        };
+        
+        // Usar o mesmo formato que ja existe
+        if (hasTamanhos) {
+          metadataPayload['Tamanhos'] = tamanhosStr;
+        } else if (hasTamanhos_lower) {
+          metadataPayload['tamanhos'] = tamanhosStr;
+        } else {
+          // Tentar ambos
+          metadataPayload['Tamanhos'] = tamanhosStr;
+          metadataPayload['tamanhos'] = tamanhosStr;
+        }
+        
+        // Detectar o nome correto da coluna de recomendacoes (com ou sem acento)
+        if ('Recomendações' in existingMetadata) {
+          metadataPayload['Recomendações'] = recomendacoesStr;
+        } else if ('Recomendacoes' in existingMetadata) {
+          metadataPayload['Recomendacoes'] = recomendacoesStr;
+        } else if ('recomendacoes' in existingMetadata) {
+          metadataPayload['recomendacoes'] = recomendacoesStr;
+        } else {
+          metadataPayload['Recomendações'] = recomendacoesStr;
+        }
+        
+        console.log(`[UPSERT_PRODUCT] Payload de update:`, JSON.stringify(metadataPayload));
+        const updateResult = await noco.update(PRODUTOS_METADADOS_TABLE_ID, metadataPayload);
+        console.log(`[UPSERT_PRODUCT] Resultado update:`, JSON.stringify(updateResult));
       } else {
-        console.log(`[UPSERT_PRODUCT] Criando novos metadados`);
-        await noco.create(PRODUTOS_METADADOS_TABLE_ID, metadataPayload);
+        // Criar novos metadados (ou se nao conseguiu encontrar o ID)
+        console.log(`[UPSERT_PRODUCT] Criando novos metadados (existingMetadata: ${!!existingMetadata}, actualId: ${actualId})`);
+        metadataPayload = {
+          'Produto ID': savedProduct.id,
+          'Recomendações': recomendacoesStr,
+          'Tamanhos': tamanhosStr,
+        };
+        
+        // Se ja existe um registro mas nao conseguimos o ID, tentar deletar antes
+        if (existingMetadata && !actualId) {
+          console.log(`[UPSERT_PRODUCT] Registro existe mas ID nao encontrado, tentando criar novo...`);
+        }
+        
+        const createResult = await noco.create(PRODUTOS_METADADOS_TABLE_ID, metadataPayload);
+        console.log(`[UPSERT_PRODUCT] Resultado create:`, JSON.stringify(createResult));
       }
     } catch (metaError: any) {
       console.error('[UPSERT_PRODUCT] Erro ao salvar metadados:', metaError);
+      console.error('[UPSERT_PRODUCT] Erro detalhes:', metaError.message);
     }
 
     if (selectedInsumos !== undefined && savedProduct && savedProduct.id) {

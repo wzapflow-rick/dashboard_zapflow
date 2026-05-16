@@ -75,24 +75,34 @@ function formatItensForWhatsApp(itens: any[]): string {
 
 /**
  * Enviar mensagem de confirmação de pedido criado
+ * Usa a instancia da empresa para enviar (zapflow_{empresaId})
  */
 export async function sendOrderCreatedMessage(
     phone: string, 
     orderId: number, 
     total: number, 
     dataAgendamento?: string | null,
-    itens?: any[]
+    itens?: any[],
+    empresaId?: number
 ): Promise<boolean> {
     const trackUrl = `${BASE_URL}/track/${orderId}`;
     const itensFormatados = itens ? formatItensForWhatsApp(itens) : '';
     const message = getOrderCreatedMessage(orderId, total, trackUrl, !!dataAgendamento, dataAgendamento || undefined, itensFormatados);
 
+    // Se tiver empresaId, usa a instancia da empresa
+    if (empresaId) {
+        const result = await sendWhatsAppMessageWithInstance(phone, message, empresaId);
+        return result.success;
+    }
+    
+    // Fallback para instancia padrao (nao recomendado)
     return sendWhatsAppMessage(phone, message);
 }
 
 /**
  * Enviar mensagem de atualização de status
  * tipoEntrega: 'delivery' = entrega, 'retirada' = retirada
+ * Usa a instancia da empresa para enviar (zapflow_{empresaId})
  */
 export async function sendOrderStatusMessage(
     phone: string,
@@ -106,6 +116,13 @@ export async function sendOrderStatusMessage(
     
     const message = getStatusMessage(status, orderId, isDelivery, trackUrl, empresaId);
 
+    // Se tiver empresaId, usa a instancia da empresa
+    if (empresaId) {
+        const result = await sendWhatsAppMessageWithInstance(phone, message, empresaId);
+        return result.success;
+    }
+    
+    // Fallback para instancia padrao (nao recomendado)
     return sendWhatsAppMessage(phone, message);
 }
 
@@ -264,6 +281,38 @@ ${BASE_URL}
 Agora é só configurar seu cardápio e começar a receber pedidos direto no WhatsApp.
 
 💡 Dica rápida: comece criando suas categorias e adicionando seus produtos no menu "Cardápio" — isso já deixa sua loja pronta para vender.
+
+Qualquer dúvida, estamos por aqui para te ajudar 🤝
+Boas vendas!
+— Equipe ZapFlow`;
+
+    return sendWhatsAppMessage(phone, message);
+}
+
+/**
+ * Enviar mensagem de boas-vindas para conta trial (Plano Parceria)
+ */
+export async function sendTrialWelcomeMessage(
+    phone: string,
+    nome: string,
+    email: string
+): Promise<boolean> {
+    const message = `🎉 Bem-vindo ao ZapFlow, ${nome}!
+
+Sua conta TRIAL foi criada com sucesso — você tem 7 dias GRÁTIS para testar tudo! 🚀
+
+📦 Plano: Parceria (Trial)
+📧 E-mail: ${email}
+⏰ Período: 7 dias grátis
+
+🔗 Acesse seu painel:
+${BASE_URL}
+
+Agora é só configurar seu cardápio e começar a receber pedidos direto no WhatsApp.
+
+💡 Dica rápida: comece criando suas categorias e adicionando seus produtos no menu "Cardápio" — isso já deixa sua loja pronta para vender.
+
+Após os 7 dias, você pode assinar o plano Start por apenas R$ 29,90/mês para continuar usando.
 
 Qualquer dúvida, estamos por aqui para te ajudar 🤝
 Boas vendas!

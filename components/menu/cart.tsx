@@ -303,10 +303,40 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
     if (mpQrCode) {
       navigator.clipboard.writeText(mpQrCode);
       setMpCopied(true);
-      toast.success('Código PIX copiado!');
+      toast.success('Codigo PIX copiado!');
       setTimeout(() => setMpCopied(false), 2000);
     }
   };
+
+  // Polling automatico para verificar pagamento PIX a cada 5 segundos
+  useEffect(() => {
+    if (!mpQrCode || !orderId || step === 'success') return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const { getOrderStatus } = await import('@/app/actions/public-orders');
+        const status = await getOrderStatus(orderId);
+        if (status === 'pendente' || status === 'pago' || status === 'producao' || status === 'pronto') {
+          clearInterval(pollInterval);
+          setStep('success');
+          clearCart();
+          toast.success('Pagamento confirmado!');
+        }
+      } catch (error) {
+        // Silenciosamente ignora erros de polling
+      }
+    }, 5000); // Verifica a cada 5 segundos
+
+    // Timeout de 10 minutos para parar de verificar
+    const timeout = setTimeout(() => {
+      clearInterval(pollInterval);
+    }, 10 * 60 * 1000);
+
+    return () => {
+      clearInterval(pollInterval);
+      clearTimeout(timeout);
+    };
+  }, [mpQrCode, orderId, step, clearCart]);
 
   const checkPixPayment = async () => {
     if (!orderId) return;
@@ -314,12 +344,17 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
     try {
       const { getOrderStatus } = await import('@/app/actions/public-orders');
       const status = await getOrderStatus(orderId);
-      if (status === 'pago' || status === 'producao') {
+      // Aceita qualquer status que indique pagamento confirmado:
+      // - 'pendente' = Novo Pedido (pagamento PIX confirmado, aguardando preparo)
+      // - 'pago' = Pagamento confirmado (legado)
+      // - 'producao' = Em preparo
+      // - 'pronto' = Pronto para entrega
+      if (status === 'pendente' || status === 'pago' || status === 'producao' || status === 'pronto') {
         setStep('success');
         clearCart();
         toast.success('Pagamento confirmado!');
       } else {
-        toast.info('Ainda não recebemos a confirmação. Aguarde um instante.');
+        toast.info('Ainda nao recebemos a confirmacao. Aguarde um instante.');
       }
     } catch (error) {
       toast.error('Erro ao verificar pagamento');

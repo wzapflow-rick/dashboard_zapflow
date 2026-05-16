@@ -120,6 +120,7 @@ export async function createManualOrder(data: {
             valor_total: data.valor_total,
             status: 'pendente',
             canal: 'Painel',
+            tipo_entrega: 'retirada', // Pedidos manuais da expedicao sao para retirada
             empresa_id: user.empresaId,
             criado_em: new Date().toISOString(),
         };
@@ -181,12 +182,21 @@ export async function updateOrderStatus(id: number, status: string, motivo?: str
                     }) as any;
 
                     if (client) {
-                        const dateOnly = new Date().toISOString().split('T')[0];
-                        await noco.update(CLIENTES_TABLE_ID, {
-                            id: client.id,
-                            ultima_compra: dateOnly,
-                            ultimo_pedido: JSON.stringify(orderData.itens || []),
-                        });
+                        // Usa formato ISO completo para compatibilidade com NocoDB
+                        const now = new Date().toISOString();
+                        try {
+                            await noco.update(CLIENTES_TABLE_ID, {
+                                id: client.id,
+                                ultima_compra: now,
+                            });
+                        } catch (updateErr: any) {
+                            // Se falhar por formato de data, tenta sem o campo
+                            if (updateErr.message?.includes('date') || updateErr.message?.includes('time')) {
+                                console.warn('[Orders] Formato de data invalido, ignorando atualizacao');
+                            } else {
+                                throw updateErr;
+                            }
+                        }
                     }
                 }
             } catch (err) {
@@ -508,5 +518,147 @@ export async function getOrdersForReport(startDate: string, endDate: string) {
     } catch (error: any) {
         console.error('Erro ao buscar pedidos para relatório:', error);
         throw new Error(error.message || 'Falha ao buscar relatório');
+    }
+}
+
+/**
+ * Atualiza os itens de um pedido existente
+ * Permite adicionar, remover ou alterar quantidade de itens
+ */
+export async function updateOrderItems(
+    orderId: number, 
+    newItems: any[], 
+    novoTotal: number,
+    observacao?: string
+) {
+    try {
+        const user = await requireRole(['admin', 'gerente', 'atendente']);
+
+        // Busca o pedido atual
+        const orderData = await noco.findById(PEDIDOS_TABLE_ID, orderId) as any;
+
+        if (!orderData || Number(orderData.empresa_id) !== Number(user.empresaId)) {
+            logger.securityAccessDenied(user.empresaId, `order:${orderId}`, 'UPDATE_ITEMS');
+            throw new Error('Acesso negado: Pedido nao pertence a esta empresa');
+        }
+
+        // Verifica se o pedido pode ser editado (apenas pendente ou preparando)
+        const statusEditaveis = ['pendente', 'preparando', 'aguardando_pagamento'];
+        if (!statusEditaveis.includes(orderData.status)) {
+            throw new Error(`Pedido com status "${orderData.status}" nao pode ser editado`);
+        }
+
+        // Prepara o payload de atualizacao
+        const itensStr = JSON.stringify(newItems);
+        const updatePayload: any = { 
+            id: orderId, 
+            itens: itensStr,
+            valor_total: novoTotal
+        };
+
+        // Adiciona observacao se fornecida
+        if (observacao) {
+            const nowStr = new Date().toLocaleString('pt-BR');
+            updatePayload.observacoes = orderData.observacoes
+                ? `${orderData.observacoes}\n✏️ EDITADO (${nowStr}): ${observacao}`
+                : `✏️ EDITADO (${nowStr}): ${observacao}`;
+        }
+
+        // Atualiza o pedido
+        const result = await noco.update(PEDIDOS_TABLE_ID, updatePayload);
+
+        // Registra log de auditoria
+        const valorAntigo = Number(orderData.valor_total || 0).toFixed(2);
+        const valorNovo = novoTotal.toFixed(2);
+        await logAction(
+            'UPDATE_ORDER_ITEMS', 
+            `Pedido #${orderId} editado. Valor: R$ ${valorAntigo} -> R$ ${valorNovo}. Itens: ${newItems.length}`
+        );
+
+        // Revalida as paginas
+        revalidatePath('/dashboard/expedition');
+
+        return { success: true, order: result };
+    } catch (error: any) {
+        console.error('Erro ao atualizar itens do pedido:', error);
+        throw new Error(error.message || 'Falha ao atualizar pedido');
+    }
+}
+
+/**
+ * Adiciona um valor extra ao pedido (ex: açaí por peso, item avulso)
+ * O valor é somado ao total e o item é adicionado à lista de itens
+ */
+export async function addExtraValueToOrder(
+    orderId: number,
+    nome: string,
+    valor: number
+) {
+    try {
+        const user = await requireRole(['admin', 'gerente', 'atendente', 'cozinheiro']);
+
+        if (!nome?.trim()) {
+            throw new Error('Nome do item é obrigatório');
+        }
+
+        if (!valor || valor <= 0) {
+            throw new Error('Valor deve ser maior que zero');
+        }
+
+        // Busca o pedido atual
+        const orderData = await noco.findById(PEDIDOS_TABLE_ID, orderId) as any;
+
+        if (!orderData || Number(orderData.empresa_id) !== Number(user.empresaId)) {
+            logger.securityAccessDenied(user.empresaId, `order:${orderId}`, 'ADD_EXTRA_VALUE');
+            throw new Error('Acesso negado: Pedido não pertence a esta empresa');
+        }
+
+        // Parse dos itens existentes
+        let itensAtuais: any[] = [];
+        try {
+            itensAtuais = typeof orderData.itens === 'string' 
+                ? JSON.parse(orderData.itens) 
+                : (orderData.itens || []);
+        } catch {
+            itensAtuais = [];
+        }
+
+        // Adiciona o novo item extra
+        const novoItem = {
+            id: `extra_${Date.now()}`,
+            produto: nome.trim(),
+            nome: nome.trim(),
+            quantidade: 1,
+            preco_unitario: valor,
+            subtotal: valor,
+            isExtra: true, // Marca como item extra/avulso
+        };
+
+        itensAtuais.push(novoItem);
+
+        // Calcula o novo total
+        const valorAtual = Number(orderData.valor_total) || 0;
+        const novoTotal = valorAtual + valor;
+
+        // Atualiza o pedido
+        const result = await noco.update(PEDIDOS_TABLE_ID, {
+            id: orderId,
+            itens: JSON.stringify(itensAtuais),
+            valor_total: novoTotal,
+        });
+
+        await logAction('ADD_EXTRA_VALUE', `Valor extra adicionado ao pedido #${orderId}: ${nome} - R$ ${valor.toFixed(2)}`);
+
+        revalidatePath('/dashboard/expedition');
+        revalidatePath('/dashboard/tables');
+        
+        return { 
+            success: true, 
+            novoTotal,
+            itemAdicionado: novoItem,
+        };
+    } catch (error: any) {
+        console.error('Erro ao adicionar valor extra:', error);
+        throw new Error(error.message || 'Falha ao adicionar valor extra');
     }
 }

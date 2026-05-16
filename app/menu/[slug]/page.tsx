@@ -111,7 +111,7 @@ export default async function PublicMenuPage({
                     <div className="bg-[#0a0a0a] rounded-2xl p-4 border border-[#2a2a2a]">
                         <p className="text-xs text-gray-500 mb-2">Enquanto isso, entre em contato:</p>
                         <a 
-                            href="https://wzapflow.com.br" 
+                            href="https://www.wzapflow.com.br" 
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-2 bg-primary text-white font-semibold px-6 py-3 rounded-xl hover:bg-primary/90 transition-colors"
