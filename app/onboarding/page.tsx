@@ -282,12 +282,13 @@ function OnboardingContent() {
               </motion.div>
             )}
 
-            {/* STEP 2: WhatsApp / QR Code */}
+            {/* STEP 2: WhatsApp / QR Code (OPCIONAL) */}
             {currentStep === 2 && (
               <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8 text-center">
                 <div>
                   <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Conecte seu WhatsApp</h2>
                   <p className="text-slate-500 dark:text-slate-400 mt-2">Escaneie o QR Code abaixo para ativar a automação.</p>
+                  <p className="text-slate-400 dark:text-slate-500 text-sm mt-1">Você também pode configurar isso depois em Configurações.</p>
                 </div>
 
                 <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xl max-w-sm mx-auto relative overflow-hidden">
@@ -344,13 +345,16 @@ function OnboardingContent() {
                   <button onClick={prevStep} className="flex items-center gap-2 text-slate-500 dark:text-slate-400 font-bold hover:text-slate-700 dark:hover:text-slate-200 px-6 py-4">
                     <ChevronLeft className="size-5" /> Voltar
                   </button>
-                  {connectionState === 'connected' && (
-                    <button onClick={nextStep}
-                      className="w-full md:w-64 bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/25 flex items-center justify-center gap-2 transition-all">
-                      Próximo Passo
-                      <ArrowRight className="size-5" />
-                    </button>
-                  )}
+                  <button onClick={nextStep}
+                    className={cn(
+                      "w-full md:w-64 font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all",
+                      connectionState === 'connected' 
+                        ? "bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/25" 
+                        : "bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200"
+                    )}>
+                    {connectionState === 'connected' ? 'Próximo Passo' : 'Pular por agora'}
+                    <ArrowRight className="size-5" />
+                  </button>
                 </div>
               </motion.div>
             )}
