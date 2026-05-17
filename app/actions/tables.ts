@@ -423,7 +423,7 @@ export async function createTableOrder(data: {
   const pedidoExistenteData = await noco.list(PEDIDOS_TABLE_ID, {
     where: `(comanda_id,eq,${data.comanda_id})~and(status,eq,pendente)~and(empresa_id,eq,${user.empresaId})`,
     limit: 1,
-    sort: '-Id',
+    sort: '-id',
   });
 
   const pedidoExistente = pedidoExistenteData.list?.[0] as any;
