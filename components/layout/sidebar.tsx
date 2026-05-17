@@ -10,7 +10,6 @@ import {
     Megaphone,
     Settings,
     CreditCard,
-    Bolt,
     X,
     PackageOpen,
     Star,
@@ -87,8 +86,14 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen, user }:
             >
                 <div className="p-6 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                        <div className="size-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center text-white shrink-0 shadow-lg shadow-orange-500/20">
-                            <Bolt className="size-6" />
+                        <div className="size-10 rounded-xl overflow-hidden shrink-0 shadow-lg">
+                            <Image
+                                src="/logo-zapflow.png"
+                                alt="ZapFlow"
+                                width={40}
+                                height={40}
+                                className="object-cover"
+                            />
                         </div>
                         {(isOpen || isMobileMenuOpen) && (
                             <motion.div
