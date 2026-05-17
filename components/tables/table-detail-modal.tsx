@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import {
   X,
   Plus,
@@ -15,6 +16,7 @@ import {
   AlertCircle,
   Printer,
   PlusCircle,
+  ExternalLink,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -155,6 +157,13 @@ export default function TableDetailModal({
     setShowOrderModal(true);
   };
 
+  // Contar pedidos pendentes ou preparando (aguardando no kanban)
+  const pedidosPendentes = mesa.comandas.reduce((acc, c) => {
+    return acc + c.pedidos.filter((p: any) => 
+      p.status === 'pendente' || p.status === 'preparando'
+    ).length;
+  }, 0);
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -186,12 +195,25 @@ export default function TableDetailModal({
                   <p className="text-sm text-slate-400">{mesa.nome}</p>
                 )}
               </div>
-              <button
-                onClick={onClose}
-                className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
-              >
-                <X className="size-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                {pedidosPendentes > 0 && (
+                  <Link
+                    href="/dashboard/expedition"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/20 transition-colors text-sm"
+                    title="Ver pedidos no painel de expedicao"
+                  >
+                    <span className="font-semibold">{pedidosPendentes}</span>
+                    <span className="hidden sm:inline">no Kanban</span>
+                    <ExternalLink className="size-3.5" />
+                  </Link>
+                )}
+                <button
+                  onClick={onClose}
+                  className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+                >
+                  <X className="size-5" />
+                </button>
+              </div>
             </div>
 
             {/* Content */}

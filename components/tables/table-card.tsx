@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Users, Receipt, Clock } from 'lucide-react';
+import { Users, Receipt, Clock, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { type MesaComDetalhes } from '@/app/actions/tables';
 
@@ -39,6 +39,13 @@ export default function TableCard({ mesa, onClick }: TableCardProps) {
 
   const totalComandas = mesa.comandas.length;
   const totalPedidos = mesa.comandas.reduce((acc, c) => acc + c.pedidos.length, 0);
+  
+  // Contar pedidos pendentes ou preparando (aguardando no kanban)
+  const pedidosPendentes = mesa.comandas.reduce((acc, c) => {
+    return acc + c.pedidos.filter((p: any) => 
+      p.status === 'pendente' || p.status === 'preparando'
+    ).length;
+  }, 0);
 
   return (
     <button
@@ -47,9 +54,17 @@ export default function TableCard({ mesa, onClick }: TableCardProps) {
         'relative w-full p-4 rounded-xl border transition-all text-left',
         'focus:outline-none focus:ring-2 focus:ring-primary/50',
         config.bg,
-        config.border
+        config.border,
+        pedidosPendentes > 0 && 'ring-2 ring-red-500/50'
       )}
     >
+      {/* Badge de pedidos pendentes */}
+      {pedidosPendentes > 0 && (
+        <div className="absolute -top-2 -right-2 flex items-center justify-center size-6 bg-red-500 text-white text-xs font-bold rounded-full shadow-lg animate-pulse">
+          {pedidosPendentes}
+        </div>
+      )}
+
       {/* Status Badge */}
       <div className="absolute top-3 right-3">
         <span
