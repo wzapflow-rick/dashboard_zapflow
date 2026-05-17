@@ -419,22 +419,53 @@ export async function createTableOrder(data: {
     throw new Error('Esta comanda já foi fechada');
   }
 
-  const payload = {
-    cliente_nome: data.cliente_nome || comanda.nome_cliente || `Mesa ${data.numero_mesa}`,
-    telefone_cliente: '', // Mesa não tem telefone
-    itens: data.itens,
-    valor_total: data.valor_total,
-    status: 'pendente',
-    canal: 'Mesa',
-    tipo_entrega: 'mesa',
-    mesa_id: data.mesa_id,
-    numero_mesa: data.numero_mesa,
-    comanda_id: data.comanda_id,
-    empresa_id: user.empresaId,
-    criado_em: new Date().toISOString(),
-  };
+  // Verificar se já existe pedido pendente para esta comanda
+  const pedidoExistenteData = await noco.list(PEDIDOS_TABLE_ID, {
+    where: `(comanda_id,eq,${data.comanda_id})~and(status,eq,pendente)~and(empresa_id,eq,${user.empresaId})`,
+    limit: 1,
+    sort: '-Id',
+  });
 
-  const result = await noco.create(PEDIDOS_TABLE_ID, payload);
+  const pedidoExistente = pedidoExistenteData.list?.[0] as any;
+
+  let result;
+
+  if (pedidoExistente) {
+    // MERGE: Adicionar novos itens ao pedido existente
+    const pedidoNorm = normalizeRecord(pedidoExistente);
+    const itensExistentes = JSON.parse(String((pedidoNorm as any).itens || '[]'));
+    const novosItens = JSON.parse(data.itens);
+
+    // Unir os arrays de itens
+    const itensMerged = [...itensExistentes, ...novosItens];
+    const novoValorTotal = (Number((pedidoNorm as any).valor_total) || 0) + data.valor_total;
+
+    await noco.update(PEDIDOS_TABLE_ID, {
+      id: pedidoNorm.id,
+      itens: JSON.stringify(itensMerged),
+      valor_total: novoValorTotal,
+    });
+
+    result = { ...pedidoNorm, itens: JSON.stringify(itensMerged), valor_total: novoValorTotal };
+  } else {
+    // CRIAR NOVO: Nenhum pedido pendente encontrado
+    const payload = {
+      cliente_nome: data.cliente_nome || comanda.nome_cliente || `Mesa ${data.numero_mesa}`,
+      telefone_cliente: '', // Mesa não tem telefone
+      itens: data.itens,
+      valor_total: data.valor_total,
+      status: 'pendente',
+      canal: 'Mesa',
+      tipo_entrega: 'mesa',
+      mesa_id: data.mesa_id,
+      numero_mesa: data.numero_mesa,
+      comanda_id: data.comanda_id,
+      empresa_id: user.empresaId,
+      criado_em: new Date().toISOString(),
+    };
+
+    result = await noco.create(PEDIDOS_TABLE_ID, payload);
+  }
 
   // Atualizar total da comanda
   const novoTotal = (Number(comanda.total) || 0) + data.valor_total;
