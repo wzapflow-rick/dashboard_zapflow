@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Lightbulb, RefreshCw, Sparkles } from 'lucide-react';
 import { InsightsList } from '@/components/insights/insight-card';
+import { TipsCarousel } from '@/components/insights/tips-carousel';
 import { getInsights, type Insight } from '@/app/actions/insights';
 
 export default function InsightsPage() {
@@ -80,6 +81,9 @@ export default function InsightsPage() {
             </div>
           </div>
         </motion.div>
+
+        {/* Tips Carousel */}
+        <TipsCarousel />
 
         {/* Insights Grid */}
         <InsightsList insights={insights} isLoading={isLoading} />
