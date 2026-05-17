@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Phone, MapPin, Printer, CheckCircle2, UserPlus, CreditCard, Banknote, QrCode, Eye, Truck, ChevronDown, User, X, ExternalLink, Ban, Pencil, PlusCircle, Clock } from 'lucide-react';
+import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { getAvailableDrivers, assignDriverToOrder, Driver } from '@/app/actions/drivers';
 import { AddExtraValueModal } from './add-extra-value-modal';
@@ -150,19 +151,47 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
     // Calcular tempo decorrido desde a criacao do pedido
     const tempoDecorrido = order.criado_em ? getTimeAgo(order.criado_em) : null;
 
+    // Configuracao de glow e animacao baseado no status
+    const statusGlowConfig: Record<string, { glow: string; pulse: boolean; ring: string }> = {
+        agendado: { glow: 'shadow-violet-500/20', pulse: false, ring: 'ring-violet-500/30' },
+        pagamento_pendente: { glow: 'shadow-orange-500/30', pulse: true, ring: 'ring-orange-500/40' },
+        pendente: { glow: 'shadow-red-500/30', pulse: true, ring: 'ring-red-500/40' },
+        preparando: { glow: 'shadow-amber-500/25', pulse: false, ring: 'ring-amber-500/30' },
+        entrega: { glow: 'shadow-blue-500/25', pulse: false, ring: 'ring-blue-500/30' },
+        finalizado: { glow: 'shadow-green-500/20', pulse: false, ring: 'ring-green-500/30' },
+    };
+    const glowConfig = statusGlowConfig[columnId] || statusGlowConfig.pendente;
+
     return (
-        <div
+        <motion.div
             data-order-id={order.id}
             onClick={onSelect}
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ 
+                opacity: 1, 
+                y: 0, 
+                scale: 1,
+                boxShadow: glowConfig.pulse 
+                    ? ['0 4px 20px rgba(0,0,0,0.1)', '0 4px 30px rgba(239,68,68,0.2)', '0 4px 20px rgba(0,0,0,0.1)']
+                    : '0 4px 20px rgba(0,0,0,0.1)'
+            }}
+            transition={{ 
+                duration: 0.3,
+                boxShadow: glowConfig.pulse ? { duration: 2, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.2 }
+            }}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
             className={cn(
-                "bg-white dark:bg-slate-800 rounded-lg shadow-sm border-l-4 p-4 space-y-3 border border-slate-200 dark:border-slate-700 cursor-pointer transition-all duration-200",
-                columnId === 'agendado' ? "border-violet-500" :
-                    columnId === 'pagamento_pendente' ? "border-orange-500" :
-                        columnId === 'pendente' ? "border-red-500" :
-                            columnId === 'preparando' ? "border-amber-500" :
-                                columnId === 'entrega' ? "border-blue-500" :
-                                    "border-green-500",
-                isSelected && "ring-2 ring-primary ring-offset-2 dark:ring-offset-slate-900 shadow-lg scale-[1.02]"
+                "bg-white dark:bg-slate-800 rounded-lg border-l-4 p-4 space-y-3 border border-slate-200 dark:border-slate-700 cursor-pointer",
+                "shadow-lg transition-colors duration-300",
+                glowConfig.glow,
+                columnId === 'agendado' ? "border-l-violet-500" :
+                    columnId === 'pagamento_pendente' ? "border-l-orange-500" :
+                        columnId === 'pendente' ? "border-l-red-500" :
+                            columnId === 'preparando' ? "border-l-amber-500" :
+                                columnId === 'entrega' ? "border-l-blue-500" :
+                                    "border-l-green-500",
+                isSelected && `ring-2 ${glowConfig.ring} ring-offset-2 dark:ring-offset-slate-900`
             )}
         >
             <div className="flex justify-between items-start">
@@ -434,7 +463,7 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
                     )}
                     <button
                         onClick={() => onMoveOrder(order.id, order.status)}
-                        className="col-span-3 h-9 bg-orange-500 text-white text-xs font-bold rounded uppercase tracking-wider hover:bg-orange-600 transition-all shadow-sm active:scale-95 transition-transform"
+                        className="col-span-3 h-9 bg-orange-500 text-white text-xs font-bold rounded uppercase tracking-wider hover:bg-orange-600 transition-all shadow-sm hover:shadow-orange-500/25 active:scale-95"
                     >
                         Confirmar Pagamento
                     </button>
@@ -458,9 +487,9 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
                     </button>
                     <button
                         onClick={() => onMoveOrder(order.id, order.status)}
-                        className="col-span-4 h-9 bg-violet-500 text-white text-xs font-bold rounded uppercase tracking-wider hover:bg-violet-600 transition-all shadow-sm active:scale-95 transition-transform"
+                        className="col-span-4 h-9 bg-violet-500 text-white text-xs font-bold rounded uppercase tracking-wider hover:bg-violet-600 transition-all shadow-sm hover:shadow-violet-500/25 active:scale-95"
                     >
-                        Liberar para Produção
+                        Liberar para Producao
                     </button>
                 </div>
             )}
@@ -508,7 +537,7 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
                     )}
                     <button
                         onClick={() => onMoveOrder(order.id, order.status)}
-                        className={`${onCancelOrder && onEditOrder && (columnId === 'pendente' || columnId === 'preparando') ? 'col-span-3' : onCancelOrder || (onEditOrder && (columnId === 'pendente' || columnId === 'preparando')) ? 'col-span-4' : 'col-span-5'} h-9 bg-primary text-white text-xs font-bold rounded uppercase tracking-wider hover:opacity-90 transition-all shadow-sm active:scale-95 transition-transform`}
+                        className={`${onCancelOrder && onEditOrder && (columnId === 'pendente' || columnId === 'preparando') ? 'col-span-3' : onCancelOrder || (onEditOrder && (columnId === 'pendente' || columnId === 'preparando')) ? 'col-span-4' : 'col-span-5'} h-9 bg-primary text-white text-xs font-bold rounded uppercase tracking-wider hover:opacity-90 transition-all shadow-sm hover:shadow-primary/25 active:scale-95`}
                     >
                         {columnId === 'pendente' ? 'Mover para Preparando' :
                             columnId === 'preparando' ? 'Finalizar Preparo' :
@@ -534,6 +563,6 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
                     setDisplayTotal(novoTotal);
                 }}
             />
-        </div>
+        </motion.div>
     );
 }

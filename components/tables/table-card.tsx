@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Users, Receipt, Clock, AlertCircle } from 'lucide-react';
+import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { type MesaComDetalhes } from '@/app/actions/tables';
 
@@ -18,13 +19,17 @@ export default function TableCard({ mesa, onClick }: TableCardProps) {
       badge: 'bg-emerald-500',
       text: 'text-emerald-400',
       label: 'Livre',
+      glow: 'hover:shadow-emerald-500/20',
+      animate: false,
     },
     ocupada: {
-      bg: 'bg-amber-500/10 hover:bg-amber-500/20',
+      bg: 'bg-amber-500/10 hover:bg-amber-500/15',
       border: 'border-amber-500/30',
       badge: 'bg-amber-500',
       text: 'text-amber-400',
       label: 'Ocupada',
+      glow: 'shadow-amber-500/15 hover:shadow-amber-500/25',
+      animate: true,
     },
     reservada: {
       bg: 'bg-blue-500/10 hover:bg-blue-500/20',
@@ -32,6 +37,8 @@ export default function TableCard({ mesa, onClick }: TableCardProps) {
       badge: 'bg-blue-500',
       text: 'text-blue-400',
       label: 'Reservada',
+      glow: 'shadow-blue-500/15 hover:shadow-blue-500/25',
+      animate: false,
     },
   };
 
@@ -48,21 +55,42 @@ export default function TableCard({ mesa, onClick }: TableCardProps) {
   }, 0);
 
   return (
-    <button
+    <motion.button
       onClick={onClick}
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ 
+        opacity: 1, 
+        scale: 1,
+        boxShadow: config.animate 
+          ? ['0 4px 15px rgba(0,0,0,0.1)', '0 4px 25px rgba(245,158,11,0.15)', '0 4px 15px rgba(0,0,0,0.1)']
+          : '0 4px 15px rgba(0,0,0,0.1)'
+      }}
+      transition={{ 
+        duration: 0.3,
+        boxShadow: config.animate ? { duration: 3, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.2 }
+      }}
+      whileHover={{ scale: 1.03, y: -4 }}
+      whileTap={{ scale: 0.97 }}
       className={cn(
-        'relative w-full p-4 rounded-xl border transition-all text-left',
+        'relative w-full p-4 rounded-xl border text-left shadow-lg',
         'focus:outline-none focus:ring-2 focus:ring-primary/50',
+        'transition-colors duration-300',
         config.bg,
         config.border,
+        config.glow,
         pedidosPendentes > 0 && 'ring-2 ring-red-500/50'
       )}
     >
       {/* Badge de pedidos pendentes */}
       {pedidosPendentes > 0 && (
-        <div className="absolute -top-2 -right-2 flex items-center justify-center size-6 bg-red-500 text-white text-xs font-bold rounded-full shadow-lg animate-pulse">
+        <motion.div 
+          initial={{ scale: 0 }}
+          animate={{ scale: [1, 1.1, 1] }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute -top-2 -right-2 flex items-center justify-center size-6 bg-red-500 text-white text-xs font-bold rounded-full shadow-lg shadow-red-500/30"
+        >
           {pedidosPendentes}
-        </div>
+        </motion.div>
       )}
 
       {/* Status Badge */}
@@ -128,6 +156,6 @@ export default function TableCard({ mesa, onClick }: TableCardProps) {
           </span>
         </div>
       )}
-    </button>
+    </motion.button>
   );
 }

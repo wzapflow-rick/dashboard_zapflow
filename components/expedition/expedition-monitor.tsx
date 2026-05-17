@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { Plus } from 'lucide-react';
 import OrderCreatorModal from '@/components/modals/order-creator-modal';
 import { useOffline } from '@/hooks/use-offline';
+import { useActionFeedback } from '@/components/ui/action-feedback';
 
 const PrintModal = dynamic(() => import('@/components/expedition/print-modal'), {
   ssr: false,
@@ -62,6 +63,9 @@ export default function ExpeditionMonitor() {
     forceSync,
     isSyncing 
   } = useOffline();
+
+  // Hook de feedback flutuante
+  const { success: showSuccess, error: showError, FeedbackComponent } = useActionFeedback();
 
   const loadOrders = useCallback(async () => {
     try {
@@ -349,6 +353,14 @@ export default function ExpeditionMonitor() {
   };
 
   const executeMove = async (orderId: number, nextStatus: string) => {
+    const statusMessages: { [key: string]: string } = {
+      'pagamento_pendente': 'Pedido liberado para pagamento',
+      'pendente': 'Pagamento confirmado',
+      'preparando': 'Pedido em preparo',
+      'entrega': 'Pedido saiu para entrega',
+      'finalizado': 'Pedido finalizado',
+    };
+
     try {
       // Atualização otimista
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: nextStatus } : o));
@@ -356,11 +368,15 @@ export default function ExpeditionMonitor() {
       // Persistir no banco
       await updateOrderStatus(orderId, nextStatus);
 
+      // Feedback visual flutuante
+      showSuccess(statusMessages[nextStatus] || 'Status atualizado');
+
       if (nextStatus === 'finalizado') {
         toast.success('Pedido finalizado e estoque deduzido!');
       }
     } catch (err) {
       console.error('Erro ao mover pedido:', err);
+      showError('Erro ao mover pedido');
       loadOrders();
     }
   };
@@ -413,7 +429,9 @@ export default function ExpeditionMonitor() {
   };
 
   return (
-    <div className="h-[calc(100vh-120px)] flex flex-col bg-white dark:bg-slate-950">
+    <>
+      <FeedbackComponent />
+      <div className="h-[calc(100vh-120px)] flex flex-col bg-white dark:bg-slate-950">
       <header className="h-auto min-h-16 border-b border-slate-200 dark:border-slate-800/50 bg-white dark:bg-gradient-to-r dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 px-4 sm:px-8 py-3 flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0 rounded-t-xl shadow-sm dark:shadow-2xl dark:shadow-black/30">
         <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
           <div className="flex items-center gap-4">
@@ -583,5 +601,6 @@ export default function ExpeditionMonitor() {
         />
       )}
     </div>
+    </>
   );
 }

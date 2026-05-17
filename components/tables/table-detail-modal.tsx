@@ -610,7 +610,11 @@ function ComandaCard({
   });
 
   return (
-    <div className="p-3 bg-slate-900/50 rounded-lg border border-slate-700/50">
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="p-3 bg-slate-900/50 rounded-lg border border-slate-700/50 hover:border-slate-600/50 transition-colors"
+    >
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <Receipt className="size-4 text-slate-400" />
@@ -625,13 +629,15 @@ function ComandaCard({
         </div>
         <div className="flex items-center gap-2">
           {pedidoAtivo && comanda.status === 'aberta' && (
-            <button
+            <motion.button
               onClick={() => setShowAddValueModal(true)}
+              whileHover={{ scale: 1.15 }}
+              whileTap={{ scale: 0.9 }}
               className="size-6 flex items-center justify-center rounded-full bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
               title="Adicionar valor extra"
             >
               <PlusCircle className="size-3.5" />
-            </button>
+            </motion.button>
           )}
           <span className="text-sm font-semibold text-primary">
             R$ {totalComanda.toFixed(2).replace('.', ',')}
@@ -709,30 +715,36 @@ function ComandaCard({
 
       {/* Actions */}
       <div className="flex gap-2">
-        <button
+        <motion.button
           onClick={onNovoPedido}
           disabled={isLoading}
-          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary text-sm rounded-lg hover:bg-primary/20 disabled:opacity-50"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary text-sm rounded-lg hover:bg-primary/20 hover:shadow-lg hover:shadow-primary/10 disabled:opacity-50 transition-all"
         >
           <ShoppingBag className="size-3.5" />
           Novo Pedido
-        </button>
-        <button
+        </motion.button>
+        <motion.button
           onClick={onPrint}
           disabled={isLoading}
-          className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-slate-700 text-slate-300 text-sm rounded-lg hover:bg-slate-600 disabled:opacity-50"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-slate-700 text-slate-300 text-sm rounded-lg hover:bg-slate-600 disabled:opacity-50 transition-colors"
           title="Imprimir comanda"
         >
           <Printer className="size-3.5" />
-        </button>
-        <button
+        </motion.button>
+        <motion.button
           onClick={onFechar}
           disabled={isLoading}
-          className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-slate-700 text-slate-300 text-sm rounded-lg hover:bg-slate-600 disabled:opacity-50"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-slate-700 text-slate-300 text-sm rounded-lg hover:bg-slate-600 disabled:opacity-50 transition-colors"
         >
           <Check className="size-3.5" />
           Pagar
-        </button>
+        </motion.button>
       </div>
 
       {/* Modal para adicionar valor extra */}
@@ -747,6 +759,6 @@ function ComandaCard({
           }}
         />
       )}
-    </div>
+    </motion.div>
   );
 }
