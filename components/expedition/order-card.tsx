@@ -15,9 +15,11 @@ interface OrderCardProps {
     onOpenDetails?: (order: any) => void;
     onCancelOrder?: (orderId: number) => void;
     onEditOrder?: (order: any) => void;
+    isSelected?: boolean;
+    onSelect?: () => void;
 }
 
-export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRegisterCustomer, onOpenDetails, onCancelOrder, onEditOrder }: OrderCardProps) {
+export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRegisterCustomer, onOpenDetails, onCancelOrder, onEditOrder, isSelected, onSelect }: OrderCardProps) {
     const [drivers, setDrivers] = useState<Driver[]>([]);
     const [selectedDriver, setSelectedDriver] = useState<number | null>(order.entregador_id || null);
     const [assigning, setAssigning] = useState(false);
@@ -127,14 +129,16 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
 
     return (
         <div
+            onClick={onSelect}
             className={cn(
-                "bg-white dark:bg-slate-800 rounded-lg shadow-sm border-l-4 p-4 space-y-3 border border-slate-200 dark:border-slate-700",
+                "bg-white dark:bg-slate-800 rounded-lg shadow-sm border-l-4 p-4 space-y-3 border border-slate-200 dark:border-slate-700 cursor-pointer transition-all duration-200",
                 columnId === 'agendado' ? "border-violet-500" :
                     columnId === 'pagamento_pendente' ? "border-orange-500" :
                         columnId === 'pendente' ? "border-red-500" :
                             columnId === 'preparando' ? "border-amber-500" :
                                 columnId === 'entrega' ? "border-blue-500" :
-                                    "border-green-500"
+                                    "border-green-500",
+                isSelected && "ring-2 ring-primary ring-offset-2 dark:ring-offset-slate-900 shadow-lg scale-[1.02]"
             )}
         >
             <div className="flex justify-between items-start">

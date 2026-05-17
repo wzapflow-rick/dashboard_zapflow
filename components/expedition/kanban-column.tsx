@@ -11,9 +11,11 @@ interface KanbanColumnProps {
     onOpenDetails: (order: any) => void;
     onCancelOrder?: (orderId: number) => void;
     onEditOrder?: (order: any) => void;
+    selectedOrderId?: number | null;
+    onSelectOrder?: (orderId: number | null) => void;
 }
 
-export function KanbanColumn({ col, columnOrders, onOpenPrintModal, onMoveOrder, onRegisterCustomer, onOpenDetails, onCancelOrder, onEditOrder }: KanbanColumnProps) {
+export function KanbanColumn({ col, columnOrders, onOpenPrintModal, onMoveOrder, onRegisterCustomer, onOpenDetails, onCancelOrder, onEditOrder, selectedOrderId, onSelectOrder }: KanbanColumnProps) {
     return (
         <div className="min-w-[320px] flex flex-col h-full bg-slate-100/50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-700">
             <div className={cn(
@@ -63,6 +65,8 @@ export function KanbanColumn({ col, columnOrders, onOpenPrintModal, onMoveOrder,
                         onOpenDetails={onOpenDetails}
                         onCancelOrder={onCancelOrder}
                         onEditOrder={onEditOrder}
+                        isSelected={selectedOrderId === order.id}
+                        onSelect={() => onSelectOrder?.(order.id)}
                     />
                 ))}
             </div>

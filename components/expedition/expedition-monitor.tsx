@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Printer, Eye, WifiOff, RefreshCw, CloudOff, Cloud } from 'lucide-react';
+import { Search, Printer, Eye, WifiOff, RefreshCw, CloudOff, Cloud, Keyboard } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { KanbanColumn } from '@/components/expedition/kanban-column';
 import { getOrders, updateOrderStatus, verificarEstoqueDoPedido } from '@/app/actions/orders';
@@ -34,6 +34,7 @@ export default function ExpeditionMonitor() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [selectedOrderForPrint, setSelectedOrderForPrint] = useState<any>(null);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
@@ -195,6 +196,105 @@ export default function ExpeditionMonitor() {
     });
   }, [orders, searchQuery]);
 
+  // Atalhos de teclado para navegacao no kanban
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignorar se estiver digitando em input ou textarea
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      // Ignorar se algum modal estiver aberto
+      if (isPrintModalOpen || isRegisterModalOpen || isStockModalOpen || isOrderCreatorOpen || isDetailsOpen || isCancelModalOpen || isEditModalOpen) {
+        return;
+      }
+
+      // Pedidos ativos (exceto finalizados e cancelados) ordenados por coluna e posicao
+      const activeOrders = filteredOrders.filter(o => 
+        o.status !== 'finalizado' && o.status !== 'cancelado'
+      );
+
+      if (activeOrders.length === 0) return;
+
+      const currentIndex = selectedOrderId 
+        ? activeOrders.findIndex(o => o.id === selectedOrderId)
+        : -1;
+
+      switch (e.key) {
+        case 'ArrowDown':
+        case 'j': // Vim-style
+          e.preventDefault();
+          if (currentIndex === -1) {
+            setSelectedOrderId(activeOrders[0]?.id || null);
+          } else if (currentIndex < activeOrders.length - 1) {
+            setSelectedOrderId(activeOrders[currentIndex + 1].id);
+          }
+          break;
+
+        case 'ArrowUp':
+        case 'k': // Vim-style
+          e.preventDefault();
+          if (currentIndex === -1) {
+            setSelectedOrderId(activeOrders[activeOrders.length - 1]?.id || null);
+          } else if (currentIndex > 0) {
+            setSelectedOrderId(activeOrders[currentIndex - 1].id);
+          }
+          break;
+
+        case 'Enter':
+          e.preventDefault();
+          if (selectedOrderId) {
+            const selectedOrder = activeOrders.find(o => o.id === selectedOrderId);
+            if (selectedOrder) {
+              handleMoveOrder(selectedOrder.id, selectedOrder.status);
+            }
+          }
+          break;
+
+        case 'Escape':
+          e.preventDefault();
+          setSelectedOrderId(null);
+          break;
+
+        case 'p':
+        case 'P':
+          e.preventDefault();
+          if (selectedOrderId) {
+            const selectedOrder = orders.find(o => o.id === selectedOrderId);
+            if (selectedOrder) {
+              openPrintModal(selectedOrder);
+            }
+          }
+          break;
+
+        case 'e':
+        case 'E':
+          e.preventDefault();
+          if (selectedOrderId) {
+            const selectedOrder = orders.find(o => o.id === selectedOrderId);
+            if (selectedOrder && (selectedOrder.status === 'pendente' || selectedOrder.status === 'preparando')) {
+              openEditModal(selectedOrder);
+            }
+          }
+          break;
+
+        case 'd':
+        case 'D':
+          e.preventDefault();
+          if (selectedOrderId) {
+            const selectedOrder = orders.find(o => o.id === selectedOrderId);
+            if (selectedOrder) {
+              openDetailsModal(selectedOrder);
+            }
+          }
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [filteredOrders, selectedOrderId, isPrintModalOpen, isRegisterModalOpen, isStockModalOpen, isOrderCreatorOpen, isDetailsOpen, isCancelModalOpen, isEditModalOpen]);
+
   const handleMoveOrder = async (orderId: number, currentStatus: string) => {
     const statusFlow: { [key: string]: string } = {
       'agendado': 'pagamento_pendente',
@@ -351,6 +451,14 @@ export default function ExpeditionMonitor() {
             <Plus className="size-4" />
             Novo Pedido
           </button>
+          <div className="hidden lg:flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/50 text-[10px] text-slate-500 dark:text-slate-400" title="Atalhos de teclado: ↑↓ navegar, Enter mover, P imprimir, E editar, D detalhes, Esc limpar">
+            <Keyboard className="size-3.5" />
+            <span className="font-medium">↑↓</span>
+            <span className="text-slate-300 dark:text-slate-600">|</span>
+            <span className="font-medium">Enter</span>
+            <span className="text-slate-300 dark:text-slate-600">|</span>
+            <span className="font-medium">P E D</span>
+          </div>
           <button className="hidden sm:flex size-9 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-200 hover:shadow-lg">
             <Printer className="size-5" />
           </button>
@@ -371,6 +479,8 @@ export default function ExpeditionMonitor() {
               onOpenDetails={openDetailsModal}
               onCancelOrder={handleCancelOrder}
               onEditOrder={openEditModal}
+              selectedOrderId={selectedOrderId}
+              onSelectOrder={setSelectedOrderId}
             />
           );
         })}
