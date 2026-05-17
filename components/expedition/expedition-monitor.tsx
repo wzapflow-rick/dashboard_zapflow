@@ -33,6 +33,7 @@ const columns = [
 export default function ExpeditionMonitor() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [selectedOrderForPrint, setSelectedOrderForPrint] = useState<any>(null);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
@@ -151,6 +152,48 @@ export default function ExpeditionMonitor() {
       });
     }
   }, [isOnline, pendingCount, forceSync, loadOrders]);
+
+  // Referencia para rastrear pedidos anteriores (para detectar novos)
+  const prevOrdersRef = React.useRef<any[]>([]);
+
+  // Som de notificacao para NOVOS pedidos chegando
+  useEffect(() => {
+    if (orders.length > 0 && prevOrdersRef.current.length > 0) {
+      const prevIds = new Set(prevOrdersRef.current.map(o => o.id));
+      const newOrders = orders.filter(o => !prevIds.has(o.id) && o.status === 'pendente');
+      
+      if (newOrders.length > 0) {
+        // Toca som para novos pedidos
+        playNotificationSound();
+        toast.success(`${newOrders.length} novo(s) pedido(s) chegou!`, {
+          duration: 5000,
+        });
+      }
+    }
+    prevOrdersRef.current = orders;
+  }, [orders]);
+
+  // Filtra pedidos pela busca
+  const filteredOrders = React.useMemo(() => {
+    if (!searchQuery.trim()) return orders;
+    
+    const query = searchQuery.toLowerCase().trim();
+    return orders.filter(order => {
+      const clienteName = (order.cliente_nome || '').toLowerCase();
+      const clientePhone = (order.telefone_cliente || order.cliente_telefone || '').toLowerCase();
+      const orderId = String(order.id || '');
+      const codigo = String(order.codigo || '').toLowerCase();
+      const mesa = order.numero_mesa ? `mesa ${order.numero_mesa}` : '';
+      
+      return (
+        clienteName.includes(query) ||
+        clientePhone.includes(query) ||
+        orderId.includes(query) ||
+        codigo.includes(query) ||
+        mesa.includes(query)
+      );
+    });
+  }, [orders, searchQuery]);
 
   const handleMoveOrder = async (orderId: number, currentStatus: string) => {
     const statusFlow: { [key: string]: string } = {
@@ -297,6 +340,8 @@ export default function ExpeditionMonitor() {
               className="pl-9 pr-3 h-9 w-full sm:w-64 bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/50 rounded-lg text-sm text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 dark:focus:ring-blue-500/40 dark:focus:border-blue-500/50 outline-none transition-all duration-200 hover:border-slate-300 dark:hover:border-slate-600/50"
               placeholder="Buscar pedido..."
               type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           <button
@@ -314,7 +359,7 @@ export default function ExpeditionMonitor() {
 
       <div className="flex-1 overflow-x-auto p-4 sm:p-6 flex gap-4 sm:gap-6 bg-gradient-to-br from-slate-50 via-slate-50 to-slate-100 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 rounded-b-xl border-x border-b border-slate-200 dark:border-slate-800/50 custom-scrollbar">
         {columns.map((col) => {
-          const columnOrders = orders.filter(o => o.status === col.id);
+          const columnOrders = filteredOrders.filter(o => o.status === col.id);
           return (
             <KanbanColumn
               key={col.id}

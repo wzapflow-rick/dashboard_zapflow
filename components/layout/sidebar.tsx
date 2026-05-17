@@ -13,7 +13,6 @@ import {
     Bolt,
     X,
     PackageOpen,
-    FlaskConical,
     Star,
     DollarSign,
     LayoutGrid,
@@ -31,7 +30,6 @@ const navItems = [
     { name: 'Divulgação', href: '/dashboard/growth', icon: Megaphone, roles: ['admin'] },
     { name: 'Campanhas', href: '/dashboard/campanhas', icon: Megaphone, roles: ['admin'] },
     { name: 'Insumos', href: '/dashboard/insumos', icon: PackageOpen, roles: ['admin'] },
-    { name: 'Módulo de Testes', href: '/dashboard/testes', icon: FlaskConical, roles: ['admin'] },
 ];
 
 const adminItems = [
@@ -114,8 +112,8 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen, user }:
                 <nav className="flex-1 px-4 space-y-1 mt-4 overflow-y-auto custom-scrollbar">
                     {navItems
                         .filter(item => {
-                            if (!user?.controle_estoque) {
-                                return item.name !== 'Insumos' && item.name !== 'Módulo de Testes';
+                            if (!user?.controle_estoque && item.name === 'Insumos') {
+                                return false;
                             }
                             return true;
                         })
@@ -201,7 +199,7 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen, user }:
                                 className="flex flex-col overflow-hidden"
                             >
                                 <span className="text-sm font-semibold text-slate-900 leading-tight truncate dark:text-white">{user?.nome || 'Minha Loja'}</span>
-                                <span className="text-xs text-slate-500 dark:text-slate-400">Plano Pro</span>
+                                <span className="text-xs text-slate-500 dark:text-slate-400 capitalize">Plano {user?.plano || 'Iniciante'}</span>
                             </motion.div>
                         )}
                     </div>
