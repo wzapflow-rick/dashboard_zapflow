@@ -295,6 +295,20 @@ export default function ExpeditionMonitor() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [filteredOrders, selectedOrderId, isPrintModalOpen, isRegisterModalOpen, isStockModalOpen, isOrderCreatorOpen, isDetailsOpen, isCancelModalOpen, isEditModalOpen]);
 
+  // Auto-scroll para o card selecionado quando navegar com teclado
+  useEffect(() => {
+    if (selectedOrderId) {
+      const cardElement = document.querySelector(`[data-order-id="${selectedOrderId}"]`);
+      if (cardElement) {
+        cardElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+          inline: 'nearest'
+        });
+      }
+    }
+  }, [selectedOrderId]);
+
   const handleMoveOrder = async (orderId: number, currentStatus: string) => {
     const statusFlow: { [key: string]: string } = {
       'agendado': 'pagamento_pendente',

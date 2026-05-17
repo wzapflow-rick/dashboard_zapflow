@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, ShoppingBag, DollarSign, Zap, Clock, Loader2 } from 'lucide-react';
+import { TrendingUp, ShoppingBag, DollarSign, Zap, Clock, Loader2, RefreshCw } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { motion } from 'motion/react';
 import { StatCard } from './stat-card';
@@ -31,45 +31,52 @@ export default function DashboardOverview() {
   const [selectedPeriod, setSelectedPeriod] = useState('Hoje');
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const loadData = async (showRefreshIndicator = false) => {
+    if (showRefreshIndicator) {
+      setIsRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+    
+    try {
+      // First get user info to ensure Header works
+      const me = await getMe();
+      setUser(me);
+
+      // Then attempt to get dashboard data
+      try {
+        const data = await getDashboardData(selectedPeriod);
+        setDashboardData(data);
+        setError(null);
+
+        if (data.rawOrders) {
+          const formattedOrders = data.rawOrders.map((o: any) => ({
+            id: `#${o.id}`,
+            customer: o.cliente_nome || o.nome_cliente || 'Cliente',
+            phone: o.telefone_cliente || '',
+            time: o.criado_em ? new Date(o.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '...',
+            value: `R$ ${Number(o.valor_total || 0).toFixed(2).replace('.', ',')}`,
+            status: o.status === 'pendente' ? 'Pendente' : o.status === 'preparando' ? 'Preparando' : o.status === 'cancelado' ? 'Cancelado' : 'Finalizado',
+            statusColor: o.status === 'pendente' ? 'amber' : o.status === 'preparando' ? 'blue' : o.status === 'cancelado' ? 'red' : 'emerald',
+            raw: o
+          }));
+          setOrders(formattedOrders);
+        }
+      } catch (dashError: any) {
+        console.error('Erro ao carregar dados da dashboard:', dashError);
+        setError(dashError.message || 'Erro ao carregar dados');
+      }
+    } catch (err) {
+      console.error('Erro critico no dashboard:', err);
+    } finally {
+      setLoading(false);
+      setIsRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    async function loadData() {
-      setLoading(true);
-      try {
-        // First get user info to ensure Header works
-        const me = await getMe();
-        setUser(me);
-
-        // Then attempt to get dashboard data
-        try {
-          const data = await getDashboardData(selectedPeriod);
-          setDashboardData(data);
-          setError(null);
-
-          if (data.rawOrders) {
-            const formattedOrders = data.rawOrders.map((o: any) => ({
-              id: `#${o.id}`,
-              customer: o.cliente_nome || o.nome_cliente || 'Cliente',
-              phone: o.telefone_cliente || '',
-              time: o.criado_em ? new Date(o.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '...',
-              value: `R$ ${Number(o.valor_total || 0).toFixed(2).replace('.', ',')}`,
-              status: o.status === 'pendente' ? 'Pendente' : o.status === 'preparando' ? 'Preparando' : o.status === 'cancelado' ? 'Cancelado' : 'Finalizado',
-              statusColor: o.status === 'pendente' ? 'amber' : o.status === 'preparando' ? 'blue' : o.status === 'cancelado' ? 'red' : 'emerald',
-              raw: o
-            }));
-            setOrders(formattedOrders);
-          }
-          // Debug: console.log('Dashboard data loaded:', data);
-        } catch (dashError: any) {
-          console.error('Erro ao carregar dados da dashboard:', dashError);
-          setError(dashError.message || 'Erro ao carregar dados');
-        }
-      } catch (err) {
-        console.error('Erro crítico no dashboard:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
     loadData();
   }, [selectedPeriod]);
 
@@ -102,17 +109,25 @@ export default function DashboardOverview() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Olá, {user?.nome || 'Usuário'} 👋</h1>
           <p className="text-slate-500 text-sm mt-1 dark:text-slate-400">Aqui está o que está acontecendo com sua loja {selectedPeriod.toLowerCase()}.</p>
         </div>
-        <div className="flex items-center gap-4 w-full sm:w-auto">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <select
             value={selectedPeriod}
             onChange={(e) => setSelectedPeriod(e.target.value)}
-            className="w-full sm:w-auto bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer shadow-sm dark:bg-[#0f1f35] dark:border-[#1e3a5f] dark:text-slate-300"
+            className="flex-1 sm:flex-none sm:w-auto bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer shadow-sm dark:bg-[#0f1f35] dark:border-[#1e3a5f] dark:text-slate-300"
           >
             <option value="Hoje">Hoje</option>
             <option value="Últimos 7 dias">Últimos 7 dias</option>
             <option value="Este Mês">Este Mês</option>
             <option value="Tudo">Tudo</option>
           </select>
+          <button
+            onClick={() => loadData(true)}
+            disabled={isRefreshing}
+            className="size-10 flex items-center justify-center bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 hover:text-primary transition-all shadow-sm dark:bg-[#0f1f35] dark:border-[#1e3a5f] dark:text-slate-400 dark:hover:text-primary disabled:opacity-50"
+            title="Atualizar dados"
+          >
+            <RefreshCw className={`size-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          </button>
         </div>
       </header>
 

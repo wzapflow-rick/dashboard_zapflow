@@ -152,6 +152,7 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
 
     return (
         <div
+            data-order-id={order.id}
             onClick={onSelect}
             className={cn(
                 "bg-white dark:bg-slate-800 rounded-lg shadow-sm border-l-4 p-4 space-y-3 border border-slate-200 dark:border-slate-700 cursor-pointer transition-all duration-200",

@@ -422,11 +422,20 @@ export default function TableOrderModal({
             <header className="p-4 border-b border-slate-700 flex items-center gap-2">
               <ShoppingCart className="size-5 text-primary" />
               <span className="font-semibold text-white">Carrinho</span>
-              {cart.length > 0 && (
-                <span className="ml-auto px-2 py-0.5 bg-primary/20 text-primary text-xs font-bold rounded-full">
-                  {cart.reduce((acc, i) => acc + i.quantidade, 0)}
-                </span>
-              )}
+              <AnimatePresence mode="wait">
+                {cart.length > 0 && (
+                  <motion.span
+                    key={cart.reduce((acc, i) => acc + i.quantidade, 0)}
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.5, opacity: 0 }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+                    className="ml-auto px-2 py-0.5 bg-primary/20 text-primary text-xs font-bold rounded-full"
+                  >
+                    {cart.reduce((acc, i) => acc + i.quantidade, 0)}
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </header>
 
             <div className="flex-1 overflow-y-auto p-3">
