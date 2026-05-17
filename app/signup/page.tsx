@@ -112,7 +112,7 @@ function SignupContent() {
           email,
           nome,
           telefone: cleanPhone,
-          senha,
+          password: senha,
         });
         
         if (!result.success) {
