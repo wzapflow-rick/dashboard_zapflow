@@ -17,6 +17,7 @@ import {
     Star,
     DollarSign,
     LayoutGrid,
+    Lightbulb,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -24,6 +25,7 @@ import Image from 'next/image';
 
 const navItems = [
     { name: 'Visão Geral', href: '/dashboard', icon: LayoutDashboard, roles: ['admin'] },
+    { name: 'Insights', href: '/dashboard/insights', icon: Lightbulb, roles: ['admin', 'gerente'] },
     { name: 'Cardápio', href: '/dashboard/menu', icon: UtensilsCrossed, roles: ['admin'] },
     { name: 'Expedição', href: '/dashboard/expedition', icon: Truck, roles: ['admin', 'gerente', 'atendente', 'cozinheiro'] },
     { name: 'Mesas', href: '/dashboard/mesas', icon: LayoutGrid, roles: ['admin', 'gerente', 'atendente'] },
