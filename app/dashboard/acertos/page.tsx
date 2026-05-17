@@ -58,16 +58,23 @@ export default function AcertosPage() {
     const handlePeriodoChange = (novoPeriodo: string) => {
         setPeriodo(novoPeriodo);
         if (empresaId) {
-            loadData(empresaId);
+            // Usa o novo periodo diretamente em vez do state (que ainda nao atualizou)
+            setLoading(true);
+            fetch(`/api/acertos?empresaId=${empresaId}&periodo=${novoPeriodo}`)
+                .then(res => res.ok ? res.json() : Promise.reject(res))
+                .then(data => {
+                    setEntregadores(data.drivers || []);
+                    setTotais(data.totais || { entregas: 0, valor: 0 });
+                })
+                .catch(err => console.error('Erro ao carregar dados:', err))
+                .finally(() => setLoading(false));
         }
     };
 
     const marcardPago = async (entregadorId: number, valor: number) => {
-        console.log('marcardPago called:', entregadorId, valor);
         toast.success('Processando pagamento...');
 
         try {
-            console.log('Making PATCH request...');
             const res = await fetch('/api/acertos', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
@@ -78,11 +85,7 @@ export default function AcertosPage() {
                 })
             });
 
-            console.log('Response status:', res.status);
-
             if (res.ok) {
-                const data = await res.json();
-                console.log('Response data:', data);
                 toast.success('Pagamento registrado com sucesso!');
 
                 // Refresh data directly
@@ -91,11 +94,9 @@ export default function AcertosPage() {
                 }
             } else {
                 const errorData = await res.json();
-                console.log('Error:', errorData);
                 toast.error('Erro: ' + (errorData.error || 'desconhecido'));
             }
         } catch (error) {
-            console.error('Exception:', error);
             toast.error('Erro de conexão');
         }
     };
@@ -118,7 +119,7 @@ export default function AcertosPage() {
                 <div className="space-y-6">
                     <header>
                         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Controle de Entregadores</h1>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Acompanhe as entregas ecalculate o que precisa pagar</p>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Acompanhe as entregas e calcule o que precisa pagar</p>
                     </header>
 
                     {/* Filtro de período */}
@@ -245,10 +246,7 @@ export default function AcertosPage() {
                                                         </div>
                                                     ) : (
                                                         <button
-                                                            onClick={() => {
-                                                                console.log('BOTAO CLICADO', e.entregador_id, e.valor_total);
-                                                                marcardPago(e.entregador_id, e.valor_total);
-                                                            }}
+                                                            onClick={() => marcardPago(e.entregador_id, e.valor_total)}
                                                             className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl text-sm transition-colors"
                                                         >
                                                             ✓ Pagar

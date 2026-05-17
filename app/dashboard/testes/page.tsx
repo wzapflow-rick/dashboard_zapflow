@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import DashboardLayout, { SidebarProvider } from '@/components/dashboard-layout';
 import { motion } from 'framer-motion';
 import {
@@ -17,7 +18,23 @@ import {
 import { generateMockOrder, setupPizzariaFicticia } from '@/app/actions/testing';
 import { toast } from 'sonner';
 
+// Bloqueia acesso em producao - apenas ambiente de desenvolvimento
+const IS_PRODUCTION = process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_ENABLE_TEST_PAGE;
+
 export default function TestPage() {
+    const router = useRouter();
+
+    useEffect(() => {
+        if (IS_PRODUCTION) {
+            toast.error('Pagina de testes nao disponivel em producao');
+            router.replace('/dashboard');
+        }
+    }, [router]);
+
+    // Em producao, nao renderiza nada (vai redirecionar)
+    if (IS_PRODUCTION) {
+        return null;
+    }
     const [isGenerating, setIsGenerating] = useState(false);
     const [isSettingUp, setIsSettingUp] = useState(false);
     const [generatedCount, setGeneratedCount] = useState(0);
