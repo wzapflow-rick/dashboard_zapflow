@@ -48,6 +48,7 @@ export default function TableDetailModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showFecharMesaConfirm, setShowFecharMesaConfirm] = useState(false);
   const [showAddComanda, setShowAddComanda] = useState(false);
   const [newComandaNome, setNewComandaNome] = useState('');
   const [selectedComanda, setSelectedComanda] = useState<ComandaComPedidos | null>(null);
@@ -81,6 +82,7 @@ export default function TableDetailModal({
       setError(err.message || 'Erro ao fechar mesa');
     } finally {
       setIsLoading(false);
+      setShowFecharMesaConfirm(false);
     }
   };
 
@@ -365,7 +367,7 @@ export default function TableDetailModal({
                 <div className="flex gap-2">
                   {mesa.comandas.length > 0 && (
                     <button
-                      onClick={handleFecharMesa}
+                      onClick={() => setShowFecharMesaConfirm(true)}
                       disabled={isLoading}
                       className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded-lg hover:bg-amber-500/20 disabled:opacity-50"
                     >
@@ -414,6 +416,51 @@ export default function TableDetailModal({
                         className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50"
                       >
                         {isLoading ? 'Excluindo...' : 'Excluir'}
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Fechar Mesa Confirmation */}
+            <AnimatePresence>
+              {showFecharMesaConfirm && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 bg-slate-900/95 flex items-center justify-center p-4"
+                >
+                  <div className="text-center max-w-sm">
+                    <DollarSign className="size-12 text-amber-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-white mb-2">
+                      Fechar Mesa {mesa.numero}?
+                    </h3>
+                    <p className="text-slate-400 text-sm mb-2">
+                      Todas as comandas serao encerradas.
+                    </p>
+                    <div className="p-3 bg-slate-800 rounded-lg mb-4">
+                      <p className="text-2xl font-bold text-primary">
+                        R$ {mesa.total_mesa.toFixed(2).replace('.', ',')}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {mesa.comandas.length} comanda{mesa.comandas.length !== 1 ? 's' : ''} aberta{mesa.comandas.length !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => setShowFecharMesaConfirm(false)}
+                        className="flex-1 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={handleFecharMesa}
+                        disabled={isLoading}
+                        className="flex-1 px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50"
+                      >
+                        {isLoading ? 'Fechando...' : 'Confirmar'}
                       </button>
                     </div>
                   </div>

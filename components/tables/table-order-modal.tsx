@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Search, Plus, Minus, ShoppingCart, Loader2 } from 'lucide-react';
+import { X, Search, Plus, Minus, ShoppingCart, Loader2, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getProducts, getCategories, type Category } from '@/app/actions/products';
 import { getCompositeProducts, type CompositeProduct, type CompositeItem } from '@/app/actions/grupos-slots';
@@ -50,6 +50,7 @@ export default function TableOrderModal({
   const [isCompositeModalOpen, setIsCompositeModalOpen] = useState(false);
   const [selectedComposite, setSelectedComposite] = useState<CompositeProduct | null>(null);
   const [selectedItems, setSelectedItems] = useState<CompositeItem[]>([]);
+  const [addedProductId, setAddedProductId] = useState<number | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -86,6 +87,11 @@ export default function TableOrderModal({
       }
       return [...prev, { ...product, quantidade: 1 }];
     });
+    
+    // Feedback visual
+    setAddedProductId(product.id);
+    toast.success(`${product.nome} adicionado!`, { duration: 1500 });
+    setTimeout(() => setAddedProductId(null), 600);
   };
 
   const removeFromCart = (productId: number, isComposite?: boolean) => {
@@ -335,25 +341,37 @@ export default function TableOrderModal({
                         <span className="text-slate-600">({produtos.length})</span>
                       </h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {produtos.map((p) => (
-                          <button
-                            key={p.id}
-                            onClick={() => addToCart(p)}
-                            className="group p-3 bg-slate-900/50 border border-slate-700 rounded-lg text-left hover:border-primary/50 hover:bg-slate-900 transition-all flex items-center justify-between gap-2"
-                          >
-                            <div className="min-w-0">
-                              <h4 className="font-semibold text-white text-sm truncate group-hover:text-primary transition-colors">
-                                {p.nome}
-                              </h4>
-                              <span className="text-xs text-slate-500">
-                                R$ {Number(p.preco).toFixed(2).replace('.', ',')}
-                              </span>
-                            </div>
-                            <div className="size-7 bg-slate-800 rounded-lg flex items-center justify-center text-slate-400 group-hover:bg-primary group-hover:text-white transition-all shrink-0">
-                              <Plus className="size-4" />
-                            </div>
-                          </button>
-                        ))}
+                                        {produtos.map((p) => {
+                                          const isAdded = addedProductId === p.id;
+                                          return (
+                                          <button
+                                            key={p.id}
+                                            onClick={() => addToCart(p)}
+                                            className={`group p-3 bg-slate-900/50 border rounded-lg text-left transition-all flex items-center justify-between gap-2 ${
+                                              isAdded 
+                                                ? 'border-green-500 bg-green-500/10 scale-[0.98]' 
+                                                : 'border-slate-700 hover:border-primary/50 hover:bg-slate-900'
+                                            }`}
+                                          >
+                                            <div className="min-w-0">
+                                              <h4 className={`font-semibold text-sm truncate transition-colors ${
+                                                isAdded ? 'text-green-400' : 'text-white group-hover:text-primary'
+                                              }`}>
+                                                {p.nome}
+                                              </h4>
+                                              <span className="text-xs text-slate-500">
+                                                R$ {Number(p.preco).toFixed(2).replace('.', ',')}
+                                              </span>
+                                            </div>
+                                            <div className={`size-7 rounded-lg flex items-center justify-center transition-all shrink-0 ${
+                                              isAdded 
+                                                ? 'bg-green-500 text-white' 
+                                                : 'bg-slate-800 text-slate-400 group-hover:bg-primary group-hover:text-white'
+                                            }`}>
+                                              {isAdded ? <Check className="size-4" /> : <Plus className="size-4" />}
+                                            </div>
+                                          </button>
+                                        );})}
                       </div>
                     </div>
                   ))}

@@ -1,10 +1,30 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Phone, MapPin, Printer, CheckCircle2, UserPlus, CreditCard, Banknote, QrCode, Eye, Truck, ChevronDown, User, X, ExternalLink, Ban, Pencil, PlusCircle } from 'lucide-react';
+import { Phone, MapPin, Printer, CheckCircle2, UserPlus, CreditCard, Banknote, QrCode, Eye, Truck, ChevronDown, User, X, ExternalLink, Ban, Pencil, PlusCircle, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getAvailableDrivers, assignDriverToOrder, Driver } from '@/app/actions/drivers';
 import { AddExtraValueModal } from './add-extra-value-modal';
+
+// Funcao para calcular tempo decorrido de forma legivel
+function getTimeAgo(dateString: string): string {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    
+    if (diffMins < 1) return 'agora';
+    if (diffMins < 60) return `${diffMins}min`;
+    
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) {
+        const mins = diffMins % 60;
+        return mins > 0 ? `${diffHours}h ${mins}min` : `${diffHours}h`;
+    }
+    
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays}d`;
+}
 
 interface OrderCardProps {
     order: any;
@@ -127,6 +147,9 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
         ? new Date(dataAgendamento.replace(' ', 'T')).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
         : null;
 
+    // Calcular tempo decorrido desde a criacao do pedido
+    const tempoDecorrido = order.criado_em ? getTimeAgo(order.criado_em) : null;
+
     return (
         <div
             onClick={onSelect}
@@ -175,17 +198,33 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
                         )}
                     </div>
                 </div>
-                <span className={cn(
-                    "text-xs font-bold px-2 py-1 rounded",
-                    columnId === 'agendado' ? "text-violet-600 bg-violet-50 dark:bg-violet-900/30" :
-                        columnId === 'pagamento_pendente' ? "text-orange-600 bg-orange-50" :
-                            columnId === 'pendente' ? "text-red-600 bg-red-50" :
-                                columnId === 'preparando' ? "text-amber-600 bg-amber-50" :
-                                    columnId === 'entrega' ? "text-blue-600 bg-blue-50" :
-                                        "text-green-600 bg-green-50"
-                )}>
-                    {orderTime}
-                </span>
+                <div className="flex flex-col items-end gap-1">
+                    <span className={cn(
+                        "text-xs font-bold px-2 py-1 rounded",
+                        columnId === 'agendado' ? "text-violet-600 bg-violet-50 dark:bg-violet-900/30" :
+                            columnId === 'pagamento_pendente' ? "text-orange-600 bg-orange-50" :
+                                columnId === 'pendente' ? "text-red-600 bg-red-50" :
+                                    columnId === 'preparando' ? "text-amber-600 bg-amber-50" :
+                                        columnId === 'entrega' ? "text-blue-600 bg-blue-50" :
+                                            "text-green-600 bg-green-50"
+                    )}>
+                        {orderTime}
+                    </span>
+                    {tempoDecorrido && columnId !== 'finalizado' && columnId !== 'cancelado' && (
+                        <span className={cn(
+                            "text-[10px] font-medium px-1.5 py-0.5 rounded flex items-center gap-1",
+                            // Cores baseadas no tempo de espera
+                            tempoDecorrido.includes('d') || (tempoDecorrido.includes('h') && parseInt(tempoDecorrido) >= 1)
+                                ? "text-red-600 bg-red-50 dark:bg-red-900/30 dark:text-red-400"
+                                : parseInt(tempoDecorrido) >= 30
+                                    ? "text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400"
+                                    : "text-slate-500 bg-slate-100 dark:bg-slate-700 dark:text-slate-400"
+                        )}>
+                            <Clock className="size-3" />
+                            {tempoDecorrido}
+                        </span>
+                    )}
+                </div>
             </div>
 
             <div className="text-sm space-y-1">
