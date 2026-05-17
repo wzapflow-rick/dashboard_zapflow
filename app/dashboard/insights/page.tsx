@@ -3,11 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Lightbulb, RefreshCw, Sparkles } from 'lucide-react';
+import DashboardLayout, { SidebarProvider } from '@/components/dashboard-layout';
 import { InsightsList } from '@/components/insights/insight-card';
 import { TipsCarousel } from '@/components/insights/tips-carousel';
 import { getInsights, type Insight } from '@/app/actions/insights';
 
-export default function InsightsPage() {
+function InsightsContent() {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -41,8 +42,7 @@ export default function InsightsPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -96,11 +96,20 @@ export default function InsightsPage() {
             transition={{ delay: 0.5 }}
             className="mt-8 flex items-center justify-center gap-2 text-sm text-slate-400 dark:text-slate-500"
           >
-            <Sparkles className="size-4" />
-            <span>Insights gerados automaticamente com base nos seus dados</span>
-          </motion.div>
-        )}
-      </div>
+          <Sparkles className="size-4" />
+          <span>Insights gerados automaticamente com base nos seus dados</span>
+        </motion.div>
+      )}
     </div>
+  );
+}
+
+export default function InsightsPage() {
+  return (
+    <SidebarProvider>
+      <DashboardLayout>
+        <InsightsContent />
+      </DashboardLayout>
+    </SidebarProvider>
   );
 }
