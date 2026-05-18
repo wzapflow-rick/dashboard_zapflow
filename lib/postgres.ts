@@ -87,10 +87,15 @@ function getPool(): Pool {
     const connectionString = process.env.DATABASE_URL;
     
     if (!connectionString) {
+      console.error('[PostgreSQL] DATABASE_URL não está configurado!');
       throw new PostgresError(
         'DATABASE_URL não está configurado nas variáveis de ambiente.'
       );
     }
+
+    // Log sanitizado da conexão (sem senha)
+    const sanitizedUrl = connectionString.replace(/:([^@]+)@/, ':****@');
+    console.log('[PostgreSQL] Inicializando pool com:', sanitizedUrl);
 
     pool = new Pool({
       connectionString,
@@ -104,6 +109,10 @@ function getPool(): Pool {
 
     pool.on('error', (err) => {
       console.error('[PostgreSQL Pool] Erro inesperado no cliente:', err);
+    });
+
+    pool.on('connect', () => {
+      console.log('[PostgreSQL Pool] Nova conexão estabelecida');
     });
   }
 

@@ -115,7 +115,13 @@ export async function login(data: any) {
         await new Promise(resolve => setTimeout(resolve, 1000));
         return { error: 'E-mail ou senha inválidos' };
     } catch (error) {
-        console.error('Login Error:', error);
+        console.error('[AUTH] Login Error:', error);
+        
+        // Mostrar detalhes do erro em desenvolvimento
+        if (process.env.NODE_ENV !== 'production' && error instanceof Error) {
+            return { error: `Erro: ${error.message}` };
+        }
+        
         return { error: 'Erro interno no servidor' };
     }
 }
