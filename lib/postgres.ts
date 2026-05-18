@@ -97,9 +97,12 @@ function getPool(): Pool {
     const sanitizedUrl = connectionString.replace(/:([^@]+)@/, ':****@');
     console.log('[PostgreSQL] Inicializando pool com:', sanitizedUrl);
 
+    // SSL desabilitado - PostgreSQL self-hosted sem SSL
+    // Para habilitar SSL, configure o PostgreSQL com certificados e mude para:
+    // ssl: { rejectUnauthorized: false }
     pool = new Pool({
       connectionString,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+      ssl: false,
       max: 10,
       min: 0,
       idleTimeoutMillis: 30000,

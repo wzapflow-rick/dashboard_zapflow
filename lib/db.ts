@@ -2,7 +2,7 @@ import { Pool } from 'pg';
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  ssl: false, // PostgreSQL self-hosted sem SSL
   // Configuracoes para evitar problemas de conexao em serverless
   max: 10, // Maximo de conexoes no pool
   min: 0,  // Minimo de conexoes
