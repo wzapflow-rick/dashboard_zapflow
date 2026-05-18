@@ -3,8 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import { getMe } from '@/lib/session-server';
 import { getInsumos } from './insumos';
-import { noco } from '@/lib/nocodb';
-import { ITENS_BASE_TABLE_ID, ITEM_BASE_INSUMO_TABLE_ID } from '@/lib/constants';
+import { pg } from '@/lib/postgres';
+import { ITENS_BASE_TABLE, ITEM_BASE_INSUMO_TABLE } from '@/lib/tables';
 
 export interface ItemBase {
     id: number;
@@ -28,8 +28,8 @@ export async function getItensBase(): Promise<ItemBase[]> {
         const user = await getMe();
         if (!user?.empresaId) return [];
 
-        const data = await noco.list(ITENS_BASE_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})`,
+        const data = await pg.list(ITENS_BASE_TABLE, {
+            where: { empresa_id: user.empresaId },
             sort: 'nome',
             limit: 1000,
         });
@@ -60,9 +60,10 @@ export async function upsertItemBase(itemData: Partial<ItemBase>) {
 
         let data;
         if (itemData.id) {
-            data = await noco.update(ITENS_BASE_TABLE_ID, { ...payload, id: itemData.id });
+            data = await pg.update(ITENS_BASE_TABLE, { ...payload, id: itemData.id });
         } else {
-            data = await noco.create(ITENS_BASE_TABLE_ID, payload);
+            delete payload.id;
+            data = await pg.create(ITENS_BASE_TABLE, payload);
             console.log('upsertItemBase response:', data);
         }
 
@@ -76,7 +77,7 @@ export async function upsertItemBase(itemData: Partial<ItemBase>) {
 
 export async function deleteItemBase(id: number) {
     try {
-        await noco.delete(ITENS_BASE_TABLE_ID, id);
+        await pg.delete(ITENS_BASE_TABLE, id);
         revalidatePath('/dashboard/menu');
         return { success: true };
     } catch (e: any) {
@@ -92,17 +93,17 @@ export async function getReceitaDoItemBase(itemBaseId: number): Promise<ItemBase
         const user = await getMe();
         if (!user?.empresaId) return [];
 
-        const data = await noco.list(ITEM_BASE_INSUMO_TABLE_ID, {
-            where: `(produto_id,eq,${itemBaseId})~and(empresa_id,eq,${user.empresaId})`,
+        const data = await pg.list(ITEM_BASE_INSUMO_TABLE, {
+            where: { produto_id: itemBaseId, empresa_id: user.empresaId },
             limit: 1000,
         });
 
-   return (data.list || []).map((i: any) => ({
-    id: Number(i.id),
-    item: Number(i.produto_id),
-    insumo: Number(i.insumo_id),
-    quantidade: Number(i.quantidade_usada),
-}));
+        return (data.list || []).map((i: any) => ({
+            id: Number(i.id),
+            item: Number(i.produto_id),
+            insumo: Number(i.insumo_id),
+            quantidade: Number(i.quantidade_usada),
+        }));
     } catch (e) {
         console.error('getReceitaDoItemBase error:', e);
         return [];
@@ -114,14 +115,14 @@ export async function saveReceitaDoItemBase(
     insumosList: { insumo: number; quantidade: number }[]
 ) {
     try {
-        const existingData = await noco.list(ITEM_BASE_INSUMO_TABLE_ID, {
-            where: `(produto_id,eq,${itemBaseId})`,
+        const existingData = await pg.list(ITEM_BASE_INSUMO_TABLE, {
+            where: { produto_id: itemBaseId },
             limit: 1000,
         });
 
         if (existingData.list?.length > 0) {
             for (const r of existingData.list) {
-                await noco.delete(ITEM_BASE_INSUMO_TABLE_ID, (r as any).id);
+                await pg.delete(ITEM_BASE_INSUMO_TABLE, (r as any).id);
             }
         }
 
@@ -130,7 +131,7 @@ export async function saveReceitaDoItemBase(
             if (!user?.empresaId) throw new Error('Usuário não autorizado');
 
             for (const item of insumosList) {
-                await noco.create(ITEM_BASE_INSUMO_TABLE_ID, {
+                await pg.create(ITEM_BASE_INSUMO_TABLE, {
                     produto_id: Number(itemBaseId),
                     insumo_id: Number(item.insumo),
                     quantidade_usada: parseFloat(Number(item.quantidade || 1).toFixed(3)),
@@ -154,8 +155,8 @@ async function recalcularPrecoCustoItemBase(itemBaseId: number | string): Promis
     const id = Number(itemBaseId);
     if (isNaN(id)) return;
     try {
-        const receitaData = await noco.list(ITEM_BASE_INSUMO_TABLE_ID, {
-            where: `(item,eq,${itemBaseId})`,
+        const receitaData = await pg.list(ITEM_BASE_INSUMO_TABLE, {
+            where: { item: itemBaseId },
             limit: 1000,
         });
         const receita = receitaData.list || [];
@@ -188,7 +189,7 @@ async function recalcularPrecoCustoItemBase(itemBaseId: number | string): Promis
 
 async function atualizarPrecoCustoItemBase(itemBaseId: number, custo: number): Promise<void> {
     try {
-        await noco.update(ITENS_BASE_TABLE_ID, { id: itemBaseId, preco_custo: custo });
+        await pg.update(ITENS_BASE_TABLE, { id: itemBaseId, preco_custo: custo });
         revalidatePath('/dashboard/menu');
     } catch (error) {
         console.error('Erro ao atualizar preço de custo do item base:', error);

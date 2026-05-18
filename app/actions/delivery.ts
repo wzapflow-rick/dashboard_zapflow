@@ -2,37 +2,21 @@
 
 import { revalidatePath } from 'next/cache';
 import { getMe } from '@/lib/session-server';
-import { noco } from '@/lib/nocodb';
-import { TAXAS_ENTREGA_TABLE_ID, EMPRESAS_TABLE_ID } from '@/lib/constants';
+import { pg } from '@/lib/postgres';
+import { TAXAS_ENTREGA_TABLE, EMPRESAS_TABLE } from '@/lib/tables';
 
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || '';
-
-/**
- * Normaliza o campo de ID de um registro do NocoDB.
- * A tabela taxas_entrega usa "Id" (maiúsculo) como PK, enquanto o restante do
- * código espera "id" (minúsculo). Esta função garante que ambos os formatos
- * sejam tratados corretamente.
- */
-function normalizeId(record: any): any {
-    if (!record) return record;
-    // Se o registro tem "Id" maiúsculo mas não tem "id" minúsculo, normaliza
-    if (record.Id !== undefined && record.id === undefined) {
-        return { ...record, id: record.Id };
-    }
-    return record;
-}
 
 export async function getDeliveryRates() {
     try {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        const data = await noco.list(TAXAS_ENTREGA_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})`,
+        const data = await pg.list(TAXAS_ENTREGA_TABLE, {
+            where: { empresa_id: user.empresaId },
             limit: 1000,
         });
-        // Normaliza o campo Id/id para compatibilidade com o restante do código
-        return (data.list || []).map(normalizeId);
+        return data.list || [];
     } catch (error) {
         console.error('API Error:', error);
         throw new Error('Failed to fetch delivery rates');
@@ -44,7 +28,6 @@ export async function upsertDeliveryRate(data: any) {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        // Sanitização de valores para evitar erros de tipo no NocoDB
         const sanitizedData = {
             ...data,
             valor_taxa: typeof data.valor_taxa === 'string' 
@@ -53,22 +36,21 @@ export async function upsertDeliveryRate(data: any) {
             empresa_id: Number(user.empresaId)
         };
 
-        // Normaliza o id (pode vir como "Id" maiúsculo do NocoDB)
-        const recordId = data.id || data.Id;
+        const recordId = data.id;
 
         let result;
         if (recordId) {
-            const { id, Id, empresa_id, empresas, ...updatePayload } = sanitizedData;
-            result = await noco.update(TAXAS_ENTREGA_TABLE_ID, { id: recordId, ...updatePayload });
+            const { empresa_id, ...updatePayload } = sanitizedData;
+            result = await pg.update(TAXAS_ENTREGA_TABLE, { id: recordId, ...updatePayload });
         } else {
-            const { empresa_id, id, Id, ...insertData } = sanitizedData;
-            result = await noco.create(TAXAS_ENTREGA_TABLE_ID, {
+            const { id, ...insertData } = sanitizedData;
+            result = await pg.create(TAXAS_ENTREGA_TABLE, {
                 ...insertData,
                 empresa_id: Number(user.empresaId)
             });
         }
 
-        return normalizeId(result);
+        return result;
     } catch (error) {
         console.error('API Error:', error);
         throw new Error('Failed to save delivery rate');
@@ -77,7 +59,7 @@ export async function upsertDeliveryRate(data: any) {
 
 export async function deleteDeliveryRate(id: number) {
     try {
-        await noco.delete(TAXAS_ENTREGA_TABLE_ID, id);
+        await pg.delete(TAXAS_ENTREGA_TABLE, id);
         revalidatePath('/dashboard/settings');
         return { success: true };
     } catch (error) {
@@ -119,7 +101,7 @@ export async function getDeliveryConfig(empresaId?: number): Promise<DeliveryCon
             return null;
         }
 
-        const config = await noco.findById(EMPRESAS_TABLE_ID, targetEmpresaId) as any;
+        const config = await pg.findById(EMPRESAS_TABLE, targetEmpresaId) as any;
         if (!config) return null;
 
         return {
@@ -163,7 +145,6 @@ async function getDistanceFromGoogle(
     };
 }
 
-// Buscar taxa por bairro (usado quando auto_radius = false)
 export async function getDeliveryRateByBairro(empresaId: number, bairro: string): Promise<{ taxa: number; tempo_estimado: string } | null> {
     try {
         if (!bairro || !empresaId) return null;
@@ -171,20 +152,18 @@ export async function getDeliveryRateByBairro(empresaId: number, bairro: string)
         const bairroNormalizado = bairro.trim().toLowerCase();
         console.log(`[Delivery] Buscando taxa para bairro: "${bairroNormalizado}" | Empresa: ${empresaId}`);
         
-        const data = await noco.list(TAXAS_ENTREGA_TABLE_ID, {
-            where: `(empresa_id,eq,${empresaId})`,
+        const data = await pg.list(TAXAS_ENTREGA_TABLE, {
+            where: { empresa_id: empresaId },
             limit: 1000,
         });
         
         const taxas = data.list || [];
         console.log(`[Delivery] Taxas encontradas: ${taxas.length}`);
         
-        // Busca exata primeiro, depois parcial
         let match = taxas.find((t: any) => 
             t.bairro && t.bairro.trim().toLowerCase() === bairroNormalizado
         );
         
-        // Se não encontrou exato, tenta busca parcial
         if (!match) {
             match = taxas.find((t: any) => 
                 t.bairro && (
@@ -210,13 +189,12 @@ export async function getDeliveryRateByBairro(empresaId: number, bairro: string)
     }
 }
 
-// Listar todos os bairros disponíveis para uma empresa (usado no checkout)
 export async function getAvailableBairros(empresaId: number): Promise<Array<{ bairro: string; taxa: number; tempo_estimado: string }>> {
     try {
         if (!empresaId) return [];
         
-        const data = await noco.list(TAXAS_ENTREGA_TABLE_ID, {
-            where: `(empresa_id,eq,${empresaId})`,
+        const data = await pg.list(TAXAS_ENTREGA_TABLE, {
+            where: { empresa_id: empresaId },
             limit: 1000,
         });
         
@@ -253,12 +231,10 @@ export async function calculateDeliveryFee(
             return { success: false, error: 'Configuração de entrega inválida' };
         }
 
-        // Se não usa raio automático, retorna taxa fixa (a taxa por bairro é calculada separadamente)
         if (!config.auto_radius) {
             if (config.taxa_entrega_fixa > 0) {
                 return { success: true, taxa_entrega: config.taxa_entrega_fixa };
             }
-            // Se não tem taxa fixa, retorna sucesso com taxa 0 (será calculada por bairro no checkout)
             return { success: true, taxa_entrega: 0 };
         }
 
@@ -368,7 +344,6 @@ export async function saveDeliveryRatesBatch(rates: any[]) {
         for (const data of rates) {
             if (!data.bairro || data.bairro.trim() === '') continue;
 
-            // Limpeza extrema do valor
             let valorStr = String(data.valor_taxa || '0');
             valorStr = valorStr.replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.');
             const valorTaxa = parseFloat(valorStr) || 0;
@@ -382,25 +357,19 @@ export async function saveDeliveryRatesBatch(rates: any[]) {
 
             console.log('[saveDeliveryRatesBatch] Enviando payload:', JSON.stringify(payload));
 
-            // Normaliza o id (pode vir como "Id" maiúsculo do NocoDB)
-            const recordId = data.id || data.Id;
+            const recordId = data.id;
 
             try {
                 if (recordId && !String(recordId).startsWith('temp-')) {
-                    // Registro existente: faz update
                     const updatePayload = { ...payload, id: recordId };
-                    const res = await noco.update(TAXAS_ENTREGA_TABLE_ID, updatePayload);
-                    results.push(normalizeId(res));
+                    const res = await pg.update(TAXAS_ENTREGA_TABLE, updatePayload);
+                    results.push(res);
                 } else {
-                    // Registro novo: faz insert
-                    // Nota: o NocoDB retorna 422 ERR_INVALID_PK_VALUE em tabelas SQLite criadas via API,
-                    // mas o dado é persistido. O nocoRequest já trata esse caso retornando {} sem erro.
-                    const res = await noco.create(TAXAS_ENTREGA_TABLE_ID, payload);
-                    results.push({ bairro: payload.bairro, saved: true, ...normalizeId(res) });
+                    const res = await pg.create(TAXAS_ENTREGA_TABLE, payload);
+                    results.push({ bairro: payload.bairro, saved: true, ...res });
                 }
             } catch (innerError: any) {
                 console.error('[saveDeliveryRatesBatch] Erro no item individual:', innerError.message);
-                // Continua para o próximo item para não quebrar o lote todo
             }
         }
 

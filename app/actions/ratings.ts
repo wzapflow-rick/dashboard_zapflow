@@ -2,8 +2,8 @@
 
 import { getMe } from '@/lib/session-server';
 import { revalidatePath } from 'next/cache';
-import { noco } from '@/lib/nocodb';
-import { AVALIACOES_TABLE_ID, CLIENTES_TABLE_ID } from '@/lib/constants';
+import { pg } from '@/lib/postgres';
+import { AVALIACOES_TABLE, CLIENTES_TABLE } from '@/lib/tables';
 
 export async function getClientByPhone(telefone: string): Promise<{ nome?: string; id?: number } | null> {
     try {
@@ -12,8 +12,8 @@ export async function getClientByPhone(telefone: string): Promise<{ nome?: strin
 
         const cleanPhone = telefone.replace(/\D/g, '');
 
-        const client = await noco.findOne(CLIENTES_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})~and(telefone,eq,${cleanPhone})`,
+        const client = await pg.findOne(CLIENTES_TABLE, {
+            where: { empresa_id: user.empresaId, telefone: cleanPhone },
         }) as any;
 
         return client ? { nome: client.nome, id: client.id } : null;
@@ -43,7 +43,7 @@ export async function createRating(data: {
     comentario?: string;
 }) {
     try {
-        const result = await noco.create(AVALIACOES_TABLE_ID, data);
+        const result = await pg.create(AVALIACOES_TABLE, data);
         revalidatePath('/dashboard/customers');
         return { success: true, data: result };
     } catch (error) {
@@ -57,8 +57,8 @@ export async function getRatingsByEmpresa(): Promise<Rating[]> {
         const user = await getMe();
         if (!user?.empresaId) return [];
 
-        const data = await noco.list(AVALIACOES_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})`,
+        const data = await pg.list(AVALIACOES_TABLE, {
+            where: { empresa_id: user.empresaId },
             sort: '-created_at',
             limit: 100,
         });
@@ -81,8 +81,8 @@ export async function getRatingsByEmpresa(): Promise<Rating[]> {
 
 export async function getAverageRatings(empresaId: number) {
     try {
-        const data = await noco.list(AVALIACOES_TABLE_ID, {
-            where: `(empresa_id,eq,${empresaId})`,
+        const data = await pg.list(AVALIACOES_TABLE, {
+            where: { empresa_id: empresaId },
             limit: 500,
         });
         const ratings = data.list || [];
@@ -113,8 +113,8 @@ export async function getAverageRatings(empresaId: number) {
 
 export async function getRatingByOrder(orderId: number) {
     try {
-        const result = await noco.findOne(AVALIACOES_TABLE_ID, {
-            where: `(pedido_id,eq,${orderId})`,
+        const result = await pg.findOne(AVALIACOES_TABLE, {
+            where: { pedido_id: orderId },
         });
         return result || null;
     } catch (error) {

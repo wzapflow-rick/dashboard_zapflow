@@ -12,14 +12,14 @@ import { addPointsForOrder } from './loyalty';
 import { finishDelivery } from './drivers';
 import { sendOrderStatusMessage } from './whatsapp';
 import { logger } from '@/lib/logger';
-import { noco } from '@/lib/nocodb';
+import { pg } from '@/lib/postgres';
 import {
-  PEDIDOS_TABLE_ID,
-  CLIENTES_TABLE_ID,
-  ENTREGADORES_TABLE_ID,
-  EMPRESAS_TABLE_ID,
-  RATE_LIMIT,
-} from '@/lib/constants';
+  PEDIDOS_TABLE,
+  CLIENTES_TABLE,
+  ENTREGADORES_TABLE,
+  EMPRESAS_TABLE,
+} from '@/lib/tables';
+import { RATE_LIMIT } from '@/lib/constants';
 
 interface NecessidadeInsumo {
     nome: string;
@@ -36,8 +36,8 @@ export async function getOrders() {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        const ordersData = await noco.list(PEDIDOS_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})`,
+        const ordersData = await pg.list(PEDIDOS_TABLE, {
+            where: { empresa_id: user.empresaId },
             sort: '-id',
             limit: 1000,
         });
@@ -45,16 +45,16 @@ export async function getOrders() {
 
         if (orders.length === 0) return [];
 
-        const clientsData = await noco.list(CLIENTES_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})`,
+        const clientsData = await pg.list(CLIENTES_TABLE, {
+            where: { empresa_id: user.empresaId },
             limit: 1000,
         });
         const clients = clientsData.list || [];
 
         let drivers: any[] = [];
         try {
-            const driversData = await noco.list(ENTREGADORES_TABLE_ID, {
-                where: `(empresa_id,eq,${user.empresaId})`,
+            const driversData = await pg.list(ENTREGADORES_TABLE, {
+                where: { empresa_id: user.empresaId },
                 limit: 1000,
             });
             drivers = driversData.list || [];
@@ -120,12 +120,12 @@ export async function createManualOrder(data: {
             valor_total: data.valor_total,
             status: 'pendente',
             canal: 'Painel',
-            tipo_entrega: 'retirada', // Pedidos manuais da expedicao sao para retirada
+            tipo_entrega: 'retirada',
             empresa_id: user.empresaId,
             criado_em: new Date().toISOString(),
         };
 
-        const result = await noco.create(PEDIDOS_TABLE_ID, payload);
+        const result = await pg.create(PEDIDOS_TABLE, payload);
 
         revalidatePath('/dashboard/expedition');
         return result;
@@ -158,7 +158,7 @@ export async function updateOrderStatus(id: number, status: string, motivo?: str
             }
         }
 
-        const orderData = await noco.findById(PEDIDOS_TABLE_ID, id) as any;
+        const orderData = await pg.findById(PEDIDOS_TABLE, id) as any;
 
         if (!orderData || Number(orderData.empresa_id) !== Number(user.empresaId)) {
             logger.securityAccessDenied(user.empresaId, `order:${id}`, 'UPDATE_STATUS');
@@ -177,20 +177,18 @@ export async function updateOrderStatus(id: number, status: string, motivo?: str
         if (status === 'finalizado') {
             try {
                 if (orderData.telefone_cliente) {
-                    const client = await noco.findOne(CLIENTES_TABLE_ID, {
-                        where: `(empresa_id,eq,${user.empresaId})~and(telefone,eq,${orderData.telefone_cliente})`,
+                    const client = await pg.findOne(CLIENTES_TABLE, {
+                        where: { empresa_id: user.empresaId, telefone: orderData.telefone_cliente },
                     }) as any;
 
                     if (client) {
-                        // Usa formato ISO completo para compatibilidade com NocoDB
-                        const now = new Date().toISOString();
+                        const nowIso = new Date().toISOString();
                         try {
-                            await noco.update(CLIENTES_TABLE_ID, {
+                            await pg.update(CLIENTES_TABLE, {
                                 id: client.id,
-                                ultima_compra: now,
+                                ultima_compra: nowIso,
                             });
                         } catch (updateErr: any) {
-                            // Se falhar por formato de data, tenta sem o campo
                             if (updateErr.message?.includes('date') || updateErr.message?.includes('time')) {
                                 console.warn('[Orders] Formato de data invalido, ignorando atualizacao');
                             } else {
@@ -204,7 +202,7 @@ export async function updateOrderStatus(id: number, status: string, motivo?: str
             }
         }
 
-        const result = await noco.update(PEDIDOS_TABLE_ID, updatePayload);
+        const result = await pg.update(PEDIDOS_TABLE, updatePayload);
 
         if (status === 'finalizado') {
             deduzirInsumosDoPedido(id).catch(err => console.error('Falha na dedução:', err));
@@ -252,7 +250,7 @@ export async function deduzirInsumosDoPedido(orderId: number) {
         const user = await getMe();
         if (!user?.empresaId) return;
 
-        const company = await noco.findById(EMPRESAS_TABLE_ID, user.empresaId) as any;
+        const company = await pg.findById(EMPRESAS_TABLE, user.empresaId) as any;
 
         const isEstoqueAtivo = company?.controle_estoque === true ||
             company?.controle_estoque === 1 ||
@@ -263,7 +261,7 @@ export async function deduzirInsumosDoPedido(orderId: number) {
             return;
         }
 
-        const order = await noco.findById(PEDIDOS_TABLE_ID, orderId) as any;
+        const order = await pg.findById(PEDIDOS_TABLE, orderId) as any;
 
         if (!order?.itens) return;
 
@@ -394,7 +392,7 @@ export async function verificarEstoqueDoPedido(orderId: number) {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        const company = await noco.findById(EMPRESAS_TABLE_ID, user.empresaId) as any;
+        const company = await pg.findById(EMPRESAS_TABLE, user.empresaId) as any;
 
         const isEstoqueAtivo = company?.controle_estoque === true ||
             company?.controle_estoque === 1 ||
@@ -404,7 +402,7 @@ export async function verificarEstoqueDoPedido(orderId: number) {
             return { hasEnough: true, shortages: [] };
         }
 
-        const order = await noco.findById(PEDIDOS_TABLE_ID, orderId) as any;
+        const order = await pg.findById(PEDIDOS_TABLE, orderId) as any;
 
         if (!order?.itens) return {
             hasEnough: true,
@@ -491,7 +489,7 @@ export async function getOrderById(id: number) {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        const order = await noco.findById(PEDIDOS_TABLE_ID, id) as any;
+        const order = await pg.findById(PEDIDOS_TABLE, id) as any;
 
         if (!order || Number(order.empresa_id) !== Number(user.empresaId)) {
             throw new Error('Pedido não encontrado ou acesso negado');
@@ -509,10 +507,14 @@ export async function getOrdersForReport(startDate: string, endDate: string) {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        const data = await noco.listAll(PEDIDOS_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})~and(criado_em,gte,${startDate})~and(criado_em,lte,${endDate})`,
-            sort: '-criado_em',
-        });
+        // Para filtros de data complexos, usamos raw query
+        const data = await pg.raw(`
+            SELECT * FROM pedidos 
+            WHERE empresa_id = $1 
+            AND criado_em >= $2 
+            AND criado_em <= $3 
+            ORDER BY criado_em DESC
+        `, [user.empresaId, startDate, endDate]);
 
         return data;
     } catch (error: any) {
@@ -523,7 +525,6 @@ export async function getOrdersForReport(startDate: string, endDate: string) {
 
 /**
  * Atualiza os itens de um pedido existente
- * Permite adicionar, remover ou alterar quantidade de itens
  */
 export async function updateOrderItems(
     orderId: number, 
@@ -534,21 +535,18 @@ export async function updateOrderItems(
     try {
         const user = await requireRole(['admin', 'gerente', 'atendente']);
 
-        // Busca o pedido atual
-        const orderData = await noco.findById(PEDIDOS_TABLE_ID, orderId) as any;
+        const orderData = await pg.findById(PEDIDOS_TABLE, orderId) as any;
 
         if (!orderData || Number(orderData.empresa_id) !== Number(user.empresaId)) {
             logger.securityAccessDenied(user.empresaId, `order:${orderId}`, 'UPDATE_ITEMS');
             throw new Error('Acesso negado: Pedido nao pertence a esta empresa');
         }
 
-        // Verifica se o pedido pode ser editado (apenas pendente ou preparando)
         const statusEditaveis = ['pendente', 'preparando', 'aguardando_pagamento'];
         if (!statusEditaveis.includes(orderData.status)) {
             throw new Error(`Pedido com status "${orderData.status}" nao pode ser editado`);
         }
 
-        // Prepara o payload de atualizacao
         const itensStr = JSON.stringify(newItems);
         const updatePayload: any = { 
             id: orderId, 
@@ -556,7 +554,6 @@ export async function updateOrderItems(
             valor_total: novoTotal
         };
 
-        // Adiciona observacao se fornecida
         if (observacao) {
             const nowStr = new Date().toLocaleString('pt-BR');
             updatePayload.observacoes = orderData.observacoes
@@ -564,10 +561,8 @@ export async function updateOrderItems(
                 : `✏️ EDITADO (${nowStr}): ${observacao}`;
         }
 
-        // Atualiza o pedido
-        const result = await noco.update(PEDIDOS_TABLE_ID, updatePayload);
+        const result = await pg.update(PEDIDOS_TABLE, updatePayload);
 
-        // Registra log de auditoria
         const valorAntigo = Number(orderData.valor_total || 0).toFixed(2);
         const valorNovo = novoTotal.toFixed(2);
         await logAction(
@@ -575,7 +570,6 @@ export async function updateOrderItems(
             `Pedido #${orderId} editado. Valor: R$ ${valorAntigo} -> R$ ${valorNovo}. Itens: ${newItems.length}`
         );
 
-        // Revalida as paginas
         revalidatePath('/dashboard/expedition');
 
         return { success: true, order: result };
@@ -586,8 +580,7 @@ export async function updateOrderItems(
 }
 
 /**
- * Adiciona um valor extra ao pedido (ex: açaí por peso, item avulso)
- * O valor é somado ao total e o item é adicionado à lista de itens
+ * Adiciona um valor extra ao pedido
  */
 export async function addExtraValueToOrder(
     orderId: number,
@@ -605,15 +598,13 @@ export async function addExtraValueToOrder(
             throw new Error('Valor deve ser maior que zero');
         }
 
-        // Busca o pedido atual
-        const orderData = await noco.findById(PEDIDOS_TABLE_ID, orderId) as any;
+        const orderData = await pg.findById(PEDIDOS_TABLE, orderId) as any;
 
         if (!orderData || Number(orderData.empresa_id) !== Number(user.empresaId)) {
             logger.securityAccessDenied(user.empresaId, `order:${orderId}`, 'ADD_EXTRA_VALUE');
             throw new Error('Acesso negado: Pedido não pertence a esta empresa');
         }
 
-        // Parse dos itens existentes
         let itensAtuais: any[] = [];
         try {
             itensAtuais = typeof orderData.itens === 'string' 
@@ -623,7 +614,6 @@ export async function addExtraValueToOrder(
             itensAtuais = [];
         }
 
-        // Adiciona o novo item extra
         const novoItem = {
             id: `extra_${Date.now()}`,
             produto: nome.trim(),
@@ -631,17 +621,15 @@ export async function addExtraValueToOrder(
             quantidade: 1,
             preco_unitario: valor,
             subtotal: valor,
-            isExtra: true, // Marca como item extra/avulso
+            isExtra: true,
         };
 
         itensAtuais.push(novoItem);
 
-        // Calcula o novo total
         const valorAtual = Number(orderData.valor_total) || 0;
         const novoTotal = valorAtual + valor;
 
-        // Atualiza o pedido
-        const result = await noco.update(PEDIDOS_TABLE_ID, {
+        const result = await pg.update(PEDIDOS_TABLE, {
             id: orderId,
             itens: JSON.stringify(itensAtuais),
             valor_total: novoTotal,

@@ -3,13 +3,13 @@
 import { revalidatePath } from 'next/cache';
 import { getMe } from '@/lib/session-server';
 import { sendWhatsAppMessage, sendWhatsAppMessageWithInstance } from './whatsapp';
-import { noco } from '@/lib/nocodb';
+import { pg } from '@/lib/postgres';
 import {
-  ENTREGADORES_TABLE_ID,
-  PEDIDOS_TABLE_ID,
-  COMISSOES_TABLE_ID,
-  HISTORICO_ENTREGAS_TABLE_ID,
-} from '@/lib/constants';
+  ENTREGADORES_TABLE,
+  PEDIDOS_TABLE,
+  COMISSOES_TABLE,
+  HISTORICO_ENTREGAS_TABLE,
+} from '@/lib/tables';
 
 export interface Driver {
     id?: number;
@@ -33,8 +33,8 @@ export async function getDrivers() {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        const data = await noco.list(ENTREGADORES_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})`,
+        const data = await pg.list(ENTREGADORES_TABLE, {
+            where: { empresa_id: user.empresaId },
             sort: '-id',
             limit: 1000,
         });
@@ -50,8 +50,8 @@ export async function getAvailableDrivers() {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        const data = await noco.list(ENTREGADORES_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})`,
+        const data = await pg.list(ENTREGADORES_TABLE, {
+            where: { empresa_id: user.empresaId },
             sort: '-id',
             limit: 1000,
         });
@@ -83,7 +83,7 @@ export async function createDriver(data: Omit<Driver, 'id' | 'empresa_id'>) {
             ativo: true,
         };
 
-        const result = await noco.create(ENTREGADORES_TABLE_ID, payload);
+        const result = await pg.create(ENTREGADORES_TABLE, payload);
 
         revalidatePath('/dashboard/settings');
         return result;
@@ -99,7 +99,7 @@ export async function updateDriver(id: number, data: Partial<Driver>) {
 
         const { id: _, empresa_id, ...updateData } = data as any;
 
-        const result = await noco.update(ENTREGADORES_TABLE_ID, { id, ...updateData });
+        const result = await pg.update(ENTREGADORES_TABLE, { id, ...updateData });
 
         revalidatePath('/dashboard/settings');
         return result;
@@ -111,7 +111,7 @@ export async function updateDriver(id: number, data: Partial<Driver>) {
 
 export async function deleteDriver(id: number) {
     try {
-        await noco.delete(ENTREGADORES_TABLE_ID, id);
+        await pg.delete(ENTREGADORES_TABLE, id);
 
         revalidatePath('/dashboard/settings');
         return { success: true };
@@ -137,7 +137,7 @@ export async function assignDriverToOrder(orderId: number, driverId: number | nu
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        await noco.update(PEDIDOS_TABLE_ID, {
+        await pg.update(PEDIDOS_TABLE, {
             id: orderId,
             entregador_id: driverId,
         });
@@ -165,7 +165,7 @@ export async function finishDelivery(orderId: number) {
 
         console.log(`[finishDelivery] Iniciando finalização do pedido ${orderId}`);
 
-        const order = await noco.findById(PEDIDOS_TABLE_ID, orderId) as any;
+        const order = await pg.findById(PEDIDOS_TABLE, orderId) as any;
 
         console.log(`[finishDelivery] Pedido encontrado:`, {
             id: order?.id,
@@ -175,7 +175,7 @@ export async function finishDelivery(orderId: number) {
         });
 
         if (order?.entregador_id) {
-            const driver = await noco.findById(ENTREGADORES_TABLE_ID, order.entregador_id) as any;
+            const driver = await pg.findById(ENTREGADORES_TABLE, order.entregador_id) as any;
 
             const comissao = Number(driver?.comissao_por_entrega) || 0;
             const taxaEntrega = Number(order.taxa_entrega) || 0;
@@ -199,10 +199,10 @@ export async function finishDelivery(orderId: number) {
             };
 
             try {
-                await noco.create(HISTORICO_ENTREGAS_TABLE_ID, historicoPayload);
-                console.log(`[finishDelivery] ✅ Histórico salvo com sucesso`);
+                await pg.create(HISTORICO_ENTREGAS_TABLE, historicoPayload);
+                console.log(`[finishDelivery] Histórico salvo com sucesso`);
             } catch (e) {
-                console.error(`[finishDelivery] ❌ Exceção ao salvar histórico:`, e);
+                console.error(`[finishDelivery] Exceção ao salvar histórico:`, e);
             }
 
             // Registrar comissão diária
@@ -219,25 +219,25 @@ export async function finishDelivery(orderId: number) {
             };
 
             try {
-                const existing = await noco.findOne(COMISSOES_TABLE_ID, {
-                    where: `(entregador_id,eq,${order.entregador_id})~and(data,eq,${today})`,
+                const existing = await pg.findOne(COMISSOES_TABLE, {
+                    where: { entregador_id: order.entregador_id, data: today },
                 }) as any;
 
                 if (existing) {
-                    await noco.update(COMISSOES_TABLE_ID, {
+                    await pg.update(COMISSOES_TABLE, {
                         id: existing.id,
                         total_entregas: (existing.total_entregas || 0) + 1,
                         valor_total_pedidos: (Number(existing.valor_total_pedidos) || 0) + (Number(order.valor_total) || 0),
                         taxa_entrega_total: (Number(existing.taxa_entrega_total) || 0) + taxaEntrega,
                         comissao_total: (Number(existing.comissao_total) || 0) + comissaoFinal,
                     });
-                    console.log(`[finishDelivery] ✅ Comissão atualizada`);
+                    console.log(`[finishDelivery] Comissão atualizada`);
                 } else {
-                    await noco.create(COMISSOES_TABLE_ID, comissaoPayload);
-                    console.log(`[finishDelivery] ✅ Comissão criada`);
+                    await pg.create(COMISSOES_TABLE, comissaoPayload);
+                    console.log(`[finishDelivery] Comissão criada`);
                 }
             } catch (e) {
-                console.error(`[finishDelivery] ❌ Erro ao registrar comissão:`, e);
+                console.error(`[finishDelivery] Erro ao registrar comissão:`, e);
             }
 
             await updateDriverStatus(order.entregador_id, 'disponivel');
@@ -247,22 +247,22 @@ export async function finishDelivery(orderId: number) {
                 entregas_total: (driver?.entregas_total || 0) + 1
             });
 
-            console.log(`[finishDelivery] ✅ Entregador atualizado`);
+            console.log(`[finishDelivery] Entregador atualizado`);
         } else {
-            console.log(`[finishDelivery] ⚠️ Pedido sem entregador atribuído`);
+            console.log(`[finishDelivery] Pedido sem entregador atribuído`);
         }
 
         return { success: true };
     } catch (error) {
-        console.error('[finishDelivery] ❌ Erro geral:', error);
+        console.error('[finishDelivery] Erro geral:', error);
         return { success: false };
     }
 }
 
 export async function getDriverDeliveryHistory(driverId: number, limit = 50) {
     try {
-        const data = await noco.list(HISTORICO_ENTREGAS_TABLE_ID, {
-            where: `(entregador_id,eq,${driverId})`,
+        const data = await pg.list(HISTORICO_ENTREGAS_TABLE, {
+            where: { entregador_id: driverId },
             sort: '-entregue_em',
             limit,
         });
@@ -280,8 +280,8 @@ export async function getAllDeliveries(limit = 200) {
 
         console.log('[getAllDeliveries] Buscando pedidos com entregador...');
 
-        const ordersData = await noco.list(PEDIDOS_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})`,
+        const ordersData = await pg.list(PEDIDOS_TABLE, {
+            where: { empresa_id: user.empresaId },
             sort: '-id',
             limit,
         });
@@ -293,8 +293,8 @@ export async function getAllDeliveries(limit = 200) {
 
         console.log(`[getAllDeliveries] Pedidos com entregador: ${orders.length}`);
 
-        const driversData = await noco.list(ENTREGADORES_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})`,
+        const driversData = await pg.list(ENTREGADORES_TABLE, {
+            where: { empresa_id: user.empresaId },
             limit: 1000,
         });
         const driversList: any[] = driversData.list || [];
@@ -331,16 +331,16 @@ export async function getAllDeliveries(limit = 200) {
 async function sendDriverNotification(driverId: number, orderId: number) {
     try {
         const user = await getMe();
-        const driver = await noco.findById(ENTREGADORES_TABLE_ID, driverId) as any;
+        const driver = await pg.findById(ENTREGADORES_TABLE, driverId) as any;
 
         if (!driver?.telefone) {
             console.log('[Driver Notification] Entregador sem telefone');
             return;
         }
 
-        const order = await noco.findById(PEDIDOS_TABLE_ID, orderId) as any;
+        const order = await pg.findById(PEDIDOS_TABLE, orderId) as any;
 
-        const mensagem = `🛵 *Nova entrega atribuída!*
+        const mensagem = `*Nova entrega atribuída!*
 
 Pedido #${orderId}
 Cliente: ${order?.cliente_nome || 'Cliente'}
@@ -349,7 +349,6 @@ Total: R$ ${Number(order?.valor_total || 0).toFixed(2)}
 
 Acesse o painel para mais detalhes.`;
 
-        // Usa a instancia da empresa para enviar
         if (user?.empresaId) {
             const result = await sendWhatsAppMessageWithInstance(driver.telefone, mensagem, user.empresaId);
             if (result.success) {
@@ -358,7 +357,6 @@ Acesse o painel para mais detalhes.`;
                 console.error(`[Driver Notification] Falha ao enviar para ${driver.nome}: ${result.error}`);
             }
         } else {
-            // Fallback
             const success = await sendWhatsAppMessage(driver.telefone, mensagem);
             if (success) {
                 console.log(`[Driver Notification] Notificacao enviada para ${driver.nome} (fallback)`);
@@ -374,11 +372,12 @@ export async function getDriverStats(driverId: number) {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        const data = await noco.list(PEDIDOS_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})~and(entregador_id,eq,${driverId})~and(status,eq,entrega)`,
-            limit: 1000,
-        });
-        const orders = data.list || [];
+        // Query para filtro complexo
+        const orders = await pg.raw(`
+            SELECT * FROM pedidos 
+            WHERE empresa_id = $1 AND entregador_id = $2 AND status = 'entrega'
+            LIMIT 1000
+        `, [user.empresaId, driverId]);
 
         const totalEntregas = orders.length;
         const valorTotal = orders.reduce((sum: number, o: any) => sum + Number(o.valor_total || 0), 0);
@@ -396,8 +395,8 @@ export async function resetDailyDeliveries() {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        const data = await noco.list(ENTREGADORES_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})`,
+        const data = await pg.list(ENTREGADORES_TABLE, {
+            where: { empresa_id: user.empresaId },
             limit: 1000,
         });
         const drivers = data.list || [];

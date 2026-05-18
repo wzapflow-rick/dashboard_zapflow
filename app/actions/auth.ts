@@ -6,8 +6,8 @@ import { revalidatePath } from 'next/cache';
 import { encrypt, decrypt } from '@/lib/session';
 import { logger } from '@/lib/logger';
 import { LoginSchema } from '@/lib/validations';
-import { noco } from '@/lib/nocodb';
-import { EMPRESAS_TABLE_ID, USUARIOS_TABLE_ID } from '@/lib/constants';
+import { pg } from '@/lib/postgres';
+import { EMPRESAS_TABLE, USUARIOS_TABLE } from '@/lib/tables';
 import { checkRateLimit, clearRateLimitAttempts } from '@/lib/rate-limit';
 
 export async function login(data: any) {
@@ -24,8 +24,8 @@ export async function login(data: any) {
         // Rate limiting distribuido usando PostgreSQL
         const rateLimitResult = await checkRateLimit(email.toLowerCase(), 'login', {
             maxAttempts: 5,
-            windowMs: 15 * 60 * 1000,      // 15 minutos
-            blockDurationMs: 30 * 60 * 1000, // 30 minutos de bloqueio
+            windowMs: 15 * 60 * 1000,
+            blockDurationMs: 30 * 60 * 1000,
         });
 
         if (!rateLimitResult.allowed) {
@@ -34,12 +34,13 @@ export async function login(data: any) {
             return { error: `Muitas tentativas de login. Tente novamente em ${remainingTime} minutos.` };
         }
 
-        // 1. Tentar login como empresa/admin
-        const empresa = await noco.findOne(EMPRESAS_TABLE_ID, {
-            where: `(email,eq,${email})~or(login,eq,${email})`,
-        }) as any;
+        // 1. Tentar login como empresa/admin - busca por email ou login
+        const empresas = await pg.raw(`
+            SELECT * FROM empresas WHERE email = $1 OR login = $1 LIMIT 1
+        `, [email]);
+        const empresa = empresas[0] as any;
 
-        const empresaSenha = empresa?.senha || empresa?.senha_hash || empresa?.password || empresa?.Senha || empresa?.senhaHash;
+        const empresaSenha = empresa?.senha || empresa?.senha_hash || empresa?.password;
 
         if (empresa && empresaSenha && (bcrypt.compareSync(password, empresaSenha) || password === empresa.password || password === empresa.senha)) {
             logger.securityLoginSuccess(email, empresa.id);
@@ -65,17 +66,16 @@ export async function login(data: any) {
                 sameSite: 'strict',
                 path: '/',
             });
-            // Limpar tentativas apos login bem-sucedido
             await clearRateLimitAttempts(email.toLowerCase(), 'login');
             return { success: true, role: 'admin' };
         }
 
         // 2. Tentar login como usuário interno (atendente, cozinheiro, etc.)
-        const usuario = await noco.findOne(USUARIOS_TABLE_ID, {
-            where: `(email,eq,${email})`,
+        const usuario = await pg.findOne(USUARIOS_TABLE, {
+            where: { email },
         }) as any;
 
-        const usuarioSenha = usuario?.senha_hash || usuario?.senha || usuario?.Senha_hash || usuario?.senhaHash || usuario?.password_hash;
+        const usuarioSenha = usuario?.senha_hash || usuario?.senha || usuario?.password_hash;
 
         if (usuario && usuarioSenha && bcrypt.compareSync(password, usuarioSenha)) {
             if (usuario.ativo === false || usuario.ativo === 0 || String(usuario.ativo).toLowerCase() === 'false') {
@@ -106,12 +106,10 @@ export async function login(data: any) {
                 sameSite: 'strict',
                 path: '/',
             });
-            // Limpar tentativas apos login bem-sucedido
             await clearRateLimitAttempts(email.toLowerCase(), 'login');
             return { success: true, role: usuario.role || 'atendente' };
         }
 
-        // Login falhou - o rate limit ja foi registrado em checkRateLimit
         logger.securityLoginFailure(email, 'INVALID_CREDENTIALS');
 
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -127,20 +125,19 @@ export async function register(formData: FormData) {
     const password = formData.get('password') as string;
     const nome = formData.get('nome') as string;
 
-    const existing = await noco.findOne(EMPRESAS_TABLE_ID, {
-        where: `(email,eq,${email})~or(login,eq,${email})`,
-    });
+    const existing = await pg.raw(`
+        SELECT * FROM empresas WHERE email = $1 OR login = $1 LIMIT 1
+    `, [email]);
 
-    if (existing) return { error: 'E-mail já cadastrado' };
+    if (existing.length > 0) return { error: 'E-mail já cadastrado' };
 
     const hashedPassword = bcrypt.hashSync(password, 10);
 
-    const empresa = await noco.create(EMPRESAS_TABLE_ID, {
+    const empresa = await pg.create(EMPRESAS_TABLE, {
         email,
         senha_hash: hashedPassword,
         login: email,
         senha: hashedPassword,
-        // password removido - nunca salvar senha em texto plano
         nome_admin: nome,
         nome_fantasia: nome,
         status: 'ativo',
@@ -195,7 +192,7 @@ export async function updateOnboarding(onboardingData: any) {
         updateBody.instancia_evolution = onboardingData.instancia_evolution;
     }
 
-    await noco.update(EMPRESAS_TABLE_ID, updateBody);
+    await pg.update(EMPRESAS_TABLE, updateBody);
 
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
     const newSession = await encrypt({

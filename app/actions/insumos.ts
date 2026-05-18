@@ -3,8 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import { getMe } from '@/lib/session-server';
 import { InsumoSchema } from '@/lib/validations';
-import { noco } from '@/lib/nocodb';
-import { INSUMOS_TABLE_ID, PRODUTO_INSUMOS_TABLE_ID } from '@/lib/constants';
+import { pg } from '@/lib/postgres';
+import { INSUMOS_TABLE, PRODUTO_INSUMOS_TABLE } from '@/lib/tables';
 
 export interface Insumo {
     id: number;
@@ -28,12 +28,12 @@ export async function getInsumos() {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        const data = await noco.list(INSUMOS_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})`,
+        const data = await pg.list(INSUMOS_TABLE, {
+            where: { empresa_id: user.empresaId },
             sort: '-id',
             limit: 1000,
         });
-        return (data.list || []).map((item: any) => ({ ...item, id: item.id || item.Id }));
+        return (data.list || []).map((item: any) => ({ ...item, id: item.id }));
     } catch (error) {
         console.error('API Error:', error);
         throw new Error('Failed to fetch insumos');
@@ -61,9 +61,10 @@ export async function upsertInsumo(insumoData: any) {
         let result;
         if (payload.id) {
             const { empresa_id, ...updatePayload } = payload;
-            result = await noco.update(INSUMOS_TABLE_ID, updatePayload);
+            result = await pg.update(INSUMOS_TABLE, updatePayload);
         } else {
-            result = await noco.create(INSUMOS_TABLE_ID, payload);
+            delete payload.id;
+            result = await pg.create(INSUMOS_TABLE, payload);
         }
 
         revalidatePath('/dashboard/insumos');
@@ -82,7 +83,7 @@ export async function deleteInsumo(id: number | string) {
             throw new Error('ID inválido');
         }
 
-        await noco.delete(INSUMOS_TABLE_ID, numericId);
+        await pg.delete(INSUMOS_TABLE, numericId);
         revalidatePath('/dashboard/insumos');
         revalidatePath('/dashboard/menu');
         return { success: true };
@@ -98,11 +99,11 @@ export async function deleteInsumo(id: number | string) {
 
 export async function getReceitaDoProduto(produtoId: number | string) {
     try {
-        const data = await noco.list(PRODUTO_INSUMOS_TABLE_ID, {
-            where: `(produto_id,eq,${produtoId})`,
+        const data = await pg.list(PRODUTO_INSUMOS_TABLE, {
+            where: { produto_id: produtoId },
             limit: 1000,
         });
-        return (data.list || []).map((item: any) => ({ ...item, id: item.id || item.Id }));
+        return (data.list || []).map((item: any) => ({ ...item, id: item.id }));
     } catch (error) {
         console.error('API Error:', error);
         return [];
@@ -111,8 +112,8 @@ export async function getReceitaDoProduto(produtoId: number | string) {
 
 export async function getTodasReceitas() {
     try {
-        const data = await noco.list(PRODUTO_INSUMOS_TABLE_ID, { limit: 1000 });
-        return (data.list || []).map((item: any) => ({ ...item, id: item.id || item.Id }));
+        const data = await pg.list(PRODUTO_INSUMOS_TABLE, { limit: 1000 });
+        return (data.list || []).map((item: any) => ({ ...item, id: item.id }));
     } catch (error) {
         console.error('API Error:', error);
         return [];
@@ -122,21 +123,21 @@ export async function getTodasReceitas() {
 export async function saveReceitaDoProduto(produtoId: number | string, insumosList: { insumo_id: number | string, quantidade_necessaria: number }[]) {
     try {
         // Deletar receita existente para recriar
-        const existingData = await noco.list(PRODUTO_INSUMOS_TABLE_ID, {
-            where: `(produto_id,eq,${produtoId})`,
+        const existingData = await pg.list(PRODUTO_INSUMOS_TABLE, {
+            where: { produto_id: produtoId },
             limit: 1000,
         });
 
         if (existingData.list && existingData.list.length > 0) {
             for (const r of existingData.list) {
-                await noco.delete(PRODUTO_INSUMOS_TABLE_ID, (r as any).id);
+                await pg.delete(PRODUTO_INSUMOS_TABLE, (r as any).id);
             }
         }
 
         // Inserir novos registros
         if (insumosList.length > 0) {
             for (const item of insumosList) {
-                await noco.create(PRODUTO_INSUMOS_TABLE_ID, {
+                await pg.create(PRODUTO_INSUMOS_TABLE, {
                     produto_id: produtoId,
                     produtos: produtoId,
                     insumo_id: item.insumo_id,
@@ -156,12 +157,12 @@ export async function saveReceitaDoProduto(produtoId: number | string, insumosLi
 
 export async function atualizarEstoqueInsumo(id: number, quantidade_alterada: number) {
     try {
-        const current = await noco.findById(INSUMOS_TABLE_ID, id) as any;
+        const current = await pg.findById(INSUMOS_TABLE, id) as any;
 
         const currentQty = Number(current?.quantidade_atual || 0);
         const newQty = currentQty + quantidade_alterada;
 
-        await noco.update(INSUMOS_TABLE_ID, {
+        await pg.update(INSUMOS_TABLE, {
             id,
             quantidade_atual: newQty
         });
@@ -186,7 +187,7 @@ export async function setNovoEstoqueInsumo(id: number, nova_quantidade: number) 
             throw new Error('Quantidade inválida');
         }
 
-        await noco.update(INSUMOS_TABLE_ID, {
+        await pg.update(INSUMOS_TABLE, {
             id: numericId,
             quantidade_atual: numericQty
         });

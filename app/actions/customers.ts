@@ -4,8 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { getMe } from '@/lib/session-server';
 import { CustomerUpsertSchema } from '@/lib/validations';
 import { logAction } from '@/lib/audit';
-import { noco } from '@/lib/nocodb';
-import { CLIENTES_TABLE_ID, PEDIDOS_TABLE_ID, LOYALTY_POINTS_TABLE_ID } from '@/lib/constants';
+import { pg } from '@/lib/postgres';
+import { CLIENTES_TABLE, PEDIDOS_TABLE, LOYALTY_POINTS_TABLE } from '@/lib/tables';
 
 const customerUpsertAttempts = new Map<string, { count: number; lastAttempt: number }>();
 const MAX_CUSTOMER_ATTEMPTS = 10;
@@ -17,17 +17,17 @@ export async function getCustomers() {
         if (!user?.empresaId) throw new Error('Não autorizado');
 
         const [clientsData, ordersData, pointsData] = await Promise.all([
-            noco.list(CLIENTES_TABLE_ID, {
-                where: `(empresa_id,eq,${user.empresaId})`,
+            pg.list(CLIENTES_TABLE, {
+                where: { empresa_id: user.empresaId },
                 sort: '-id',
                 limit: 1000,
             }),
-            noco.list(PEDIDOS_TABLE_ID, {
-                where: `(empresa_id,eq,${user.empresaId})`,
+            pg.list(PEDIDOS_TABLE, {
+                where: { empresa_id: user.empresaId },
                 limit: 1000,
             }),
-            noco.list(LOYALTY_POINTS_TABLE_ID, {
-                where: `(empresa_id,eq,${user.empresaId})`,
+            pg.list(LOYALTY_POINTS_TABLE, {
+                where: { empresa_id: user.empresaId },
                 limit: 1000,
             }),
         ]);
@@ -56,7 +56,7 @@ export async function getCustomers() {
             const pontos = pointsByPhone[phone] || 0;
 
             return JSON.parse(JSON.stringify({
-                id: client.id || client.Id,
+                id: client.id,
                 nome: client.nome || 'Sem Nome',
                 telefone: phone || 'N/A',
                 bairro_entrega: client.bairro_entrega || '',
@@ -79,8 +79,8 @@ export async function getCustomerHistory(phone: string) {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        const data = await noco.list(PEDIDOS_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})~and(telefone_cliente,eq,${phone})`,
+        const data = await pg.list(PEDIDOS_TABLE, {
+            where: { empresa_id: user.empresaId, telefone_cliente: phone },
             sort: '-id',
             limit: 100,
         });
@@ -117,12 +117,12 @@ export async function upsertCustomer(customerData: any) {
             }
         }
 
-        const existingCustomer = await noco.findOne(CLIENTES_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})~and(telefone,eq,${telefone})`,
+        const existingCustomer = await pg.findOne(CLIENTES_TABLE, {
+            where: { empresa_id: user.empresaId, telefone },
         }) as any;
 
         if (existingCustomer) {
-            await noco.update(CLIENTES_TABLE_ID, {
+            await pg.update(CLIENTES_TABLE, {
                 id: existingCustomer.id,
                 nome: nome || existingCustomer.nome,
                 bairro_entrega: bairro_entrega || existingCustomer.bairro_entrega,
@@ -130,7 +130,7 @@ export async function upsertCustomer(customerData: any) {
             });
             await logAction('UPDATE_CUSTOMER', `Cliente atualizado: ${telefone}`);
         } else {
-            await noco.create(CLIENTES_TABLE_ID, {
+            await pg.create(CLIENTES_TABLE, {
                 empresa_id: user.empresaId,
                 nome: nome || 'Cliente sem nome',
                 telefone,

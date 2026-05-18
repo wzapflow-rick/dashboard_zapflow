@@ -4,8 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { getMe } from '@/lib/session-server';
 import { getInsumos } from './insumos';
 import { getReceitaDoItemBase } from './itens-base';
-import { noco } from '@/lib/nocodb';
-import { GRUPOS_SLOTS_TABLE_ID, ITENS_BASE_TABLE_ID, PRODUTOS_TABLE_ID } from '@/lib/constants';
+import { pg } from '@/lib/postgres';
+import { GRUPOS_SLOTS_TABLE, ITENS_BASE_TABLE, PRODUTOS_TABLE } from '@/lib/tables';
 
 export type TipoGrupo = 'fracionado' | 'adicional';
 export type RegraPreco = 'mais_caro' | 'media' | 'soma';
@@ -72,8 +72,8 @@ export async function getGruposSlots(): Promise<GrupoSlot[]> {
         const user = await getMe();
         if (!user?.empresaId) return [];
 
-        const data = await noco.list(GRUPOS_SLOTS_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})`,
+        const data = await pg.list(GRUPOS_SLOTS_TABLE, {
+            where: { empresa_id: user.empresaId },
             limit: 1000,
         });
 
@@ -120,9 +120,9 @@ export async function upsertGrupoSlot(grupoData: Partial<GrupoSlot>) {
 
         let data;
         if (grupoData.id) {
-            data = await noco.update(GRUPOS_SLOTS_TABLE_ID, { id: grupoData.id, ...payload });
+            data = await pg.update(GRUPOS_SLOTS_TABLE, { id: grupoData.id, ...payload });
         } else {
-            data = await noco.create(GRUPOS_SLOTS_TABLE_ID, payload);
+            data = await pg.create(GRUPOS_SLOTS_TABLE, payload);
         }
 
         revalidatePath('/dashboard/menu');
@@ -135,7 +135,7 @@ export async function upsertGrupoSlot(grupoData: Partial<GrupoSlot>) {
 
 export async function deleteGrupoSlot(id: number) {
     try {
-        await noco.delete(GRUPOS_SLOTS_TABLE_ID, id);
+        await pg.delete(GRUPOS_SLOTS_TABLE, id);
         revalidatePath('/dashboard/menu');
         return { success: true };
     } catch (e: any) {
@@ -147,8 +147,8 @@ export async function deleteGrupoSlot(id: number) {
 
 export async function getItensDoGrupoSlot(grupoId: number): Promise<number[]> {
     try {
-        const grupo = await noco.findOne(GRUPOS_SLOTS_TABLE_ID, {
-            where: `(id,eq,${grupoId})`,
+        const grupo = await pg.findOne(GRUPOS_SLOTS_TABLE, {
+            where: { id: grupoId },
         }) as any;
 
         console.log('[DEBUG getItensDoGrupoSlot] Response:', JSON.stringify(grupo));
@@ -163,8 +163,8 @@ export async function getItensDoGrupoSlot(grupoId: number): Promise<number[]> {
 
 export async function addItemBaseAoGrupo(grupoId: number, itemId: number) {
     try {
-        const grupo = await noco.findOne(GRUPOS_SLOTS_TABLE_ID, {
-            where: `(id,eq,${grupoId})`,
+        const grupo = await pg.findOne(GRUPOS_SLOTS_TABLE, {
+            where: { id: grupoId },
         }) as any;
 
         if (!grupo) throw new Error('Grupo não encontrado');
@@ -180,10 +180,10 @@ export async function addItemBaseAoGrupo(grupoId: number, itemId: number) {
         const novosItens = [...itensAtuais, itemId];
         console.log('[DEBUG addItemBaseAoGrupo] Salvando itens:', JSON.stringify(novosItens));
 
-        await noco.update(GRUPOS_SLOTS_TABLE_ID, { id: grupoId, itens: JSON.stringify(novosItens) });
+        await pg.update(GRUPOS_SLOTS_TABLE, { id: grupoId, itens: JSON.stringify(novosItens) });
 
         // Verificar se salvou
-        const grupoAtualizado = await noco.findOne(GRUPOS_SLOTS_TABLE_ID, { where: `(id,eq,${grupoId})` });
+        const grupoAtualizado = await pg.findOne(GRUPOS_SLOTS_TABLE, { where: { id: grupoId } });
         console.log('[DEBUG addItemBaseAoGrupo] Depois de salvar:', JSON.stringify(grupoAtualizado));
 
         revalidatePath('/dashboard/menu');
@@ -195,8 +195,8 @@ export async function addItemBaseAoGrupo(grupoId: number, itemId: number) {
 
 export async function removeItemBaseDoGrupo(grupoId: number, itemId: number) {
     try {
-        const grupo = await noco.findOne(GRUPOS_SLOTS_TABLE_ID, {
-            where: `(id,eq,${grupoId})`,
+        const grupo = await pg.findOne(GRUPOS_SLOTS_TABLE, {
+            where: { id: grupoId },
         }) as any;
 
         if (!grupo) return { success: true };
@@ -204,7 +204,7 @@ export async function removeItemBaseDoGrupo(grupoId: number, itemId: number) {
         const itensAtuais = parseJsonArray(grupo.itens);
         const novosItens = itensAtuais.filter(id => id !== itemId);
 
-        await noco.update(GRUPOS_SLOTS_TABLE_ID, { id: grupoId, itens: JSON.stringify(novosItens) });
+        await pg.update(GRUPOS_SLOTS_TABLE, { id: grupoId, itens: JSON.stringify(novosItens) });
 
         revalidatePath('/dashboard/menu');
         return { success: true };
@@ -217,8 +217,8 @@ export async function removeItemBaseDoGrupo(grupoId: number, itemId: number) {
 
 export async function getGruposDoProduto(produtoId: number): Promise<number[]> {
     try {
-        const produto = await noco.findOne(PRODUTOS_TABLE_ID, {
-            where: `(id,eq,${produtoId})`,
+        const produto = await pg.findOne(PRODUTOS_TABLE, {
+            where: { id: produtoId },
         }) as any;
         return produto ? parseJsonArray(produto.grupos) : [];
     } catch (e) {
@@ -229,7 +229,7 @@ export async function getGruposDoProduto(produtoId: number): Promise<number[]> {
 
 export async function updateGruposDoProduto(produtoId: number, grupoIds: number[]) {
     try {
-        await noco.update(PRODUTOS_TABLE_ID, {
+        await pg.update(PRODUTOS_TABLE, {
             id: produtoId,
             grupos: JSON.stringify(grupoIds)
         });
@@ -250,8 +250,8 @@ export async function getCompositeProducts(): Promise<CompositeProduct[]> {
         if (!user?.empresaId) return [];
 
         const [gruposData, itensData] = await Promise.all([
-            noco.list(GRUPOS_SLOTS_TABLE_ID, { where: `(empresa_id,eq,${user.empresaId})`, limit: 1000 }),
-            noco.list(ITENS_BASE_TABLE_ID, { where: `(empresa_id,eq,${user.empresaId})`, limit: 2000 }),
+            pg.list(GRUPOS_SLOTS_TABLE, { where: { empresa_id: user.empresaId }, limit: 1000 }),
+            pg.list(ITENS_BASE_TABLE, { where: { empresa_id: user.empresaId }, limit: 2000 }),
         ]);
 
         const grupos = (gruposData.list || []).filter((g: any) => g.tipo === 'fracionado');
@@ -314,8 +314,8 @@ export async function getCompositeProductsStock(): Promise<{ grupoId: number; es
         if (!user?.empresaId) return [];
 
         const [gruposData, itensData] = await Promise.all([
-            noco.list(GRUPOS_SLOTS_TABLE_ID, { where: `(empresa_id,eq,${user.empresaId})`, limit: 1000 }),
-            noco.list(ITENS_BASE_TABLE_ID, { where: `(empresa_id,eq,${user.empresaId})`, limit: 2000 }),
+            pg.list(GRUPOS_SLOTS_TABLE, { where: { empresa_id: user.empresaId }, limit: 1000 }),
+            pg.list(ITENS_BASE_TABLE, { where: { empresa_id: user.empresaId }, limit: 2000 }),
         ]);
 
         const grupos = (gruposData.list || []).filter((g: any) => g.tipo === 'fracionado');
@@ -337,7 +337,7 @@ export async function getCompositeProductsStock(): Promise<{ grupoId: number; es
         for (const grupo of grupos) {
             const itens = parseJsonArray(grupo.itens);
             if (itens.length === 0) {
-            results.push({ grupoId: Number(grupo.id), estoquePossivel: 0 });                
+                results.push({ grupoId: Number(grupo.id), estoquePossivel: 0 });
                 continue;
             }
 

@@ -4,8 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { getMe } from '@/lib/session-server';
 import { LoyaltyConfigSchema, LoyaltyRedeemSchema, User } from '@/lib/validations';
 import { logAction } from '@/lib/audit';
-import { noco } from '@/lib/nocodb';
-import { LOYALTY_CONFIG_TABLE_ID, LOYALTY_POINTS_TABLE_ID } from '@/lib/constants';
+import { pg } from '@/lib/postgres';
+import { LOYALTY_CONFIG_TABLE, LOYALTY_POINTS_TABLE } from '@/lib/tables';
 
 export interface LoyaltyConfig {
     id?: number | string;
@@ -35,8 +35,8 @@ export async function getClientPoints(telefone: string): Promise<ClientPoints | 
         const user = await getMe();
         if (!user?.empresaId) return null;
 
-        const result = await noco.findOne(LOYALTY_POINTS_TABLE_ID, {
-            where: `(cliente_telefone,eq,${telefone})~and(empresa_id,eq,${user.empresaId})`,
+        const result = await pg.findOne(LOYALTY_POINTS_TABLE, {
+            where: { cliente_telefone: telefone, empresa_id: user.empresaId },
         });
 
         if (result) {
@@ -60,8 +60,8 @@ export async function getLoyaltyConfig(empresaId?: number): Promise<LoyaltyConfi
         }
         if (!targetEmpresaId) return null;
 
-        const result = await noco.findOne(LOYALTY_CONFIG_TABLE_ID, {
-            where: `(empresa_id,eq,${targetEmpresaId})`,
+        const result = await pg.findOne(LOYALTY_CONFIG_TABLE, {
+            where: { empresa_id: targetEmpresaId },
         });
 
         if (result) return result as unknown as LoyaltyConfig;
@@ -91,16 +91,16 @@ export async function saveLoyaltyConfig(configData: Partial<LoyaltyConfig>) {
             return { error: 'Dados inválidos', details: validated.error.format() };
         }
 
-        const existing = await noco.findOne(LOYALTY_CONFIG_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})`,
+        const existing = await pg.findOne(LOYALTY_CONFIG_TABLE, {
+            where: { empresa_id: user.empresaId },
         }) as any;
 
         const payload = { ...validated.data, empresa_id: user.empresaId };
 
         if (existing) {
-            await noco.update(LOYALTY_CONFIG_TABLE_ID, { id: existing.id, ...payload });
+            await pg.update(LOYALTY_CONFIG_TABLE, { id: existing.id, ...payload });
         } else {
-            await noco.create(LOYALTY_CONFIG_TABLE_ID, payload);
+            await pg.create(LOYALTY_CONFIG_TABLE, payload);
         }
 
         await logAction('LOYALTY_CONFIG_UPDATE', `Configuração de fidelidade atualizada para empresa ${user.empresaId}`);
@@ -121,7 +121,6 @@ export async function addPointsToClient(telefone: string, valorPedido: number, n
 
         const config = await getLoyaltyConfig(user.empresaId);
         if (!config || !config.ativo) {
-            // Fidelidade inativa - retorna sucesso silencioso para nao quebrar o fluxo
             return { success: true, pontos: 0, skipped: true };
         }
 
@@ -129,28 +128,27 @@ export async function addPointsToClient(telefone: string, valorPedido: number, n
         if (pontosGanhos <= 0) return { success: true, pontos: 0 };
 
         try {
-            const existing = await noco.findOne(LOYALTY_POINTS_TABLE_ID, {
-                where: `(cliente_telefone,eq,${telefone})~and(empresa_id,eq,${user.empresaId})`,
+            const existing = await pg.findOne(LOYALTY_POINTS_TABLE, {
+                where: { cliente_telefone: telefone, empresa_id: user.empresaId },
             }) as any;
 
             if (existing) {
-                await noco.update(LOYALTY_POINTS_TABLE_ID, {
+                await pg.update(LOYALTY_POINTS_TABLE, {
                     id: existing.id,
                     pontos_acumulados: (existing.pontos_acumulados || 0) + pontosGanhos,
                 });
             } else {
-                await noco.create(LOYALTY_POINTS_TABLE_ID, {
+                await pg.create(LOYALTY_POINTS_TABLE, {
                     cliente_telefone: telefone,
                     pontos_acumulados: pontosGanhos,
                     empresa_id: user.empresaId
                 });
             }
         } catch (dbError: any) {
-            // Se a tabela ou coluna nao existe, ignora silenciosamente
             if (dbError.message?.includes('column does not exist') || 
                 dbError.message?.includes('table') ||
-                dbError.status === 400 || 
-                dbError.status === 404) {
+                dbError.code === '42703' || 
+                dbError.code === '42P01') {
                 console.warn('[Loyalty] Tabela ou coluna nao existe, ignorando:', dbError.message);
                 return { success: true, pontos: 0, skipped: true };
             }
@@ -175,15 +173,15 @@ export async function redeemPoints(data: { cliente_telefone: string, pontos_resg
 
         const { cliente_telefone, pontos_resgatar } = validated.data;
 
-        const existing = await noco.findOne(LOYALTY_POINTS_TABLE_ID, {
-            where: `(cliente_telefone,eq,${cliente_telefone})~and(empresa_id,eq,${user.empresaId})`,
+        const existing = await pg.findOne(LOYALTY_POINTS_TABLE, {
+            where: { cliente_telefone, empresa_id: user.empresaId },
         }) as any;
 
         if (!existing || (existing.pontos_acumulados || 0) < pontos_resgatar) {
             return { error: 'Pontos insuficientes' };
         }
 
-        await noco.update(LOYALTY_POINTS_TABLE_ID, {
+        await pg.update(LOYALTY_POINTS_TABLE, {
             id: existing.id,
             pontos_acumulados: existing.pontos_acumulados - pontos_resgatar
         });
@@ -205,8 +203,8 @@ export async function getLoyaltyStats() {
 
         const config = await getLoyaltyConfig(user.empresaId);
 
-        const pointsData = await noco.list(LOYALTY_POINTS_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})`,
+        const pointsData = await pg.list(LOYALTY_POINTS_TABLE, {
+            where: { empresa_id: user.empresaId },
             sort: '-pontos_acumulados',
             limit: 100,
         });
@@ -240,8 +238,8 @@ export async function getAllClientsPoints(): Promise<ClientPoints[]> {
         const user = await getMe();
         if (!user?.empresaId) return [];
 
-        const data = await noco.list(LOYALTY_POINTS_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})`,
+        const data = await pg.list(LOYALTY_POINTS_TABLE, {
+            where: { empresa_id: user.empresaId },
             sort: '-pontos_acumulados',
             limit: 1000,
         });
@@ -278,8 +276,8 @@ export async function deductPointsForOrder(telefone: string, pontos: number) {
         const user = await getMe();
         if (!user?.empresaId) return { error: 'Não autorizado' };
 
-        const existing = await noco.findOne(LOYALTY_POINTS_TABLE_ID, {
-            where: `(cliente_telefone,eq,${telefone})~and(empresa_id,eq,${user.empresaId})`,
+        const existing = await pg.findOne(LOYALTY_POINTS_TABLE, {
+            where: { cliente_telefone: telefone, empresa_id: user.empresaId },
         }) as any;
 
         if (!existing) return { error: 'Cliente não encontrado' };
@@ -287,7 +285,7 @@ export async function deductPointsForOrder(telefone: string, pontos: number) {
         const currentPoints = existing.pontos_acumulados || 0;
         const newPoints = Math.max(0, currentPoints - pontos);
 
-        await noco.update(LOYALTY_POINTS_TABLE_ID, {
+        await pg.update(LOYALTY_POINTS_TABLE, {
             id: existing.id,
             pontos_acumulados: newPoints
         });

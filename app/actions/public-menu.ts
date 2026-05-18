@@ -1,15 +1,15 @@
-import { noco } from '@/lib/nocodb';
+import { pg } from '@/lib/postgres';
 import { 
-    PRODUTOS_TABLE_ID, 
-    CATEGORIAS_TABLE_ID, 
-    GRUPOS_COMPLEMENTOS_TABLE_ID, 
-    COMPLEMENTOS_TABLE_ID, 
-    EMPRESAS_TABLE_ID, 
-    CONFIGURACOES_LOJA_TABLE_ID, 
-    LOYALTY_CONFIG_TABLE_ID,
-    PRODUTOS_METADADOS_TABLE_ID,
-    isPaidPlan
-} from '@/lib/constants';
+    PRODUTOS_TABLE, 
+    CATEGORIAS_TABLE, 
+    GRUPOS_COMPLEMENTOS_TABLE, 
+    COMPLEMENTOS_TABLE, 
+    EMPRESAS_TABLE, 
+    CONFIGURACOES_LOJA_TABLE, 
+    LOYALTY_CONFIG_TABLE,
+    PRODUTOS_METADADOS_TABLE,
+} from '@/lib/tables';
+import { isPaidPlan } from '@/lib/constants';
 import { getAssinaturaByEmpresaId } from '@/lib/assinaturas';
 
 export async function getPublicMenu(slug: string) {
@@ -21,8 +21,8 @@ export async function getPublicMenu(slug: string) {
 
         // TENTATIVA 1: Busca simples por nome_fantasia
         console.log(`[MENU_DEBUG] Tentando buscar por nome_fantasia: ${possibleName}`);
-        const empresasByFantasia = await noco.list(EMPRESAS_TABLE_ID, {
-            where: `(nome_fantasia,like,%${possibleName}%)`,
+        const empresasByFantasia = await pg.list(EMPRESAS_TABLE, {
+            where: `(nome_fantasia,ilike,%${possibleName}%)`,
             limit: 1
         });
         
@@ -34,12 +34,12 @@ export async function getPublicMenu(slug: string) {
         // TENTATIVA 2: Fallback para ID fixo 4 (VR Pizza Show)
         if (!empresa && (slug === 'vr-pizza-show' || slug === 'vr-pizza')) {
             console.log(`[MENU_DEBUG] Fallback ID 4 ativado`);
-            empresa = await noco.findById(EMPRESAS_TABLE_ID, 4);
+            empresa = await pg.findById(EMPRESAS_TABLE, 4);
         }
 
         // TENTATIVA 3: Fallback final - pegar a primeira se for a única
         if (!empresa) {
-            const todas = await noco.list(EMPRESAS_TABLE_ID, { limit: 2 });
+            const todas = await pg.list(EMPRESAS_TABLE, { limit: 2 });
             if (todas.list.length === 1) {
                 empresa = todas.list[0];
                 console.log(`[MENU_DEBUG] Fallback única empresa: ${empresa.nome_fantasia}`);
@@ -83,8 +83,8 @@ export async function getPublicMenu(slug: string) {
             } else {
                 console.log(`[MENU_DEBUG] Nenhuma assinatura ativa encontrada para empresa ${empresaId}`);
             }
-        } catch (nocoError) {
-            console.error(`[MENU_DEBUG] Erro ao verificar assinatura no NocoDB:`, nocoError);
+        } catch (pgError) {
+            console.error(`[MENU_DEBUG] Erro ao verificar assinatura no PostgreSQL:`, pgError);
             // Fallback: verificar campo plano da empresa
             const planoEmpresa = empresa.planos || empresa.plano || 'iniciante';
             if (isPaidPlan(planoEmpresa)) {
@@ -108,24 +108,22 @@ export async function getPublicMenu(slug: string) {
 
         // 2. BUSCA DE DADOS EM PARALELO
         const [configData, categorias, todosProdutos, todosGrupos, todosItens, loyaltyConfig, produtosMetadados] = await Promise.all([
-            noco.list(CONFIGURACOES_LOJA_TABLE_ID, { 
-                where: `(Empresa ID,eq,${empresaId})` 
+            pg.list(CONFIGURACOES_LOJA_TABLE, { 
+                where: { empresa_id: empresaId } 
             }).catch(() => ({ list: [] })),
-            noco.listAll(CATEGORIAS_TABLE_ID, { where: `(empresa_id,eq,${empresaId})` }).catch(() => []),
-            noco.listAll(PRODUTOS_TABLE_ID, { where: `(empresa_id,eq,${empresaId})` }).catch(() => []),
-            noco.listAll(GRUPOS_COMPLEMENTOS_TABLE_ID, { where: `(empresa_id,eq,${empresaId})` }).catch(() => []),
-            noco.listAll(COMPLEMENTOS_TABLE_ID, { where: `(empresa_id,eq,${empresaId})` }).catch(() => []),
-            noco.findOne(LOYALTY_CONFIG_TABLE_ID, { where: `(empresa_id,eq,${empresaId})` }).catch(() => null),
-            noco.listAll(PRODUTOS_METADADOS_TABLE_ID).catch(() => []),
+            pg.listAll(CATEGORIAS_TABLE, { where: { empresa_id: empresaId } }).catch(() => []),
+            pg.listAll(PRODUTOS_TABLE, { where: { empresa_id: empresaId } }).catch(() => []),
+            pg.listAll(GRUPOS_COMPLEMENTOS_TABLE, { where: { empresa_id: empresaId } }).catch(() => []),
+            pg.listAll(COMPLEMENTOS_TABLE, { where: { empresa_id: empresaId } }).catch(() => []),
+            pg.findOne(LOYALTY_CONFIG_TABLE, { where: { empresa_id: empresaId } }).catch(() => null),
+            pg.listAll(PRODUTOS_METADADOS_TABLE).catch(() => []),
         ]);
 
         const config = configData.list && configData.list.length > 0 ? configData.list[0] : null;
 
         if (config) {
-            if (config.Logo) empresa.logo = config.Logo;
+            if (config.logo) empresa.logo = config.logo;
             if (config.banner) empresa.banner = config.banner;
-            if (!empresa.logo && config.logo) empresa.logo = config.logo;
-            if (!empresa.banner && config.Banner) empresa.banner = config.Banner;
         }
 
         // 3. ORGANIZAÇÃO DOS PRODUTOS (ordenar categorias pela ordem)
@@ -133,10 +131,10 @@ export async function getPublicMenu(slug: string) {
         
         const grouped = categoriasOrdenadas.map((cat: any) => {
             const productsInCategory = (todosProdutos || []).filter((p: any) => 
-                (p.categoria_id === cat.id || p.categorias === cat.id) && p.tipo !== 'composto'
+                (p.categoria_id === cat.id) && p.tipo !== 'composto'
             );
             const compositeInCategory = (todosProdutos || []).filter((p: any) => 
-                (p.categoria_id === cat.id || p.categorias === cat.id) && p.tipo === 'composto'
+                (p.categoria_id === cat.id) && p.tipo === 'composto'
             );
 
             return {
@@ -167,16 +165,15 @@ export async function getPublicMenu(slug: string) {
                         }
                     });
 
-                    // Tentar encontrar por 'Produto ID' ou 'produto_id'
                     const metadata = (produtosMetadados || []).find((m: any) => 
-                        Number(m['Produto ID'] || m.produto_id || m.Produto_ID) === Number(p.id)
+                        Number(m.produto_id) === Number(p.id)
                     );
                     
                     let recomendacoes = null;
                     let tamanhos = null;
 
-                    const rawRecom = metadata?.Recomendacoes || metadata?.recomendacoes || metadata?.Recomendações;
-                    const rawTamanhos = metadata?.Tamanhos || metadata?.tamanhos;
+                    const rawRecom = metadata?.recomendacoes;
+                    const rawTamanhos = metadata?.tamanhos;
 
                     try {
                         if (rawRecom && typeof rawRecom === 'string') {
@@ -212,14 +209,14 @@ export async function getPublicMenu(slug: string) {
                 }),
                 compositeProducts: compositeInCategory.map((p: any) => {
                     const metadata = (produtosMetadados || []).find((m: any) => 
-                        Number(m['Produto ID'] || m.produto_id || m.Produto_ID) === Number(p.id)
+                        Number(m.produto_id) === Number(p.id)
                     );
                     
                     let recomendacoes = null;
                     let tamanhos = null;
 
-                    const rawRecom = metadata?.Recomendacoes || metadata?.recomendacoes || metadata?.Recomendações;
-                    const rawTamanhos = metadata?.Tamanhos || metadata?.tamanhos;
+                    const rawRecom = metadata?.recomendacoes;
+                    const rawTamanhos = metadata?.tamanhos;
 
                     try {
                         if (rawRecom && typeof rawRecom === 'string') {

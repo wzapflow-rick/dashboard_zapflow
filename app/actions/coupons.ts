@@ -4,8 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { getMe, requireAdmin } from '@/lib/session-server';
 import { CouponSchema } from '@/lib/validations';
 import { logAction } from '@/lib/audit';
-import { noco } from '@/lib/nocodb';
-import { CUPONS_TABLE_ID } from '@/lib/constants';
+import { pg } from '@/lib/postgres';
+import { CUPONS_TABLE } from '@/lib/tables';
 
 export interface Coupon {
     id: number | string;
@@ -26,12 +26,12 @@ export async function getCoupons(): Promise<Coupon[]> {
         const user = await getMe();
         if (!user?.empresaId) return [];
 
-        const data = await noco.list(CUPONS_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})`,
+        const data = await pg.list(CUPONS_TABLE, {
+            where: { empresa_id: user.empresaId },
             sort: '-id',
             limit: 1000,
         });
-        return (data.list || []).map((c: any) => ({ ...c, id: c.id || c.Id }));
+        return (data.list || []).map((c: any) => ({ ...c, id: c.id }));
     } catch (error) {
         console.error('getCoupons error:', error);
         return [];
@@ -48,8 +48,8 @@ export async function upsertCoupon(couponData: any) {
             throw new Error(`Dados inválidos: ${errorMsg}`);
         }
 
-        const existingCoupon = await noco.findOne(CUPONS_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})~and(codigo,eq,${validated.data.codigo})`,
+        const existingCoupon = await pg.findOne(CUPONS_TABLE, {
+            where: { empresa_id: user.empresaId, codigo: validated.data.codigo },
         }) as any;
 
         if (existingCoupon && existingCoupon.id !== couponData.id) {
@@ -64,11 +64,11 @@ export async function upsertCoupon(couponData: any) {
         let result;
         if (couponData.id || existingCoupon?.id) {
             const id = couponData.id || existingCoupon.id;
-            result = await noco.update(CUPONS_TABLE_ID, { ...payload, id });
+            result = await pg.update(CUPONS_TABLE, { ...payload, id });
             await logAction('UPDATE_CUPOM', `Cupom atualizado: ${validated.data.codigo}`);
         } else {
             payload.usos_atuais = 0;
-            result = await noco.create(CUPONS_TABLE_ID, payload);
+            result = await pg.create(CUPONS_TABLE, payload);
             await logAction('CREATE_CUPOM', `Novo cupom criado: ${validated.data.codigo}`);
         }
 
@@ -84,7 +84,7 @@ export async function deleteCoupon(id: number | string) {
     try {
         await requireAdmin();
 
-        await noco.delete(CUPONS_TABLE_ID, id);
+        await pg.delete(CUPONS_TABLE, id);
 
         await logAction('DELETE_CUPOM', `Cupom ID ${id} deletado`);
         revalidatePath('/dashboard/settings');
@@ -100,9 +100,15 @@ export async function validateCoupon(codigo: string, valorPedido: number) {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        const cupom = await noco.findOne(CUPONS_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})~and(codigo,eq,${codigo.toUpperCase()})~and(ativo,eq,true)`,
-        }) as any;
+        // Busca cupom ativo com o código
+        const allCoupons = await pg.list(CUPONS_TABLE, {
+            where: { empresa_id: user.empresaId, ativo: true },
+            limit: 1000,
+        });
+        
+        const cupom = (allCoupons.list || []).find((c: any) => 
+            c.codigo?.toUpperCase() === codigo.toUpperCase()
+        ) as any;
 
         if (!cupom) {
             return { valid: false, error: 'Cupom não encontrado' };
@@ -141,7 +147,6 @@ export async function validateCoupon(codigo: string, valorPedido: number) {
 
         if (!dataFimValida) return { valid: false, error: 'Cupom expirado' };
         if (!dataInicioValida) {
-            // Formata a data de início para feedback melhor ao usuário
             if (cupom.data_inicio) {
                 const parts = cupom.data_inicio.split('T')[0].split('-');
                 if (parts.length === 3) {
@@ -188,12 +193,12 @@ export async function validateCoupon(codigo: string, valorPedido: number) {
 
 export async function incrementCouponUsage(couponId: number | string) {
     try {
-        const cupom = await noco.findById(CUPONS_TABLE_ID, couponId) as any;
+        const cupom = await pg.findById(CUPONS_TABLE, couponId) as any;
         const novosUsos = (cupom?.usos_atuais || 0) + 1;
 
         const shouldDeactivate = cupom?.limite_uso && novosUsos >= cupom.limite_uso;
 
-        await noco.update(CUPONS_TABLE_ID, {
+        await pg.update(CUPONS_TABLE, {
             id: couponId,
             usos_atuais: novosUsos,
             ativo: shouldDeactivate ? false : cupom?.ativo

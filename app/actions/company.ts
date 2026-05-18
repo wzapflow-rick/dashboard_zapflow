@@ -5,8 +5,8 @@ import { cookies } from 'next/headers';
 import { encrypt, decrypt } from '@/lib/session';
 import { getMe, requireAdmin } from '@/lib/session-server';
 import { CompanyUpdateSchema } from '@/lib/validations';
-import { noco } from '@/lib/nocodb';
-import { EMPRESAS_TABLE_ID, CONFIGURACOES_LOJA_TABLE_ID } from '@/lib/constants';
+import { pg } from '@/lib/postgres';
+import { EMPRESAS_TABLE, CONFIGURACOES_LOJA_TABLE } from '@/lib/tables';
 
 /**
  * Busca detalhes da empresa, incluindo a logo da tabela de configurações extras.
@@ -17,17 +17,15 @@ export async function getCompanyDetails() {
         if (!user?.empresaId) throw new Error('Não autorizado');
 
         const [company, extraConfig] = await Promise.all([
-            noco.findById(EMPRESAS_TABLE_ID, user.empresaId) as Promise<any>,
-            noco.findOne(CONFIGURACOES_LOJA_TABLE_ID, {
-                where: `(Empresa ID,eq,${user.empresaId})`
+            pg.findById(EMPRESAS_TABLE, user.empresaId) as Promise<any>,
+            pg.findOne(CONFIGURACOES_LOJA_TABLE, {
+                where: { empresa_id: user.empresaId }
             }) as Promise<any>
         ]);
 
         if (company) {
-            // Mapeia 'Logo' e 'Banner' da tabela extra para as propriedades usadas no front-end
-            // Suporta variações de case: Banner, banner, BANNER
-            company.logo = extraConfig?.Logo || company.logo || null;
-            company.banner = extraConfig?.Banner || extraConfig?.banner || extraConfig?.BANNER || company.banner || null;
+            company.logo = extraConfig?.logo || company.logo || null;
+            company.banner = extraConfig?.banner || company.banner || null;
         }
 
         return company;
@@ -54,26 +52,26 @@ export async function updateCompany(data: any) {
             ...companyData
         };
 
-        const updatedData = await noco.update(EMPRESAS_TABLE_ID, payload) as any;
+        const updatedData = await pg.update(EMPRESAS_TABLE, payload) as any;
 
-        // 3. Persistir a logo e banner na tabela dedicada (mapeando para as colunas reais do NocoDB)
+        // 3. Persistir a logo e banner na tabela dedicada
         if (logo !== undefined || banner !== undefined) {
-            const extraConfig = await noco.findOne(CONFIGURACOES_LOJA_TABLE_ID, {
-                where: `(Empresa ID,eq,${user.empresaId})`
+            const extraConfig = await pg.findOne(CONFIGURACOES_LOJA_TABLE, {
+                where: { empresa_id: user.empresaId }
             }) as any;
 
             const updatePayload: any = {};
-            if (logo !== undefined) updatePayload.Logo = logo;
+            if (logo !== undefined) updatePayload.logo = logo;
             if (banner !== undefined) updatePayload.banner = banner;
 
             if (extraConfig) {
-                await noco.update(CONFIGURACOES_LOJA_TABLE_ID, {
-                    id: extraConfig.Id || extraConfig.id,
+                await pg.update(CONFIGURACOES_LOJA_TABLE, {
+                    id: extraConfig.id,
                     ...updatePayload
                 });
             } else {
-                await noco.create(CONFIGURACOES_LOJA_TABLE_ID, {
-                    'Empresa ID': user.empresaId,
+                await pg.create(CONFIGURACOES_LOJA_TABLE, {
+                    empresa_id: user.empresaId,
                     ...updatePayload
                 });
             }
