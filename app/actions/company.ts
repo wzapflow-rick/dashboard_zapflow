@@ -14,6 +14,7 @@ import { EMPRESAS_TABLE, CONFIGURACOES_LOJA_TABLE } from '@/lib/tables';
 export async function getCompanyDetails() {
     try {
         const user = await getMe();
+        console.log('[v0] getCompanyDetails - user:', user?.empresaId);
         if (!user?.empresaId) throw new Error('Não autorizado');
 
         const [company, extraConfig] = await Promise.all([
@@ -23,6 +24,9 @@ export async function getCompanyDetails() {
             }) as Promise<any>
         ]);
 
+        console.log('[v0] getCompanyDetails - company:', company?.id, company?.nome_fantasia);
+        console.log('[v0] getCompanyDetails - extraConfig:', extraConfig);
+
         if (company) {
             company.logo = extraConfig?.logo || company.logo || null;
             company.banner = extraConfig?.banner || company.banner || null;
@@ -30,7 +34,7 @@ export async function getCompanyDetails() {
 
         return company;
     } catch (error) {
-        console.error('API Error (getCompanyDetails):', error);
+        console.error('[v0] API Error (getCompanyDetails):', error);
         return null;
     }
 }
