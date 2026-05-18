@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { noco } from '@/lib/nocodb';
-import { EMPRESAS_TABLE_ID } from '@/lib/constants';
+import { pg } from '@/lib/postgres';
 import { blockCompany, updatePaymentStatus } from '@/app/actions/billing';
 import { sendPaymentReminder } from '@/app/actions/whatsapp';
 
@@ -23,12 +22,15 @@ export async function GET(request: NextRequest) {
     const todayStr = today.toISOString().split('T')[0];
     
     // Buscar empresas com pagamento PIX que tem vencimento
-    const result = await noco.list(EMPRESAS_TABLE_ID, {
-      where: `(tipo_pagamento,eq,pix)~and(data_vencimento,le,${todayStr})~and(planos,ne,iniciante)`,
-      limit: 500,
-    });
+    const result = await pg.query(`
+      SELECT * FROM empresas 
+      WHERE tipo_pagamento = 'pix' 
+        AND data_vencimento <= $1 
+        AND planos != 'iniciante'
+      LIMIT 500
+    `, [todayStr]);
     
-    const empresas = result?.list || [];
+    const empresas = result.rows || [];
     console.log(`[Cron] Encontradas ${empresas.length} empresas para verificar`);
     
     let processed = 0;
@@ -36,7 +38,7 @@ export async function GET(request: NextRequest) {
     let notified = 0;
     
     for (const empresa of empresas) {
-      const empresaId = (empresa.id || empresa.Id) as number;
+      const empresaId = empresa.id as number;
       const dataVencimento = new Date(empresa.data_vencimento as string);
       const diasAtraso = Math.floor((today.getTime() - dataVencimento.getTime()) / (1000 * 60 * 60 * 24));
       

@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { noco } from '@/lib/nocodb';
-import { 
-  EMPRESAS_TABLE_ID, 
-  BOT_CONFIG_TABLE_ID,
-  CLIENTES_TABLE_ID 
-} from '@/lib/constants';
+import { pg } from '@/lib/postgres';
 
 const EVO_API_URL = process.env.EVOLUTION_API_URL || 'https://evo.wzapflow.com.br';
 const EVO_API_KEY = process.env.EVOLUTION_API_KEY || '';
@@ -99,8 +94,8 @@ async function wasRecentlyContacted(empresaId: number, phone: string): Promise<b
   
   // 2. Verifica na tabela de clientes (campo ultimo_contato_bot)
   try {
-    const cliente = await noco.findOne(CLIENTES_TABLE_ID, {
-      where: `(telefone,eq,${phone})~and(empresa_id,eq,${empresaId})`
+    const cliente = await pg.findOne('clientes', {
+      where: { telefone: phone, empresa_id: empresaId }
     }) as any;
     
     if (cliente) {
@@ -123,8 +118,8 @@ async function wasRecentlyContacted(empresaId: number, phone: string): Promise<b
     }
     
     // 3. Verifica na config do bot (campo contatos_recentes como JSON)
-    const botConfig = await noco.findOne(BOT_CONFIG_TABLE_ID!, {
-      where: `(empresa_id,eq,${empresaId})`
+    const botConfig = await pg.findOne('bot_config', {
+      where: { empresa_id: empresaId }
     }) as any;
     
     if (botConfig?.contatos_recentes) {
@@ -168,17 +163,16 @@ async function markAsContacted(empresaId: number, phone: string): Promise<void> 
   
   // 2. Tenta atualizar na tabela de clientes
   try {
-    const cliente = await noco.findOne(CLIENTES_TABLE_ID, {
-      where: `(telefone,eq,${phone})~and(empresa_id,eq,${empresaId})`
+    const cliente = await pg.findOne('clientes', {
+      where: { telefone: phone, empresa_id: empresaId }
     }) as any;
     
-    if (cliente?.id || cliente?.Id) {
-      const clienteId = cliente.id || cliente.Id;
-      await noco.update(CLIENTES_TABLE_ID, {
-        id: clienteId,
+    if (cliente?.id) {
+      await pg.update('clientes', {
+        id: cliente.id,
         ultimo_contato_bot: new Date().toISOString()
       });
-      console.log(`[BOT] Cliente ${phone} marcado no banco (ID: ${clienteId})`);
+      console.log(`[BOT] Cliente ${phone} marcado no banco (ID: ${cliente.id})`);
     }
   } catch (clienteError) {
     console.warn('[BOT] Erro ao atualizar cliente:', clienteError);
@@ -187,12 +181,11 @@ async function markAsContacted(empresaId: number, phone: string): Promise<void> 
   // 3. Salva tambem na config do bot (contatos_recentes como JSON)
   // Isso garante persistencia mesmo que a tabela de clientes nao tenha o campo
   try {
-    const botConfig = await noco.findOne(BOT_CONFIG_TABLE_ID!, {
-      where: `(empresa_id,eq,${empresaId})`
+    const botConfig = await pg.findOne('bot_config', {
+      where: { empresa_id: empresaId }
     }) as any;
     
     if (botConfig) {
-      const configId = botConfig.id || botConfig.Id;
       let contatos: Record<string, number> = {};
       
       // Parse contatos existentes
@@ -218,8 +211,8 @@ async function markAsContacted(empresaId: number, phone: string): Promise<void> 
       }
       
       // Salva de volta
-      await noco.update(BOT_CONFIG_TABLE_ID!, {
-        id: configId,
+      await pg.update('bot_config', {
+        id: botConfig.id,
         contatos_recentes: JSON.stringify(contatos)
       });
       console.log(`[BOT] Contatos recentes salvos na config (${Object.keys(contatos).length} contatos)`);
@@ -243,8 +236,8 @@ async function markAsContacted(empresaId: number, phone: string): Promise<void> 
 async function getEmpresaByInstance(instanceName: string): Promise<any> {
   try {
     // Tenta buscar por instancia_evolution exata
-    let empresa = await noco.findOne(EMPRESAS_TABLE_ID, {
-      where: `(instancia_evolution,eq,${instanceName})`
+    let empresa = await pg.findOne('empresas', {
+      where: { instancia_evolution: instanceName }
     }) as any;
     
     if (empresa) {
@@ -255,7 +248,7 @@ async function getEmpresaByInstance(instanceName: string): Promise<any> {
     const match = instanceName.match(/zapflow_(\d+)/);
     if (match) {
       const empresaId = Number(match[1]);
-      empresa = await noco.findById(EMPRESAS_TABLE_ID, empresaId) as any;
+      empresa = await pg.findById('empresas', empresaId) as any;
       return empresa;
     }
     
@@ -271,13 +264,8 @@ async function getEmpresaByInstance(instanceName: string): Promise<any> {
  */
 async function getBotConfig(empresaId: number): Promise<any> {
   try {
-    if (!BOT_CONFIG_TABLE_ID) {
-      console.warn('[BOT] BOT_CONFIG_TABLE_ID nao configurado');
-      return null;
-    }
-    
-    const config = await noco.findOne(BOT_CONFIG_TABLE_ID, {
-      where: `(empresa_id,eq,${empresaId})`
+    const config = await pg.findOne('bot_config', {
+      where: { empresa_id: empresaId }
     }) as any;
     
     if (config) {

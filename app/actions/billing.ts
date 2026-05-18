@@ -129,7 +129,7 @@ export async function updatePaymentStatus(
   }
 ) {
   try {
-    await pg.update('empresas', empresaId, data);
+    await pg.update('empresas', { id: empresaId, ...data });
     return { success: true };
   } catch (error: any) {
     console.error('[Billing] Erro ao atualizar status:', error);
@@ -178,7 +178,8 @@ export async function calculateNextDueDate(): Promise<string> {
  */
 export async function blockCompany(empresaId: number) {
   try {
-    await pg.update('empresas', empresaId, {
+    await pg.update('empresas', {
+      id: empresaId,
       bloqueado: true,
       planos: 'iniciante',
     });
@@ -196,7 +197,8 @@ export async function unblockCompany(empresaId: number, plano: string) {
   try {
     const nextDueDate = await calculateNextDueDate();
     
-    await pg.update('empresas', empresaId, {
+    await pg.update('empresas', {
+      id: empresaId,
       bloqueado: false,
       dias_inadimplente: 0,
       ultimo_aviso_enviado: 0,

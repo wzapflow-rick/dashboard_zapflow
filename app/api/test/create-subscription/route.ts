@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { noco } from '@/lib/nocodb';
-import { ASSINATURAS_TABLE_ID } from '@/lib/constants';
+import { pg } from '@/lib/postgres';
 
 // APENAS PARA TESTE - Remover em producao
 export async function POST(req: NextRequest) {
@@ -39,7 +38,7 @@ export async function POST(req: NextRequest) {
     
     console.log('[TEST] Criando assinatura:', JSON.stringify(assinaturaData));
     
-    const result = await noco.create(ASSINATURAS_TABLE_ID, assinaturaData);
+    const result = await pg.create('assinaturas', assinaturaData);
     
     console.log('[TEST] Assinatura criada:', result);
     
@@ -54,7 +53,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ 
       success: false, 
       error: error.message,
-      details: error.response?.data || error.toString()
+      details: error.toString()
     }, { status: 500 });
   }
 }

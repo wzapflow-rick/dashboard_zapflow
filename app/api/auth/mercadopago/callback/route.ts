@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { decrypt } from '@/lib/session';
-import { noco } from '@/lib/nocodb';
-import { PAGAMENTOS_CONFIG_TABLE_ID } from '@/lib/constants';
+import { pg } from '@/lib/postgres';
 
 export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
@@ -71,17 +70,17 @@ export async function GET(request: NextRequest) {
         };
 
         // Verifica se já existe uma configuração para esta empresa
-        const existing = await noco.findOne(PAGAMENTOS_CONFIG_TABLE_ID, {
-            where: `(empresa_id,eq,${empresaId})`,
+        const existing = await pg.findOne('pagamentos_config', {
+            where: { empresa_id: Number(empresaId) },
         }) as any;
 
         if (existing) {
-            await noco.update(PAGAMENTOS_CONFIG_TABLE_ID, {
-                id: existing.id || existing.Id,
+            await pg.update('pagamentos_config', {
+                id: existing.id,
                 ...configData
             });
         } else {
-            await noco.create(PAGAMENTOS_CONFIG_TABLE_ID, configData);
+            await pg.create('pagamentos_config', configData);
         }
 
         console.log(`[MercadoPago] Conta conectada com sucesso para empresa #${empresaId}`);

@@ -570,6 +570,18 @@ async function raw<T = Record<string, unknown>>(
 }
 
 /**
+ * Executa uma query SQL e retorna resultado no formato compatível com pg (com .rows).
+ * Compatível com código que espera result.rows
+ */
+async function query<T = Record<string, unknown>>(
+  queryStr: string,
+  params: unknown[] = [],
+): Promise<{ rows: T[] }> {
+  const rows = await executeQuery<T>(queryStr, params);
+  return { rows };
+}
+
+/**
  * Obtém um cliente do pool para transações manuais.
  */
 async function getClient(): Promise<PoolClient> {
@@ -604,6 +616,7 @@ export const pg = {
   count,
   listAll,
   raw,
+  query,
   getClient,
 } as const;
 

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { noco } from '@/lib/nocodb';
-import { EMPRESAS_TABLE_ID } from '@/lib/constants';
+import { pg } from '@/lib/postgres';
 
 export async function GET(
     request: Request,
@@ -9,7 +8,7 @@ export async function GET(
     try {
         const { empresaId } = await params;
 
-        const data = await noco.findById(EMPRESAS_TABLE_ID, Number(empresaId)) as any;
+        const data = await pg.findById('empresas', Number(empresaId)) as any;
 
         if (!data) {
             return NextResponse.json({ error: 'Empresa não encontrada' }, { status: 404 });

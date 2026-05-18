@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { noco } from '@/lib/nocodb';
-import { PEDIDOS_TABLE_ID, ENTREGADORES_TABLE_ID } from '@/lib/constants';
+import { pg } from '@/lib/postgres';
 
 export async function GET(
     request: Request,
@@ -19,7 +18,7 @@ export async function GET(
 
         const sanitizedOrderId = Number(orderId.replace(/[^0-9]/g, ''));
 
-        const order = await noco.findById(PEDIDOS_TABLE_ID, sanitizedOrderId) as any;
+        const order = await pg.findById('pedidos', sanitizedOrderId) as any;
 
         if (!order) {
             return NextResponse.json(
@@ -31,7 +30,7 @@ export async function GET(
         let driverInfo = null;
         if (order.entregador_id) {
             try {
-                const driver = await noco.findById(ENTREGADORES_TABLE_ID, order.entregador_id) as any;
+                const driver = await pg.findById('entregadores', order.entregador_id) as any;
                 if (driver) {
                     driverInfo = {
                         nome: driver.nome,

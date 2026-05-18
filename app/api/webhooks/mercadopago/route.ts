@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { noco } from '@/lib/nocodb';
+import { pg } from '@/lib/postgres';
 import crypto from 'crypto';
-import { 
-  PEDIDOS_TABLE_ID, 
-  PAGAMENTOS_CONFIG_TABLE_ID,
-  FATURAS_ASSINATURA_TABLE_ID,
-  EMPRESAS_TABLE_ID
-} from '@/lib/constants';
 import {
   getAssinaturaByMpSubscriptionId,
   createAssinatura,
@@ -115,10 +109,10 @@ interface OrderData {
  */
 async function getAccessTokenForOrder(orderId: number) {
     try {
-        const order = await noco.findById(PEDIDOS_TABLE_ID, orderId) as any;
+        const order = await pg.findById('pedidos', orderId) as any;
         if (order?.empresa_id) {
-            const config = await noco.findOne(PAGAMENTOS_CONFIG_TABLE_ID, {
-                where: `(empresa_id,eq,${order.empresa_id})`
+            const config = await pg.findOne('pagamentos_config', {
+                where: { empresa_id: order.empresa_id }
             }) as any;
             if (config?.mp_access_token) {
                 return config.mp_access_token;
@@ -196,7 +190,7 @@ async function handleSubscriptionEvent(subscriptionId: string) {
     // Se a assinatura foi autorizada, atualiza status da empresa
     if (subData.status === 'authorized') {
       try {
-        await noco.update(EMPRESAS_TABLE_ID, {
+        await pg.update('empresas', {
           id: empresaId,
           assinatura_ativa: true,
         });
@@ -206,7 +200,7 @@ async function handleSubscriptionEvent(subscriptionId: string) {
       }
     } else if (subData.status === 'cancelled' || subData.status === 'paused') {
       try {
-        await noco.update(EMPRESAS_TABLE_ID, {
+        await pg.update('empresas', {
           id: empresaId,
           assinatura_ativa: false,
         });
@@ -266,20 +260,19 @@ async function handleSubscriptionPayment(paymentId: string) {
       
       console.log(`[Webhook] Pagamento aprovado para empresa ${empresaId}, plano: ${plano}`);
       
-      const db = (await import('@/lib/db')).default;
       const hoje = new Date();
       const proximaCobranca = new Date(hoje);
       proximaCobranca.setMonth(proximaCobranca.getMonth() + 1);
       
       // Verifica se ja existe assinatura
-      const existingResult = await db.query(
+      const existingResult = await pg.query(
         'SELECT id FROM assinaturas WHERE empresa_id = $1 LIMIT 1',
         [empresaId]
       );
       
       if (existingResult.rows.length > 0) {
         // Atualiza assinatura existente
-        await db.query(`
+        await pg.query(`
           UPDATE assinaturas 
           SET status = 'authorized',
               plano = $1,
@@ -292,7 +285,7 @@ async function handleSubscriptionPayment(paymentId: string) {
         console.log(`[Webhook] Assinatura ATUALIZADA para empresa ${empresaId}`);
       } else {
         // Cria nova assinatura via SQL direto (evita problema do Link field do NocoDB)
-        await db.query(`
+        await pg.query(`
           INSERT INTO assinaturas (
             empresa_id, plano, status, valor, 
             mp_subscription_id, mp_preapproval_plan_id,
@@ -454,8 +447,6 @@ export async function POST(req: NextRequest) {
                 console.log('[v0] Detectado pagamento PIX mensal para empresa:', signupData.empresaId);
                 
                 try {
-                  const db = (await import('@/lib/db')).default;
-                  
                   const empresaId = signupData.empresaId;
                   const plano = signupData.plano;
                   const hoje = new Date();
@@ -463,14 +454,14 @@ export async function POST(req: NextRequest) {
                   proximaCobranca.setMonth(proximaCobranca.getMonth() + 1);
                   
                   // Verifica se ja existe assinatura
-                  const existingResult = await db.query(
+                  const existingResult = await pg.query(
                     'SELECT id FROM assinaturas WHERE empresa_id = $1 LIMIT 1',
                     [empresaId]
                   );
                   
                   if (existingResult.rows.length > 0) {
                     // Atualiza assinatura existente
-                    await db.query(`
+                    await pg.query(`
                       UPDATE assinaturas 
                       SET status = 'authorized',
                           plano = $1,
@@ -483,7 +474,7 @@ export async function POST(req: NextRequest) {
                     console.log('[v0] Assinatura atualizada para empresa:', empresaId);
                   } else {
                     // Cria nova assinatura
-                    await db.query(`
+                    await pg.query(`
                       INSERT INTO assinaturas (
                         empresa_id, plano, status, valor, 
                         mp_subscription_id, mp_preapproval_plan_id,
@@ -533,12 +524,12 @@ export async function POST(req: NextRequest) {
       
       // Tentativa: Buscar pedido pelo payment_id para descobrir a empresa
       try {
-          const orderSearch = await noco.findOne(PEDIDOS_TABLE_ID, {
-              where: `(payment_id,eq,${paymentId})`
+          const orderSearch = await pg.findOne('pedidos', {
+              where: { payment_id: paymentId }
           }) as any;
           if (orderSearch?.empresa_id) {
-              const config = await noco.findOne(PAGAMENTOS_CONFIG_TABLE_ID, {
-                  where: `(empresa_id,eq,${orderSearch.empresa_id})`
+              const config = await pg.findOne('pagamentos_config', {
+                  where: { empresa_id: orderSearch.empresa_id }
               }) as any;
               if (config?.mp_access_token) {
                   accessToken = config.mp_access_token;
@@ -622,7 +613,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ received: true });
       }
 
-      const order = await noco.findById(PEDIDOS_TABLE_ID, orderId) as OrderData;
+      const order = await pg.findById('pedidos', orderId) as OrderData;
 
       if (!order) {
         console.log(`[MercadoPago Webhook] Pedido ${orderId} nao encontrado`);
@@ -634,7 +625,7 @@ export async function POST(req: NextRequest) {
         // IMPORTANTE: Atualiza AMBOS os campos:
         // - status_pagamento: 'aprovado' (para controle interno)
         // - status: 'pendente' (para mover no Kanban de "Aguardando Pagamento" para "Novo Pedido")
-        await noco.update(PEDIDOS_TABLE_ID, { 
+        await pg.update('pedidos', { 
           id: orderId, 
           status_pagamento: 'aprovado',
           status: 'pendente' // Move para "Novo Pedido" no Kanban
@@ -657,7 +648,7 @@ export async function POST(req: NextRequest) {
           console.error('[MercadoPago Webhook] Erro ao enviar WhatsApp:', waError);
         }
       } else if (paymentData.status === 'rejected' || paymentData.status === 'cancelled') {
-        await noco.update(PEDIDOS_TABLE_ID, { 
+        await pg.update('pedidos', { 
           id: orderId, 
           status_pagamento: 'rejeitado',
           status: 'cancelado' // Cancela o pedido
@@ -702,8 +693,6 @@ export async function POST(req: NextRequest) {
                   if (signupData.empresaId && signupData.plano && signupData.tipo === 'pix_mensal') {
                     console.log('[v0] Processando PIX mensal via merchant_order para empresa:', signupData.empresaId);
                     
-                    const db = (await import('@/lib/db')).default;
-                    
                     const empresaId = signupData.empresaId;
                     const plano = signupData.plano;
                     const hoje = new Date();
@@ -711,14 +700,14 @@ export async function POST(req: NextRequest) {
                     proximaCobranca.setMonth(proximaCobranca.getMonth() + 1);
                     
                     // Verifica se ja existe assinatura
-                    const existingResult = await db.query(
+                    const existingResult = await pg.query(
                       'SELECT id FROM assinaturas WHERE empresa_id = $1 LIMIT 1',
                       [empresaId]
                     );
                     
                     if (existingResult.rows.length > 0) {
                       // Atualiza assinatura existente
-                      await db.query(`
+                      await pg.query(`
                         UPDATE assinaturas 
                         SET status = 'authorized',
                             plano = $1,
@@ -731,7 +720,7 @@ export async function POST(req: NextRequest) {
                       console.log('[v0] Assinatura atualizada via merchant_order para empresa:', empresaId);
                     } else {
                       // Cria nova assinatura
-                      await db.query(`
+                      await pg.query(`
                         INSERT INTO assinaturas (
                           empresa_id, plano, status, valor, 
                           mp_subscription_id, mp_preapproval_plan_id,

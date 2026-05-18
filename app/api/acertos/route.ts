@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { noco } from '@/lib/nocodb';
-import { ENTREGADORES_TABLE_ID, PEDIDOS_TABLE_ID } from '@/lib/constants';
+import { pg } from '@/lib/postgres';
 
 export async function GET(request: Request) {
     try {
@@ -13,12 +12,12 @@ export async function GET(request: Request) {
         }
 
         const [driversData, ordersData] = await Promise.all([
-            noco.list(ENTREGADORES_TABLE_ID, {
-                where: `(empresa_id,eq,${empresaId})`,
+            pg.list('entregadores', {
+                where: { empresa_id: Number(empresaId) },
                 limit: 100,
             }),
-            noco.list(PEDIDOS_TABLE_ID, {
-                where: `(empresa_id,eq,${empresaId})~and(status,eq,finalizado)`,
+            pg.list('pedidos', {
+                where: { empresa_id: Number(empresaId), status: 'finalizado' },
                 limit: 1000,
             }),
         ]);
@@ -94,7 +93,7 @@ export async function PATCH(request: Request) {
             return NextResponse.json({ error: 'Dados incompletos' }, { status: 400 });
         }
 
-        const data = await noco.update(ENTREGADORES_TABLE_ID, {
+        const data = await pg.update('entregadores', {
             id: entregador_id,
             ultimo_acerto_valor: valor_pago || 0,
             ultimo_acerto_data: pago ? new Date().toISOString() : null,
