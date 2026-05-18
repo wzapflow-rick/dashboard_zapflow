@@ -1,7 +1,7 @@
 'use server';
 
 import { getMe } from '@/lib/session-server';
-import { query } from '@/lib/db';
+import { pg } from '@/lib/postgres';
 
 // Helper para timeout em queries
 async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
@@ -41,23 +41,23 @@ export async function getDashboardData(period: string = 'Hoje') {
 
         console.log(`[Dashboard] Period: ${period}, EmpresaId: ${user.empresaId}`);
 
-        // Buscar pedidos do PostgreSQL
-        const ordersResult = await withTimeout(
-            query(
-                `SELECT id, status, valor_total, criado_em, itens 
-                 FROM pedidos 
-                 WHERE empresa_id = $1 AND criado_em >= $2
-                 ORDER BY id DESC 
-                 LIMIT 200`,
-                [user.empresaId, startDate.toISOString()]
-            ),
+        // Limitar a 200 pedidos para evitar timeout em contas com muitos pedidos
+        const ordersData = await withTimeout(
+            pg.list('pedidos', {
+                where: { empresa_id: user.empresaId },
+                sort: '-id',
+                limit: 200,
+            }),
             10000,
             'listar pedidos'
         );
         console.log(`[Dashboard] Pedidos carregados em ${Date.now() - startTime}ms`);
         
-        const orders = ordersResult.rows || [];
-        console.log(`[Dashboard] Total de pedidos encontrados: ${orders.length}`);
+        const allOrders = ordersData.list || [];
+        console.log(`[Dashboard] Total de pedidos encontrados: ${allOrders.length}`);
+
+        // Filtrar por data em memória
+        const orders = allOrders.filter((o: any) => o.criado_em && new Date(o.criado_em) >= startDate);
 
         // 1. Calcular faturamento e contagem (Excluindo cancelados)
         const validOrders = orders.filter((o: any) => o.status !== 'cancelado');
@@ -103,21 +103,18 @@ export async function getDashboardData(period: string = 'Hoje') {
 
         console.log(`[Dashboard] Stats calculadas em ${Date.now() - startTime}ms`);
 
-        // Buscar imagens reais dos produtos
+        // Buscar imagens reais dos produtos para o Top 5 (com timeout)
         let realProducts: any[] = [];
         try {
-            const productsResult = await withTimeout(
-                query(
-                    `SELECT id, nome, imagem, imagem_url 
-                     FROM produtos 
-                     WHERE empresa_id = $1 
-                     LIMIT 50`,
-                    [user.empresaId]
-                ),
+            const productsData = await withTimeout(
+                pg.list('produtos', {
+                    where: { empresa_id: user.empresaId },
+                    limit: 50,
+                }),
                 5000,
                 'listar produtos'
             );
-            realProducts = productsResult.rows || [];
+            realProducts = productsData.list || [];
             console.log(`[Dashboard] Produtos carregados em ${Date.now() - startTime}ms`);
         } catch (prodErr) {
             console.warn(`[Dashboard] Falha ao carregar produtos: ${prodErr}`);

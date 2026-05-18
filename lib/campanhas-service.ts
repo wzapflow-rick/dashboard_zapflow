@@ -1,10 +1,4 @@
-import { noco } from '@/lib/nocodb';
-import { 
-    CAMPANHAS_TABLE_ID, 
-    DISPAROS_TABLE_ID, 
-    CLIENTES_TABLE_ID,
-    EMPRESAS_TABLE_ID 
-} from '@/lib/constants';
+import { pg } from '@/lib/postgres';
 
 const EVO_API_URL = process.env.EVOLUTION_API_URL || 'https://evo.wzapflow.com.br';
 const EVO_API_KEY = process.env.EVOLUTION_API_KEY || '';
@@ -38,8 +32,6 @@ async function enviarMensagemEvolution(
         const url = `${EVO_API_URL}/message/sendText/${instanceName}`;
 
         console.log(`[CAMPANHAS] Enviando para ${formattedPhone} via instancia ${instanceName}`);
-        console.log(`[CAMPANHAS] URL: ${url}`);
-        console.log(`[CAMPANHAS] Mensagem: ${message.substring(0, 100)}...`);
 
         const response = await fetch(url, {
             method: 'POST',
@@ -54,7 +46,6 @@ async function enviarMensagemEvolution(
         });
 
         const result = await response.json();
-        console.log(`[CAMPANHAS] Resposta Evolution (${response.status}):`, JSON.stringify(result).substring(0, 300));
 
         if (!response.ok) {
             return { 
@@ -101,7 +92,6 @@ interface Empresa {
     instancia_evolution?: string;
 }
 
-// Dias da semana em portugues
 const DIAS_SEMANA: Record<number, string> = {
     0: 'DOM',
     1: 'SEG',
@@ -112,16 +102,12 @@ const DIAS_SEMANA: Record<number, string> = {
     6: 'SAB'
 };
 
-/**
- * Verifica se a campanha deve rodar agora
- */
 function shouldRunNow(campanha: Campanha): boolean {
     const now = new Date();
     const currentDay = DIAS_SEMANA[now.getDay()];
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
     
-    // Verificar dia da semana
     if (campanha.dias_semana) {
         try {
             const dias = JSON.parse(campanha.dias_semana);
@@ -133,13 +119,11 @@ function shouldRunNow(campanha: Campanha): boolean {
         }
     }
     
-    // Verificar horario (com tolerancia de 30 minutos)
     if (campanha.horario_envio) {
         const [hour, minute] = campanha.horario_envio.split(':').map(Number);
         const campanhaMinutes = hour * 60 + minute;
         const currentMinutes = currentHour * 60 + currentMinute;
         
-        // Tolerancia de 30 minutos antes e depois
         if (Math.abs(campanhaMinutes - currentMinutes) > 30) {
             return false;
         }
@@ -148,15 +132,12 @@ function shouldRunNow(campanha: Campanha): boolean {
     return true;
 }
 
-/**
- * Busca todos os clientes de uma empresa
- */
 async function getTodosClientes(empresaId: string): Promise<Cliente[]> {
     try {
         console.log(`[CAMPANHAS] Buscando todos os clientes da empresa ${empresaId}`);
         
-        const data = await noco.list(CLIENTES_TABLE_ID!, {
-            where: `(empresa_id,eq,${empresaId})`,
+        const data = await pg.list('clientes', {
+            where: { empresa_id: empresaId },
             limit: 100,
         });
         
@@ -170,41 +151,20 @@ async function getTodosClientes(empresaId: string): Promise<Cliente[]> {
     }
 }
 
-/**
- * Busca clientes elegiveis para reengajamento
- */
 async function getClientesReengajamento(empresaId: string, diasSemPedido: number): Promise<Cliente[]> {
     try {
         const dataLimite = new Date();
         dataLimite.setDate(dataLimite.getDate() - diasSemPedido);
-        const dataLimiteStr = dataLimite.toISOString().split('T')[0];
+        const dataLimiteStr = dataLimite.toISOString();
         
         console.log(`[CAMPANHAS] Buscando clientes sem compra desde ${dataLimiteStr} para empresa ${empresaId}`);
         
-        // Primeiro tenta buscar com filtro de data
-        let data = await noco.list(CLIENTES_TABLE_ID!, {
-            where: `(empresa_id,eq,${empresaId})~and(ultima_compra,lt,${dataLimiteStr})`,
-            limit: 100,
-        });
+        const data = await pg.query(
+            `SELECT * FROM clientes WHERE empresa_id = $1 AND (ultima_compra < $2 OR ultima_compra IS NULL) LIMIT 100`,
+            [empresaId, dataLimiteStr]
+        );
         
-        let clientes = ((data.list || []) as unknown as Cliente[]).filter((c) => c.telefone);
-        
-        // Se nao encontrou nenhum, busca clientes sem ultima_compra preenchida
-        if (clientes.length === 0) {
-            console.log(`[CAMPANHAS] Nenhum cliente com filtro de data, buscando clientes sem ultima_compra`);
-            data = await noco.list(CLIENTES_TABLE_ID!, {
-                where: `(empresa_id,eq,${empresaId})`,
-                limit: 100,
-            });
-            
-            // Filtra clientes sem ultima_compra ou com ultima_compra antiga
-            clientes = ((data.list || []) as unknown as Cliente[]).filter((c) => {
-                if (!c.telefone) return false;
-                if (!c.ultima_compra) return true; // Cliente nunca comprou
-                const ultimaCompraDate = new Date(c.ultima_compra);
-                return ultimaCompraDate < dataLimite;
-            });
-        }
+        const clientes = ((data.rows || []) as unknown as Cliente[]).filter((c) => c.telefone);
         
         console.log(`[CAMPANHAS] Encontrados ${clientes.length} clientes elegiveis para reengajamento`);
         return clientes;
@@ -214,9 +174,6 @@ async function getClientesReengajamento(empresaId: string, diasSemPedido: number
     }
 }
 
-/**
- * Verifica se cliente ja recebeu disparo recentemente
- */
 async function clienteJaRecebeuRecentemente(
     empresaId: string, 
     clienteId: number, 
@@ -226,25 +183,20 @@ async function clienteJaRecebeuRecentemente(
     try {
         const umaSemanaAtras = new Date();
         umaSemanaAtras.setDate(umaSemanaAtras.getDate() - 7);
-        // Usar formato apenas com data (YYYY-MM-DD) que o NocoDB aceita
-        const dataStr = umaSemanaAtras.toISOString().split('T')[0];
+        const dataStr = umaSemanaAtras.toISOString();
         
-        const data = await noco.list(DISPAROS_TABLE_ID!, {
-            where: `(empresa_id,eq,${empresaId})~and(cliente_id,eq,${clienteId})~and(campanha_id,eq,${campanhaId})~and(enviado_em,gt,${dataStr})~and(status,eq,enviado)`,
-            limit: maxEnviosSemana + 1,
-        });
+        const data = await pg.query(
+            `SELECT id FROM disparos WHERE empresa_id = $1 AND cliente_id = $2 AND campanha_id = $3 AND enviado_em > $4 AND status = 'enviado' LIMIT $5`,
+            [empresaId, clienteId, campanhaId, dataStr, maxEnviosSemana + 1]
+        );
         
-        return (data.list || []).length >= maxEnviosSemana;
+        return (data.rows || []).length >= maxEnviosSemana;
     } catch (error) {
         console.error('Erro ao verificar disparos anteriores:', error);
-        // Em caso de erro, retorna false para permitir o envio (melhor experiencia)
         return false;
     }
 }
 
-/**
- * Seleciona uma variante aleatoria da mensagem
- */
 function selecionarVariante(campanha: Campanha): { varianteNum: number; mensagem: string } {
     const variantes: string[] = [];
     if (campanha.variante_1) variantes.push(campanha.variante_1);
@@ -260,9 +212,6 @@ function selecionarVariante(campanha: Campanha): { varianteNum: number; mensagem
     return { varianteNum: index + 1, mensagem: variantes[index] };
 }
 
-/**
- * Substitui variaveis na mensagem
- */
 function substituirVariaveis(
     mensagem: string, 
     cliente: Cliente, 
@@ -276,9 +225,6 @@ function substituirVariaveis(
         .replace(/\{\{ultimo_pedido\}\}/g, cliente.ultima_compra || 'N/A');
 }
 
-/**
- * Registra disparo no banco
- */
 async function registrarDisparo(
     empresaId: string,
     campanhaId: number,
@@ -290,7 +236,7 @@ async function registrarDisparo(
     erroDetalhe?: string
 ): Promise<void> {
     try {
-        await noco.create(DISPAROS_TABLE_ID!, {
+        await pg.create('disparos', {
             empresa_id: empresaId,
             campanha_id: campanhaId,
             cliente_id: clienteId,
@@ -306,30 +252,22 @@ async function registrarDisparo(
     }
 }
 
-/**
- * Busca dados da empresa
- */
 async function getEmpresa(empresaId: string): Promise<Empresa | null> {
     try {
-        const data = await noco.findOne(EMPRESAS_TABLE_ID!, {
-            where: `(id,eq,${empresaId})`,
-        }) as any;
+        const data = await pg.findById('empresas', Number(empresaId)) as any;
         
         if (!data) {
             console.error(`[CAMPANHAS] Empresa ${empresaId} nao encontrada no banco`);
             return null;
         }
         
-        // Se instancia_evolution estiver vazia, usa o padrao zapflow_{empresaId}
         let instanciaEvolution = data.instancia_evolution;
         if (!instanciaEvolution) {
             instanciaEvolution = `zapflow_${empresaId}`;
             console.log(`[CAMPANHAS] Empresa ${data.nome_fantasia} sem instancia configurada, usando fallback: ${instanciaEvolution}`);
             
-            // Tenta atualizar a empresa com o valor padrao (nao bloqueia se falhar)
             try {
-                await noco.update(EMPRESAS_TABLE_ID!, {
-                    id: data.id,
+                await pg.update('empresas', Number(empresaId), {
                     instancia_evolution: instanciaEvolution
                 });
                 console.log(`[CAMPANHAS] Instancia ${instanciaEvolution} salva automaticamente para empresa ${empresaId}`);
@@ -352,9 +290,6 @@ async function getEmpresa(empresaId: string): Promise<Empresa | null> {
     }
 }
 
-/**
- * Processa uma campanha
- */
 async function processarCampanha(campanha: Campanha): Promise<{ enviados: number; erros: number; detalhes?: string }> {
     let enviados = 0;
     let erros = 0;
@@ -378,17 +313,14 @@ async function processarCampanha(campanha: Campanha): Promise<{ enviados: number
     
     switch (campanha.tipo) {
         case 'reengajamento':
-            // Reengajamento: clientes que nao compram ha X dias
             clientes = await getClientesReengajamento(campanha.empresa_id, diasGatilho);
             break;
         case 'cupom':
         case 'promocao':
         case 'novidade':
-            // Cupom/Promocao/Novidade: enviar para todos os clientes
             clientes = await getTodosClientes(campanha.empresa_id);
             break;
         default:
-            // Default: enviar para todos os clientes
             console.log(`[CAMPANHAS] Tipo desconhecido '${campanha.tipo}', enviando para todos os clientes`);
             clientes = await getTodosClientes(campanha.empresa_id);
     }
@@ -421,7 +353,6 @@ async function processarCampanha(campanha: Campanha): Promise<{ enviados: number
             
             const mensagemFinal = substituirVariaveis(mensagem, cliente, empresa, diasAusente);
             
-            // Usa a instancia Evolution configurada na empresa
             const result = await enviarMensagemEvolution(
                 cliente.telefone, 
                 mensagemFinal, 
@@ -455,8 +386,6 @@ async function processarCampanha(campanha: Campanha): Promise<{ enviados: number
                 console.error(`[CAMPANHAS] Erro ao enviar para ${cliente.telefone}: ${result.error}`);
             }
             
-            // Delay entre envios (evitar rate limit e banimento do WhatsApp)
-            // Delay aleatorio entre 8-15 segundos para maior seguranca
             const delayMs = 8000 + Math.floor(Math.random() * 7000);
             console.log(`[CAMPANHAS] Aguardando ${(delayMs/1000).toFixed(1)}s antes do proximo envio...`);
             await new Promise(resolve => setTimeout(resolve, delayMs));
@@ -484,33 +413,15 @@ export async function executarDisparoCampanhas(ignorarHorario: boolean = true): 
     try {
         console.log('[CAMPANHAS] Iniciando processamento de campanhas');
         
-        if (!CAMPANHAS_TABLE_ID || !DISPAROS_TABLE_ID || !CLIENTES_TABLE_ID) {
-            console.error('[CAMPANHAS] Tabelas nao configuradas');
-            return { 
-                success: false,
-                campanhas_processadas: 0,
-                total_enviados: 0,
-                total_erros: 0,
-                resultados: [],
-                error: 'Tabelas nao configuradas'
-            };
-        }
+        console.log(`[CAMPANHAS] Buscando campanhas ativas`);
         
-        console.log(`[CAMPANHAS] Buscando campanhas ativas na tabela ${CAMPANHAS_TABLE_ID}`);
+        const campanhasData = await pg.query(
+            `SELECT * FROM campanhas WHERE ativo = true LIMIT 100`,
+            []
+        );
         
-        const campanhasData = await noco.list(CAMPANHAS_TABLE_ID, {
-            where: '(ativo,eq,true)',
-            limit: 100,
-        });
-        
-        console.log(`[CAMPANHAS] Resposta raw:`, JSON.stringify(campanhasData, null, 2));
-        
-        const campanhas = (campanhasData.list || []) as unknown as Campanha[];
+        const campanhas = (campanhasData.rows || []) as unknown as Campanha[];
         console.log(`[CAMPANHAS] ${campanhas.length} campanhas ativas encontradas`);
-        
-        if (campanhas.length > 0) {
-            console.log(`[CAMPANHAS] Primeira campanha:`, JSON.stringify(campanhas[0], null, 2));
-        }
         
         let totalEnviados = 0;
         let totalErros = 0;

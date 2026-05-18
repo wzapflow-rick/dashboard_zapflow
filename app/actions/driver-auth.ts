@@ -2,15 +2,15 @@
 
 import { cookies } from 'next/headers';
 import { encrypt, decrypt } from '@/lib/session';
-import { noco } from '@/lib/nocodb';
-import { ENTREGADORES_TABLE_ID, PEDIDOS_TABLE_ID } from '@/lib/constants';
+import { pg } from '@/lib/postgres';
 
 export async function driverLogin(email: string, password: string) {
     try {
-        const data = await noco.list(ENTREGADORES_TABLE_ID, {
-            where: `(email,eq,${email})~and(ativo,eq,true)`,
-        });
-        const driver = data.list?.[0] as any;
+        const data = await pg.query(
+            `SELECT * FROM entregadores WHERE email = $1 AND ativo = true LIMIT 1`,
+            [email]
+        );
+        const driver = data.rows?.[0] as any;
 
         if (!driver) {
             return { success: false, error: 'Entregador não encontrado' };
@@ -39,7 +39,7 @@ export async function driverLogin(email: string, password: string) {
             maxAge: 60 * 60 * 8,
         });
 
-        await noco.update(ENTREGADORES_TABLE_ID, { id: driver.id, status: 'disponivel' });
+        await pg.update('entregadores', driver.id, { status: 'disponivel' });
 
         return {
             success: true,
@@ -80,8 +80,7 @@ export async function driverLogout() {
     (await cookies()).delete('driver_session');
 
     if (session?.driverId) {
-        await noco.update(ENTREGADORES_TABLE_ID, {
-            id: session.driverId,
+        await pg.update('entregadores', session.driverId, {
             status: 'offline'
         }).catch(() => {});
     }
@@ -96,12 +95,12 @@ export async function getDriverOrders(driverId: number) {
             throw new Error('Acesso negado: Sessão inválida');
         }
 
-        const data = await noco.list(PEDIDOS_TABLE_ID, {
-            where: `(entregador_id,eq,${driverId})~and(status,neq,finalizado)~and(status,neq,cancelado)`,
-            sort: '-id',
-        });
+        const data = await pg.query(
+            `SELECT * FROM pedidos WHERE entregador_id = $1 AND status NOT IN ('finalizado', 'cancelado') ORDER BY id DESC`,
+            [driverId]
+        );
 
-        return (data.list || []).map((order: any) => ({
+        return (data.rows || []).map((order: any) => ({
             id: order.id,
             cliente_nome: order.cliente_nome,
             telefone_cliente: order.telefone_cliente,
@@ -128,18 +127,17 @@ export async function updateOrderStatusByDriver(orderId: number, newStatus: stri
             throw new Error('Não autorizado');
         }
 
-        const order = await noco.findById(PEDIDOS_TABLE_ID, orderId) as any;
+        const order = await pg.findById('pedidos', orderId) as any;
 
         if (!order || Number(order.entregador_id) !== Number(session.driverId)) {
             throw new Error('Acesso negado: Pedido não pertence a este entregador');
         }
 
-        await noco.update(PEDIDOS_TABLE_ID, { id: orderId, status: newStatus });
+        await pg.update('pedidos', orderId, { status: newStatus });
 
         if (newStatus === 'finalizado') {
-            const driver = await noco.findById(ENTREGADORES_TABLE_ID, session.driverId) as any;
-            await noco.update(ENTREGADORES_TABLE_ID, {
-                id: session.driverId,
+            const driver = await pg.findById('entregadores', session.driverId) as any;
+            await pg.update('entregadores', session.driverId, {
                 entregas_hoje: (driver?.entregas_hoje || 0) + 1
             });
         }

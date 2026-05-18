@@ -1,15 +1,14 @@
 'use server';
 
 import { getMe } from '@/lib/session-server';
-import { noco } from '@/lib/nocodb';
-import { PEDIDOS_TABLE_ID } from '@/lib/constants';
+import { pg } from '@/lib/postgres';
 
 export async function getSalesReport(startDate: string, endDate: string) {
     const user = await getMe();
     if (!user?.empresaId) throw new Error('Não autorizado');
 
-    const ordersData = await noco.list(PEDIDOS_TABLE_ID, {
-        where: `(empresa_id,eq,${user.empresaId})`,
+    const ordersData = await pg.list('pedidos', {
+        where: { empresa_id: user.empresaId },
         limit: 10000,
     });
 
@@ -124,8 +123,8 @@ export async function getMonthlyComparison() {
     const user = await getMe();
     if (!user?.empresaId) throw new Error('Não autorizado');
 
-    const ordersData = await noco.list(PEDIDOS_TABLE_ID, {
-        where: `(empresa_id,eq,${user.empresaId})`,
+    const ordersData = await pg.list('pedidos', {
+        where: { empresa_id: user.empresaId },
         limit: 10000,
     });
 

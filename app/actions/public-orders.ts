@@ -4,8 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { incrementCouponUsage } from './coupons';
 import { deductPointsForOrder } from './loyalty';
 import { sendOrderCreatedMessage } from './whatsapp';
-import { noco } from '@/lib/nocodb';
-import { PEDIDOS_TABLE_ID, CLIENTES_TABLE_ID } from '@/lib/constants';
+import { pg } from '@/lib/postgres';
 
 interface OrderItem {
     id: number;
@@ -59,18 +58,19 @@ export async function checkCustomerByPhone(empresaId: number, telefone: string) 
         ];
 
         for (const phone of phoneVariations) {
-            const data = await noco.list(CLIENTES_TABLE_ID, {
-                where: `(empresa_id,eq,${empresaId})~and(telefone,like,${phone})`,
-            });
+            const data = await pg.query(
+                `SELECT * FROM clientes WHERE empresa_id = $1 AND telefone LIKE $2 LIMIT 1`,
+                [empresaId, `%${phone}%`]
+            );
 
-            if (data.list && data.list.length > 0) {
-                return data.list[0];
+            if (data.rows && data.rows.length > 0) {
+                return data.rows[0];
             }
         }
 
         // Última tentativa: buscar todos e filtrar manualmente
-        const allClientsData = await noco.list(CLIENTES_TABLE_ID, {
-            where: `(empresa_id,eq,${empresaId})`,
+        const allClientsData = await pg.list('clientes', {
+            where: { empresa_id: empresaId },
             limit: 1000,
         });
         const allClients = allClientsData.list || [];
@@ -89,21 +89,20 @@ export async function checkCustomerByPhone(empresaId: number, telefone: string) 
 
 async function ensureCliente(empresaId: number, telefone: string, nome: string, endereco?: string, bairro?: string) {
     try {
-        const data = await noco.list(CLIENTES_TABLE_ID, {
-            where: `(empresa_id,eq,${empresaId})~and(telefone,eq,${telefone})`,
+        const data = await pg.list('clientes', {
+            where: { empresa_id: empresaId, telefone },
         });
 
         if (data.list && data.list.length > 0) {
             const existing = data.list[0] as any;
-            await noco.update(CLIENTES_TABLE_ID, {
-                id: existing.id,
+            await pg.update('clientes', existing.id, {
                 nome: nome || existing.nome,
                 endereco: endereco || existing.endereco,
                 bairro_entrega: bairro || existing.bairro_entrega,
             });
             return existing.id;
         } else {
-            const created = await noco.create(CLIENTES_TABLE_ID, {
+            const created = await pg.create('clientes', {
                 empresa_id: empresaId,
                 nome: nome || 'Cliente Cardápio',
                 telefone,
@@ -136,7 +135,6 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
             let produtoNome = item.nome || 'Produto';
             const tamanho = item.tamanho || '';
 
-            // FORÇAR: Se houver tamanho, garante que ele esteja no nome de forma clara
             if (tamanho && !produtoNome.toLowerCase().includes(tamanho.toLowerCase())) {
                 produtoNome = `${produtoNome} (${tamanho})`;
             }
@@ -206,7 +204,7 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
             observacoes: orderPayload.observacoes,
         });
 
-        const order = await noco.create(PEDIDOS_TABLE_ID, orderPayload) as any;
+        const order = await pg.create('pedidos', orderPayload) as any;
 
         if (data.cupomId) {
             incrementCouponUsage(data.cupomId).catch(err =>
@@ -239,7 +237,7 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
 
 export async function checkOrderStatus(orderId: number) {
     try {
-        const order = await noco.findById(PEDIDOS_TABLE_ID, orderId) as any;
+        const order = await pg.findById('pedidos', orderId) as any;
         if (!order) return null;
 
         return {
@@ -256,7 +254,7 @@ export async function checkOrderStatus(orderId: number) {
 
 export async function getOrderStatus(orderId: number) {
     try {
-        const order = await noco.findById(PEDIDOS_TABLE_ID, orderId) as any;
+        const order = await pg.findById('pedidos', orderId) as any;
         return order?.status || null;
     } catch (error) {
         console.error('Erro ao buscar status do pedido:', error);
@@ -266,7 +264,7 @@ export async function getOrderStatus(orderId: number) {
 
 export async function updateOrderStatusPublic(orderId: number, status: string) {
     try {
-        await noco.update(PEDIDOS_TABLE_ID, { id: orderId, status });
+        await pg.update('pedidos', orderId, { status });
         revalidatePath('/dashboard/expedition');
         return { success: true };
     } catch (error) {

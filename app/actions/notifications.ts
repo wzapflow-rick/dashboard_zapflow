@@ -1,8 +1,7 @@
 'use server';
 
 import { getMe } from '@/lib/session-server';
-import { noco } from '@/lib/nocodb';
-import { PEDIDOS_TABLE_ID } from '@/lib/constants';
+import { pg } from '@/lib/postgres';
 
 export async function getNotifications() {
     try {
@@ -11,8 +10,8 @@ export async function getNotifications() {
             return { notifications: [], newCount: 0 };
         }
 
-        const data = await noco.list(PEDIDOS_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})`,
+        const data = await pg.list('pedidos', {
+            where: { empresa_id: user.empresaId },
             sort: '-id',
             limit: 10,
         });

@@ -3,8 +3,7 @@
 import { getMe } from '@/lib/session-server';
 import { HorarioSchema } from '@/lib/validations';
 import { z } from 'zod';
-import { noco } from '@/lib/nocodb';
-import { HORARIOS_TABLE_ID } from '@/lib/constants';
+import { pg } from '@/lib/postgres';
 
 const HorariosArraySchema = z.array(HorarioSchema).min(1, 'Adicione pelo menos um horário');
 
@@ -29,19 +28,19 @@ export async function saveHorariosFuncionamento(horarios: HorarioItem[], nomeEmp
         const empresaId = user.empresaId;
 
         // Deletar registros existentes
-        const existing = await noco.list(HORARIOS_TABLE_ID, {
-            where: `(empresa_id,eq,${empresaId})`,
+        const existing = await pg.list('horarios', {
+            where: { empresa_id: empresaId },
         });
 
         if (existing.list && existing.list.length > 0) {
             for (const r of existing.list) {
-                await noco.delete(HORARIOS_TABLE_ID, (r as any).id || (r as any).Id);
+                await pg.delete('horarios', (r as any).id);
             }
         }
 
         // Inserir novos horários
         for (const h of validated.data) {
-            await noco.create(HORARIOS_TABLE_ID, {
+            await pg.create('horarios', {
                 empresa_id: empresaId,
                 nome_empresa: nomeEmpresa,
                 dia_semana: h.dia_semana,
@@ -63,8 +62,8 @@ export async function getHorariosFuncionamento() {
     if (!user) return { error: 'Não autorizado', horarios: [] };
 
     try {
-        const data = await noco.list(HORARIOS_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})`,
+        const data = await pg.list('horarios', {
+            where: { empresa_id: user.empresaId },
             sort: 'dia_semana',
         });
         return { horarios: data.list || [] };

@@ -1,7 +1,6 @@
 'use server';
 
-import { noco } from '@/lib/nocodb';
-import { PEDIDOS_TABLE_ID, PAGAMENTOS_CONFIG_TABLE_ID } from '@/lib/constants';
+import { pg } from '@/lib/postgres';
 
 const MP_ACCESS_TOKEN_FALLBACK = process.env.MP_ACCESS_TOKEN || '';
 const MP_PUBLIC_KEY_FALLBACK = process.env.MP_PUBLIC_KEY || '';
@@ -37,8 +36,8 @@ interface MPPaymentResponse {
  */
 async function getCompanyMPCredentials(empresaId: number) {
     try {
-        const config = await noco.findOne(PAGAMENTOS_CONFIG_TABLE_ID, {
-            where: `(empresa_id,eq,${empresaId})`
+        const config = await pg.findOne('pagamentos_config', {
+            where: { empresa_id: empresaId }
         }) as any;
 
         if (config && config.mp_access_token) {
@@ -69,7 +68,7 @@ export async function getMPPublicKey(empresaId?: number): Promise<string> {
 
 export async function getOrderPaymentId(orderId: number): Promise<string | null> {
     try {
-        const order = await noco.findById(PEDIDOS_TABLE_ID, orderId) as any;
+        const order = await pg.findById('pedidos', orderId) as any;
         return order?.payment_id ? String(order.payment_id) : null;
     } catch (error) {
         console.error('[MercadoPago] Erro ao buscar payment_id do pedido:', error);
@@ -100,7 +99,7 @@ export async function createPayment(input: CreatePaymentInput): Promise<CreatePa
     try {
         const { pedidoId, paymentMethodId, token, issuerId, installationTerms } = input;
 
-        const pedido = await noco.findById(PEDIDOS_TABLE_ID, pedidoId) as PedidoData;
+        const pedido = await pg.findById('pedidos', pedidoId) as PedidoData;
 
         if (!pedido) {
             return { success: false, error: 'Pedido não encontrado' };
@@ -182,8 +181,7 @@ export async function createPayment(input: CreatePaymentInput): Promise<CreatePa
 
         const mpPayment = await mpResponse.json() as MPPaymentResponse;
 
-        await noco.update(PEDIDOS_TABLE_ID, {
-            id: pedidoId,
+        await pg.update('pedidos', pedidoId, {
             payment_id: String(mpPayment.id),
             status_pagamento: mpPayment.status === 'approved' ? 'aprovado' : 'pendente',
         });
@@ -212,8 +210,8 @@ export async function getPaymentStatus(paymentId: number): Promise<{
     try {
         // Para o status, precisamos saber de qual empresa é o pagamento para usar o token correto
         // Buscamos o pedido pelo payment_id
-        const order = await noco.findOne(PEDIDOS_TABLE_ID, {
-            where: `(payment_id,eq,${paymentId})`
+        const order = await pg.findOne('pedidos', {
+            where: { payment_id: String(paymentId) }
         }) as any;
 
         let accessToken = MP_ACCESS_TOKEN_FALLBACK;
@@ -280,8 +278,8 @@ export async function getMPConnectionStatus(): Promise<{ connected: boolean; use
     if (!me || !me.empresaId) return { connected: false, userId: null, publicKey: null };
 
     try {
-        const config = await noco.findOne(PAGAMENTOS_CONFIG_TABLE_ID, {
-            where: `(empresa_id,eq,${me.empresaId})`,
+        const config = await pg.findOne('pagamentos_config', {
+            where: { empresa_id: me.empresaId },
         }) as any;
 
         return { 
@@ -304,12 +302,12 @@ export async function disconnectMP() {
     if (!me || !me.empresaId) throw new Error('Não autorizado');
 
     try {
-        const config = await noco.findOne(PAGAMENTOS_CONFIG_TABLE_ID, {
-            where: `(empresa_id,eq,${me.empresaId})`,
+        const config = await pg.findOne('pagamentos_config', {
+            where: { empresa_id: me.empresaId },
         }) as any;
 
         if (config) {
-            await noco.delete(PAGAMENTOS_CONFIG_TABLE_ID, config.id || config.Id);
+            await pg.delete('pagamentos_config', config.id);
         }
 
         return { success: true };

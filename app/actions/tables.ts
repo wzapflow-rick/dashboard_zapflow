@@ -2,11 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { getMe, requireRole } from '@/lib/session-server';
-import { noco } from '@/lib/nocodb';
+import { pg } from '@/lib/postgres';
 import {
-  MESAS_TABLE_ID,
-  COMANDAS_TABLE_ID,
-  PEDIDOS_TABLE_ID,
   MESA_STATUS,
   COMANDA_STATUS,
 } from '@/lib/constants';
@@ -15,13 +12,11 @@ import {
 // HELPERS
 // ============================================================
 
-// Normaliza o ID do NocoDB (pode vir como "Id" maiúsculo)
-function normalizeRecord<T extends { id?: number; Id?: number }>(record: T): T & { id: number } {
-  const id = record.id ?? record.Id;
-  return { ...record, id: id as number };
+function normalizeRecord<T extends { id?: number }>(record: T): T & { id: number } {
+  return { ...record, id: record.id as number };
 }
 
-function normalizeRecordList<T extends { id?: number; Id?: number }>(list: T[]): (T & { id: number })[] {
+function normalizeRecordList<T extends { id?: number }>(list: T[]): (T & { id: number })[] {
   return list.map(normalizeRecord);
 }
 
@@ -70,13 +65,8 @@ export async function getMesas(): Promise<Mesa[]> {
     const user = await getMe();
     if (!user?.empresaId) throw new Error('Não autorizado');
 
-    if (!MESAS_TABLE_ID) {
-      console.warn('MESAS_TABLE_ID não configurado');
-      return [];
-    }
-
-    const data = await noco.list(MESAS_TABLE_ID, {
-      where: `(store_id,eq,${user.empresaId})`,
+    const data = await pg.list('mesas', {
+      where: { store_id: user.empresaId },
       sort: 'numero',
       limit: 100,
     });
@@ -93,16 +83,14 @@ export async function getMesaById(id: number): Promise<Mesa | null> {
     const user = await getMe();
     if (!user?.empresaId) throw new Error('Não autorizado');
 
-    const mesaRaw = await noco.findById(MESAS_TABLE_ID, id) as any;
-    if (!mesaRaw) return null;
-    
-    const mesa = normalizeRecord(mesaRaw) as Mesa;
+    const mesa = await pg.findById('mesas', id) as any;
+    if (!mesa) return null;
 
     if (String(mesa.store_id) !== String(user.empresaId)) {
       return null;
     }
 
-    return mesa;
+    return normalizeRecord(mesa) as Mesa;
   } catch (error) {
     console.error('Erro ao buscar mesa:', error);
     return null;
@@ -116,9 +104,8 @@ export async function createMesa(data: {
 }): Promise<Mesa> {
   const user = await requireRole(['admin', 'gerente', 'atendente']);
 
-  // Verificar se já existe mesa com esse número
-  const existente = await noco.findOne(MESAS_TABLE_ID, {
-    where: `(store_id,eq,${user.empresaId})~and(numero,eq,${data.numero})`,
+  const existente = await pg.findOne('mesas', {
+    where: { store_id: user.empresaId, numero: data.numero },
   });
 
   if (existente) {
@@ -134,7 +121,7 @@ export async function createMesa(data: {
     qr_code: `mesa_${user.empresaId}_${data.numero}_${Date.now()}`,
   };
 
-  const result = await noco.create(MESAS_TABLE_ID, payload);
+  const result = await pg.create('mesas', payload);
 
   revalidatePath('/dashboard/mesas');
   return normalizeRecord(result as any) as Mesa;
@@ -146,15 +133,14 @@ export async function updateMesa(
 ): Promise<Mesa> {
   const user = await requireRole(['admin', 'gerente', 'atendente']);
 
-  const mesaRaw = await noco.findById(MESAS_TABLE_ID, id) as any;
-  if (!mesaRaw) throw new Error('Mesa não encontrada');
+  const mesa = await pg.findById('mesas', id) as any;
+  if (!mesa) throw new Error('Mesa não encontrada');
   
-  const mesa = normalizeRecord(mesaRaw) as Mesa;
   if (String(mesa.store_id) !== String(user.empresaId)) {
     throw new Error('Mesa não encontrada');
   }
 
-  const result = await noco.update(MESAS_TABLE_ID, { id, ...data });
+  const result = await pg.update('mesas', id, data);
 
   revalidatePath('/dashboard/mesas');
   return normalizeRecord(result as any) as Mesa;
@@ -163,25 +149,23 @@ export async function updateMesa(
 export async function deleteMesa(id: number): Promise<void> {
   const user = await requireRole(['admin', 'gerente']);
 
-  const mesaRaw = await noco.findById(MESAS_TABLE_ID, id) as any;
-  if (!mesaRaw) throw new Error('Mesa não encontrada');
+  const mesa = await pg.findById('mesas', id) as any;
+  if (!mesa) throw new Error('Mesa não encontrada');
   
-  const mesa = normalizeRecord(mesaRaw) as Mesa;
   if (String(mesa.store_id) !== String(user.empresaId)) {
     throw new Error('Mesa não encontrada');
   }
 
-  // Verificar se há comandas abertas
-  const comandasAbertas = await noco.list(COMANDAS_TABLE_ID, {
-    where: `(mesa_id,eq,${id})~and(status,eq,${COMANDA_STATUS.ABERTA})`,
-    limit: 1,
-  });
+  const comandasAbertas = await pg.query(
+    `SELECT id FROM comandas WHERE mesa_id = $1 AND status = $2 LIMIT 1`,
+    [id, COMANDA_STATUS.ABERTA]
+  );
 
-  if (comandasAbertas.list?.length > 0) {
+  if (comandasAbertas.rows?.length > 0) {
     throw new Error('Não é possível excluir mesa com comandas abertas');
   }
 
-  await noco.delete(MESAS_TABLE_ID, id);
+  await pg.delete('mesas', id);
 
   revalidatePath('/dashboard/mesas');
 }
@@ -195,9 +179,9 @@ export async function getComandasByMesa(mesaId: number): Promise<Comanda[]> {
     const user = await getMe();
     if (!user?.empresaId) throw new Error('Não autorizado');
 
-    const data = await noco.list(COMANDAS_TABLE_ID, {
-      where: `(mesa_id,eq,${mesaId})~and(store_id,eq,${user.empresaId})`,
-      sort: '-Id',
+    const data = await pg.list('comandas', {
+      where: { mesa_id: mesaId, store_id: user.empresaId },
+      sort: '-id',
       limit: 100,
     });
 
@@ -213,18 +197,12 @@ export async function getComandasAbertas(): Promise<Comanda[]> {
     const user = await getMe();
     if (!user?.empresaId) throw new Error('Não autorizado');
 
-    if (!COMANDAS_TABLE_ID) {
-      console.warn('COMANDAS_TABLE_ID não configurado');
-      return [];
-    }
+    const data = await pg.query(
+      `SELECT * FROM comandas WHERE store_id = $1 AND status = $2 ORDER BY id DESC LIMIT 100`,
+      [user.empresaId, COMANDA_STATUS.ABERTA]
+    );
 
-    const data = await noco.list(COMANDAS_TABLE_ID, {
-      where: `(store_id,eq,${user.empresaId})~and(status,eq,${COMANDA_STATUS.ABERTA})`,
-      sort: '-Id',
-      limit: 100,
-    });
-
-    return normalizeRecordList((data.list || []) as any[]) as Comanda[];
+    return normalizeRecordList((data.rows || []) as any[]) as Comanda[];
   } catch (error) {
     console.error('Erro ao buscar comandas abertas:', error);
     return [];
@@ -237,11 +215,9 @@ export async function createComanda(data: {
 }): Promise<Comanda> {
   const user = await requireRole(['admin', 'gerente', 'atendente']);
 
-  // Verificar se a mesa existe e pertence à empresa
-  const mesaRaw = await noco.findById(MESAS_TABLE_ID, data.mesa_id) as any;
-  if (!mesaRaw) throw new Error('Mesa não encontrada');
+  const mesa = await pg.findById('mesas', data.mesa_id) as any;
+  if (!mesa) throw new Error('Mesa não encontrada');
   
-  const mesa = normalizeRecord(mesaRaw) as Mesa;
   if (String(mesa.store_id) !== String(user.empresaId)) {
     throw new Error('Mesa não encontrada');
   }
@@ -254,14 +230,10 @@ export async function createComanda(data: {
     total: 0,
   };
 
-  const result = await noco.create(COMANDAS_TABLE_ID, payload);
+  const result = await pg.create('comandas', payload);
 
-  // Atualizar status da mesa para ocupada
   if (mesa.status === MESA_STATUS.LIVRE) {
-    await noco.update(MESAS_TABLE_ID, {
-      id: mesa.id,
-      status: MESA_STATUS.OCUPADA,
-    });
+    await pg.update('mesas', mesa.id, { status: MESA_STATUS.OCUPADA });
   }
 
   revalidatePath('/dashboard/mesas');
@@ -274,24 +246,21 @@ export async function updateComanda(
 ): Promise<Comanda> {
   const user = await requireRole(['admin', 'gerente', 'atendente']);
 
-  const comandaRaw = await noco.findById(COMANDAS_TABLE_ID, id) as any;
-  if (!comandaRaw) throw new Error('Comanda não encontrada');
+  const comanda = await pg.findById('comandas', id) as any;
+  if (!comanda) throw new Error('Comanda não encontrada');
   
-  const comanda = normalizeRecord(comandaRaw) as Comanda;
   if (String(comanda.store_id) !== String(user.empresaId)) {
     throw new Error('Comanda não encontrada');
   }
 
-  const updatePayload: any = { id, ...data };
+  const updatePayload: any = { ...data };
 
-  // Se está fechando ou marcando como paga, adicionar data de fechamento
   if (data.status && data.status !== COMANDA_STATUS.ABERTA) {
     updatePayload.closed_at = new Date().toISOString();
   }
 
-  const result = await noco.update(COMANDAS_TABLE_ID, updatePayload);
+  const result = await pg.update('comandas', id, updatePayload);
 
-  // Verificar se deve liberar a mesa
   if (data.status === COMANDA_STATUS.PAGA) {
     await verificarELiberarMesa(comanda.mesa_id);
   }
@@ -302,23 +271,18 @@ export async function updateComanda(
 }
 
 async function verificarELiberarMesa(mesaId: number): Promise<void> {
-  // Verificar se ainda há comandas abertas na mesa
-  const comandasAbertas = await noco.list(COMANDAS_TABLE_ID, {
-    where: `(mesa_id,eq,${mesaId})~and(status,eq,${COMANDA_STATUS.ABERTA})`,
-    limit: 1,
-  });
+  const comandasAbertas = await pg.query(
+    `SELECT id FROM comandas WHERE mesa_id = $1 AND status = $2 LIMIT 1`,
+    [mesaId, COMANDA_STATUS.ABERTA]
+  );
 
-  if (!comandasAbertas.list?.length) {
-    // Não há mais comandas abertas, liberar mesa
-    await noco.update(MESAS_TABLE_ID, {
-      id: mesaId,
-      status: MESA_STATUS.LIVRE,
-    });
+  if (!comandasAbertas.rows?.length) {
+    await pg.update('mesas', mesaId, { status: MESA_STATUS.LIVRE });
   }
 }
 
 // ============================================================
-// MESAS COM DETALHES (para visualização)
+// MESAS COM DETALHES
 // ============================================================
 
 export async function getMesasComDetalhes(): Promise<MesaComDetalhes[]> {
@@ -326,14 +290,8 @@ export async function getMesasComDetalhes(): Promise<MesaComDetalhes[]> {
     const user = await getMe();
     if (!user?.empresaId) throw new Error('Não autorizado');
 
-    if (!MESAS_TABLE_ID || !COMANDAS_TABLE_ID) {
-      console.warn('IDs de tabelas de mesas/comandas não configurados');
-      return [];
-    }
-
-    // Buscar mesas
-    const mesasData = await noco.list(MESAS_TABLE_ID, {
-      where: `(store_id,eq,${user.empresaId})`,
+    const mesasData = await pg.list('mesas', {
+      where: { store_id: user.empresaId },
       sort: 'numero',
       limit: 100,
     });
@@ -341,21 +299,18 @@ export async function getMesasComDetalhes(): Promise<MesaComDetalhes[]> {
 
     if (mesas.length === 0) return [];
 
-    // Buscar todas as comandas abertas
-    const comandasData = await noco.list(COMANDAS_TABLE_ID, {
-      where: `(store_id,eq,${user.empresaId})~and(status,eq,${COMANDA_STATUS.ABERTA})`,
-      limit: 500,
-    });
-    const comandas = normalizeRecordList((comandasData.list || []) as any[]) as Comanda[];
+    const comandasData = await pg.query(
+      `SELECT * FROM comandas WHERE store_id = $1 AND status = $2 LIMIT 500`,
+      [user.empresaId, COMANDA_STATUS.ABERTA]
+    );
+    const comandas = normalizeRecordList((comandasData.rows || []) as any[]) as Comanda[];
 
-    // Buscar pedidos de mesa (TODOS exceto cancelados - incluindo finalizados para mostrar no histórico da comanda)
-    const pedidosData = await noco.list(PEDIDOS_TABLE_ID, {
-      where: `(empresa_id,eq,${user.empresaId})~and(tipo_entrega,eq,mesa)~and(status,neq,cancelado)`,
-      limit: 500,
-    });
-    const pedidos = normalizeRecordList((pedidosData.list || []) as any[]);
+    const pedidosData = await pg.query(
+      `SELECT * FROM pedidos WHERE empresa_id = $1 AND tipo_entrega = 'mesa' AND status != 'cancelado' LIMIT 500`,
+      [user.empresaId]
+    );
+    const pedidos = normalizeRecordList((pedidosData.rows || []) as any[]);
 
-    // Montar estrutura de retorno
     const mesasComDetalhes: MesaComDetalhes[] = mesas.map((mesa) => {
       const comandasDaMesa = comandas.filter((c) => String(c.mesa_id) === String(mesa.id));
 
@@ -406,11 +361,9 @@ export async function createTableOrder(data: {
 }): Promise<any> {
   const user = await requireRole(['admin', 'gerente', 'atendente', 'cozinheiro']);
 
-  // Verificar comanda
-  const comandaRaw = await noco.findById(COMANDAS_TABLE_ID, data.comanda_id) as any;
-  if (!comandaRaw) throw new Error('Comanda não encontrada');
+  const comanda = await pg.findById('comandas', data.comanda_id) as any;
+  if (!comanda) throw new Error('Comanda não encontrada');
   
-  const comanda = normalizeRecord(comandaRaw) as Comanda;
   if (String(comanda.store_id) !== String(user.empresaId)) {
     throw new Error('Comanda não encontrada');
   }
@@ -419,39 +372,32 @@ export async function createTableOrder(data: {
     throw new Error('Esta comanda já foi fechada');
   }
 
-  // Verificar se já existe pedido pendente para esta comanda
-  const pedidoExistenteData = await noco.list(PEDIDOS_TABLE_ID, {
-    where: `(comanda_id,eq,${data.comanda_id})~and(status,eq,pendente)~and(empresa_id,eq,${user.empresaId})`,
-    limit: 1,
-    sort: '-id',
-  });
+  const pedidoExistenteData = await pg.query(
+    `SELECT * FROM pedidos WHERE comanda_id = $1 AND status = 'pendente' AND empresa_id = $2 ORDER BY id DESC LIMIT 1`,
+    [data.comanda_id, user.empresaId]
+  );
 
-  const pedidoExistente = pedidoExistenteData.list?.[0] as any;
+  const pedidoExistente = pedidoExistenteData.rows?.[0] as any;
 
   let result;
 
   if (pedidoExistente) {
-    // MERGE: Adicionar novos itens ao pedido existente
-    const pedidoNorm = normalizeRecord(pedidoExistente);
-    const itensExistentes = JSON.parse(String((pedidoNorm as any).itens || '[]'));
+    const itensExistentes = JSON.parse(String(pedidoExistente.itens || '[]'));
     const novosItens = JSON.parse(data.itens);
 
-    // Unir os arrays de itens
     const itensMerged = [...itensExistentes, ...novosItens];
-    const novoValorTotal = (Number((pedidoNorm as any).valor_total) || 0) + data.valor_total;
+    const novoValorTotal = (Number(pedidoExistente.valor_total) || 0) + data.valor_total;
 
-    await noco.update(PEDIDOS_TABLE_ID, {
-      id: pedidoNorm.id,
+    await pg.update('pedidos', pedidoExistente.id, {
       itens: JSON.stringify(itensMerged),
       valor_total: novoValorTotal,
     });
 
-    result = { ...pedidoNorm, itens: JSON.stringify(itensMerged), valor_total: novoValorTotal };
+    result = { ...pedidoExistente, itens: JSON.stringify(itensMerged), valor_total: novoValorTotal };
   } else {
-    // CRIAR NOVO: Nenhum pedido pendente encontrado
     const payload = {
       cliente_nome: data.cliente_nome || comanda.nome_cliente || `Mesa ${data.numero_mesa}`,
-      telefone_cliente: '', // Mesa não tem telefone
+      telefone_cliente: '',
       itens: data.itens,
       valor_total: data.valor_total,
       status: 'pendente',
@@ -464,15 +410,11 @@ export async function createTableOrder(data: {
       criado_em: new Date().toISOString(),
     };
 
-    result = await noco.create(PEDIDOS_TABLE_ID, payload);
+    result = await pg.create('pedidos', payload);
   }
 
-  // Atualizar total da comanda
   const novoTotal = (Number(comanda.total) || 0) + data.valor_total;
-  await noco.update(COMANDAS_TABLE_ID, {
-    id: data.comanda_id,
-    total: novoTotal,
-  });
+  await pg.update('comandas', data.comanda_id, { total: novoTotal });
 
   revalidatePath('/dashboard/expedition');
   revalidatePath('/dashboard/mesas');
@@ -486,15 +428,13 @@ export async function createTableOrder(data: {
 export async function abrirMesa(mesaId: number, nomeCliente?: string): Promise<Comanda> {
   const user = await requireRole(['admin', 'gerente', 'atendente']);
 
-  const mesaRaw = await noco.findById(MESAS_TABLE_ID, mesaId) as any;
-  if (!mesaRaw) throw new Error('Mesa não encontrada');
+  const mesa = await pg.findById('mesas', mesaId) as any;
+  if (!mesa) throw new Error('Mesa não encontrada');
   
-  const mesa = normalizeRecord(mesaRaw) as Mesa;
   if (String(mesa.store_id) !== String(user.empresaId)) {
     throw new Error('Mesa não encontrada');
   }
 
-  // Criar comanda padrão
   const comanda = await createComanda({
     mesa_id: mesaId,
     nome_cliente: nomeCliente,
@@ -506,38 +446,30 @@ export async function abrirMesa(mesaId: number, nomeCliente?: string): Promise<C
 export async function fecharMesa(mesaId: number): Promise<{ total: number; comandas: number }> {
   const user = await requireRole(['admin', 'gerente', 'atendente']);
 
-  const mesaRaw = await noco.findById(MESAS_TABLE_ID, mesaId) as any;
-  if (!mesaRaw) throw new Error('Mesa não encontrada');
+  const mesa = await pg.findById('mesas', mesaId) as any;
+  if (!mesa) throw new Error('Mesa não encontrada');
   
-  const mesa = normalizeRecord(mesaRaw) as Mesa;
   if (String(mesa.store_id) !== String(user.empresaId)) {
     throw new Error('Mesa não encontrada');
   }
 
-  // Buscar todas as comandas abertas da mesa
-  const comandasData = await noco.list(COMANDAS_TABLE_ID, {
-    where: `(mesa_id,eq,${mesaId})~and(status,eq,${COMANDA_STATUS.ABERTA})`,
-    limit: 100,
-  });
-  const comandas = normalizeRecordList((comandasData.list || []) as any[]) as Comanda[];
+  const comandasData = await pg.query(
+    `SELECT * FROM comandas WHERE mesa_id = $1 AND status = $2 LIMIT 100`,
+    [mesaId, COMANDA_STATUS.ABERTA]
+  );
+  const comandas = normalizeRecordList((comandasData.rows || []) as any[]) as Comanda[];
 
   let totalGeral = 0;
 
-  // Fechar todas as comandas
   for (const comanda of comandas) {
     totalGeral += Number(comanda.total) || 0;
-    await noco.update(COMANDAS_TABLE_ID, {
-      id: comanda.id,
+    await pg.update('comandas', comanda.id, {
       status: COMANDA_STATUS.PAGA,
       closed_at: new Date().toISOString(),
     });
   }
 
-  // Liberar mesa
-  await noco.update(MESAS_TABLE_ID, {
-    id: mesaId,
-    status: MESA_STATUS.LIVRE,
-  });
+  await pg.update('mesas', mesaId, { status: MESA_STATUS.LIVRE });
 
   revalidatePath('/dashboard/mesas');
   return { total: totalGeral, comandas: comandas.length };

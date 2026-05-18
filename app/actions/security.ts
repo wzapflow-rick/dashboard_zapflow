@@ -2,8 +2,7 @@
 
 import bcrypt from 'bcryptjs';
 import { getMe } from '@/lib/session-server';
-import { noco } from '@/lib/nocodb';
-import { EMPRESAS_TABLE_ID } from '@/lib/constants';
+import { pg } from '@/lib/postgres';
 
 export async function changePassword(newPassword: string) {
     try {
@@ -12,8 +11,7 @@ export async function changePassword(newPassword: string) {
 
         const hashedPassword = bcrypt.hashSync(newPassword, 10);
 
-        await noco.update(EMPRESAS_TABLE_ID, {
-            id: user.empresaId,
+        await pg.update('empresas', user.empresaId, {
             senha: hashedPassword,
         });
 

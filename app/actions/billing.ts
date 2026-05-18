@@ -1,7 +1,7 @@
 'use server';
 
-import { noco } from '@/lib/nocodb';
-import { EMPRESAS_TABLE_ID, SUBSCRIPTION_PLANS, type SubscriptionPlanId } from '@/lib/constants';
+import { pg } from '@/lib/postgres';
+import { SUBSCRIPTION_PLANS, type SubscriptionPlanId } from '@/lib/constants';
 
 const MP_ACCESS_TOKEN = process.env.MERCADOPAGO_ACCESS_TOKEN;
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://cardapio.wzapflow.com.br';
@@ -19,7 +19,7 @@ export interface BillingStatus {
  */
 export async function getBillingStatus(empresaId: number): Promise<BillingStatus | null> {
   try {
-    const empresa = await noco.findById(EMPRESAS_TABLE_ID, empresaId) as any;
+    const empresa = await pg.findById('empresas', empresaId) as any;
     
     if (!empresa) return null;
     
@@ -46,13 +46,11 @@ export async function generatePixPayment(empresaId: number, plano: SubscriptionP
       return { success: false, error: 'Plano invalido' };
     }
 
-    // Buscar dados da empresa
-    const empresa = await noco.findById(EMPRESAS_TABLE_ID, empresaId) as any;
+    const empresa = await pg.findById('empresas', empresaId) as any;
     if (!empresa) {
       return { success: false, error: 'Empresa nao encontrada' };
     }
 
-    // Criar pagamento PIX no Mercado Pago
     const preference = {
       items: [
         {
@@ -131,10 +129,7 @@ export async function updatePaymentStatus(
   }
 ) {
   try {
-    await noco.update(EMPRESAS_TABLE_ID, {
-      id: empresaId,
-      ...data,
-    });
+    await pg.update('empresas', empresaId, data);
     return { success: true };
   } catch (error: any) {
     console.error('[Billing] Erro ao atualizar status:', error);
@@ -149,12 +144,12 @@ export async function getOverdueCompanies() {
   try {
     const today = new Date().toISOString().split('T')[0];
     
-    const result = await noco.list(EMPRESAS_TABLE_ID, {
-      where: `(tipo_pagamento,eq,pix)~and(data_vencimento,lt,${today})~and(bloqueado,eq,false)`,
-      limit: 100,
-    });
+    const result = await pg.query(
+      `SELECT * FROM empresas WHERE tipo_pagamento = 'pix' AND data_vencimento < $1 AND bloqueado = false LIMIT 100`,
+      [today]
+    );
 
-    return result?.list || [];
+    return result?.rows || [];
   } catch (error) {
     console.error('[Billing] Erro ao buscar empresas inadimplentes:', error);
     return [];
@@ -167,14 +162,13 @@ export async function getOverdueCompanies() {
 export async function calculateNextDueDate(): Promise<string> {
   const now = new Date();
   let year = now.getFullYear();
-  let month = now.getMonth() + 1; // Proximo mes
+  let month = now.getMonth() + 1;
   
   if (month > 11) {
     month = 0;
     year += 1;
   }
   
-  // Dia 5 do proximo mes
   const dueDate = new Date(year, month, 5);
   return dueDate.toISOString().split('T')[0];
 }
@@ -184,10 +178,9 @@ export async function calculateNextDueDate(): Promise<string> {
  */
 export async function blockCompany(empresaId: number) {
   try {
-    await noco.update(EMPRESAS_TABLE_ID, {
-      id: empresaId,
+    await pg.update('empresas', empresaId, {
       bloqueado: true,
-      planos: 'iniciante', // Bloqueia cardapio tambem
+      planos: 'iniciante',
     });
     return { success: true };
   } catch (error: any) {
@@ -201,10 +194,9 @@ export async function blockCompany(empresaId: number) {
  */
 export async function unblockCompany(empresaId: number, plano: string) {
   try {
-    const nextDueDate = calculateNextDueDate();
+    const nextDueDate = await calculateNextDueDate();
     
-    await noco.update(EMPRESAS_TABLE_ID, {
-      id: empresaId,
+    await pg.update('empresas', empresaId, {
       bloqueado: false,
       dias_inadimplente: 0,
       ultimo_aviso_enviado: 0,

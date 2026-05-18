@@ -2,8 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { getMe } from '@/lib/session-server';
-import { noco } from '@/lib/nocodb';
-import { CLIENTES_TABLE_ID, BOT_CONFIG_TABLE_ID, EMPRESAS_TABLE_ID } from '@/lib/constants';
+import { pg } from '@/lib/postgres';
 
 // ============================================================
 // TIPOS PARA CONFIGURACAO DO BOT DE SAUDACAO
@@ -49,13 +48,8 @@ export async function getBotConfig(): Promise<BotConfig | null> {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Nao autorizado');
 
-        if (!BOT_CONFIG_TABLE_ID) {
-            console.warn('[getBotConfig] BOT_CONFIG_TABLE_ID nao configurado');
-            return { ...DEFAULT_BOT_CONFIG, empresa_id: user.empresaId };
-        }
-
-        const config = await noco.findOne<BotConfig>(BOT_CONFIG_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})`,
+        const config = await pg.findOne<BotConfig>('bot_config', {
+            where: { empresa_id: user.empresaId },
         });
 
         if (!config) {
@@ -77,13 +71,9 @@ export async function saveBotConfig(config: Partial<BotConfig>): Promise<{ succe
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Nao autorizado');
 
-        if (!BOT_CONFIG_TABLE_ID) {
-            return { success: false, error: 'BOT_CONFIG_TABLE_ID nao configurado. Adicione o ID da tabela nas variaveis de ambiente.' };
-        }
-
         // Verifica se ja existe configuracao
-        const existing = await noco.findOne<BotConfig>(BOT_CONFIG_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})`,
+        const existing = await pg.findOne<BotConfig>('bot_config', {
+            where: { empresa_id: user.empresaId },
         });
 
         const dataToSave = {
@@ -92,12 +82,9 @@ export async function saveBotConfig(config: Partial<BotConfig>): Promise<{ succe
         };
 
         if (existing?.id) {
-            await noco.update(BOT_CONFIG_TABLE_ID, {
-                id: existing.id,
-                ...dataToSave,
-            });
+            await pg.update('bot_config', existing.id, dataToSave);
         } else {
-            await noco.create(BOT_CONFIG_TABLE_ID, dataToSave);
+            await pg.create('bot_config', dataToSave);
         }
 
         revalidatePath('/dashboard/settings');
@@ -116,7 +103,7 @@ export async function getCardapioLink(): Promise<string> {
         const user = await getMe();
         if (!user?.empresaId) return '';
 
-        const empresa = await noco.findById<{ nome_fantasia: string }>(EMPRESAS_TABLE_ID, user.empresaId);
+        const empresa = await pg.findById<{ nome_fantasia: string }>('empresas', user.empresaId);
         if (!empresa?.nome_fantasia) return '';
 
         // Gera slug a partir do nome fantasia
@@ -143,14 +130,13 @@ export async function toggleBotStatus(phone: string, botActive: boolean) {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        const client = await noco.findOne(CLIENTES_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})~and(telefone,eq,${phone})`,
+        const client = await pg.findOne('clientes', {
+            where: { empresa_id: user.empresaId, telefone: phone },
         }) as any;
 
         if (!client) throw new Error('Cliente não encontrado');
 
-        await noco.update(CLIENTES_TABLE_ID, {
-            id: client.id,
+        await pg.update('clientes', client.id, {
             modo_robo: botActive
         });
 
@@ -169,8 +155,8 @@ export async function getBotStatus(phone: string) {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        const client = await noco.findOne(CLIENTES_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})~and(telefone,eq,${phone})`,
+        const client = await pg.findOne('clientes', {
+            where: { empresa_id: user.empresaId, telefone: phone },
         }) as any;
 
         return {

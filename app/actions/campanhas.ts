@@ -2,8 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/session-server';
-import { noco } from '@/lib/nocodb';
-import { CAMPANHAS_TABLE_ID, DISPAROS_TABLE_ID } from '@/lib/constants';
+import { pg } from '@/lib/postgres';
 
 export type CampanhaTipo = 'reengajamento' | 'cupom' | 'pos_pedido' | 'horario' | 'data_especial' | 'produto_destaque';
 
@@ -64,21 +63,16 @@ export async function getCampanhas(): Promise<CampanhaConfig[]> {
     try {
         const user = await requireAdmin();
 
-        if (!CAMPANHAS_TABLE_ID) {
-            console.warn('NOCODB_TABLE_CAMPANHAS não configurado');
-            return [];
-        }
-
-        const data = await noco.list(CAMPANHAS_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})`,
+        const data = await pg.list('campanhas', {
+            where: { empresa_id: user.empresaId },
             sort: '-id',
             limit: 100,
         });
 
         return (data.list || []).map((c: any) => ({
             ...c,
-            id: c.id || c.Id,
-            dias_semana: c.dias_semana ? JSON.parse(c.dias_semana) : undefined
+            id: c.id,
+            dias_semana: c.dias_semana ? (typeof c.dias_semana === 'string' ? JSON.parse(c.dias_semana) : c.dias_semana) : undefined
         }));
     } catch (error) {
         console.error('getCampanhas error:', error);
@@ -90,8 +84,6 @@ export async function createCampanha(data: CampanhaFormData): Promise<{ success:
     try {
         const user = await requireAdmin();
 
-        if (!CAMPANHAS_TABLE_ID) throw new Error('NOCODB_TABLE_CAMPANHAS não configurado');
-
         const payload = {
             empresa_id: user.empresaId,
             ...data,
@@ -99,7 +91,7 @@ export async function createCampanha(data: CampanhaFormData): Promise<{ success:
             max_envios_semana: data.max_envios_semana || 2,
         };
 
-        const result = await noco.create(CAMPANHAS_TABLE_ID, payload);
+        const result = await pg.create('campanhas', payload);
 
         revalidatePath('/dashboard/campanhas');
         return { success: true, data: result };
@@ -113,14 +105,12 @@ export async function updateCampanha(id: number, data: Partial<CampanhaFormData>
     try {
         await requireAdmin();
 
-        if (!CAMPANHAS_TABLE_ID) throw new Error('NOCODB_TABLE_CAMPANHAS não configurado');
-
         const payload = {
             ...data,
             dias_semana: data.dias_semana ? JSON.stringify(data.dias_semana) : undefined,
         };
 
-        await noco.update(CAMPANHAS_TABLE_ID, { ...payload, id });
+        await pg.update('campanhas', id, payload);
 
         revalidatePath('/dashboard/campanhas');
         return { success: true };
@@ -134,9 +124,7 @@ export async function deleteCampanha(id: number): Promise<{ success: boolean; er
     try {
         await requireAdmin();
 
-        if (!CAMPANHAS_TABLE_ID) throw new Error('NOCODB_TABLE_CAMPANHAS não configurado');
-
-        await noco.delete(CAMPANHAS_TABLE_ID, id);
+        await pg.delete('campanhas', id);
 
         revalidatePath('/dashboard/campanhas');
         return { success: true };
@@ -150,9 +138,7 @@ export async function toggleCampanha(id: number, ativo: boolean): Promise<{ succ
     try {
         await requireAdmin();
 
-        if (!CAMPANHAS_TABLE_ID) throw new Error('NOCODB_TABLE_CAMPANHAS não configurado');
-
-        await noco.update(CAMPANHAS_TABLE_ID, { id, ativo });
+        await pg.update('campanhas', id, { ativo });
 
         revalidatePath('/dashboard/campanhas');
         return { success: true };
@@ -166,17 +152,12 @@ export async function getDisparos(campanhaId?: number): Promise<DisparoLog[]> {
     try {
         const user = await requireAdmin();
 
-        if (!DISPAROS_TABLE_ID) {
-            console.warn('NOCODB_TABLE_DISPAROS não configurado');
-            return [];
-        }
-
-        let where = `(empresa_id,eq,${user.empresaId})`;
+        const where: any = { empresa_id: user.empresaId };
         if (campanhaId) {
-            where += `~and(campanha_id,eq,${campanhaId})`;
+            where.campanha_id = campanhaId;
         }
 
-        const data = await noco.list(DISPAROS_TABLE_ID, {
+        const data = await pg.list('disparos', {
             where,
             sort: '-enviado_em',
             limit: 100,
@@ -184,7 +165,7 @@ export async function getDisparos(campanhaId?: number): Promise<DisparoLog[]> {
 
         return (data.list || []).map((d: any) => ({
             ...d,
-            id: d.id || d.Id
+            id: d.id
         }));
     } catch (error) {
         console.error('getDisparos error:', error);
@@ -196,20 +177,16 @@ export async function getDisparosStats(): Promise<DisparoStats> {
     try {
         const user = await requireAdmin();
 
-        if (!DISPAROS_TABLE_ID) {
-            return { total_enviados: 0, total_erros: 0, total_clientes_alcancados: 0 };
-        }
-
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        // Usar formato apenas com data (YYYY-MM-DD) que o NocoDB aceita
-        const dataStr = thirtyDaysAgo.toISOString().split('T')[0];
+        const dataStr = thirtyDaysAgo.toISOString();
 
-        const data = await noco.list(DISPAROS_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})~and(enviado_em,gt,${dataStr})`,
-        });
+        const result = await pg.query(
+            `SELECT * FROM disparos WHERE empresa_id = $1 AND enviado_em > $2`,
+            [user.empresaId, dataStr]
+        );
 
-        const disparos = data.list || [];
+        const disparos = result.rows || [];
 
         const total_enviados = disparos.filter((d: any) => d.status === 'enviado').length;
         const total_erros = disparos.filter((d: any) => d.status === 'erro').length;
@@ -237,17 +214,15 @@ export async function getCampanhasParaN8N(empresaId: string, apiKey: string): Pr
             throw new Error('API key inválida');
         }
 
-        if (!CAMPANHAS_TABLE_ID) return [];
+        const data = await pg.query(
+            `SELECT * FROM campanhas WHERE empresa_id = $1 AND ativo = true LIMIT 100`,
+            [empresaId]
+        );
 
-        const data = await noco.list(CAMPANHAS_TABLE_ID, {
-            where: `(empresa_id,eq,${empresaId})~and(ativo,eq,true)`,
-            limit: 100,
-        });
-
-        return (data.list || []).map((c: any) => ({
+        return (data.rows || []).map((c: any) => ({
             ...c,
-            id: c.id || c.Id,
-            dias_semana: c.dias_semana ? JSON.parse(c.dias_semana) : undefined
+            id: c.id,
+            dias_semana: c.dias_semana ? (typeof c.dias_semana === 'string' ? JSON.parse(c.dias_semana) : c.dias_semana) : undefined
         }));
     } catch (error) {
         console.error('getCampanhasParaN8N error:', error);
@@ -266,8 +241,6 @@ export async function registrarDisparo(data: {
     erroDetalhe?: string;
 }): Promise<{ success: boolean; error?: string }> {
     try {
-        if (!DISPAROS_TABLE_ID) throw new Error('NOCODB_TABLE_DISPAROS não configurado');
-
         const payload = {
             empresa_id: data.empresaId,
             campanha_id: data.campanhaId,
@@ -280,7 +253,7 @@ export async function registrarDisparo(data: {
             enviado_em: new Date().toISOString(),
         };
 
-        await noco.create(DISPAROS_TABLE_ID, payload);
+        await pg.create('disparos', payload);
 
         revalidatePath('/dashboard/campanhas');
         return { success: true };

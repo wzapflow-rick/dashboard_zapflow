@@ -1,10 +1,8 @@
 'use server';
 
-import { noco } from '@/lib/nocodb';
+import { pg } from '@/lib/postgres';
 import db from '@/lib/db';
 import { 
-  PENDING_SIGNUPS_TABLE_ID, 
-  EMPRESAS_TABLE_ID, 
   SUBSCRIPTION_PLANS,
   type SubscriptionPlanId
 } from '@/lib/constants';
@@ -55,7 +53,6 @@ export async function createCheckoutSession(data: CheckoutData) {
   try {
     const { email, nome, telefone, plano } = data;
     
-    // Validacoes
     if (!email || !nome || !telefone || !plano) {
       console.log('[v0] Campos faltando em createCheckoutSession');
       return { success: false, error: 'Todos os campos sao obrigatorios' };
@@ -63,9 +60,8 @@ export async function createCheckoutSession(data: CheckoutData) {
     
     console.log('[v0] Verificando email existente:', email);
     
-    // Verificar se email ja existe
-    const existingCompany = await noco.list(EMPRESAS_TABLE_ID, {
-      where: `(email,eq,${email})`,
+    const existingCompany = await pg.list('empresas', {
+      where: { email },
       limit: 1,
     });
     
@@ -75,7 +71,6 @@ export async function createCheckoutSession(data: CheckoutData) {
       return { success: false, error: 'Este email ja esta cadastrado. Faca login.' };
     }
     
-    // Buscar dados do plano
     const planKey = plano.toUpperCase() as keyof typeof SUBSCRIPTION_PLANS;
     const planData = SUBSCRIPTION_PLANS[planKey];
     
@@ -83,10 +78,8 @@ export async function createCheckoutSession(data: CheckoutData) {
       return { success: false, error: 'Plano invalido' };
     }
     
-    // Gerar token unico
     const token = uuidv4();
     
-    // Dados para external_reference (sera usado no webhook)
     const externalReference = JSON.stringify({
       token,
       email,
@@ -95,7 +88,6 @@ export async function createCheckoutSession(data: CheckoutData) {
       plano,
     });
     
-    // Criar preferencia de pagamento no Mercado Pago
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://cardapio.wzapflow.com.br';
     
     const preference = {
@@ -115,7 +107,6 @@ export async function createCheckoutSession(data: CheckoutData) {
     console.log('[v0] Criando assinatura no MP com preference:', JSON.stringify(preference));
     console.log('[v0] MP_ACCESS_TOKEN presente:', !!MP_ACCESS_TOKEN);
     
-    // Criar assinatura no MP
     const response = await fetch('https://api.mercadopago.com/preapproval', {
       method: 'POST',
       headers: {
@@ -159,14 +150,12 @@ export async function createPixCheckoutSession(data: CheckoutData) {
   try {
     const { email, nome, telefone, plano } = data;
     
-    // Validacoes
     if (!email || !nome || !telefone || !plano) {
       return { success: false, error: 'Todos os campos sao obrigatorios' };
     }
     
-    // Verificar se email ja existe
-    const existingCompany = await noco.list(EMPRESAS_TABLE_ID, {
-      where: `(email,eq,${email})`,
+    const existingCompany = await pg.list('empresas', {
+      where: { email },
       limit: 1,
     });
     
@@ -174,7 +163,6 @@ export async function createPixCheckoutSession(data: CheckoutData) {
       return { success: false, error: 'Este email ja esta cadastrado. Faca login.' };
     }
     
-    // Buscar dados do plano
     const planKey = plano.toUpperCase() as keyof typeof SUBSCRIPTION_PLANS;
     const planData = SUBSCRIPTION_PLANS[planKey];
     
@@ -182,10 +170,8 @@ export async function createPixCheckoutSession(data: CheckoutData) {
       return { success: false, error: 'Plano invalido' };
     }
     
-    // Gerar token unico
     const token = uuidv4();
     
-    // Dados para external_reference (sera usado no webhook)
     const externalReference = JSON.stringify({
       token,
       email,
@@ -197,7 +183,6 @@ export async function createPixCheckoutSession(data: CheckoutData) {
     
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://cardapio.wzapflow.com.br';
     
-    // Criar preferencia de pagamento PIX no Mercado Pago
     const preference = {
       items: [
         {
@@ -279,7 +264,6 @@ export async function createTrialAccount(data: {
   try {
     const { email, nome, telefone, senha } = data;
     
-    // Validacoes
     if (!email || !nome || !telefone || !senha) {
       return { success: false, error: 'Todos os campos sao obrigatorios' };
     }
@@ -288,9 +272,8 @@ export async function createTrialAccount(data: {
       return { success: false, error: 'Senha deve ter no minimo 6 caracteres' };
     }
     
-    // Verificar se email ja existe
-    const existingCompany = await noco.list(EMPRESAS_TABLE_ID, {
-      where: `(email,eq,${email})`,
+    const existingCompany = await pg.list('empresas', {
+      where: { email },
       limit: 1,
     });
     
@@ -298,10 +281,8 @@ export async function createTrialAccount(data: {
       return { success: false, error: 'Este email ja esta cadastrado. Faca login.' };
     }
     
-    // Hash da senha
     const hashedPassword = hashPassword(senha);
     
-    // Gerar slug unico baseado no nome
     const baseSlug = nome
       .toLowerCase()
       .normalize('NFD')
@@ -310,11 +291,9 @@ export async function createTrialAccount(data: {
       .replace(/^-|-$/g, '');
     const uniqueSlug = `${baseSlug}-${Date.now().toString(36)}`;
     
-    // Limpar telefone
     const cleanPhone = telefone.replace(/\D/g, '');
     
-    // Criar empresa
-    const empresa = await noco.create(EMPRESAS_TABLE_ID, {
+    const empresa = await pg.create('empresas', {
       email: email,
       senha_hash: hashedPassword,
       login: email,
@@ -332,13 +311,12 @@ export async function createTrialAccount(data: {
       slug: uniqueSlug,
     }) as any;
     
-    if (!empresa?.id && !empresa?.Id) {
+    if (!empresa?.id) {
       return { success: false, error: 'Erro ao criar conta' };
     }
     
-    const empresaId = empresa.id || empresa.Id;
+    const empresaId = empresa.id;
     
-    // Criar assinatura trial (7 dias gratis)
     try {
       const hoje = new Date();
       const fimTrial = new Date(hoje);
@@ -358,13 +336,13 @@ export async function createTrialAccount(data: {
       `, [
         empresaId,
         'start',
-        'trialing', // Status especial para trial de 7 dias
-        29.90, // Preco apos o trial
+        'trialing',
+        29.90,
         'trial_' + Date.now(),
         'start',
         hoje.toISOString(),
         proximaCobranca.toISOString(),
-        fimTrial.toISOString(), // Data fim do trial
+        fimTrial.toISOString(),
         'TRIAL',
         'TRIAL'
       ]);
@@ -374,7 +352,6 @@ export async function createTrialAccount(data: {
       console.error('[v0] Erro ao criar assinatura trial:', subError);
     }
     
-    // Criar sessao (login automatico)
     const session = await encrypt({
       userId: empresaId,
       email: email,
@@ -397,7 +374,6 @@ export async function createTrialAccount(data: {
       path: '/',
     });
     
-    // Enviar mensagem de boas-vindas no WhatsApp
     try {
       const { sendWelcomeMessage } = await import('./whatsapp');
       await sendWelcomeMessage(cleanPhone, nome, email, 'start', senha);
@@ -436,16 +412,10 @@ export async function createPendingSignup(data: {
   mp_subscription_id?: string;
 }) {
   try {
-    if (!PENDING_SIGNUPS_TABLE_ID) {
-      console.error('[Signup] PENDING_SIGNUPS_TABLE_ID nao configurado');
-      return null;
-    }
-    
-    // Calcular expiracao (24 horas)
     const expiraEm = new Date();
     expiraEm.setHours(expiraEm.getHours() + 24);
     
-    const signup = await noco.create(PENDING_SIGNUPS_TABLE_ID, {
+    const signup = await pg.create('pending_signups', {
       token: data.token,
       email: data.email,
       nome: data.nome,
@@ -470,12 +440,12 @@ export async function createPendingSignup(data: {
 
 export async function getPendingSignup(token: string): Promise<PendingSignup | null> {
   try {
-    if (!PENDING_SIGNUPS_TABLE_ID || !token) {
+    if (!token) {
       return null;
     }
     
-    const result = await noco.list(PENDING_SIGNUPS_TABLE_ID, {
-      where: `(token,eq,${token})`,
+    const result = await pg.list('pending_signups', {
+      where: { token },
       limit: 1,
     });
     
@@ -485,20 +455,16 @@ export async function getPendingSignup(token: string): Promise<PendingSignup | n
       return null;
     }
     
-    // Verificar se expirou
     const expiraEm = new Date(signup.expira_em as string);
-    const signupId = (signup.id || signup.Id) as number;
+    const signupId = signup.id as number;
     
     if (expiraEm < new Date()) {
-      // Marcar como expirado
-      await noco.update(PENDING_SIGNUPS_TABLE_ID, {
-        id: signupId,
+      await pg.update('pending_signups', signupId, {
         status: 'expired',
       });
       return null;
     }
     
-    // Verificar se ja foi usado
     if (signup.status === 'completed') {
       return null;
     }
@@ -516,22 +482,18 @@ export async function getPendingSignup(token: string): Promise<PendingSignup | n
 
 export async function completeSignup(token: string, password: string) {
   try {
-    // Buscar pending signup
     const signup = await getPendingSignup(token);
     
     if (!signup) {
       return { success: false, error: 'Link invalido ou expirado' };
     }
     
-    // Validar senha
     if (!password || password.length < 6) {
       return { success: false, error: 'Senha deve ter no minimo 6 caracteres' };
     }
     
-    // Hash da senha
-    const hashedPassword = await hashPassword(password);
+    const hashedPassword = hashPassword(password);
     
-    // Gerar slug unico baseado no nome
     const baseSlug = signup.nome
       .toLowerCase()
       .normalize('NFD')
@@ -540,8 +502,7 @@ export async function completeSignup(token: string, password: string) {
       .replace(/^-|-$/g, '');
     const uniqueSlug = `${baseSlug}-${Date.now().toString(36)}`;
     
-    // Criar empresa
-    const empresa = await noco.create(EMPRESAS_TABLE_ID, {
+    const empresa = await pg.create('empresas', {
       email: signup.email,
       senha_hash: hashedPassword,
       login: signup.email,
@@ -559,25 +520,22 @@ export async function completeSignup(token: string, password: string) {
       slug: uniqueSlug,
     }) as any;
     
-    if (!empresa?.id && !empresa?.Id) {
+    if (!empresa?.id) {
       return { success: false, error: 'Erro ao criar conta' };
     }
     
-    const empresaId = empresa.id || empresa.Id;
+    const empresaId = empresa.id;
     
-    // Criar assinatura (em try/catch separado para nao bloquear criacao da conta)
     try {
         const planKey = signup.plano.toUpperCase() as keyof typeof SUBSCRIPTION_PLANS;
         const planData = SUBSCRIPTION_PLANS[planKey];
         
-        // Calcular proxima data de cobranca (30 dias a partir de hoje)
         const hoje = new Date();
         const proximaCobranca = new Date(hoje);
         proximaCobranca.setDate(proximaCobranca.getDate() + 30);
         
         console.log('[v0] Criando assinatura via SQL direto para empresa:', empresaId);
         
-        // Usar SQL direto para contornar restricao de Link field do NocoDB
         const plano = signup.plano || 'start';
         const valor = planData?.price || 0;
         const mpSubscriptionId = signup.mp_payment_id || signup.mp_subscription_id || 'pix_' + Date.now();
@@ -606,24 +564,18 @@ export async function completeSignup(token: string, password: string) {
         console.log('[v0] Assinatura criada com sucesso via SQL');
     } catch (subError) {
       console.error('[v0] Erro ao criar assinatura (nao bloqueante):', subError);
-      // Continua mesmo se falhar a criacao da assinatura
     }
     
-    // Marcar pending signup como completo
-    if (PENDING_SIGNUPS_TABLE_ID) {
-      await noco.update(PENDING_SIGNUPS_TABLE_ID, {
-        id: signup.id,
-        status: 'completed',
-      });
-    }
+    await pg.update('pending_signups', signup.id, {
+      status: 'completed',
+    });
     
-    // Criar sessao (login automatico) - TODOS os campos necessarios
     const session = await encrypt({
       userId: empresaId,
       email: signup.email,
       empresaId,
       nome: signup.nome,
-      onboarded: false, // Usuario novo precisa fazer onboarding
+      onboarded: false,
       controle_estoque: false,
       role: 'admin',
       source: 'empresa',
@@ -635,12 +587,11 @@ export async function completeSignup(token: string, password: string) {
     cookieStore.set('session', session, {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'lax', // 'lax' permite navegacao cross-site (links externos)
-      maxAge: 60 * 60 * 24, // 24 horas
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24,
       path: '/',
     });
     
-    // Enviar mensagem de boas-vindas no WhatsApp
     try {
       const { sendWelcomeMessage } = await import('./whatsapp');
       await sendWelcomeMessage(signup.telefone, signup.nome, signup.email, signup.plano, password);

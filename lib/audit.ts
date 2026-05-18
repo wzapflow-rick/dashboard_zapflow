@@ -1,7 +1,5 @@
 import { getMe } from '@/lib/session-server';
-import { noco } from '@/lib/nocodb';
-
-const AUDIT_TABLE_ID = 'm_audit_logs'; // Tabela de auditoria (criar no NocoDB se necessário)
+import { pg } from '@/lib/postgres';
 
 export async function logAction(action: string, details: string) {
     try {
@@ -14,7 +12,7 @@ export async function logAction(action: string, details: string) {
             timestamp: new Date().toISOString()
         };
 
-        await noco.create(AUDIT_TABLE_ID, payload);
+        await pg.create('audit_logs', payload);
     } catch (error) {
         console.warn('Erro ao registrar log de auditoria:', error);
     }

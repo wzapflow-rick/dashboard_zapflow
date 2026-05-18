@@ -1,8 +1,7 @@
 'use server';
 
-import { noco } from '@/lib/nocodb';
+import { pg } from '@/lib/postgres';
 import { 
-  EMPRESAS_TABLE_ID,
   SUBSCRIPTION_PLANS,
   type SubscriptionPlanId 
 } from '@/lib/constants';
@@ -10,7 +9,6 @@ import {
   getAssinaturaByEmpresaId,
   createAssinatura,
   updateAssinaturaByEmpresaId,
-  updateAssinaturaByMpSubscriptionId,
 } from '@/lib/assinaturas';
 
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN || '';
@@ -101,8 +99,6 @@ export async function getSubscription(): Promise<Subscription | null> {
 // ============================================================
 
 export async function getInvoices(): Promise<Invoice[]> {
-  // Tabela de faturas ainda nao existe - retorna array vazio
-  // TODO: Criar tabela faturas_assinatura no NocoDB quando necessario
   return [];
 }
 
@@ -127,7 +123,7 @@ export async function createSubscription(planId: SubscriptionPlanId, cardToken?:
 
   try {
     // Busca dados da empresa
-    const empresa = await noco.findById(EMPRESAS_TABLE_ID, me.empresaId) as any;
+    const empresa = await pg.findById('empresas', me.empresaId) as any;
     
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://cardapio.wzapflow.com.br';
     
@@ -146,7 +142,6 @@ export async function createSubscription(planId: SubscriptionPlanId, cardToken?:
       notification_url: `${baseUrl}/api/webhooks/mercadopago`,
     };
 
-    // Se tiver token do cartao, adiciona
     if (cardToken) {
       preapprovalPayload.card_token_id = cardToken;
     }
@@ -184,7 +179,6 @@ export async function createSubscription(planId: SubscriptionPlanId, cardToken?:
       cartao_bandeira: mpData.payment_method_id || null,
     };
 
-    // Verifica se ja existe assinatura
     const existing = await getAssinaturaByEmpresaId(me.empresaId);
 
     if (existing) {
@@ -193,9 +187,8 @@ export async function createSubscription(planId: SubscriptionPlanId, cardToken?:
       await createAssinatura(subscriptionData);
     }
     
-    // Atualiza o plano na tabela de empresas para liberar o cardapio
-    await noco.update(EMPRESAS_TABLE_ID, {
-      id: me.empresaId,
+    // Atualiza o plano na tabela de empresas
+    await pg.update('empresas', me.empresaId, {
       planos: planId,
     });
 
@@ -226,15 +219,12 @@ export async function changePlan(newPlanId: SubscriptionPlanId): Promise<{
   }
 
   try {
-    // Busca assinatura atual
     const subscription = await getSubscription();
     
     if (!subscription || !subscription.mp_subscription_id) {
-      // Nao tem assinatura ativa, cria uma nova
       return createSubscription(newPlanId);
     }
 
-    // Atualiza a assinatura no Mercado Pago
     const mpResponse = await fetch(`https://api.mercadopago.com/preapproval/${subscription.mp_subscription_id}`, {
       method: 'PUT',
       headers: {
@@ -255,15 +245,12 @@ export async function changePlan(newPlanId: SubscriptionPlanId): Promise<{
       return { success: false, error: 'Erro ao alterar plano no Mercado Pago' };
     }
 
-    // Atualiza no PostgreSQL
     await updateAssinaturaByEmpresaId(me.empresaId, {
       plano: newPlanId,
       valor: plan.price,
     });
     
-    // Atualiza o plano na tabela de empresas
-    await noco.update(EMPRESAS_TABLE_ID, {
-      id: me.empresaId,
+    await pg.update('empresas', me.empresaId, {
       planos: newPlanId,
     });
 
@@ -291,7 +278,6 @@ export async function cancelSubscription(): Promise<{
       return { success: false, error: 'Nenhuma assinatura ativa encontrada' };
     }
 
-    // Cancela no Mercado Pago
     const mpResponse = await fetch(`https://api.mercadopago.com/preapproval/${subscription.mp_subscription_id}`, {
       method: 'PUT',
       headers: {
@@ -309,14 +295,11 @@ export async function cancelSubscription(): Promise<{
       return { success: false, error: 'Erro ao cancelar assinatura' };
     }
 
-    // Atualiza no PostgreSQL
     await updateAssinaturaByEmpresaId(me.empresaId, {
       status: 'cancelled',
     });
     
-    // Volta o plano da empresa para iniciante (bloqueia cardapio)
-    await noco.update(EMPRESAS_TABLE_ID, {
-      id: me.empresaId,
+    await pg.update('empresas', me.empresaId, {
       planos: 'iniciante',
     });
 
@@ -344,7 +327,6 @@ export async function updatePaymentCard(cardToken: string): Promise<{
       return { success: false, error: 'Nenhuma assinatura ativa encontrada' };
     }
 
-    // Atualiza o cartao no Mercado Pago
     const mpResponse = await fetch(`https://api.mercadopago.com/preapproval/${subscription.mp_subscription_id}`, {
       method: 'PUT',
       headers: {
@@ -363,7 +345,6 @@ export async function updatePaymentCard(cardToken: string): Promise<{
       return { success: false, error: 'Erro ao atualizar cartao' };
     }
 
-    // Atualiza no PostgreSQL
     await updateAssinaturaByEmpresaId(me.empresaId, {
       cartao_ultimos_digitos: mpData.last_four_digits || null,
       cartao_bandeira: mpData.payment_method_id || null,
@@ -396,10 +377,9 @@ export async function generatePixPayment(planId: SubscriptionPlanId): Promise<{
   }
 
   try {
-    const empresa = await noco.findById(EMPRESAS_TABLE_ID, me.empresaId) as any;
+    const empresa = await pg.findById('empresas', me.empresaId) as any;
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://cardapio.wzapflow.com.br';
 
-    // Cria pagamento PIX avulso (primeira cobranca)
     const paymentPayload = {
       transaction_amount: plan.price,
       description: `Assinatura ZapFlow - Plano ${plan.name}`,
@@ -456,6 +436,5 @@ export async function getMPPublicKeyForSubscription(): Promise<string> {
 // ============================================================
 
 export async function getAvailablePlans() {
-  // Filtra apenas planos pagos (exclui o plano iniciante)
   return Object.values(SUBSCRIPTION_PLANS).filter(plan => plan.id !== 'iniciante');
 }

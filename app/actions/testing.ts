@@ -5,8 +5,7 @@ import { getMe } from '@/lib/session-server';
 import { getProducts, upsertProduct, upsertCategory } from './products';
 import { upsertCustomer } from './customers';
 import { upsertInsumo } from './insumos';
-import { noco } from '@/lib/nocodb';
-import { PEDIDOS_TABLE_ID } from '@/lib/constants';
+import { pg } from '@/lib/postgres';
 
 const FIRST_NAMES = ['João', 'Maria', 'Pedro', 'Ana', 'Lucas', 'Julia', 'Carlos', 'Beatriz', 'Marcos', 'Fernanda'];
 const LAST_NAMES = ['Silva', 'Santos', 'Oliveira', 'Souza', 'Rodrigues', 'Ferreira', 'Almeida', 'Pereira', 'Carvalho', 'Gomes'];
@@ -70,7 +69,7 @@ export async function generateMockOrder() {
             origem: 'Módulo de Testes'
         };
 
-        const result = await noco.create(PEDIDOS_TABLE_ID, orderPayload);
+        const result = await pg.create('pedidos', orderPayload);
 
         revalidatePath('/dashboard/expedition');
         revalidatePath('/dashboard/customers');

@@ -3,21 +3,20 @@
 import bcrypt from 'bcryptjs';
 import { getMe, requireAdmin } from '@/lib/session-server';
 import { revalidatePath } from 'next/cache';
-import { noco } from '@/lib/nocodb';
-import { USUARIOS_TABLE_ID } from '@/lib/constants';
+import { pg } from '@/lib/postgres';
 
 export async function getUsers() {
     try {
         const user = await getMe();
         if (!user?.empresaId) return [];
 
-        const data = await noco.list(USUARIOS_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})`,
+        const data = await pg.list('usuarios', {
+            where: { empresa_id: user.empresaId },
             sort: '-id',
         });
 
         return (data.list || []).map((u: any) => ({
-            id: u.id || u.Id,
+            id: u.id,
             nome: u.nome,
             email: u.email,
             role: u.role || 'atendente',
@@ -35,7 +34,7 @@ export async function createUser(data: { nome: string; email: string; senha: str
 
         const hashedPassword = bcrypt.hashSync(data.senha, 10);
 
-        const result = await noco.create(USUARIOS_TABLE_ID, {
+        const result = await pg.create('usuarios', {
             empresa_id: me.empresaId,
             nome: data.nome,
             email: data.email,
@@ -55,14 +54,14 @@ export async function updateUser(id: number, data: { nome?: string; email?: stri
     try {
         await requireAdmin();
 
-        const body: any = { id };
+        const body: any = {};
         if (data.nome !== undefined) body.nome = data.nome;
         if (data.email !== undefined) body.email = data.email;
         if (data.role !== undefined) body.role = data.role;
         if (data.ativo !== undefined) body.ativo = data.ativo;
         if (data.senha) body.senha_hash = bcrypt.hashSync(data.senha, 10);
 
-        const result = await noco.update(USUARIOS_TABLE_ID, body);
+        const result = await pg.update('usuarios', id, body);
 
         revalidatePath('/dashboard/users');
         return result;
@@ -78,7 +77,7 @@ export async function deleteUser(id: number | string) {
         const numericId = Number(id);
         if (isNaN(numericId)) throw new Error('ID inválido');
 
-        await noco.delete(USUARIOS_TABLE_ID, numericId);
+        await pg.delete('usuarios', numericId);
 
         revalidatePath('/dashboard/users');
         return { success: true };
@@ -90,8 +89,8 @@ export async function deleteUser(id: number | string) {
 
 export async function findUserByEmail(email: string) {
     try {
-        const result = await noco.findOne(USUARIOS_TABLE_ID, {
-            where: `(email,eq,${email})`,
+        const result = await pg.findOne('usuarios', {
+            where: { email },
         });
         return result || null;
     } catch {

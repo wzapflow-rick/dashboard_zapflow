@@ -1,7 +1,7 @@
 'use server';
 
 import { getMe } from '@/lib/session-server';
-import { query } from '@/lib/db';
+import { pg } from '@/lib/postgres';
 
 export type InsightType = 'growth' | 'alert' | 'opportunity' | 'product' | 'operation' | 'customer';
 
@@ -14,15 +14,13 @@ export interface Insight {
   description: string;
   trend?: 'up' | 'down' | 'neutral';
   color: string;
-  priority: number; // 1 = alta, 2 = media, 3 = baixa
+  priority: number;
 }
 
-// Helper para formatar valores monetarios
 function formatCurrency(value: number): string {
   return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 }
 
-// Helper para formatar porcentagem
 function formatPercentage(value: number): string {
   const sign = value >= 0 ? '+' : '';
   return `${sign}${value.toFixed(0)}%`;
@@ -50,18 +48,13 @@ export async function getInsights(): Promise<Insight[]> {
     const twoWeeksAgo = new Date(weekAgo);
     twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 7);
 
-    // Buscar pedidos (ultimos 14 dias para comparacoes)
-    const ordersResult = await query(
-      `SELECT id, status, valor_total, criado_em, itens, telefone_cliente 
-       FROM pedidos 
-       WHERE empresa_id = $1 AND criado_em >= $2
-       ORDER BY id DESC 
-       LIMIT 500`,
-      [user.empresaId, twoWeeksAgo.toISOString()]
-    );
-    const allOrders = ordersResult.rows || [];
+    const ordersData = await pg.list('pedidos', {
+      where: { empresa_id: user.empresaId },
+      sort: '-id',
+      limit: 500,
+    });
+    const allOrders = ordersData.list || [];
 
-    // Separar pedidos por periodo
     const todayOrders = allOrders.filter((o: any) => 
       o.criado_em && new Date(o.criado_em) >= todayStart && o.status !== 'cancelado'
     );
@@ -74,7 +67,7 @@ export async function getInsights(): Promise<Insight[]> {
 
     const insights: Insight[] = [];
 
-    // ========== INSIGHT 1: Faturamento do dia ==========
+    // INSIGHT 1: Faturamento do dia
     const todayRevenue = todayOrders
       .filter((o: any) => o.status === 'finalizado')
       .reduce((sum: number, o: any) => sum + Number(o.valor_total || 0), 0);
@@ -100,7 +93,7 @@ export async function getInsights(): Promise<Insight[]> {
       });
     }
 
-    // ========== INSIGHT 2: Ticket Medio ==========
+    // INSIGHT 2: Ticket Medio
     const todayTicket = todayOrders.length > 0 
       ? todayOrders.reduce((sum: number, o: any) => sum + Number(o.valor_total || 0), 0) / todayOrders.length 
       : 0;
@@ -126,12 +119,12 @@ export async function getInsights(): Promise<Insight[]> {
       }
     }
 
-    // ========== INSIGHT 3: Horario de Pico ==========
+    // INSIGHT 3: Horario de Pico
     if (todayOrders.length >= 3) {
       const salesByHour: { [hour: number]: number } = {};
       todayOrders.forEach((o: any) => {
         const date = new Date(o.criado_em);
-        const hour = (date.getUTCHours() - 3 + 24) % 24; // UTC-3 Brasilia
+        const hour = (date.getUTCHours() - 3 + 24) % 24;
         salesByHour[hour] = (salesByHour[hour] || 0) + 1;
       });
       
@@ -154,7 +147,7 @@ export async function getInsights(): Promise<Insight[]> {
       }
     }
 
-    // ========== INSIGHT 4: Produto Mais Vendido ==========
+    // INSIGHT 4: Produto Mais Vendido
     const productStats = new Map<string, number>();
     todayOrders.forEach((order: any) => {
       let items = [];
@@ -189,7 +182,7 @@ export async function getInsights(): Promise<Insight[]> {
       }
     }
 
-    // ========== INSIGHT 5: Pedidos Pendentes (Alerta) ==========
+    // INSIGHT 5: Pedidos Pendentes
     const pendingOrders = allOrders.filter((o: any) => 
       o.status === 'pendente' || o.status === 'preparando'
     );
@@ -216,27 +209,7 @@ export async function getInsights(): Promise<Insight[]> {
       });
     }
 
-    // ========== INSIGHT 6: Tempo Medio de Preparo ==========
-    const finishedToday = todayOrders.filter((o: any) => o.status === 'finalizado');
-    if (finishedToday.length >= 3) {
-      // Calcular tempo medio (criado -> finalizado)
-      // Como nao temos timestamp de finalizacao, vamos estimar baseado no padrao
-      const avgTime = 28; // placeholder - idealmente viria do banco
-      
-      insights.push({
-        id: 'prep-time',
-        type: 'operation',
-        icon: 'Zap',
-        title: 'Operacao Eficiente',
-        value: `${avgTime}min`,
-        description: `Tempo medio de preparo hoje`,
-        trend: 'up',
-        color: 'emerald',
-        priority: 3,
-      });
-    }
-
-    // ========== INSIGHT 7: Clientes Recorrentes ==========
+    // INSIGHT 6: Clientes Recorrentes
     const customerPhones = new Map<string, number>();
     weekOrders.forEach((o: any) => {
       const phone = o.telefone_cliente;
@@ -262,34 +235,7 @@ export async function getInsights(): Promise<Insight[]> {
       });
     }
 
-    // ========== INSIGHT 8: Comparativo Semanal ==========
-    const lastWeekStart = new Date(weekAgo);
-    lastWeekStart.setDate(lastWeekStart.getDate() - 7);
-    
-    const thisWeekOrders = weekOrders.length;
-    const lastWeekOrders = allOrders.filter((o: any) => 
-      o.criado_em && new Date(o.criado_em) >= lastWeekStart && new Date(o.criado_em) < weekAgo && o.status !== 'cancelado'
-    ).length;
-    
-    if (thisWeekOrders > 0 && lastWeekOrders > 0) {
-      const weekChange = ((thisWeekOrders - lastWeekOrders) / lastWeekOrders) * 100;
-      
-      if (Math.abs(weekChange) >= 10) {
-        insights.push({
-          id: 'weekly',
-          type: weekChange >= 0 ? 'growth' : 'alert',
-          icon: 'BarChart3',
-          title: weekChange >= 0 ? 'Semana em Alta' : 'Semana em Queda',
-          value: formatPercentage(weekChange),
-          description: `Esta semana: ${thisWeekOrders} pedidos | Anterior: ${lastWeekOrders}`,
-          trend: weekChange >= 0 ? 'up' : 'down',
-          color: weekChange >= 0 ? 'emerald' : 'red',
-          priority: 2,
-        });
-      }
-    }
-
-    // ========== INSIGHT 9: Pedidos Cancelados (se houver) ==========
+    // INSIGHT 7: Pedidos Cancelados
     const canceledToday = allOrders.filter((o: any) => 
       o.criado_em && new Date(o.criado_em) >= todayStart && o.status === 'cancelado'
     );
@@ -310,40 +256,6 @@ export async function getInsights(): Promise<Insight[]> {
       });
     }
 
-    // ========== INSIGHT 10: Meta do Dia (se configurada) ==========
-    // Placeholder - pode ser configuravel no futuro
-    const dailyGoal = 1000; // R$ 1000 de meta diaria exemplo
-    if (todayRevenue > 0) {
-      const goalProgress = (todayRevenue / dailyGoal) * 100;
-      
-      if (goalProgress >= 100) {
-        insights.push({
-          id: 'goal',
-          type: 'growth',
-          icon: 'Trophy',
-          title: 'Meta Batida!',
-          value: `${goalProgress.toFixed(0)}%`,
-          description: `${formatCurrency(todayRevenue)} de ${formatCurrency(dailyGoal)}`,
-          trend: 'up',
-          color: 'emerald',
-          priority: 1,
-        });
-      } else if (goalProgress >= 70) {
-        insights.push({
-          id: 'goal',
-          type: 'opportunity',
-          icon: 'Target',
-          title: 'Quase La!',
-          value: `${goalProgress.toFixed(0)}%`,
-          description: `Faltam ${formatCurrency(dailyGoal - todayRevenue)} para a meta`,
-          trend: 'up',
-          color: 'blue',
-          priority: 2,
-        });
-      }
-    }
-
-    // Ordenar por prioridade e retornar top 8
     return insights
       .sort((a, b) => a.priority - b.priority)
       .slice(0, 8);
