@@ -68,7 +68,7 @@ export const PRODUTO_INSUMOS_TABLE = 'produto_insumos';
 export const ENTREGADORES_TABLE = 'entregadores';
 
 /** Tabela de comissões dos entregadores */
-export const COMISSOES_TABLE = 'comissoes';
+export const COMISSOES_TABLE = 'comissoes_entregadores';
 
 /** Tabela de histórico de entregas */
 export const HISTORICO_ENTREGAS_TABLE = 'historico_entregas';
@@ -87,10 +87,10 @@ export const LOYALTY_POINTS_TABLE = 'loyalty_points';
 export const CUPONS_TABLE = 'cupons';
 
 /** Tabela de campanhas automáticas de marketing */
-export const CAMPANHAS_TABLE = 'campanhas';
+export const CAMPANHAS_TABLE = 'campanhas_config';
 
 /** Tabela de disparos de campanhas */
-export const DISPAROS_TABLE = 'disparos';
+export const DISPAROS_TABLE = 'campanhas_disparos';
 
 // ============================================================
 // CONFIGURAÇÕES OPERACIONAIS
@@ -113,6 +113,21 @@ export const CONFIGURACOES_LOJA_TABLE = 'configuracoes_loja';
 
 /** Tabela de configuração do bot de saudação WhatsApp */
 export const BOT_CONFIG_TABLE = 'bot_config';
+
+/** Tabela de configurações de entrega */
+export const CONFIGURACOES_ENTREGA_TABLE = 'configuracoes_entrega';
+
+/** Tabela de endereços dos clientes */
+export const CLIENTE_ENDERECOS_TABLE = 'cliente_enderecos';
+
+/** Tabela de cupons da plataforma */
+export const CUPONS_PLATAFORMA_TABLE = 'cupons_plataforma';
+
+/** Tabela de histórico de pontos de fidelidade */
+export const LOYALTY_HISTORY_TABLE = 'loyalty_history';
+
+/** Tabela de acertos com entregadores */
+export const ACERTOS_ENTREGADORES_TABLE = 'acertos_entregadores';
 
 // ============================================================
 // METADADOS DE PRODUTOS
