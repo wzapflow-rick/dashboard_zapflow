@@ -21,13 +21,13 @@ export async function getPublicMenu(slug: string) {
 
         // TENTATIVA 1: Busca simples por nome_fantasia
         console.log(`[MENU_DEBUG] Tentando buscar por nome_fantasia: ${possibleName}`);
-        const empresasByFantasia = await pg.list(EMPRESAS_TABLE, {
-            where: `(nome_fantasia,ilike,%${possibleName}%)`,
-            limit: 1
-        });
+        const empresasByFantasia = await pg.raw<any>(
+            `SELECT * FROM "${EMPRESAS_TABLE}" WHERE LOWER(nome_fantasia) LIKE LOWER($1) LIMIT 1`,
+            [`%${possibleName}%`]
+        );
         
-        if (empresasByFantasia.list.length > 0) {
-            empresa = empresasByFantasia.list[0];
+        if (empresasByFantasia.length > 0) {
+            empresa = empresasByFantasia[0];
             console.log(`[MENU_DEBUG] Empresa encontrada por nome_fantasia: ${empresa.nome_fantasia}`);
         }
 

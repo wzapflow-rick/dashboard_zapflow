@@ -299,7 +299,7 @@ export async function upsertProduct(productData: any, selectedInsumos?: { insumo
       if (existingMetadata && existingMetadata.id) {
         console.log(`[UPSERT_PRODUCT] Atualizando metadados existentes ID: ${existingMetadata.id}`);
         await pg.update(PRODUTOS_METADADOS_TABLE, {
-          id: existingMetadata.id,
+          id: existingMetadata.id as number,
           tamanhos: tamanhosStr,
           recomendacoes: recomendacoesStr,
         });

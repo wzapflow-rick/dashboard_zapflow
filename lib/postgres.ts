@@ -414,13 +414,29 @@ async function create<T = Record<string, unknown>>(
 
 /**
  * Atualiza um registro existente.
- * O objeto `data` deve conter o campo `id` do registro a ser atualizado.
+ * Aceita dois formatos:
+ * - update(table, { id, ...data }) - objeto com id incluído
+ * - update(table, id, data) - id separado do objeto de dados
  */
 async function update<T = Record<string, unknown>>(
   table: string,
-  data: Record<string, unknown> & { id: number | string },
+  dataOrId: Record<string, unknown> & { id?: number | string } | number | string,
+  maybeData?: Record<string, unknown>,
 ): Promise<T> {
-  const { id, ...updateData } = data;
+  let id: number | string;
+  let updateData: Record<string, unknown>;
+  
+  // Suporta ambos os formatos: update(table, {id, ...data}) e update(table, id, data)
+  if (maybeData !== undefined) {
+    // Formato: update(table, id, data)
+    id = dataOrId as number | string;
+    updateData = maybeData;
+  } else {
+    // Formato: update(table, { id, ...data })
+    const { id: extractedId, ...rest } = dataOrId as Record<string, unknown> & { id: number | string };
+    id = extractedId;
+    updateData = rest;
+  }
   
   const fields = Object.keys(updateData);
   const values = Object.values(updateData);
