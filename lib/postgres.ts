@@ -392,7 +392,9 @@ async function findOne<T = Record<string, unknown>>(
   table: string,
   options: PgListOptions & { where?: string | Record<string, unknown> } = {},
 ): Promise<T | null> {
+  console.log('[v0] findOne - table:', table, 'where:', JSON.stringify(options.where));
   const result = await list<T>(table, { ...options, limit: 1 });
+  console.log('[v0] findOne - result count:', result.list.length, 'total:', result.pageInfo.totalRows);
   return result.list[0] ?? null;
 }
 
