@@ -139,7 +139,7 @@ export async function createTrialAccount(data: TrialAccountData) {
     // Enviar mensagem de boas-vindas no WhatsApp
     try {
       const { sendTrialWelcomeMessage } = await import('./whatsapp');
-      await sendTrialWelcomeMessage(telefone, nome, email);
+      await sendTrialWelcomeMessage(telefone, nome, email, password);
     } catch (waError) {
       console.error('[TrialSignup] Erro ao enviar WhatsApp:', waError);
     }

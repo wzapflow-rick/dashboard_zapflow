@@ -400,7 +400,7 @@ export async function createTrialAccount(data: {
     // Enviar mensagem de boas-vindas no WhatsApp
     try {
       const { sendWelcomeMessage } = await import('./whatsapp');
-      await sendWelcomeMessage(cleanPhone, nome, email, 'start');
+      await sendWelcomeMessage(cleanPhone, nome, email, 'start', senha);
     } catch (waError) {
       console.error('[Signup] Erro ao enviar WhatsApp:', waError);
     }
@@ -643,7 +643,7 @@ export async function completeSignup(token: string, password: string) {
     // Enviar mensagem de boas-vindas no WhatsApp
     try {
       const { sendWelcomeMessage } = await import('./whatsapp');
-      await sendWelcomeMessage(signup.telefone, signup.nome, signup.email, signup.plano);
+      await sendWelcomeMessage(signup.telefone, signup.nome, signup.email, signup.plano, password);
     } catch (waError) {
       console.error('[Signup] Erro ao enviar WhatsApp de boas-vindas:', waError);
     }

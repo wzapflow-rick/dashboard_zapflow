@@ -4,7 +4,7 @@ import { getOrderCreatedMessage, getStatusMessage, WhatsAppMessages } from '@/ll
 
 const EVO_API_URL = process.env.EVOLUTION_API_URL || 'https://evo.wzapflow.com.br';
 const EVO_API_KEY = process.env.EVOLUTION_API_KEY || '';
-const EVO_INSTANCE = process.env.EVOLUTION_INSTANCE || 'zapflow_testes';
+const EVO_INSTANCE = process.env.EVOLUTION_INSTANCE || 'zapflow_ativacao';
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://cardapio.wzapflow.com.br';
 
 // Verificar se a API key está configurada
@@ -258,22 +258,26 @@ export async function sendWelcomeMessage(
     phone: string,
     nome: string,
     email: string,
-    plano: string
+    plano: string,
+    senha?: string
 ): Promise<boolean> {
     const planNames: Record<string, string> = {
         start: 'Start',
         pro: 'PRO',
         elite: 'ELITE',
+        parceria: 'Parceria (Trial)',
     };
     
     const planName = planNames[plano] || plano;
+    
+    const senhaInfo = senha ? `\n🔑 Senha: ${senha}` : '';
     
     const message = `🎉 Bem-vindo ao ZapFlow, ${nome}!
 
 Sua conta foi ativada com sucesso — agora é hora de começar a vender mais 🚀
 
 📦 Plano: ${planName}
-📧 E-mail: ${email}
+📧 E-mail: ${email}${senhaInfo}
 
 🔗 Acesse seu painel:
 ${BASE_URL}
@@ -295,14 +299,17 @@ Boas vendas!
 export async function sendTrialWelcomeMessage(
     phone: string,
     nome: string,
-    email: string
+    email: string,
+    senha?: string
 ): Promise<boolean> {
+    const senhaInfo = senha ? `\n🔑 Senha: ${senha}` : '';
+    
     const message = `🎉 Bem-vindo ao ZapFlow, ${nome}!
 
 Sua conta TRIAL foi criada com sucesso — você tem 7 dias GRÁTIS para testar tudo! 🚀
 
 📦 Plano: Parceria (Trial)
-📧 E-mail: ${email}
+📧 E-mail: ${email}${senhaInfo}
 ⏰ Período: 7 dias grátis
 
 🔗 Acesse seu painel:
