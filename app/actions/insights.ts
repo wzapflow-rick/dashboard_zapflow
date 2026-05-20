@@ -1,8 +1,7 @@
 'use server';
 
 import { getMe } from '@/lib/session-server';
-import { noco } from '@/lib/nocodb';
-import { PEDIDOS_TABLE_ID, CLIENTES_TABLE_ID } from '@/lib/constants';
+import { query } from '@/lib/db';
 
 export type InsightType = 'growth' | 'alert' | 'opportunity' | 'product' | 'operation' | 'customer';
 
@@ -47,14 +46,20 @@ export async function getInsights(): Promise<Insight[]> {
     
     const weekAgo = new Date(todayStart);
     weekAgo.setDate(weekAgo.getDate() - 7);
+    
+    const twoWeeksAgo = new Date(weekAgo);
+    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 7);
 
-    // Buscar pedidos (ultimos 7 dias para comparacoes)
-    const ordersData = await noco.list(PEDIDOS_TABLE_ID, {
-      where: `(empresa_id,eq,${user.empresaId})`,
-      sort: '-id',
-      limit: 500,
-    });
-    const allOrders = ordersData.list || [];
+    // Buscar pedidos (ultimos 14 dias para comparacoes)
+    const ordersResult = await query(
+      `SELECT id, status, valor_total, criado_em, itens, telefone_cliente 
+       FROM pedidos 
+       WHERE empresa_id = $1 AND criado_em >= $2
+       ORDER BY id DESC 
+       LIMIT 500`,
+      [user.empresaId, twoWeeksAgo.toISOString()]
+    );
+    const allOrders = ordersResult.rows || [];
 
     // Separar pedidos por periodo
     const todayOrders = allOrders.filter((o: any) => 

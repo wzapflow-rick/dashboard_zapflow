@@ -1,8 +1,7 @@
 'use server';
 
 import { getMe } from '@/lib/session-server';
-import { noco } from '@/lib/nocodb';
-import { PEDIDOS_TABLE_ID } from '@/lib/constants';
+import { query } from '@/lib/db';
 
 // Helper para timeout em queries
 async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
@@ -42,23 +41,23 @@ export async function getDashboardData(period: string = 'Hoje') {
 
         console.log(`[Dashboard] Period: ${period}, EmpresaId: ${user.empresaId}`);
 
-        // Limitar a 200 pedidos para evitar timeout em contas com muitos pedidos
-        const ordersData = await withTimeout(
-            noco.list(PEDIDOS_TABLE_ID, {
-                where: `(empresa_id,eq,${user.empresaId})`,
-                sort: '-id',
-                limit: 200,
-            }),
+        // Buscar pedidos do PostgreSQL
+        const ordersResult = await withTimeout(
+            query(
+                `SELECT id, status, valor_total, criado_em, itens 
+                 FROM pedidos 
+                 WHERE empresa_id = $1 AND criado_em >= $2
+                 ORDER BY id DESC 
+                 LIMIT 200`,
+                [user.empresaId, startDate.toISOString()]
+            ),
             10000,
             'listar pedidos'
         );
         console.log(`[Dashboard] Pedidos carregados em ${Date.now() - startTime}ms`);
         
-        const allOrders = ordersData.list || [];
-        console.log(`[Dashboard] Total de pedidos encontrados: ${allOrders.length}`);
-
-        // Filtrar por data em memória (evita problemas de parsing de datas no NocoDB)
-        const orders = allOrders.filter((o: any) => o.criado_em && new Date(o.criado_em) >= startDate);
+        const orders = ordersResult.rows || [];
+        console.log(`[Dashboard] Total de pedidos encontrados: ${orders.length}`);
 
         // 1. Calcular faturamento e contagem (Excluindo cancelados)
         const validOrders = orders.filter((o: any) => o.status !== 'cancelado');
@@ -104,19 +103,21 @@ export async function getDashboardData(period: string = 'Hoje') {
 
         console.log(`[Dashboard] Stats calculadas em ${Date.now() - startTime}ms`);
 
-        // Buscar imagens reais dos produtos para o Top 5 (com timeout)
-        const { PRODUTOS_TABLE_ID } = await import('@/lib/constants');
+        // Buscar imagens reais dos produtos
         let realProducts: any[] = [];
         try {
-            const productsData = await withTimeout(
-                noco.list(PRODUTOS_TABLE_ID, {
-                    where: `(empresa_id,eq,${user.empresaId})`,
-                    limit: 50,
-                }),
+            const productsResult = await withTimeout(
+                query(
+                    `SELECT id, nome, imagem, imagem_url 
+                     FROM produtos 
+                     WHERE empresa_id = $1 
+                     LIMIT 50`,
+                    [user.empresaId]
+                ),
                 5000,
                 'listar produtos'
             );
-            realProducts = productsData.list || [];
+            realProducts = productsResult.rows || [];
             console.log(`[Dashboard] Produtos carregados em ${Date.now() - startTime}ms`);
         } catch (prodErr) {
             console.warn(`[Dashboard] Falha ao carregar produtos: ${prodErr}`);
