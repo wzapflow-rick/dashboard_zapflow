@@ -209,6 +209,21 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen, user }:
     const x = useMotionValue(0);
     const opacity = useTransform(x, [-300, 0], [0, 1]);
 
+    // Bloquear scroll do body quando menu mobile esta aberto
+    useEffect(() => {
+        if (isMobileMenuOpen) {
+            document.body.style.overflow = 'hidden';
+            document.body.style.touchAction = 'none';
+        } else {
+            document.body.style.overflow = '';
+            document.body.style.touchAction = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+            document.body.style.touchAction = '';
+        };
+    }, [isMobileMenuOpen]);
+
     if (user?.role === 'cozinheiro') {
         return null;
     }
@@ -277,57 +292,62 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen, user }:
                         animate={{ x: 0 }}
                         exit={{ x: '-100%' }}
                         transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                        drag="x"
-                        dragConstraints={{ left: -300, right: 0 }}
-                        dragElastic={0.1}
-                        onDragEnd={handleDragEnd}
-                        style={{ x }}
                         className={cn(
                             "fixed left-0 top-0 h-full w-[280px] z-[70] flex flex-col lg:hidden",
                             "bg-gradient-to-b from-[#0c1929] via-[#0a1525] to-[#081220]",
                             "border-r border-white/5",
-                            "shadow-[4px_0_24px_rgba(0,0,0,0.5)]"
+                            "shadow-[4px_0_24px_rgba(0,0,0,0.5)]",
+                            "touch-none"
                         )}
                     >
-                        {/* Header */}
-                        <div className="p-4 flex items-center justify-between gap-3 border-b border-white/5">
-                            <div className="flex items-center gap-3">
-                                <motion.div 
-                                    whileTap={{ scale: 0.95 }}
-                                    className="relative size-10 rounded-xl overflow-hidden shrink-0 shadow-lg ring-2 ring-primary/20"
-                                >
-                                    <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent" />
-                                    <Image
-                                        src="/logo-zapflow.png"
-                                        alt="ZapFlow"
-                                        width={40}
-                                        height={40}
-                                        className="object-cover relative z-10"
-                                    />
-                                </motion.div>
-                                
-                                <div className="flex flex-col">
-                                    <h1 className="font-bold text-white leading-none truncate text-sm">
-                                        {user?.nome || 'ZapFlow'}
-                                    </h1>
-                                    <p className="text-[9px] text-primary/80 mt-1 uppercase tracking-widest font-bold flex items-center gap-1">
-                                        <span className="size-1.5 rounded-full bg-primary animate-pulse" />
-                                        Made by ZapFlow
-                                    </p>
+                        {/* Drag handle area - apenas no header para swipe */}
+                        <motion.div
+                            drag="x"
+                            dragConstraints={{ left: -300, right: 0 }}
+                            dragElastic={0.1}
+                            onDragEnd={handleDragEnd}
+                            className="touch-none"
+                        >
+                            {/* Header */}
+                            <div className="p-4 flex items-center justify-between gap-3 border-b border-white/5">
+                                <div className="flex items-center gap-3">
+                                    <motion.div 
+                                        whileTap={{ scale: 0.95 }}
+                                        className="relative size-10 rounded-xl overflow-hidden shrink-0 shadow-lg ring-2 ring-primary/20"
+                                    >
+                                        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent" />
+                                        <Image
+                                            src="/logo-zapflow.png"
+                                            alt="ZapFlow"
+                                            width={40}
+                                            height={40}
+                                            className="object-cover relative z-10"
+                                        />
+                                    </motion.div>
+                                    
+                                    <div className="flex flex-col">
+                                        <h1 className="font-bold text-white leading-none truncate text-sm">
+                                            {user?.nome || 'ZapFlow'}
+                                        </h1>
+                                        <p className="text-[9px] text-primary/80 mt-1 uppercase tracking-widest font-bold flex items-center gap-1">
+                                            <span className="size-1.5 rounded-full bg-primary animate-pulse" />
+                                            Made by ZapFlow
+                                        </p>
+                                    </div>
                                 </div>
+                                
+                                <motion.button
+                                    whileTap={{ scale: 0.9 }}
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                    className="p-2.5 text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-all"
+                                >
+                                    <X className="size-5" />
+                                </motion.button>
                             </div>
-                            
-                            <motion.button
-                                whileTap={{ scale: 0.9 }}
-                                onClick={() => setIsMobileMenuOpen(false)}
-                                className="p-2.5 text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-all"
-                            >
-                                <X className="size-5" />
-                            </motion.button>
-                        </div>
+                        </motion.div>
 
-                        {/* Navegacao - scrollable */}
-                        <nav className="flex-1 px-3 py-3 space-y-1 overflow-y-auto custom-scrollbar">
+                        {/* Navegacao - scrollable area separada do drag */}
+                        <nav className="flex-1 px-3 py-3 space-y-1 overflow-y-auto overscroll-contain touch-auto custom-scrollbar">
                             {filteredNavItems.map((item, index) => (
                                 <NavItem
                                     key={item.name}
