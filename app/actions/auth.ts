@@ -239,11 +239,12 @@ export async function getEmpresaData() {
     if (!user?.empresaId) return null;
     
     try {
-        const result = await pg.query(
+        const result = await pg.raw<any>(
             'SELECT id, nome_fantasia, email, logo_url, banner_url, telefone_loja FROM empresas WHERE id = $1 LIMIT 1',
             [user.empresaId]
         );
-        return result.rows[0] || null;
+        console.log('[v0] getEmpresaData:', { empresaId: user.empresaId, logo_url: result[0]?.logo_url });
+        return result[0] || null;
     } catch (error) {
         console.error('Erro ao buscar dados da empresa:', error);
         return null;
