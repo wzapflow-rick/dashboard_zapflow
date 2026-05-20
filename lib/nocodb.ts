@@ -1,49 +1,92 @@
 /**
  * @file lib/nocodb.ts
- * @description Cliente centralizado para comunicação com a API do NocoDB.
- *
- * Este módulo substitui as múltiplas implementações de `nocoFetch` espalhadas
- * pelos arquivos de `app/actions/`. Todos os acessos ao banco de dados devem
- * passar por este cliente para garantir consistência, tratamento de erros
- * padronizado e facilidade de manutenção.
- *
- * @example
- * // Buscar registros
- * const pedidos = await noco.list(PEDIDOS_TABLE_ID, {
- *   where: `(empresa_id,eq,${empresaId})`,
- *   sort: '-id',
- *   limit: 100,
- * });
- *
- * // Criar registro
- * const novo = await noco.create(PEDIDOS_TABLE_ID, { status: 'pendente', ... });
- *
- * // Atualizar registro
- * await noco.update(PEDIDOS_TABLE_ID, { id: 42, status: 'finalizado' });
- *
- * // Deletar registro
- * await noco.delete(PEDIDOS_TABLE_ID, 42);
+ * @description Cliente PostgreSQL que mantém compatibilidade com a interface NocoDB.
+ * Todos os acessos passam por aqui para facilitar a migração.
+ * 
+ * MIGRADO PARA POSTGRESQL - O nome do arquivo foi mantido para compatibilidade.
  */
+
+import db from './db';
+
+// ============================================================
+// MAPEAMENTO DE TABLE_ID PARA NOMES DE TABELA
+// ============================================================
+
+const TABLE_MAP: Record<string, string> = {
+  // Principais
+  'mp08yd7oaxn5xo2': 'empresas',
+  'msrjfeb28e07cwx': 'usuarios',
+  'mui7bozvx9zb2n9': 'pedidos',
+  'mkodxks6hpm2bg9': 'clientes',
+  // Cardapio
+  'mh81t2xp1uml6pc': 'produtos',
+  'mo5so5g7gvlbwyo': 'categorias',
+  'm3o1prjcnvi678q': 'grupos_complementos',
+  'mj3ut032mx8zi72': 'complementos',
+  'm6muivyaadyh38c': 'produto_grupos_complementos',
+  'm1h9jeye8hcd4k6': 'grupos_slots',
+  'mfcp67skbxq4nt5': 'itens_base',
+  // Estoque
+  'mvis2y8mlpwqr9q': 'insumos',
+  'mev9fkmt1jaapiv': 'produto_insumos',
+  // Entregadores
+  'm4hbqkhwu2qvrry': 'entregadores',
+  'me4x6mmfsbndf42': 'comissoes_entregadores',
+  'm9lt0hyfnh3c47q': 'historico_entregas',
+  // Fidelidade
+  'mjzzdfgdohupgjh': 'loyalty_config',
+  'm8slxvm3dp4sup4': 'loyalty_points',
+  'm5echqy6luac5g6': 'cupons',
+  // Configuracoes
+  'm9yccghg9s23utv': 'taxas_entrega',
+  'mpaclmaji3b6dla': 'horarios',
+  'mlev3jx4tj2x74d': 'pagamentos_config',
+  'm3ebs9cm1yjgmo1': 'avaliacoes',
+  'mtkx66k8jacnezx': 'configuracoes_loja',
+  // Metadados
+  'm97yi797b432f4q': 'produtos_metadados',
+  // Assinaturas
+  'm1hq56kbk1zhcrp': 'pending_signups',
+  'mhpkvk982298q8a': 'assinaturas',
+  // Mesas
+  'mzft45xyoznab9k': 'mesas',
+  'mkpep3jg6ri9d7x': 'comandas',
+  // Campanhas
+  'campanhas_config': 'campanhas_config',
+  'campanhas_disparos': 'campanhas_disparos',
+  // Outros
+  'item_base_insumo': 'item_base_insumo',
+  'cliente_enderecos': 'cliente_enderecos',
+  'configuracoes_entrega': 'configuracoes_entrega',
+  'acertos_entregadores': 'acertos_entregadores',
+  'faturas_assinatura': 'faturas_assinatura',
+  'cupons_plataforma': 'cupons_plataforma',
+  'bot_config': 'bot_config',
+  'loyalty_history': 'loyalty_history',
+  'rate_limit_attempts': 'rate_limit_attempts',
+};
+
+function getTableName(tableId: string): string {
+  // Se ja for um nome de tabela valido, retorna direto
+  if (TABLE_MAP[tableId]) {
+    return TABLE_MAP[tableId];
+  }
+  // Se nao estiver no mapa, assume que ja e o nome da tabela
+  return tableId;
+}
 
 // ============================================================
 // TIPOS E INTERFACES
 // ============================================================
 
-/** Opções de consulta para listagem de registros */
 export interface NocoListOptions {
-  /** Filtro no formato NocoDB: `(campo,operador,valor)~and(campo2,operador2,valor2)` */
   where?: string;
-  /** Campo de ordenação. Use `-campo` para descendente. Ex: `-id` ou `nome` */
   sort?: string;
-  /** Número máximo de registros a retornar (padrão: 25, máximo: 1000) */
   limit?: number;
-  /** Número de registros a pular (para paginação) */
   offset?: number;
-  /** Campos a incluir na resposta, separados por vírgula */
   fields?: string;
 }
 
-/** Resposta paginada do NocoDB */
 export interface NocoListResponse<T = Record<string, unknown>> {
   list: T[];
   pageInfo: {
@@ -55,7 +98,6 @@ export interface NocoListResponse<T = Record<string, unknown>> {
   };
 }
 
-/** Erro customizado para falhas na API do NocoDB */
 export class NocoDBError extends Error {
   constructor(
     message: string,
@@ -68,144 +110,181 @@ export class NocoDBError extends Error {
 }
 
 // ============================================================
-// CONFIGURAÇÃO
+// PARSER DE WHERE NOCODB -> SQL
 // ============================================================
 
-function getConfig() {
-  const url = process.env.NOCODB_URL;
-  const token = process.env.NOCODB_TOKEN;
-
-  if (!url) {
-    throw new NocoDBError(
-      'NOCODB_URL não está configurado nas variáveis de ambiente.',
-    );
+function parseNocoWhere(where: string): { clause: string; values: any[] } {
+  if (!where) return { clause: '', values: [] };
+  
+  const conditions: string[] = [];
+  const values: any[] = [];
+  let paramIndex = 1;
+  
+  // Suporta formatos:
+  // (campo,eq,valor)
+  // (campo,eq,valor)~and(campo2,eq,valor2)
+  // (campo,eq,valor)~or(campo2,eq,valor2)
+  
+  // Separar por ~and e ~or
+  const parts = where.split(/~(and|or)/);
+  const operators: string[] = [];
+  const expressions: string[] = [];
+  
+  for (let i = 0; i < parts.length; i++) {
+    if (parts[i] === 'and' || parts[i] === 'or') {
+      operators.push(parts[i].toUpperCase());
+    } else if (parts[i]) {
+      expressions.push(parts[i]);
+    }
   }
-  if (!token) {
-    throw new NocoDBError(
-      'NOCODB_TOKEN não está configurado nas variáveis de ambiente.',
-    );
+  
+  for (const expr of expressions) {
+    // Parse (campo,operador,valor)
+    const match = expr.match(/\(([^,]+),([^,]+),(.+)\)/);
+    if (!match) continue;
+    
+    const [, field, op, rawValue] = match;
+    const value = rawValue.trim();
+    
+    let sqlOp = '=';
+    let sqlValue: any = value;
+    
+    switch (op) {
+      case 'eq':
+        sqlOp = '=';
+        break;
+      case 'neq':
+        sqlOp = '!=';
+        break;
+      case 'gt':
+        sqlOp = '>';
+        break;
+      case 'gte':
+        sqlOp = '>=';
+        break;
+      case 'lt':
+        sqlOp = '<';
+        break;
+      case 'lte':
+        sqlOp = '<=';
+        break;
+      case 'like':
+        sqlOp = 'ILIKE';
+        sqlValue = `%${value}%`;
+        break;
+      case 'is':
+        if (value === 'null') {
+          conditions.push(`${field} IS NULL`);
+          continue;
+        }
+        break;
+      case 'isnot':
+        if (value === 'null') {
+          conditions.push(`${field} IS NOT NULL`);
+          continue;
+        }
+        break;
+      case 'in':
+        const inValues = value.split(',').map(v => v.trim());
+        const placeholders = inValues.map(() => `$${paramIndex++}`).join(', ');
+        conditions.push(`${field} IN (${placeholders})`);
+        values.push(...inValues);
+        continue;
+    }
+    
+    conditions.push(`${field} ${sqlOp} $${paramIndex}`);
+    values.push(sqlValue);
+    paramIndex++;
   }
+  
+  if (conditions.length === 0) return { clause: '', values: [] };
+  
+  // Juntar condicoes com AND/OR
+  let finalClause = conditions[0];
+  for (let i = 1; i < conditions.length; i++) {
+    const op = operators[i - 1] || 'AND';
+    finalClause = `(${finalClause}) ${op} (${conditions[i]})`;
+  }
+  
+  return { clause: `WHERE ${finalClause}`, values };
+}
 
-  return { url, token };
+function buildSortClause(sort?: string): string {
+  if (!sort) return 'ORDER BY id DESC';
+  
+  if (sort.startsWith('-')) {
+    return `ORDER BY ${sort.slice(1)} DESC`;
+  }
+  return `ORDER BY ${sort} ASC`;
 }
 
 // ============================================================
-// FUNÇÃO BASE DE FETCH
+// METODOS DO CLIENTE
 // ============================================================
 
-/**
- * Função base para todas as requisições ao NocoDB.
- * Gerencia headers, erros HTTP e parsing de JSON.
- */
-async function nocoRequest<T = unknown>(
-  tableId: string,
-  endpoint: string,
-  options: RequestInit = {},
-  useCache: boolean = false,
-): Promise<T> {
-  const { url, token } = getConfig();
-
-  const fullUrl = `${url}/api/v2/tables/${tableId}${endpoint}`;
-
-  const res = await fetch(fullUrl, {
-    ...options,
-    headers: {
-      'xc-token': token,
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
-    cache: useCache ? 'force-cache' : 'no-store',
-    ...(useCache ? { next: { revalidate: 60 } } : {}),
-  });
-
-  if (!res.ok) {
-    let errorBody = '';
-    try {
-      errorBody = await res.text();
-    } catch {
-      errorBody = 'Não foi possível ler o corpo do erro.';
-    }
-
-    // O NocoDB retorna 422 com ERR_INVALID_PK_VALUE em tabelas SQLite criadas via API,
-    // mas o registro é persistido com sucesso. Tratamos como sucesso em operações POST.
-    if (res.status === 422 && options.method === 'POST' && errorBody.includes('ERR_INVALID_PK_VALUE')) {
-      console.warn(`[NocoDB] Aviso 422 ERR_INVALID_PK_VALUE ignorado para tabela ${tableId} (dado salvo com sucesso)`);
-      return {} as T;
-    }
-
-    const errorMessage = `NocoDB API Error [${tableId}] ${res.status}: ${errorBody}`;
-    console.error('--- NOCODB ERROR LOG ---');
-    console.error('Table ID:', tableId);
-    console.error('Endpoint:', endpoint);
-    console.error('Status:', res.status);
-    console.error('Error Body:', errorBody);
-    console.error('Payload Sent:', options.body);
-    console.error('------------------------');
-
-    throw new NocoDBError(errorMessage, res.status, tableId);
-  }
-
-  // DELETE retorna 200 com corpo vazio ou `{ msg: 'The record has been deleted successfully' }`
-  const contentType = res.headers.get('content-type') || '';
-  if (contentType.includes('application/json')) {
-    return res.json() as Promise<T>;
-  }
-
-  return {} as T;
-}
-
-// ============================================================
-// MÉTODOS PÚBLICOS DO CLIENTE
-// ============================================================
-
-/**
- * Lista registros de uma tabela com suporte a filtros, ordenação e paginação.
- */
 async function list<T = Record<string, unknown>>(
   tableId: string,
   options: NocoListOptions = {},
   useCache: boolean = false,
 ): Promise<NocoListResponse<T>> {
-  const params = new URLSearchParams();
-
-  if (options.where) params.set('where', options.where);
-  if (options.sort) params.set('sort', options.sort);
-  if (options.limit !== undefined) params.set('limit', String(options.limit));
-  if (options.offset !== undefined) params.set('offset', String(options.offset));
-  if (options.fields) params.set('fields', options.fields);
-
-  const query = params.toString() ? `?${params.toString()}` : '';
-
-  return nocoRequest<NocoListResponse<T>>(
-    tableId,
-    `/records${query}`,
-    {},
-    useCache,
-  );
+  const table = getTableName(tableId);
+  const { where, sort, limit = 25, offset = 0 } = options;
+  
+  const { clause: whereClause, values } = parseNocoWhere(where || '');
+  const sortClause = buildSortClause(sort);
+  
+  try {
+    // Query para contar total
+    const countQuery = `SELECT COUNT(*) as total FROM ${table} ${whereClause}`;
+    const countResult = await db.query(countQuery, values);
+    const totalRows = parseInt(countResult.rows[0]?.total || '0', 10);
+    
+    // Query principal
+    const query = `
+      SELECT * FROM ${table} 
+      ${whereClause} 
+      ${sortClause} 
+      LIMIT $${values.length + 1} 
+      OFFSET $${values.length + 2}
+    `;
+    
+    const result = await db.query(query, [...values, limit, offset]);
+    
+    const page = Math.floor(offset / limit) + 1;
+    const pageSize = limit;
+    
+    return {
+      list: result.rows as T[],
+      pageInfo: {
+        totalRows,
+        page,
+        pageSize,
+        isFirstPage: page === 1,
+        isLastPage: offset + result.rows.length >= totalRows,
+      },
+    };
+  } catch (error: any) {
+    console.error(`[PostgreSQL] Erro em list(${table}):`, error.message);
+    throw new NocoDBError(error.message, 500, tableId);
+  }
 }
 
-/**
- * Busca um único registro pelo seu ID.
- * Retorna `null` se o registro não for encontrado (404).
- */
 async function findById<T = Record<string, unknown>>(
   tableId: string,
   id: number | string,
 ): Promise<T | null> {
+  const table = getTableName(tableId);
+  
   try {
-    return await nocoRequest<T>(tableId, `/records/${id}`);
-  } catch (error) {
-    if (error instanceof NocoDBError && error.status === 404) {
-      return null;
-    }
-    throw error;
+    const query = `SELECT * FROM ${table} WHERE id = $1`;
+    const result = await db.query(query, [id]);
+    return result.rows[0] as T || null;
+  } catch (error: any) {
+    console.error(`[PostgreSQL] Erro em findById(${table}, ${id}):`, error.message);
+    return null;
   }
 }
 
-/**
- * Busca o primeiro registro que satisfaz os filtros fornecidos.
- * Retorna `null` se nenhum registro for encontrado.
- */
 async function findOne<T = Record<string, unknown>>(
   tableId: string,
   options: NocoListOptions = {},
@@ -214,64 +293,113 @@ async function findOne<T = Record<string, unknown>>(
   return result.list[0] ?? null;
 }
 
-/**
- * Cria um novo registro na tabela.
- * Retorna o registro criado com seu ID.
- */
 async function create<T = Record<string, unknown>>(
   tableId: string,
   data: Record<string, unknown>,
 ): Promise<T> {
-  return nocoRequest<T>(tableId, '/records', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
+  const table = getTableName(tableId);
+  
+  // Filtrar campos undefined
+  const filteredData: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (value !== undefined) {
+      filteredData[key] = value;
+    }
+  }
+  
+  const keys = Object.keys(filteredData);
+  const values = Object.values(filteredData);
+  const placeholders = keys.map((_, i) => `$${i + 1}`).join(', ');
+  
+  try {
+    const query = `
+      INSERT INTO ${table} (${keys.join(', ')}) 
+      VALUES (${placeholders}) 
+      RETURNING *
+    `;
+    
+    const result = await db.query(query, values);
+    return result.rows[0] as T;
+  } catch (error: any) {
+    console.error(`[PostgreSQL] Erro em create(${table}):`, error.message);
+    throw new NocoDBError(error.message, 500, tableId);
+  }
 }
 
-/**
- * Atualiza um registro existente.
- * O objeto `data` deve conter o campo `id` do registro a ser atualizado.
- */
 async function update<T = Record<string, unknown>>(
   tableId: string,
   data: Record<string, unknown> & { id: number | string },
 ): Promise<T> {
-  return nocoRequest<T>(tableId, '/records', {
-    method: 'PATCH',
-    body: JSON.stringify(data),
-  });
+  const table = getTableName(tableId);
+  const { id, ...updateData } = data;
+  
+  // Filtrar campos undefined
+  const filteredData: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(updateData)) {
+    if (value !== undefined) {
+      filteredData[key] = value;
+    }
+  }
+  
+  const keys = Object.keys(filteredData);
+  const values = Object.values(filteredData);
+  
+  const setClause = keys.map((key, i) => `${key} = $${i + 1}`).join(', ');
+  
+  try {
+    const query = `
+      UPDATE ${table} 
+      SET ${setClause}${keys.length > 0 ? ', ' : ''}updated_at = NOW() 
+      WHERE id = $${keys.length + 1} 
+      RETURNING *
+    `;
+    
+    const result = await db.query(query, [...values, id]);
+    return result.rows[0] as T;
+  } catch (error: any) {
+    // Se updated_at nao existe, tenta sem
+    if (error.message.includes('updated_at')) {
+      const query = `
+        UPDATE ${table} 
+        SET ${setClause} 
+        WHERE id = $${keys.length + 1} 
+        RETURNING *
+      `;
+      const result = await db.query(query, [...values, id]);
+      return result.rows[0] as T;
+    }
+    console.error(`[PostgreSQL] Erro em update(${table}):`, error.message);
+    throw new NocoDBError(error.message, 500, tableId);
+  }
 }
 
-/**
- * Atualiza múltiplos registros em uma única requisição.
- * Cada objeto no array deve conter o campo `id`.
- */
 async function updateMany<T = Record<string, unknown>>(
   tableId: string,
   records: Array<Record<string, unknown> & { id: number | string }>,
 ): Promise<T> {
-  return nocoRequest<T>(tableId, '/records', {
-    method: 'PATCH',
-    body: JSON.stringify(records),
-  });
+  const results: any[] = [];
+  for (const record of records) {
+    const updated = await update(tableId, record);
+    results.push(updated);
+  }
+  return results as unknown as T;
 }
 
-/**
- * Remove um registro pelo seu ID.
- */
 async function remove(
   tableId: string,
   id: number | string,
 ): Promise<void> {
-  await nocoRequest(tableId, '/records', {
-    method: 'DELETE',
-    body: JSON.stringify([{ id }]),
-  });
+  const table = getTableName(tableId);
+  
+  try {
+    const query = `DELETE FROM ${table} WHERE id = $1`;
+    await db.query(query, [id]);
+  } catch (error: any) {
+    console.error(`[PostgreSQL] Erro em delete(${table}, ${id}):`, error.message);
+    throw new NocoDBError(error.message, 500, tableId);
+  }
 }
 
-/**
- * Conta o total de registros em uma tabela, com filtros opcionais.
- */
 async function count(
   tableId: string,
   where?: string,
@@ -280,48 +408,18 @@ async function count(
   return result.pageInfo.totalRows;
 }
 
-/**
- * Busca todos os registros de uma tabela, lidando automaticamente com paginação.
- * Use com cuidado em tabelas com muitos registros.
- */
 async function listAll<T = Record<string, unknown>>(
   tableId: string,
   options: Omit<NocoListOptions, 'limit' | 'offset'> = {},
 ): Promise<T[]> {
-  const PAGE_SIZE = 1000;
-  const all: T[] = [];
-  let offset = 0;
-
-  while (true) {
-    const result = await list<T>(tableId, {
-      ...options,
-      limit: PAGE_SIZE,
-      offset,
-    });
-
-    all.push(...result.list);
-
-    if (result.pageInfo.isLastPage) break;
-    offset += PAGE_SIZE;
-  }
-
-  return all;
+  const result = await list<T>(tableId, { ...options, limit: 10000, offset: 0 });
+  return result.list;
 }
 
 // ============================================================
-// EXPORTAÇÃO DO CLIENTE
+// EXPORTACAO DO CLIENTE
 // ============================================================
 
-/**
- * Cliente centralizado do NocoDB.
- * Importe e use `noco` em todos os arquivos de `app/actions/`.
- *
- * @example
- * import { noco } from '@/lib/nocodb';
- * import { PEDIDOS_TABLE_ID } from '@/lib/constants';
- *
- * const pedidos = await noco.list(PEDIDOS_TABLE_ID, { where: '(status,eq,pendente)' });
- */
 export const noco = {
   list,
   findById,

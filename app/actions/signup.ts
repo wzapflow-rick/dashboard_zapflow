@@ -1,10 +1,8 @@
 'use server';
 
-import { noco } from '@/lib/nocodb';
+import { pg } from '@/lib/postgres';
 import db from '@/lib/db';
 import { 
-  PENDING_SIGNUPS_TABLE_ID, 
-  EMPRESAS_TABLE_ID, 
   SUBSCRIPTION_PLANS,
   type SubscriptionPlanId
 } from '@/lib/constants';
@@ -64,14 +62,13 @@ export async function createCheckoutSession(data: CheckoutData) {
     console.log('[v0] Verificando email existente:', email);
     
     // Verificar se email ja existe
-    const existingCompany = await noco.list(EMPRESAS_TABLE_ID, {
-      where: `(email,eq,${email})`,
-      limit: 1,
+    const existingCompany = await pg.findOne('empresas', {
+      where: { email },
     });
     
-    console.log('[v0] Resultado busca email:', existingCompany?.list?.length || 0);
+    console.log('[v0] Resultado busca email:', existingCompany ? 'encontrado' : 'nao encontrado');
     
-    if (existingCompany?.list?.length > 0) {
+    if (existingCompany) {
       return { success: false, error: 'Este email ja esta cadastrado. Faca login.' };
     }
     
@@ -165,12 +162,11 @@ export async function createPixCheckoutSession(data: CheckoutData) {
     }
     
     // Verificar se email ja existe
-    const existingCompany = await noco.list(EMPRESAS_TABLE_ID, {
-      where: `(email,eq,${email})`,
-      limit: 1,
+    const existingCompany = await pg.findOne('empresas', {
+      where: { email },
     });
     
-    if (existingCompany?.list?.length > 0) {
+    if (existingCompany) {
       return { success: false, error: 'Este email ja esta cadastrado. Faca login.' };
     }
     
@@ -289,12 +285,11 @@ export async function createTrialAccount(data: {
     }
     
     // Verificar se email ja existe
-    const existingCompany = await noco.list(EMPRESAS_TABLE_ID, {
-      where: `(email,eq,${email})`,
-      limit: 1,
+    const existingCompany = await pg.findOne('empresas', {
+      where: { email },
     });
     
-    if (existingCompany?.list?.length > 0) {
+    if (existingCompany) {
       return { success: false, error: 'Este email ja esta cadastrado. Faca login.' };
     }
     
@@ -314,7 +309,7 @@ export async function createTrialAccount(data: {
     const cleanPhone = telefone.replace(/\D/g, '');
     
     // Criar empresa
-    const empresa = await noco.create(EMPRESAS_TABLE_ID, {
+    const empresa = await pg.create('empresas', {
       email: email,
       senha_hash: hashedPassword,
       login: email,
@@ -332,11 +327,11 @@ export async function createTrialAccount(data: {
       slug: uniqueSlug,
     }) as any;
     
-    if (!empresa?.id && !empresa?.Id) {
+    if (!empresa?.id) {
       return { success: false, error: 'Erro ao criar conta' };
     }
     
-    const empresaId = empresa.id || empresa.Id;
+    const empresaId = empresa.id;
     
     // Criar assinatura trial (7 dias gratis)
     try {
@@ -436,16 +431,11 @@ export async function createPendingSignup(data: {
   mp_subscription_id?: string;
 }) {
   try {
-    if (!PENDING_SIGNUPS_TABLE_ID) {
-      console.error('[Signup] PENDING_SIGNUPS_TABLE_ID nao configurado');
-      return null;
-    }
-    
     // Calcular expiracao (24 horas)
     const expiraEm = new Date();
     expiraEm.setHours(expiraEm.getHours() + 24);
     
-    const signup = await noco.create(PENDING_SIGNUPS_TABLE_ID, {
+    const signup = await pg.create('pending_signups', {
       token: data.token,
       email: data.email,
       nome: data.nome,
@@ -470,16 +460,13 @@ export async function createPendingSignup(data: {
 
 export async function getPendingSignup(token: string): Promise<PendingSignup | null> {
   try {
-    if (!PENDING_SIGNUPS_TABLE_ID || !token) {
+    if (!token) {
       return null;
     }
     
-    const result = await noco.list(PENDING_SIGNUPS_TABLE_ID, {
-      where: `(token,eq,${token})`,
-      limit: 1,
-    });
-    
-    const signup = result?.list?.[0];
+    const signup = await pg.findOne('pending_signups', {
+      where: { token },
+    }) as any;
     
     if (!signup) {
       return null;
@@ -487,11 +474,11 @@ export async function getPendingSignup(token: string): Promise<PendingSignup | n
     
     // Verificar se expirou
     const expiraEm = new Date(signup.expira_em as string);
-    const signupId = (signup.id || signup.Id) as number;
+    const signupId = signup.id as number;
     
     if (expiraEm < new Date()) {
       // Marcar como expirado
-      await noco.update(PENDING_SIGNUPS_TABLE_ID, {
+      await pg.update('pending_signups', {
         id: signupId,
         status: 'expired',
       });
@@ -541,7 +528,7 @@ export async function completeSignup(token: string, password: string) {
     const uniqueSlug = `${baseSlug}-${Date.now().toString(36)}`;
     
     // Criar empresa
-    const empresa = await noco.create(EMPRESAS_TABLE_ID, {
+    const empresa = await pg.create('empresas', {
       email: signup.email,
       senha_hash: hashedPassword,
       login: signup.email,
@@ -559,11 +546,11 @@ export async function completeSignup(token: string, password: string) {
       slug: uniqueSlug,
     }) as any;
     
-    if (!empresa?.id && !empresa?.Id) {
+    if (!empresa?.id) {
       return { success: false, error: 'Erro ao criar conta' };
     }
     
-    const empresaId = empresa.id || empresa.Id;
+    const empresaId = empresa.id;
     
     // Criar assinatura (em try/catch separado para nao bloquear criacao da conta)
     try {
@@ -610,12 +597,10 @@ export async function completeSignup(token: string, password: string) {
     }
     
     // Marcar pending signup como completo
-    if (PENDING_SIGNUPS_TABLE_ID) {
-      await noco.update(PENDING_SIGNUPS_TABLE_ID, {
-        id: signup.id,
-        status: 'completed',
-      });
-    }
+    await pg.update('pending_signups', {
+      id: signup.id,
+      status: 'completed',
+    });
     
     // Criar sessao (login automatico) - TODOS os campos necessarios
     const session = await encrypt({

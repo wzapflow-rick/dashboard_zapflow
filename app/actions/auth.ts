@@ -6,8 +6,8 @@ import { revalidatePath } from 'next/cache';
 import { encrypt, decrypt } from '@/lib/session';
 import { logger } from '@/lib/logger';
 import { LoginSchema } from '@/lib/validations';
-import { noco } from '@/lib/nocodb';
-import { EMPRESAS_TABLE_ID, USUARIOS_TABLE_ID, RATE_LIMIT } from '@/lib/constants';
+import { pg } from '@/lib/postgres';
+import { RATE_LIMIT } from '@/lib/constants';
 
 const loginAttempts = new Map<string, { count: number; lastAttempt: number }>();
 
@@ -38,8 +38,8 @@ export async function login(data: any) {
         }
 
         // 1. Tentar login como empresa/admin
-        const empresa = await noco.findOne(EMPRESAS_TABLE_ID, {
-            where: `(email,eq,${email})~or(login,eq,${email})`,
+        const empresa = await pg.findOne('empresas', {
+            where: { $or: [{ email }, { login: email }] },
         }) as any;
 
         const empresaSenha = empresa?.senha || empresa?.senha_hash || empresa?.password || empresa?.Senha || empresa?.senhaHash;
@@ -73,8 +73,8 @@ export async function login(data: any) {
         }
 
         // 2. Tentar login como usuário interno (atendente, cozinheiro, etc.)
-        const usuario = await noco.findOne(USUARIOS_TABLE_ID, {
-            where: `(email,eq,${email})`,
+        const usuario = await pg.findOne('usuarios', {
+            where: { email },
         }) as any;
 
         const usuarioSenha = usuario?.senha_hash || usuario?.senha || usuario?.Senha_hash || usuario?.senhaHash || usuario?.password_hash;
@@ -132,15 +132,15 @@ export async function register(formData: FormData) {
     const password = formData.get('password') as string;
     const nome = formData.get('nome') as string;
 
-    const existing = await noco.findOne(EMPRESAS_TABLE_ID, {
-        where: `(email,eq,${email})~or(login,eq,${email})`,
+    const existing = await pg.findOne('empresas', {
+        where: { $or: [{ email }, { login: email }] },
     });
 
     if (existing) return { error: 'E-mail já cadastrado' };
 
     const hashedPassword = bcrypt.hashSync(password, 10);
 
-    const empresa = await noco.create(EMPRESAS_TABLE_ID, {
+    const empresa = await pg.create('empresas', {
         email,
         senha_hash: hashedPassword,
         login: email,
@@ -200,7 +200,7 @@ export async function updateOnboarding(onboardingData: any) {
         updateBody.instancia_evolution = onboardingData.instancia_evolution;
     }
 
-    await noco.update(EMPRESAS_TABLE_ID, updateBody);
+    await pg.update('empresas', updateBody);
 
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
     const newSession = await encrypt({
