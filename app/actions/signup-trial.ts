@@ -51,21 +51,19 @@ export async function createTrialAccount(data: TrialAccountData) {
       .replace(/^-|-$/g, '');
     const uniqueSlug = `${baseSlug}-${Date.now().toString(36)}`;
     
+    // Usar apenas colunas que existem na tabela empresas
+    // Baseado no schema: nome_fantasia, email, nome_admin, telefone_loja, nincho, instancia_evolution
     const empresa = await pg.create('empresas', {
       email: email,
       senha_hash: hashedPassword,
       login: email,
       nome_admin: nome,
       nome_fantasia: nome,
-      telefone: telefone,
-      telefone_admin: telefone,
-      whatsapp: telefone,
-      status: 'ativo',
+      telefone_loja: telefone,
       nincho: 'Outros',
       instancia_evolution: '',
       planos: 'parceria',
       slug: uniqueSlug,
-      data_inicio_trial: new Date().toISOString(),
     }) as any;
     
     if (!empresa?.id) {

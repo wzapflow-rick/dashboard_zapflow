@@ -145,7 +145,6 @@ export async function register(formData: FormData) {
         login: email,
         nome_admin: nome,
         nome_fantasia: nome,
-        status: 'ativo',
         nincho: 'Outros',
         instancia_evolution: '',
         planos: 'iniciante'
