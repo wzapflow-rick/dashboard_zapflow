@@ -1,7 +1,6 @@
 'use server';
 
-import { noco } from '@/lib/nocodb';
-import { EMPRESAS_TABLE_ID, SUBSCRIPTION_PLANS } from '@/lib/constants';
+import { query } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { encrypt } from '@/lib/session';
 import { cookies } from 'next/headers';
@@ -37,12 +36,12 @@ export async function createTrialAccount(data: TrialAccountData) {
     }
     
     // Verificar se email ja existe
-    const existingCompany = await noco.list(EMPRESAS_TABLE_ID, {
-      where: `(email,eq,${email})`,
-      limit: 1,
-    });
+    const existingResult = await query(
+      `SELECT id FROM empresas WHERE email = $1 LIMIT 1`,
+      [email]
+    );
     
-    if (existingCompany?.list?.length > 0) {
+    if (existingResult.rows.length > 0) {
       return { success: false, error: 'Este email ja esta cadastrado. Faca login.' };
     }
     
@@ -59,30 +58,21 @@ export async function createTrialAccount(data: TrialAccountData) {
     const uniqueSlug = `${baseSlug}-${Date.now().toString(36)}`;
     
     // Criar empresa com plano parceria
-    const empresa = await noco.create(EMPRESAS_TABLE_ID, {
-      email: email,
-      senha_hash: hashedPassword,
-      login: email,
-      senha: hashedPassword,
-      password: password,
-      nome_admin: nome,
-      nome_fantasia: nome,
-      telefone: telefone,
-      telefone_admin: telefone,
-      whatsapp: telefone,
-      status: 'ativo',
-      nincho: 'Outros',
-      instancia_evolution: '',
-      planos: 'parceria',
-      slug: uniqueSlug,
-      data_inicio_trial: new Date().toISOString(),
-    }) as any;
+    const empresaResult = await query(
+      `INSERT INTO empresas (
+        email, senha_hash, login, senha, password, nome_admin, nome_fantasia,
+        telefone, telefone_admin, whatsapp, status, nincho, instancia_evolution, planos, slug, data_inicio_trial
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+      RETURNING *`,
+      [email, hashedPassword, email, hashedPassword, password, nome, nome, telefone, telefone, telefone, 'ativo', 'Outros', '', 'parceria', uniqueSlug, new Date().toISOString()]
+    );
+    const empresa = empresaResult.rows[0];
     
-    if (!empresa?.id && !empresa?.Id) {
+    if (!empresa?.id) {
       return { success: false, error: 'Erro ao criar conta' };
     }
     
-    const empresaId = empresa.id || empresa.Id;
+    const empresaId = empresa.id;
     
     // Criar assinatura trial usando modulo centralizado
     try {
@@ -108,7 +98,6 @@ export async function createTrialAccount(data: TrialAccountData) {
       console.log('[TrialSignup] Assinatura trial criada com sucesso');
     } catch (subError: any) {
       console.error('[TrialSignup] ERRO ao criar assinatura:', subError?.message || subError);
-      // Continua mesmo se falhar - a empresa ja foi criada e o usuario pode assinar depois
       console.log('[TrialSignup] Continuando sem assinatura - usuario pode assinar depois');
     }
     

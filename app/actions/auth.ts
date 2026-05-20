@@ -6,8 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { encrypt, decrypt } from '@/lib/session';
 import { logger } from '@/lib/logger';
 import { LoginSchema } from '@/lib/validations';
-import { noco } from '@/lib/nocodb';
-import { EMPRESAS_TABLE_ID, USUARIOS_TABLE_ID } from '@/lib/constants';
+import { query } from '@/lib/db';
 import { checkRateLimit, clearRateLimitAttempts } from '@/lib/rate-limit';
 
 export async function login(data: any) {
@@ -35,11 +34,13 @@ export async function login(data: any) {
         }
 
         // 1. Tentar login como empresa/admin
-        const empresa = await noco.findOne(EMPRESAS_TABLE_ID, {
-            where: `(email,eq,${email})~or(login,eq,${email})`,
-        }) as any;
+        const empresaResult = await query(
+            `SELECT * FROM empresas WHERE email = $1 OR login = $1 LIMIT 1`,
+            [email]
+        );
+        const empresa = empresaResult.rows[0];
 
-        const empresaSenha = empresa?.senha || empresa?.senha_hash || empresa?.password || empresa?.Senha || empresa?.senhaHash;
+        const empresaSenha = empresa?.senha || empresa?.senha_hash || empresa?.password;
 
         if (empresa && empresaSenha && (bcrypt.compareSync(password, empresaSenha) || password === empresa.password || password === empresa.senha)) {
             logger.securityLoginSuccess(email, empresa.id);
@@ -70,12 +71,14 @@ export async function login(data: any) {
             return { success: true, role: 'admin' };
         }
 
-        // 2. Tentar login como usuário interno (atendente, cozinheiro, etc.)
-        const usuario = await noco.findOne(USUARIOS_TABLE_ID, {
-            where: `(email,eq,${email})`,
-        }) as any;
+        // 2. Tentar login como usuario interno (atendente, cozinheiro, etc.)
+        const usuarioResult = await query(
+            `SELECT * FROM usuarios WHERE email = $1 LIMIT 1`,
+            [email]
+        );
+        const usuario = usuarioResult.rows[0];
 
-        const usuarioSenha = usuario?.senha_hash || usuario?.senha || usuario?.Senha_hash || usuario?.senhaHash || usuario?.password_hash;
+        const usuarioSenha = usuario?.senha_hash || usuario?.senha;
 
         if (usuario && usuarioSenha && bcrypt.compareSync(password, usuarioSenha)) {
             if (usuario.ativo === false || usuario.ativo === 0 || String(usuario.ativo).toLowerCase() === 'false') {
@@ -127,27 +130,22 @@ export async function register(formData: FormData) {
     const password = formData.get('password') as string;
     const nome = formData.get('nome') as string;
 
-    const existing = await noco.findOne(EMPRESAS_TABLE_ID, {
-        where: `(email,eq,${email})~or(login,eq,${email})`,
-    });
+    const existingResult = await query(
+        `SELECT id FROM empresas WHERE email = $1 OR login = $1 LIMIT 1`,
+        [email]
+    );
 
-    if (existing) return { error: 'E-mail já cadastrado' };
+    if (existingResult.rows.length > 0) return { error: 'E-mail já cadastrado' };
 
     const hashedPassword = bcrypt.hashSync(password, 10);
 
-    const empresa = await noco.create(EMPRESAS_TABLE_ID, {
-        email,
-        senha_hash: hashedPassword,
-        login: email,
-        senha: hashedPassword,
-        // password removido - nunca salvar senha em texto plano
-        nome_admin: nome,
-        nome_fantasia: nome,
-        status: 'ativo',
-        nincho: 'Outros',
-        instancia_evolution: '',
-        planos: 'iniciante'
-    }) as any;
+    const insertResult = await query(
+        `INSERT INTO empresas (email, senha_hash, login, senha, nome_admin, nome_fantasia, status, nincho, instancia_evolution, planos)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         RETURNING *`,
+        [email, hashedPassword, email, hashedPassword, nome, nome, 'ativo', 'Outros', '', 'iniciante']
+    );
+    const empresa = insertResult.rows[0];
 
     if (!empresa) return { error: 'Erro ao criar conta' };
 
@@ -182,20 +180,28 @@ export async function updateOnboarding(onboardingData: any) {
 
     const empresaId = payload.empresaId;
 
-    const updateBody: any = {
-        id: empresaId,
-        nome_fantasia: onboardingData.nome,
-    };
+    const updateFields: string[] = ['nome_fantasia = $1'];
+    const params: any[] = [onboardingData.nome];
+    let paramIndex = 2;
 
     if (onboardingData.nicho) {
-        updateBody.nincho = onboardingData.nicho;
+        updateFields.push(`nincho = $${paramIndex}`);
+        params.push(onboardingData.nicho);
+        paramIndex++;
     }
 
     if (onboardingData.instancia_evolution) {
-        updateBody.instancia_evolution = onboardingData.instancia_evolution;
+        updateFields.push(`instancia_evolution = $${paramIndex}`);
+        params.push(onboardingData.instancia_evolution);
+        paramIndex++;
     }
 
-    await noco.update(EMPRESAS_TABLE_ID, updateBody);
+    params.push(empresaId);
+
+    await query(
+        `UPDATE empresas SET ${updateFields.join(', ')} WHERE id = $${paramIndex}`,
+        params
+    );
 
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
     const newSession = await encrypt({

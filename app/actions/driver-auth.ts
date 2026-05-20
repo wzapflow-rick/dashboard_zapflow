@@ -2,15 +2,15 @@
 
 import { cookies } from 'next/headers';
 import { encrypt, decrypt } from '@/lib/session';
-import { noco } from '@/lib/nocodb';
-import { ENTREGADORES_TABLE_ID, PEDIDOS_TABLE_ID } from '@/lib/constants';
+import { query } from '@/lib/db';
 
 export async function driverLogin(email: string, password: string) {
     try {
-        const data = await noco.list(ENTREGADORES_TABLE_ID, {
-            where: `(email,eq,${email})~and(ativo,eq,true)`,
-        });
-        const driver = data.list?.[0] as any;
+        const result = await query(
+            `SELECT * FROM entregadores WHERE email = $1 AND ativo = true LIMIT 1`,
+            [email]
+        );
+        const driver = result.rows[0];
 
         if (!driver) {
             return { success: false, error: 'Entregador não encontrado' };
@@ -39,7 +39,10 @@ export async function driverLogin(email: string, password: string) {
             maxAge: 60 * 60 * 8,
         });
 
-        await noco.update(ENTREGADORES_TABLE_ID, { id: driver.id, status: 'disponivel' });
+        await query(
+            `UPDATE entregadores SET status = 'disponivel' WHERE id = $1`,
+            [driver.id]
+        );
 
         return {
             success: true,
@@ -80,10 +83,10 @@ export async function driverLogout() {
     (await cookies()).delete('driver_session');
 
     if (session?.driverId) {
-        await noco.update(ENTREGADORES_TABLE_ID, {
-            id: session.driverId,
-            status: 'offline'
-        }).catch(() => {});
+        await query(
+            `UPDATE entregadores SET status = 'offline' WHERE id = $1`,
+            [session.driverId]
+        ).catch(() => {});
     }
 
     return { success: true };
@@ -96,12 +99,12 @@ export async function getDriverOrders(driverId: number) {
             throw new Error('Acesso negado: Sessão inválida');
         }
 
-        const data = await noco.list(PEDIDOS_TABLE_ID, {
-            where: `(entregador_id,eq,${driverId})~and(status,neq,finalizado)~and(status,neq,cancelado)`,
-            sort: '-id',
-        });
+        const result = await query(
+            `SELECT * FROM pedidos WHERE entregador_id = $1 AND status NOT IN ('finalizado', 'cancelado') ORDER BY id DESC`,
+            [driverId]
+        );
 
-        return (data.list || []).map((order: any) => ({
+        return (result.rows || []).map((order: any) => ({
             id: order.id,
             cliente_nome: order.cliente_nome,
             telefone_cliente: order.telefone_cliente,
@@ -128,20 +131,32 @@ export async function updateOrderStatusByDriver(orderId: number, newStatus: stri
             throw new Error('Não autorizado');
         }
 
-        const order = await noco.findById(PEDIDOS_TABLE_ID, orderId) as any;
+        const orderResult = await query(
+            `SELECT * FROM pedidos WHERE id = $1`,
+            [orderId]
+        );
+        const order = orderResult.rows[0];
 
         if (!order || Number(order.entregador_id) !== Number(session.driverId)) {
             throw new Error('Acesso negado: Pedido não pertence a este entregador');
         }
 
-        await noco.update(PEDIDOS_TABLE_ID, { id: orderId, status: newStatus });
+        await query(
+            `UPDATE pedidos SET status = $1 WHERE id = $2`,
+            [newStatus, orderId]
+        );
 
         if (newStatus === 'finalizado') {
-            const driver = await noco.findById(ENTREGADORES_TABLE_ID, session.driverId) as any;
-            await noco.update(ENTREGADORES_TABLE_ID, {
-                id: session.driverId,
-                entregas_hoje: (driver?.entregas_hoje || 0) + 1
-            });
+            const driverResult = await query(
+                `SELECT * FROM entregadores WHERE id = $1`,
+                [session.driverId]
+            );
+            const driver = driverResult.rows[0];
+            
+            await query(
+                `UPDATE entregadores SET entregas_hoje = $1 WHERE id = $2`,
+                [(driver?.entregas_hoje || 0) + 1, session.driverId]
+            );
         }
 
         return { success: true };

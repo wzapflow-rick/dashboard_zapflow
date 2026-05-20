@@ -3,21 +3,20 @@
 import bcrypt from 'bcryptjs';
 import { getMe, requireAdmin } from '@/lib/session-server';
 import { revalidatePath } from 'next/cache';
-import { noco } from '@/lib/nocodb';
-import { USUARIOS_TABLE_ID } from '@/lib/constants';
+import { query } from '@/lib/db';
 
 export async function getUsers() {
     try {
         const user = await getMe();
         if (!user?.empresaId) return [];
 
-        const data = await noco.list(USUARIOS_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})`,
-            sort: '-id',
-        });
+        const result = await query(
+            `SELECT * FROM usuarios WHERE empresa_id = $1 ORDER BY id DESC`,
+            [user.empresaId]
+        );
 
-        return (data.list || []).map((u: any) => ({
-            id: u.id || u.Id,
+        return (result.rows || []).map((u: any) => ({
+            id: u.id,
             nome: u.nome,
             email: u.email,
             role: u.role || 'atendente',
@@ -35,17 +34,15 @@ export async function createUser(data: { nome: string; email: string; senha: str
 
         const hashedPassword = bcrypt.hashSync(data.senha, 10);
 
-        const result = await noco.create(USUARIOS_TABLE_ID, {
-            empresa_id: me.empresaId,
-            nome: data.nome,
-            email: data.email,
-            senha_hash: hashedPassword,
-            role: data.role || 'atendente',
-            ativo: true,
-        });
+        const result = await query(
+            `INSERT INTO usuarios (empresa_id, nome, email, senha_hash, role, ativo)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             RETURNING *`,
+            [me.empresaId, data.nome, data.email, hashedPassword, data.role || 'atendente', true]
+        );
 
         revalidatePath('/dashboard/users');
-        return result;
+        return result.rows[0];
     } catch (error: any) {
         throw new Error(error.message || 'Erro ao criar usuário');
     }
@@ -55,17 +52,45 @@ export async function updateUser(id: number, data: { nome?: string; email?: stri
     try {
         await requireAdmin();
 
-        const body: any = { id };
-        if (data.nome !== undefined) body.nome = data.nome;
-        if (data.email !== undefined) body.email = data.email;
-        if (data.role !== undefined) body.role = data.role;
-        if (data.ativo !== undefined) body.ativo = data.ativo;
-        if (data.senha) body.senha_hash = bcrypt.hashSync(data.senha, 10);
+        const updates: string[] = [];
+        const params: any[] = [];
+        let paramIndex = 1;
 
-        const result = await noco.update(USUARIOS_TABLE_ID, body);
+        if (data.nome !== undefined) {
+            updates.push(`nome = $${paramIndex}`);
+            params.push(data.nome);
+            paramIndex++;
+        }
+        if (data.email !== undefined) {
+            updates.push(`email = $${paramIndex}`);
+            params.push(data.email);
+            paramIndex++;
+        }
+        if (data.role !== undefined) {
+            updates.push(`role = $${paramIndex}`);
+            params.push(data.role);
+            paramIndex++;
+        }
+        if (data.ativo !== undefined) {
+            updates.push(`ativo = $${paramIndex}`);
+            params.push(data.ativo);
+            paramIndex++;
+        }
+        if (data.senha) {
+            updates.push(`senha_hash = $${paramIndex}`);
+            params.push(bcrypt.hashSync(data.senha, 10));
+            paramIndex++;
+        }
+
+        params.push(id);
+
+        const result = await query(
+            `UPDATE usuarios SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
+            params
+        );
 
         revalidatePath('/dashboard/users');
-        return result;
+        return result.rows[0];
     } catch (error: any) {
         throw new Error(error.message || 'Erro ao atualizar usuário');
     }
@@ -78,7 +103,7 @@ export async function deleteUser(id: number | string) {
         const numericId = Number(id);
         if (isNaN(numericId)) throw new Error('ID inválido');
 
-        await noco.delete(USUARIOS_TABLE_ID, numericId);
+        await query(`DELETE FROM usuarios WHERE id = $1`, [numericId]);
 
         revalidatePath('/dashboard/users');
         return { success: true };
@@ -90,10 +115,11 @@ export async function deleteUser(id: number | string) {
 
 export async function findUserByEmail(email: string) {
     try {
-        const result = await noco.findOne(USUARIOS_TABLE_ID, {
-            where: `(email,eq,${email})`,
-        });
-        return result || null;
+        const result = await query(
+            `SELECT * FROM usuarios WHERE email = $1 LIMIT 1`,
+            [email]
+        );
+        return result.rows[0] || null;
     } catch {
         return null;
     }

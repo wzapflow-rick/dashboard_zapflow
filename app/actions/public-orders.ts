@@ -4,8 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { incrementCouponUsage } from './coupons';
 import { deductPointsForOrder } from './loyalty';
 import { sendOrderCreatedMessage } from './whatsapp';
-import { noco } from '@/lib/nocodb';
-import { PEDIDOS_TABLE_ID, CLIENTES_TABLE_ID } from '@/lib/constants';
+import { query } from '@/lib/db';
 
 interface OrderItem {
     id: number;
@@ -59,21 +58,22 @@ export async function checkCustomerByPhone(empresaId: number, telefone: string) 
         ];
 
         for (const phone of phoneVariations) {
-            const data = await noco.list(CLIENTES_TABLE_ID, {
-                where: `(empresa_id,eq,${empresaId})~and(telefone,like,${phone})`,
-            });
+            const result = await query(
+                `SELECT * FROM clientes WHERE empresa_id = $1 AND telefone LIKE $2 LIMIT 1`,
+                [empresaId, `%${phone}%`]
+            );
 
-            if (data.list && data.list.length > 0) {
-                return data.list[0];
+            if (result.rows && result.rows.length > 0) {
+                return result.rows[0];
             }
         }
 
-        // Última tentativa: buscar todos e filtrar manualmente
-        const allClientsData = await noco.list(CLIENTES_TABLE_ID, {
-            where: `(empresa_id,eq,${empresaId})`,
-            limit: 1000,
-        });
-        const allClients = allClientsData.list || [];
+        // Ultima tentativa: buscar todos e filtrar manualmente
+        const allClientsResult = await query(
+            `SELECT * FROM clientes WHERE empresa_id = $1 LIMIT 1000`,
+            [empresaId]
+        );
+        const allClients = allClientsResult.rows || [];
 
         const found = allClients.find((c: any) => {
             const clientPhone = (c.telefone || '').replace(/\D/g, '');
@@ -89,28 +89,26 @@ export async function checkCustomerByPhone(empresaId: number, telefone: string) 
 
 async function ensureCliente(empresaId: number, telefone: string, nome: string, endereco?: string, bairro?: string) {
     try {
-        const data = await noco.list(CLIENTES_TABLE_ID, {
-            where: `(empresa_id,eq,${empresaId})~and(telefone,eq,${telefone})`,
-        });
+        const existingResult = await query(
+            `SELECT * FROM clientes WHERE empresa_id = $1 AND telefone = $2 LIMIT 1`,
+            [empresaId, telefone]
+        );
 
-        if (data.list && data.list.length > 0) {
-            const existing = data.list[0] as any;
-            await noco.update(CLIENTES_TABLE_ID, {
-                id: existing.id,
-                nome: nome || existing.nome,
-                endereco: endereco || existing.endereco,
-                bairro_entrega: bairro || existing.bairro_entrega,
-            });
+        if (existingResult.rows && existingResult.rows.length > 0) {
+            const existing = existingResult.rows[0];
+            await query(
+                `UPDATE clientes SET nome = $1, endereco = $2, bairro_entrega = $3 WHERE id = $4`,
+                [nome || existing.nome, endereco || existing.endereco, bairro || existing.bairro_entrega, existing.id]
+            );
             return existing.id;
         } else {
-            const created = await noco.create(CLIENTES_TABLE_ID, {
-                empresa_id: empresaId,
-                nome: nome || 'Cliente Cardápio',
-                telefone,
-                endereco: endereco || '',
-                bairro_entrega: bairro || '',
-            }) as any;
-            return created.id;
+            const createResult = await query(
+                `INSERT INTO clientes (empresa_id, nome, telefone, endereco, bairro_entrega)
+                 VALUES ($1, $2, $3, $4, $5)
+                 RETURNING id`,
+                [empresaId, nome || 'Cliente Cardápio', telefone, endereco || '', bairro || '']
+            );
+            return createResult.rows[0]?.id;
         }
     } catch (error) {
         console.error('Erro ao garantir cliente:', error);
@@ -136,7 +134,6 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
             let produtoNome = item.nome || 'Produto';
             const tamanho = item.tamanho || '';
 
-            // FORÇAR: Se houver tamanho, garante que ele esteja no nome de forma clara
             if (tamanho && !produtoNome.toLowerCase().includes(tamanho.toLowerCase())) {
                 produtoNome = `${produtoNome} (${tamanho})`;
             }
@@ -164,49 +161,54 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
             ? 'Retirada no balcão'
             : [data.clienteEndereco, data.clienteBairro].filter(Boolean).join(', ') || '';
 
-        const orderPayload: any = {
-            empresa_id: data.empresaId,
-            telefone_cliente: data.clienteTelefone,
-            cliente_nome: data.clienteNome,
-            tipo_entrega: data.tipoEntrega,
-            taxa_entrega: data.taxaEntrega || 0,
-            itens: JSON.stringify(itensFormatados),
-            subtotal: data.subtotal,
-            desconto: data.desconto || 0,
-            valor_total: data.total,
-            cupom_codigo: data.cupomCodigo || '',
-            pontos_ganhos: data.pontosGanhos || 0,
-            forma_pagamento: data.formaPagamento,
-            tipo_pagamento: data.formaPagamento,
-            troco_necessario: data.troco || 0,
-            status: data.dataAgendamento ? 'agendado' : (data.formaPagamento === 'dinheiro' ? 'pendente' : 'pagamento_pendente'),
-            origem: 'cardapio_publico',
-            criado_em: new Date().toISOString(),
-            endereco_entrega: enderecoCompleto,
-            bairro_entrega: data.tipoEntrega === 'retirada' ? '' : (data.clienteBairro || ''),
-        };
-
+        let observacoes = data.observacoes || '';
+        
         if (data.dataAgendamento) {
-            orderPayload.data_agendamento = data.dataAgendamento;
-            orderPayload.observacoes = data.observacoes
-                ? `${data.observacoes}\n📅 Agendado para: ${new Date(data.dataAgendamento).toLocaleString('pt-BR')}`
-                : `📅 Agendado para: ${new Date(data.dataAgendamento).toLocaleString('pt-BR')}`;
+            const agendamentoStr = `📅 Agendado para: ${new Date(data.dataAgendamento).toLocaleString('pt-BR')}`;
+            observacoes = observacoes ? `${observacoes}\n${agendamentoStr}` : agendamentoStr;
         }
 
         if (data.tipoEntrega === 'delivery' && enderecoCompleto && enderecoCompleto !== 'Retirada no balcão') {
-            orderPayload.observacoes = data.observacoes
-                ? `${data.observacoes}\n📍 Endereço: ${enderecoCompleto}`
-                : `📍 Endereço: ${enderecoCompleto}`;
+            const enderecoStr = `📍 Endereço: ${enderecoCompleto}`;
+            observacoes = observacoes ? `${observacoes}\n${enderecoStr}` : enderecoStr;
         }
 
-        console.log('[createPublicOrder] Payload being sent:', {
-            endereco_entrega: orderPayload.endereco_entrega,
-            bairro_entrega: orderPayload.bairro_entrega,
-            tipo_entrega: orderPayload.tipo_entrega,
-            observacoes: orderPayload.observacoes,
-        });
+        const status = data.dataAgendamento ? 'agendado' : (data.formaPagamento === 'dinheiro' ? 'pendente' : 'pagamento_pendente');
 
-        const order = await noco.create(PEDIDOS_TABLE_ID, orderPayload) as any;
+        const orderResult = await query(
+            `INSERT INTO pedidos (
+                empresa_id, telefone_cliente, cliente_nome, tipo_entrega, taxa_entrega,
+                itens, subtotal, desconto, valor_total, cupom_codigo, pontos_ganhos,
+                forma_pagamento, tipo_pagamento, troco_necessario, status, origem,
+                criado_em, endereco_entrega, bairro_entrega, observacoes, data_agendamento
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+            RETURNING *`,
+            [
+                data.empresaId,
+                data.clienteTelefone,
+                data.clienteNome,
+                data.tipoEntrega,
+                data.taxaEntrega || 0,
+                JSON.stringify(itensFormatados),
+                data.subtotal,
+                data.desconto || 0,
+                data.total,
+                data.cupomCodigo || '',
+                data.pontosGanhos || 0,
+                data.formaPagamento,
+                data.formaPagamento,
+                data.troco || 0,
+                status,
+                'cardapio_publico',
+                new Date().toISOString(),
+                enderecoCompleto,
+                data.tipoEntrega === 'retirada' ? '' : (data.clienteBairro || ''),
+                observacoes,
+                data.dataAgendamento || null
+            ]
+        );
+
+        const order = orderResult.rows[0];
 
         if (data.cupomId) {
             incrementCouponUsage(data.cupomId).catch(err =>
@@ -239,7 +241,11 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
 
 export async function checkOrderStatus(orderId: number) {
     try {
-        const order = await noco.findById(PEDIDOS_TABLE_ID, orderId) as any;
+        const result = await query(
+            `SELECT id, status, valor_total, criado_em FROM pedidos WHERE id = $1`,
+            [orderId]
+        );
+        const order = result.rows[0];
         if (!order) return null;
 
         return {
@@ -256,8 +262,11 @@ export async function checkOrderStatus(orderId: number) {
 
 export async function getOrderStatus(orderId: number) {
     try {
-        const order = await noco.findById(PEDIDOS_TABLE_ID, orderId) as any;
-        return order?.status || null;
+        const result = await query(
+            `SELECT status FROM pedidos WHERE id = $1`,
+            [orderId]
+        );
+        return result.rows[0]?.status || null;
     } catch (error) {
         console.error('Erro ao buscar status do pedido:', error);
         return null;
@@ -266,7 +275,10 @@ export async function getOrderStatus(orderId: number) {
 
 export async function updateOrderStatusPublic(orderId: number, status: string) {
     try {
-        await noco.update(PEDIDOS_TABLE_ID, { id: orderId, status });
+        await query(
+            `UPDATE pedidos SET status = $1 WHERE id = $2`,
+            [status, orderId]
+        );
         revalidatePath('/dashboard/expedition');
         return { success: true };
     } catch (error) {

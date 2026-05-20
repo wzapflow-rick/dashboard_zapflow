@@ -1,10 +1,7 @@
 'use server';
 
-import { noco } from '@/lib/nocodb';
-import db from '@/lib/db';
+import { query } from '@/lib/db';
 import { 
-  PENDING_SIGNUPS_TABLE_ID, 
-  EMPRESAS_TABLE_ID, 
   SUBSCRIPTION_PLANS,
   type SubscriptionPlanId
 } from '@/lib/constants';
@@ -64,14 +61,14 @@ export async function createCheckoutSession(data: CheckoutData) {
     console.log('[v0] Verificando email existente:', email);
     
     // Verificar se email ja existe
-    const existingCompany = await noco.list(EMPRESAS_TABLE_ID, {
-      where: `(email,eq,${email})`,
-      limit: 1,
-    });
+    const existingResult = await query(
+      `SELECT id FROM empresas WHERE email = $1 LIMIT 1`,
+      [email]
+    );
     
-    console.log('[v0] Resultado busca email:', existingCompany?.list?.length || 0);
+    console.log('[v0] Resultado busca email:', existingResult.rows.length);
     
-    if (existingCompany?.list?.length > 0) {
+    if (existingResult.rows.length > 0) {
       return { success: false, error: 'Este email ja esta cadastrado. Faca login.' };
     }
     
@@ -165,12 +162,12 @@ export async function createPixCheckoutSession(data: CheckoutData) {
     }
     
     // Verificar se email ja existe
-    const existingCompany = await noco.list(EMPRESAS_TABLE_ID, {
-      where: `(email,eq,${email})`,
-      limit: 1,
-    });
+    const existingResult = await query(
+      `SELECT id FROM empresas WHERE email = $1 LIMIT 1`,
+      [email]
+    );
     
-    if (existingCompany?.list?.length > 0) {
+    if (existingResult.rows.length > 0) {
       return { success: false, error: 'Este email ja esta cadastrado. Faca login.' };
     }
     
@@ -289,12 +286,12 @@ export async function createTrialAccount(data: {
     }
     
     // Verificar se email ja existe
-    const existingCompany = await noco.list(EMPRESAS_TABLE_ID, {
-      where: `(email,eq,${email})`,
-      limit: 1,
-    });
+    const existingResult = await query(
+      `SELECT id FROM empresas WHERE email = $1 LIMIT 1`,
+      [email]
+    );
     
-    if (existingCompany?.list?.length > 0) {
+    if (existingResult.rows.length > 0) {
       return { success: false, error: 'Este email ja esta cadastrado. Faca login.' };
     }
     
@@ -314,29 +311,21 @@ export async function createTrialAccount(data: {
     const cleanPhone = telefone.replace(/\D/g, '');
     
     // Criar empresa
-    const empresa = await noco.create(EMPRESAS_TABLE_ID, {
-      email: email,
-      senha_hash: hashedPassword,
-      login: email,
-      senha: hashedPassword,
-      password: senha,
-      nome_admin: nome,
-      nome_fantasia: nome,
-      telefone: cleanPhone,
-      telefone_admin: cleanPhone,
-      whatsapp: cleanPhone,
-      status: 'ativo',
-      nincho: 'Outros',
-      instancia_evolution: '',
-      planos: 'start',
-      slug: uniqueSlug,
-    }) as any;
+    const empresaResult = await query(
+      `INSERT INTO empresas (
+        email, senha_hash, login, senha, password, nome_admin, nome_fantasia,
+        telefone, telefone_admin, whatsapp, status, nincho, instancia_evolution, planos, slug
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+      RETURNING *`,
+      [email, hashedPassword, email, hashedPassword, senha, nome, nome, cleanPhone, cleanPhone, cleanPhone, 'ativo', 'Outros', '', 'start', uniqueSlug]
+    );
+    const empresa = empresaResult.rows[0];
     
-    if (!empresa?.id && !empresa?.Id) {
+    if (!empresa?.id) {
       return { success: false, error: 'Erro ao criar conta' };
     }
     
-    const empresaId = empresa.id || empresa.Id;
+    const empresaId = empresa.id;
     
     // Criar assinatura trial (7 dias gratis)
     try {
@@ -346,7 +335,7 @@ export async function createTrialAccount(data: {
       
       const proximaCobranca = new Date(fimTrial);
       
-      await db.query(`
+      await query(`
         INSERT INTO assinaturas (
           empresa_id, plano, status, valor, 
           mp_subscription_id, mp_preapproval_plan_id,
@@ -358,13 +347,13 @@ export async function createTrialAccount(data: {
       `, [
         empresaId,
         'start',
-        'trialing', // Status especial para trial de 7 dias
-        29.90, // Preco apos o trial
+        'trialing',
+        29.90,
         'trial_' + Date.now(),
         'start',
         hoje.toISOString(),
         proximaCobranca.toISOString(),
-        fimTrial.toISOString(), // Data fim do trial
+        fimTrial.toISOString(),
         'TRIAL',
         'TRIAL'
       ]);
@@ -436,28 +425,18 @@ export async function createPendingSignup(data: {
   mp_subscription_id?: string;
 }) {
   try {
-    if (!PENDING_SIGNUPS_TABLE_ID) {
-      console.error('[Signup] PENDING_SIGNUPS_TABLE_ID nao configurado');
-      return null;
-    }
-    
     // Calcular expiracao (24 horas)
     const expiraEm = new Date();
     expiraEm.setHours(expiraEm.getHours() + 24);
     
-    const signup = await noco.create(PENDING_SIGNUPS_TABLE_ID, {
-      token: data.token,
-      email: data.email,
-      nome: data.nome,
-      telefone: data.telefone,
-      plano: data.plano,
-      mp_payment_id: data.mp_payment_id || null,
-      mp_subscription_id: data.mp_subscription_id || null,
-      status: 'pending',
-      expira_em: expiraEm.toISOString(),
-    });
+    const result = await query(
+      `INSERT INTO pending_signups (token, email, nome, telefone, plano, mp_payment_id, mp_subscription_id, status, expira_em)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING *`,
+      [data.token, data.email, data.nome, data.telefone, data.plano, data.mp_payment_id || null, data.mp_subscription_id || null, 'pending', expiraEm.toISOString()]
+    );
     
-    return signup;
+    return result.rows[0];
   } catch (error) {
     console.error('[Signup] Erro ao criar pending signup:', error);
     return null;
@@ -470,31 +449,26 @@ export async function createPendingSignup(data: {
 
 export async function getPendingSignup(token: string): Promise<PendingSignup | null> {
   try {
-    if (!PENDING_SIGNUPS_TABLE_ID || !token) {
-      return null;
-    }
+    if (!token) return null;
     
-    const result = await noco.list(PENDING_SIGNUPS_TABLE_ID, {
-      where: `(token,eq,${token})`,
-      limit: 1,
-    });
+    const result = await query(
+      `SELECT * FROM pending_signups WHERE token = $1 LIMIT 1`,
+      [token]
+    );
     
-    const signup = result?.list?.[0];
+    const signup = result.rows[0];
     
-    if (!signup) {
-      return null;
-    }
+    if (!signup) return null;
     
     // Verificar se expirou
-    const expiraEm = new Date(signup.expira_em as string);
-    const signupId = (signup.id || signup.Id) as number;
+    const expiraEm = new Date(signup.expira_em);
     
     if (expiraEm < new Date()) {
       // Marcar como expirado
-      await noco.update(PENDING_SIGNUPS_TABLE_ID, {
-        id: signupId,
-        status: 'expired',
-      });
+      await query(
+        `UPDATE pending_signups SET status = 'expired' WHERE id = $1`,
+        [signup.id]
+      );
       return null;
     }
     
@@ -503,7 +477,7 @@ export async function getPendingSignup(token: string): Promise<PendingSignup | n
       return null;
     }
     
-    return signup as unknown as PendingSignup;
+    return signup as PendingSignup;
   } catch (error) {
     console.error('[Signup] Erro ao buscar pending signup:', error);
     return null;
@@ -529,7 +503,7 @@ export async function completeSignup(token: string, password: string) {
     }
     
     // Hash da senha
-    const hashedPassword = await hashPassword(password);
+    const hashedPassword = hashPassword(password);
     
     // Gerar slug unico baseado no nome
     const baseSlug = signup.nome
@@ -541,89 +515,74 @@ export async function completeSignup(token: string, password: string) {
     const uniqueSlug = `${baseSlug}-${Date.now().toString(36)}`;
     
     // Criar empresa
-    const empresa = await noco.create(EMPRESAS_TABLE_ID, {
-      email: signup.email,
-      senha_hash: hashedPassword,
-      login: signup.email,
-      senha: hashedPassword,
-      password: password,
-      nome_admin: signup.nome,
-      nome_fantasia: signup.nome,
-      telefone: signup.telefone,
-      telefone_admin: signup.telefone,
-      whatsapp: signup.telefone,
-      status: 'ativo',
-      nincho: 'Outros',
-      instancia_evolution: '',
-      planos: signup.plano,
-      slug: uniqueSlug,
-    }) as any;
+    const empresaResult = await query(
+      `INSERT INTO empresas (
+        email, senha_hash, login, senha, password, nome_admin, nome_fantasia,
+        telefone, telefone_admin, whatsapp, status, nincho, instancia_evolution, planos, slug
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+      RETURNING *`,
+      [signup.email, hashedPassword, signup.email, hashedPassword, password, signup.nome, signup.nome, signup.telefone, signup.telefone, signup.telefone, 'ativo', 'Outros', '', signup.plano, uniqueSlug]
+    );
+    const empresa = empresaResult.rows[0];
     
-    if (!empresa?.id && !empresa?.Id) {
+    if (!empresa?.id) {
       return { success: false, error: 'Erro ao criar conta' };
     }
     
-    const empresaId = empresa.id || empresa.Id;
+    const empresaId = empresa.id;
     
-    // Criar assinatura (em try/catch separado para nao bloquear criacao da conta)
+    // Criar assinatura
     try {
-        const planKey = signup.plano.toUpperCase() as keyof typeof SUBSCRIPTION_PLANS;
-        const planData = SUBSCRIPTION_PLANS[planKey];
-        
-        // Calcular proxima data de cobranca (30 dias a partir de hoje)
-        const hoje = new Date();
-        const proximaCobranca = new Date(hoje);
-        proximaCobranca.setDate(proximaCobranca.getDate() + 30);
-        
-        console.log('[v0] Criando assinatura via SQL direto para empresa:', empresaId);
-        
-        // Usar SQL direto para contornar restricao de Link field do NocoDB
-        const plano = signup.plano || 'start';
-        const valor = planData?.price || 0;
-        const mpSubscriptionId = signup.mp_payment_id || signup.mp_subscription_id || 'pix_' + Date.now();
-        
-        await db.query(`
-          INSERT INTO assinaturas (
-            empresa_id, plano, status, valor, 
-            mp_subscription_id, mp_preapproval_plan_id,
-            data_inicio, data_proxima_cobranca,
-            cartao_ultimos_digitos, cartao_bandeira,
-            created_at, updated_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
-        `, [
-          empresaId,
-          plano,
-          'authorized',
-          valor,
-          mpSubscriptionId,
-          plano,
-          hoje.toISOString(),
-          proximaCobranca.toISOString(),
-          'PIX',
-          'PIX'
-        ]);
-        
-        console.log('[v0] Assinatura criada com sucesso via SQL');
+      const planKey = signup.plano.toUpperCase() as keyof typeof SUBSCRIPTION_PLANS;
+      const planData = SUBSCRIPTION_PLANS[planKey];
+      
+      const hoje = new Date();
+      const proximaCobranca = new Date(hoje);
+      proximaCobranca.setDate(proximaCobranca.getDate() + 30);
+      
+      const plano = signup.plano || 'start';
+      const valor = planData?.price || 0;
+      const mpSubscriptionId = signup.mp_payment_id || signup.mp_subscription_id || 'pix_' + Date.now();
+      
+      await query(`
+        INSERT INTO assinaturas (
+          empresa_id, plano, status, valor, 
+          mp_subscription_id, mp_preapproval_plan_id,
+          data_inicio, data_proxima_cobranca,
+          cartao_ultimos_digitos, cartao_bandeira,
+          created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+      `, [
+        empresaId,
+        plano,
+        'authorized',
+        valor,
+        mpSubscriptionId,
+        plano,
+        hoje.toISOString(),
+        proximaCobranca.toISOString(),
+        'PIX',
+        'PIX'
+      ]);
+      
+      console.log('[v0] Assinatura criada com sucesso via SQL');
     } catch (subError) {
       console.error('[v0] Erro ao criar assinatura (nao bloqueante):', subError);
-      // Continua mesmo se falhar a criacao da assinatura
     }
     
     // Marcar pending signup como completo
-    if (PENDING_SIGNUPS_TABLE_ID) {
-      await noco.update(PENDING_SIGNUPS_TABLE_ID, {
-        id: signup.id,
-        status: 'completed',
-      });
-    }
+    await query(
+      `UPDATE pending_signups SET status = 'completed' WHERE id = $1`,
+      [signup.id]
+    );
     
-    // Criar sessao (login automatico) - TODOS os campos necessarios
+    // Criar sessao (login automatico)
     const session = await encrypt({
       userId: empresaId,
       email: signup.email,
       empresaId,
       nome: signup.nome,
-      onboarded: false, // Usuario novo precisa fazer onboarding
+      onboarded: false,
       controle_estoque: false,
       role: 'admin',
       source: 'empresa',
@@ -635,8 +594,8 @@ export async function completeSignup(token: string, password: string) {
     cookieStore.set('session', session, {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'lax', // 'lax' permite navegacao cross-site (links externos)
-      maxAge: 60 * 60 * 24, // 24 horas
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24,
       path: '/',
     });
     

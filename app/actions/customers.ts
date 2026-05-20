@@ -4,8 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { getMe } from '@/lib/session-server';
 import { CustomerUpsertSchema } from '@/lib/validations';
 import { logAction } from '@/lib/audit';
-import { noco } from '@/lib/nocodb';
-import { CLIENTES_TABLE_ID, PEDIDOS_TABLE_ID, LOYALTY_POINTS_TABLE_ID } from '@/lib/constants';
+import { query } from '@/lib/db';
 
 const customerUpsertAttempts = new Map<string, { count: number; lastAttempt: number }>();
 const MAX_CUSTOMER_ATTEMPTS = 10;
@@ -16,25 +15,24 @@ export async function getCustomers() {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        const [clientsData, ordersData, pointsData] = await Promise.all([
-            noco.list(CLIENTES_TABLE_ID, {
-                where: `(empresa_id,eq,${user.empresaId})`,
-                sort: '-id',
-                limit: 1000,
-            }),
-            noco.list(PEDIDOS_TABLE_ID, {
-                where: `(empresa_id,eq,${user.empresaId})`,
-                limit: 1000,
-            }),
-            noco.list(LOYALTY_POINTS_TABLE_ID, {
-                where: `(empresa_id,eq,${user.empresaId})`,
-                limit: 1000,
-            }),
+        const [clientsResult, ordersResult, pointsResult] = await Promise.all([
+            query(
+                `SELECT * FROM clientes WHERE empresa_id = $1 ORDER BY id DESC LIMIT 1000`,
+                [user.empresaId]
+            ),
+            query(
+                `SELECT * FROM pedidos WHERE empresa_id = $1 LIMIT 1000`,
+                [user.empresaId]
+            ),
+            query(
+                `SELECT * FROM loyalty_points WHERE empresa_id = $1 LIMIT 1000`,
+                [user.empresaId]
+            ),
         ]);
 
-        const clients = clientsData.list || [];
-        const allOrders = ordersData.list || [];
-        const pointsList = pointsData.list || [];
+        const clients = clientsResult.rows || [];
+        const allOrders = ordersResult.rows || [];
+        const pointsList = pointsResult.rows || [];
 
         const ordersByPhone: Record<string, any[]> = {};
         allOrders.forEach((order: any) => {
@@ -55,8 +53,8 @@ export async function getCustomers() {
             const totalSpent = history.reduce((sum: number, o: any) => sum + Number(o.valor_total || 0), 0);
             const pontos = pointsByPhone[phone] || 0;
 
-            return JSON.parse(JSON.stringify({
-                id: client.id || client.Id,
+            return {
+                id: client.id,
                 nome: client.nome || 'Sem Nome',
                 telefone: phone || 'N/A',
                 bairro_entrega: client.bairro_entrega || '',
@@ -66,7 +64,7 @@ export async function getCustomers() {
                 pontos_fidelidade: pontos,
                 empresa_id: client.empresa_id,
                 criado_em: client.criado_em || null,
-            }));
+            };
         });
     } catch (error) {
         console.error('API Error:', error);
@@ -79,12 +77,11 @@ export async function getCustomerHistory(phone: string) {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        const data = await noco.list(PEDIDOS_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})~and(telefone_cliente,eq,${phone})`,
-            sort: '-id',
-            limit: 100,
-        });
-        return data.list || [];
+        const result = await query(
+            `SELECT * FROM pedidos WHERE empresa_id = $1 AND telefone_cliente = $2 ORDER BY id DESC LIMIT 100`,
+            [user.empresaId, phone]
+        );
+        return result.rows || [];
     } catch (error) {
         console.error('API Error:', error);
         throw new Error('Failed to fetch customer history');
@@ -117,26 +114,24 @@ export async function upsertCustomer(customerData: any) {
             }
         }
 
-        const existingCustomer = await noco.findOne(CLIENTES_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})~and(telefone,eq,${telefone})`,
-        }) as any;
+        const existingResult = await query(
+            `SELECT * FROM clientes WHERE empresa_id = $1 AND telefone = $2 LIMIT 1`,
+            [user.empresaId, telefone]
+        );
+        const existingCustomer = existingResult.rows[0];
 
         if (existingCustomer) {
-            await noco.update(CLIENTES_TABLE_ID, {
-                id: existingCustomer.id,
-                nome: nome || existingCustomer.nome,
-                bairro_entrega: bairro_entrega || existingCustomer.bairro_entrega,
-                endereco: endereco_completo || existingCustomer.endereco
-            });
+            await query(
+                `UPDATE clientes SET nome = $1, bairro_entrega = $2, endereco = $3 WHERE id = $4`,
+                [nome || existingCustomer.nome, bairro_entrega || existingCustomer.bairro_entrega, endereco_completo || existingCustomer.endereco, existingCustomer.id]
+            );
             await logAction('UPDATE_CUSTOMER', `Cliente atualizado: ${telefone}`);
         } else {
-            await noco.create(CLIENTES_TABLE_ID, {
-                empresa_id: user.empresaId,
-                nome: nome || 'Cliente sem nome',
-                telefone,
-                bairro_entrega,
-                endereco: endereco_completo || ''
-            });
+            await query(
+                `INSERT INTO clientes (empresa_id, nome, telefone, bairro_entrega, endereco)
+                 VALUES ($1, $2, $3, $4, $5)`,
+                [user.empresaId, nome || 'Cliente sem nome', telefone, bairro_entrega || '', endereco_completo || '']
+            );
             await logAction('CREATE_CUSTOMER', `Novo cliente cadastrado: ${telefone}`);
         }
 

@@ -12,14 +12,8 @@ import { addPointsForOrder } from './loyalty';
 import { finishDelivery } from './drivers';
 import { sendOrderStatusMessage } from './whatsapp';
 import { logger } from '@/lib/logger';
-import { noco } from '@/lib/nocodb';
-import {
-  PEDIDOS_TABLE_ID,
-  CLIENTES_TABLE_ID,
-  ENTREGADORES_TABLE_ID,
-  EMPRESAS_TABLE_ID,
-  RATE_LIMIT,
-} from '@/lib/constants';
+import { query } from '@/lib/db';
+import { RATE_LIMIT } from '@/lib/constants';
 
 interface NecessidadeInsumo {
     nome: string;
@@ -36,28 +30,27 @@ export async function getOrders() {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        const ordersData = await noco.list(PEDIDOS_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})`,
-            sort: '-id',
-            limit: 1000,
-        });
-        const orders = ordersData.list || [];
+        const ordersResult = await query(
+            `SELECT * FROM pedidos WHERE empresa_id = $1 ORDER BY id DESC LIMIT 1000`,
+            [user.empresaId]
+        );
+        const orders = ordersResult.rows || [];
 
         if (orders.length === 0) return [];
 
-        const clientsData = await noco.list(CLIENTES_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})`,
-            limit: 1000,
-        });
-        const clients = clientsData.list || [];
+        const clientsResult = await query(
+            `SELECT * FROM clientes WHERE empresa_id = $1`,
+            [user.empresaId]
+        );
+        const clients = clientsResult.rows || [];
 
         let drivers: any[] = [];
         try {
-            const driversData = await noco.list(ENTREGADORES_TABLE_ID, {
-                where: `(empresa_id,eq,${user.empresaId})`,
-                limit: 1000,
-            });
-            drivers = driversData.list || [];
+            const driversResult = await query(
+                `SELECT * FROM entregadores WHERE empresa_id = $1`,
+                [user.empresaId]
+            );
+            drivers = driversResult.rows || [];
         } catch {
             drivers = [];
         }
@@ -113,22 +106,25 @@ export async function createManualOrder(data: {
     try {
         const user = await requireRole(['admin', 'gerente', 'atendente', 'cozinheiro']);
 
-        const payload = {
-            cliente_nome: data.cliente_nome || 'Cliente Manual',
-            telefone_cliente: data.telefone_cliente || '00000000000',
-            itens: data.itens,
-            valor_total: data.valor_total,
-            status: 'pendente',
-            canal: 'Painel',
-            tipo_entrega: 'retirada', // Pedidos manuais da expedicao sao para retirada
-            empresa_id: user.empresaId,
-            criado_em: new Date().toISOString(),
-        };
-
-        const result = await noco.create(PEDIDOS_TABLE_ID, payload);
+        const result = await query(
+            `INSERT INTO pedidos (cliente_nome, telefone_cliente, itens, valor_total, status, canal, tipo_entrega, empresa_id, criado_em)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+             RETURNING *`,
+            [
+                data.cliente_nome || 'Cliente Manual',
+                data.telefone_cliente || '00000000000',
+                data.itens,
+                data.valor_total,
+                'pendente',
+                'Painel',
+                'retirada',
+                user.empresaId,
+                new Date().toISOString()
+            ]
+        );
 
         revalidatePath('/dashboard/expedition');
-        return result;
+        return result.rows[0];
     } catch (error: any) {
         console.error('Erro ao criar pedido manual:', error);
         throw new Error(error.message || 'Failed to create manual order');
@@ -158,45 +154,40 @@ export async function updateOrderStatus(id: number, status: string, motivo?: str
             }
         }
 
-        const orderData = await noco.findById(PEDIDOS_TABLE_ID, id) as any;
+        const orderResult = await query(
+            `SELECT * FROM pedidos WHERE id = $1`,
+            [id]
+        );
+        const orderData = orderResult.rows[0];
 
         if (!orderData || Number(orderData.empresa_id) !== Number(user.empresaId)) {
             logger.securityAccessDenied(user.empresaId, `order:${id}`, 'UPDATE_STATUS');
             throw new Error('Acesso negado: Pedido não pertence a esta empresa');
         }
 
-        const updatePayload: any = { id, status };
+        let observacoes = orderData.observacoes || '';
 
         if (status === 'cancelado' && motivo) {
             const nowStr = new Date().toLocaleString('pt-BR');
-            updatePayload.observacoes = orderData.observacoes
-                ? `${orderData.observacoes}\n❌ CANCELADO (${nowStr}): ${motivo}`
+            observacoes = observacoes
+                ? `${observacoes}\n❌ CANCELADO (${nowStr}): ${motivo}`
                 : `❌ CANCELADO (${nowStr}): ${motivo}`;
         }
 
         if (status === 'finalizado') {
             try {
                 if (orderData.telefone_cliente) {
-                    const client = await noco.findOne(CLIENTES_TABLE_ID, {
-                        where: `(empresa_id,eq,${user.empresaId})~and(telefone,eq,${orderData.telefone_cliente})`,
-                    }) as any;
+                    const clientResult = await query(
+                        `SELECT * FROM clientes WHERE empresa_id = $1 AND telefone = $2 LIMIT 1`,
+                        [user.empresaId, orderData.telefone_cliente]
+                    );
+                    const client = clientResult.rows[0];
 
                     if (client) {
-                        // Usa formato ISO completo para compatibilidade com NocoDB
-                        const now = new Date().toISOString();
-                        try {
-                            await noco.update(CLIENTES_TABLE_ID, {
-                                id: client.id,
-                                ultima_compra: now,
-                            });
-                        } catch (updateErr: any) {
-                            // Se falhar por formato de data, tenta sem o campo
-                            if (updateErr.message?.includes('date') || updateErr.message?.includes('time')) {
-                                console.warn('[Orders] Formato de data invalido, ignorando atualizacao');
-                            } else {
-                                throw updateErr;
-                            }
-                        }
+                        await query(
+                            `UPDATE clientes SET ultima_compra = $1 WHERE id = $2`,
+                            [new Date().toISOString(), client.id]
+                        );
                     }
                 }
             } catch (err) {
@@ -204,7 +195,10 @@ export async function updateOrderStatus(id: number, status: string, motivo?: str
             }
         }
 
-        const result = await noco.update(PEDIDOS_TABLE_ID, updatePayload);
+        await query(
+            `UPDATE pedidos SET status = $1, observacoes = $2 WHERE id = $3`,
+            [status, observacoes, id]
+        );
 
         if (status === 'finalizado') {
             deduzirInsumosDoPedido(id).catch(err => console.error('Falha na dedução:', err));
@@ -240,7 +234,7 @@ export async function updateOrderStatus(id: number, status: string, motivo?: str
 
         revalidatePath('/dashboard/expedition');
         revalidatePath('/dashboard/customers');
-        return result;
+        return { success: true };
     } catch (error: any) {
         console.error('API Error:', error);
         throw new Error(error.message || 'Failed to update order status');
@@ -252,7 +246,11 @@ export async function deduzirInsumosDoPedido(orderId: number) {
         const user = await getMe();
         if (!user?.empresaId) return;
 
-        const company = await noco.findById(EMPRESAS_TABLE_ID, user.empresaId) as any;
+        const companyResult = await query(
+            `SELECT * FROM empresas WHERE id = $1`,
+            [user.empresaId]
+        );
+        const company = companyResult.rows[0];
 
         const isEstoqueAtivo = company?.controle_estoque === true ||
             company?.controle_estoque === 1 ||
@@ -263,7 +261,11 @@ export async function deduzirInsumosDoPedido(orderId: number) {
             return;
         }
 
-        const order = await noco.findById(PEDIDOS_TABLE_ID, orderId) as any;
+        const orderResult = await query(
+            `SELECT * FROM pedidos WHERE id = $1`,
+            [orderId]
+        );
+        const order = orderResult.rows[0];
 
         if (!order?.itens) return;
 
@@ -394,7 +396,11 @@ export async function verificarEstoqueDoPedido(orderId: number) {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        const company = await noco.findById(EMPRESAS_TABLE_ID, user.empresaId) as any;
+        const companyResult = await query(
+            `SELECT * FROM empresas WHERE id = $1`,
+            [user.empresaId]
+        );
+        const company = companyResult.rows[0];
 
         const isEstoqueAtivo = company?.controle_estoque === true ||
             company?.controle_estoque === 1 ||
@@ -404,7 +410,11 @@ export async function verificarEstoqueDoPedido(orderId: number) {
             return { hasEnough: true, shortages: [] };
         }
 
-        const order = await noco.findById(PEDIDOS_TABLE_ID, orderId) as any;
+        const orderResult = await query(
+            `SELECT * FROM pedidos WHERE id = $1`,
+            [orderId]
+        );
+        const order = orderResult.rows[0];
 
         if (!order?.itens) return {
             hasEnough: true,
@@ -461,17 +471,10 @@ export async function verificarEstoqueDoPedido(orderId: number) {
             }
         }
 
-        const shortages: any[] = [];
-        necessidades.forEach((need, insumoId) => {
-            if (need.total > need.disponivel) {
-                shortages.push({
-                    insumoId,
-                    nome: need.nome,
-                    necessario: need.total,
-                    disponivel: need.disponivel,
-                    faltando: need.total - need.disponivel,
-                    unidade: need.unidade
-                });
+        const shortages: NecessidadeInsumo[] = [];
+        necessidades.forEach((nec) => {
+            if (nec.total > nec.disponivel) {
+                shortages.push(nec);
             }
         });
 
@@ -481,184 +484,68 @@ export async function verificarEstoqueDoPedido(orderId: number) {
             cliente: { nome: order.cliente_nome, telefone: order.telefone_cliente }
         };
     } catch (error) {
-        console.error('Erro ao verificar estoque do pedido:', error);
+        console.error('Erro ao verificar estoque:', error);
         return { hasEnough: true, shortages: [] };
     }
 }
 
-export async function getOrderById(id: number) {
+export async function deleteOrder(orderId: number) {
     try {
-        const user = await getMe();
-        if (!user?.empresaId) throw new Error('Não autorizado');
+        const user = await requireRole(['admin', 'gerente']);
 
-        const order = await noco.findById(PEDIDOS_TABLE_ID, id) as any;
+        const orderResult = await query(
+            `SELECT * FROM pedidos WHERE id = $1`,
+            [orderId]
+        );
+        const order = orderResult.rows[0];
 
         if (!order || Number(order.empresa_id) !== Number(user.empresaId)) {
-            throw new Error('Pedido não encontrado ou acesso negado');
-        }
-
-        return order;
-    } catch (error: any) {
-        console.error('Erro ao buscar pedido:', error);
-        throw new Error(error.message || 'Falha ao buscar pedido');
-    }
-}
-
-export async function getOrdersForReport(startDate: string, endDate: string) {
-    try {
-        const user = await getMe();
-        if (!user?.empresaId) throw new Error('Não autorizado');
-
-        const data = await noco.listAll(PEDIDOS_TABLE_ID, {
-            where: `(empresa_id,eq,${user.empresaId})~and(criado_em,gte,${startDate})~and(criado_em,lte,${endDate})`,
-            sort: '-criado_em',
-        });
-
-        return data;
-    } catch (error: any) {
-        console.error('Erro ao buscar pedidos para relatório:', error);
-        throw new Error(error.message || 'Falha ao buscar relatório');
-    }
-}
-
-/**
- * Atualiza os itens de um pedido existente
- * Permite adicionar, remover ou alterar quantidade de itens
- */
-export async function updateOrderItems(
-    orderId: number, 
-    newItems: any[], 
-    novoTotal: number,
-    observacao?: string
-) {
-    try {
-        const user = await requireRole(['admin', 'gerente', 'atendente']);
-
-        // Busca o pedido atual
-        const orderData = await noco.findById(PEDIDOS_TABLE_ID, orderId) as any;
-
-        if (!orderData || Number(orderData.empresa_id) !== Number(user.empresaId)) {
-            logger.securityAccessDenied(user.empresaId, `order:${orderId}`, 'UPDATE_ITEMS');
-            throw new Error('Acesso negado: Pedido nao pertence a esta empresa');
-        }
-
-        // Verifica se o pedido pode ser editado (apenas pendente ou preparando)
-        const statusEditaveis = ['pendente', 'preparando', 'aguardando_pagamento'];
-        if (!statusEditaveis.includes(orderData.status)) {
-            throw new Error(`Pedido com status "${orderData.status}" nao pode ser editado`);
-        }
-
-        // Prepara o payload de atualizacao
-        const itensStr = JSON.stringify(newItems);
-        const updatePayload: any = { 
-            id: orderId, 
-            itens: itensStr,
-            valor_total: novoTotal
-        };
-
-        // Adiciona observacao se fornecida
-        if (observacao) {
-            const nowStr = new Date().toLocaleString('pt-BR');
-            updatePayload.observacoes = orderData.observacoes
-                ? `${orderData.observacoes}\n✏️ EDITADO (${nowStr}): ${observacao}`
-                : `✏️ EDITADO (${nowStr}): ${observacao}`;
-        }
-
-        // Atualiza o pedido
-        const result = await noco.update(PEDIDOS_TABLE_ID, updatePayload);
-
-        // Registra log de auditoria
-        const valorAntigo = Number(orderData.valor_total || 0).toFixed(2);
-        const valorNovo = novoTotal.toFixed(2);
-        await logAction(
-            'UPDATE_ORDER_ITEMS', 
-            `Pedido #${orderId} editado. Valor: R$ ${valorAntigo} -> R$ ${valorNovo}. Itens: ${newItems.length}`
-        );
-
-        // Revalida as paginas
-        revalidatePath('/dashboard/expedition');
-
-        return { success: true, order: result };
-    } catch (error: any) {
-        console.error('Erro ao atualizar itens do pedido:', error);
-        throw new Error(error.message || 'Falha ao atualizar pedido');
-    }
-}
-
-/**
- * Adiciona um valor extra ao pedido (ex: açaí por peso, item avulso)
- * O valor é somado ao total e o item é adicionado à lista de itens
- */
-export async function addExtraValueToOrder(
-    orderId: number,
-    nome: string,
-    valor: number
-) {
-    try {
-        const user = await requireRole(['admin', 'gerente', 'atendente', 'cozinheiro']);
-
-        if (!nome?.trim()) {
-            throw new Error('Nome do item é obrigatório');
-        }
-
-        if (!valor || valor <= 0) {
-            throw new Error('Valor deve ser maior que zero');
-        }
-
-        // Busca o pedido atual
-        const orderData = await noco.findById(PEDIDOS_TABLE_ID, orderId) as any;
-
-        if (!orderData || Number(orderData.empresa_id) !== Number(user.empresaId)) {
-            logger.securityAccessDenied(user.empresaId, `order:${orderId}`, 'ADD_EXTRA_VALUE');
             throw new Error('Acesso negado: Pedido não pertence a esta empresa');
         }
 
-        // Parse dos itens existentes
-        let itensAtuais: any[] = [];
-        try {
-            itensAtuais = typeof orderData.itens === 'string' 
-                ? JSON.parse(orderData.itens) 
-                : (orderData.itens || []);
-        } catch {
-            itensAtuais = [];
-        }
+        await query(`DELETE FROM pedidos WHERE id = $1`, [orderId]);
 
-        // Adiciona o novo item extra
-        const novoItem = {
-            id: `extra_${Date.now()}`,
-            produto: nome.trim(),
-            nome: nome.trim(),
-            quantidade: 1,
-            preco_unitario: valor,
-            subtotal: valor,
-            isExtra: true, // Marca como item extra/avulso
-        };
-
-        itensAtuais.push(novoItem);
-
-        // Calcula o novo total
-        const valorAtual = Number(orderData.valor_total) || 0;
-        const novoTotal = valorAtual + valor;
-
-        // Atualiza o pedido
-        const result = await noco.update(PEDIDOS_TABLE_ID, {
-            id: orderId,
-            itens: JSON.stringify(itensAtuais),
-            valor_total: novoTotal,
-        });
-
-        await logAction('ADD_EXTRA_VALUE', `Valor extra adicionado ao pedido #${orderId}: ${nome} - R$ ${valor.toFixed(2)}`);
+        await logAction('DELETE_ORDER', `Pedido #${orderId} excluído permanentemente`);
 
         revalidatePath('/dashboard/expedition');
-        revalidatePath('/dashboard/tables');
-        
-        return { 
-            success: true, 
-            novoTotal,
-            itemAdicionado: novoItem,
-        };
+        return { success: true };
     } catch (error: any) {
-        console.error('Erro ao adicionar valor extra:', error);
-        throw new Error(error.message || 'Falha ao adicionar valor extra');
+        console.error('Delete Order Error:', error);
+        throw new Error(error.message || 'Failed to delete order');
+    }
+}
+
+export async function getOrderDetails(orderId: number) {
+    try {
+        const user = await getMe();
+        if (!user?.empresaId) throw new Error('Não autorizado');
+
+        const orderResult = await query(
+            `SELECT * FROM pedidos WHERE id = $1 AND empresa_id = $2`,
+            [orderId, user.empresaId]
+        );
+        const order = orderResult.rows[0];
+
+        if (!order) return null;
+
+        return {
+            id: order.id,
+            status: order.status,
+            valor_total: order.valor_total,
+            criado_em: order.criado_em,
+            telefone_cliente: order.telefone_cliente,
+            cliente_nome: order.cliente_nome,
+            endereco_entrega: order.endereco_entrega || '',
+            bairro_entrega: order.bairro_entrega || '',
+            tipo_entrega: order.tipo_entrega || '',
+            itens: order.itens,
+            observacoes: order.observacoes || '',
+            taxa_entrega: order.taxa_entrega || 0,
+            desconto: order.desconto || 0,
+            subtotal: order.subtotal || order.valor_total,
+        };
+    } catch (error) {
+        console.error('API Error:', error);
+        return null;
     }
 }
