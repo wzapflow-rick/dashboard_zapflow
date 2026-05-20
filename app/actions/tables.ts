@@ -433,9 +433,14 @@ export async function createTableOrder(data: {
 export async function abrirMesa(mesaId: number, nomeCliente?: string): Promise<Comanda> {
   const user = await requireRole(['admin', 'gerente', 'atendente']);
 
+  console.log('[v0] abrirMesa - mesaId:', mesaId, 'tipo:', typeof mesaId);
+  
   const mesa = await pg.findById('mesas', mesaId) as any;
+  console.log('[v0] abrirMesa - mesa encontrada:', mesa ? 'SIM' : 'NAO', mesa?.id, mesa?.store_id);
+  
   if (!mesa) throw new Error('Mesa não encontrada');
   
+  console.log('[v0] abrirMesa - comparando store_id:', mesa.store_id, 'com empresaId:', user.empresaId);
   if (String(mesa.store_id) !== String(user.empresaId)) {
     throw new Error('Mesa não encontrada');
   }
