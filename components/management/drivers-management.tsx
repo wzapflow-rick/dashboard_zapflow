@@ -228,13 +228,13 @@ export default function DriversManagement() {
                     <div className="flex items-center gap-4 mt-2">
                       <span className="flex items-center gap-1 text-xs">
                         <Star className="size-3 text-amber-500" />
-                        {driver.avaliacao?.toFixed(1) || '5.0'}
+                        {Number(driver.avaliacao ?? 5).toFixed(1)}
                       </span>
                       <span className="text-xs text-slate-500 dark:text-slate-400">
                         {driver.entregas_hoje || 0} entregas hoje
                       </span>
                       <span className="text-xs text-primary font-bold">
-                        R$ {driver.comissao_por_entrega?.toFixed(2) || '0,00'}/entrega
+                        R$ {Number(driver.comissao_por_entrega ?? 0).toFixed(2).replace('.', ',')}/entrega
                       </span>
                     </div>
                   </div>

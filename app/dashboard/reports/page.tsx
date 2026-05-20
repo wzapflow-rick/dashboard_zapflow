@@ -32,7 +32,7 @@ interface ReportData {
     topProdutos: { nome: string; qtd: number }[];
 }
 
-const formatCurrency = (value: number) => `R$ ${value.toFixed(2).replace('.', ',')}`;
+const formatCurrency = (value: number | null | undefined) => `R$ ${Number(value ?? 0).toFixed(2).replace('.', ',')}`;
 
 function ReportsContent() {
     const [loading, setLoading] = useState(true);
@@ -98,17 +98,17 @@ function ReportsContent() {
             `Período: ${report.periodo.inicio} até ${report.periodo.fim}`,
             '',
             'RESUMO',
-            `Faturamento Total,R$ ${report.totalVendas.toFixed(2).replace('.', ',')}`,
+            `Faturamento Total,R$ ${Number(report.totalVendas ?? 0).toFixed(2).replace('.', ',')}`,
             `Pedidos,${report.quantidadePedidos}`,
-            `Média por Pedido,R$ ${report.mediaPorPedido.toFixed(2).replace('.', ',')}`,
-            `Descontos,R$ ${report.totalDescontos.toFixed(2).replace('.', ',')}`,
-            `Taxas de Entrega,R$ ${report.totalTaxasEntrega.toFixed(2).replace('.', ',')}`,
+            `Média por Pedido,R$ ${Number(report.mediaPorPedido ?? 0).toFixed(2).replace('.', ',')}`,
+            `Descontos,R$ ${Number(report.totalDescontos ?? 0).toFixed(2).replace('.', ',')}`,
+            `Taxas de Entrega,R$ ${Number(report.totalTaxasEntrega ?? 0).toFixed(2).replace('.', ',')}`,
             '',
             'TOP PRODUTOS',
             ...report.topProdutos.map(p => `${p.nome},${p.qtd}`),
             '',
             'FORMA DE PAGAMENTO',
-            ...Object.entries(report.pagamentos).map(([forma, valor]) => `${forma},R$ ${valor.toFixed(2).replace('.', ',')}`),
+            ...Object.entries(report.pagamentos).map(([forma, valor]) => `${forma},R$ ${Number(valor ?? 0).toFixed(2).replace('.', ',')}`),
         ].join('\n');
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });

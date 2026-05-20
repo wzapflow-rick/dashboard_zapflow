@@ -305,8 +305,8 @@ export default function LoyaltyManagement() {
                   o cliente ganha{' '}
                   <span className="font-bold text-primary">
                     {config.desconto_tipo === 'valor_fixo' 
-                      ? `R$ ${config.desconto_valor.toFixed(2).replace('.', ',')}`
-                      : `${config.desconto_valor}% de desconto`
+                      ? `R$ ${Number(config.desconto_valor ?? 0).toFixed(2).replace('.', ',')}`
+                      : `${config.desconto_valor ?? 0}% de desconto`
                     }
                   </span>
                 </p>
