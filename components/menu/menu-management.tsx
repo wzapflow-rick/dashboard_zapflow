@@ -309,7 +309,12 @@ export default function MenuManagement({ hideCategoryButton }: { hideCategoryBut
       {/* Category Modal */}
       <CategoryModal
         isOpen={isCategoryModalOpen}
-        onClose={() => { setIsCategoryModalOpen(false); setEditingCategory(null); }}
+        onClose={() => { 
+          setIsCategoryModalOpen(false); 
+          setEditingCategory(null);
+          // Recarrega categorias ao fechar o modal para garantir sincronia
+          fetchData();
+        }}
         editingCategory={editingCategory}
         setEditingCategory={setEditingCategory}
         categories={categories}

@@ -64,7 +64,8 @@ export default function ProductFormModal({
     useEffect(() => {
         toast.dismiss();
 
-        setIsCreatingCategory(false);
+        // Se nao existem categorias, automaticamente mostrar campo para criar nova
+        setIsCreatingCategory(categories.length === 0);
         setIsSubmitting(false);
         setImagePreview(editingProduct?.imagem || null);
 
