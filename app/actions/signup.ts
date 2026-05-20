@@ -283,14 +283,6 @@ export async function createTrialAccount(data: {
     
     const hashedPassword = hashPassword(senha);
     
-    const baseSlug = nome
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '');
-    const uniqueSlug = `${baseSlug}-${Date.now().toString(36)}`;
-    
     const cleanPhone = telefone.replace(/\D/g, '');
     
     const empresa = await pg.create('empresas', {
@@ -303,7 +295,7 @@ export async function createTrialAccount(data: {
       nincho: 'Outros',
       instancia_evolution: '',
       planos: 'start',
-      slug: uniqueSlug,
+      ativo: true,
     }) as any;
     
     if (!empresa?.id) {
@@ -489,14 +481,6 @@ export async function completeSignup(token: string, password: string) {
     
     const hashedPassword = hashPassword(password);
     
-    const baseSlug = signup.nome
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '');
-    const uniqueSlug = `${baseSlug}-${Date.now().toString(36)}`;
-    
     const empresa = await pg.create('empresas', {
       email: signup.email,
       senha_hash: hashedPassword,
@@ -507,7 +491,7 @@ export async function completeSignup(token: string, password: string) {
       nincho: 'Outros',
       instancia_evolution: '',
       planos: signup.plano,
-      slug: uniqueSlug,
+      ativo: true,
     }) as any;
     
     if (!empresa?.id) {

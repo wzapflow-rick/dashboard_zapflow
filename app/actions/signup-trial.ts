@@ -43,16 +43,7 @@ export async function createTrialAccount(data: TrialAccountData) {
     
     const hashedPassword = hashPassword(password);
     
-    const baseSlug = nome
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '');
-    const uniqueSlug = `${baseSlug}-${Date.now().toString(36)}`;
-    
     // Usar apenas colunas que existem na tabela empresas
-    // Baseado no schema: nome_fantasia, email, nome_admin, telefone_loja, nincho, instancia_evolution
     const empresa = await pg.create('empresas', {
       email: email,
       senha_hash: hashedPassword,
@@ -63,7 +54,7 @@ export async function createTrialAccount(data: TrialAccountData) {
       nincho: 'Outros',
       instancia_evolution: '',
       planos: 'parceria',
-      slug: uniqueSlug,
+      ativo: true,
     }) as any;
     
     if (!empresa?.id) {
