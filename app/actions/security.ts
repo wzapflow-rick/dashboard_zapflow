@@ -12,7 +12,7 @@ export async function changePassword(newPassword: string) {
         const hashedPassword = bcrypt.hashSync(newPassword, 10);
 
         await pg.update('empresas', user.empresaId, {
-            senha: hashedPassword,
+            senha_hash: hashedPassword,
         });
 
         return { success: true };

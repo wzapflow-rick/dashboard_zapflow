@@ -55,8 +55,6 @@ export async function createTrialAccount(data: TrialAccountData) {
       email: email,
       senha_hash: hashedPassword,
       login: email,
-      senha: hashedPassword,
-      password: password,
       nome_admin: nome,
       nome_fantasia: nome,
       telefone: telefone,

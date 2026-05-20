@@ -143,7 +143,6 @@ export async function register(formData: FormData) {
         email,
         senha_hash: hashedPassword,
         login: email,
-        senha: hashedPassword,
         nome_admin: nome,
         nome_fantasia: nome,
         status: 'ativo',

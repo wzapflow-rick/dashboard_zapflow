@@ -7,33 +7,22 @@ export async function getSalesReport(startDate: string, endDate: string) {
     const user = await getMe();
     if (!user?.empresaId) throw new Error('Não autorizado');
 
-    console.log('[v0] getSalesReport - empresaId:', user.empresaId, 'startDate:', startDate, 'endDate:', endDate);
-
     const ordersData = await pg.list('pedidos', {
         where: { empresa_id: user.empresaId },
         limit: 10000,
     });
 
     const allOrders = ordersData.list || [];
-    console.log('[v0] Total de pedidos encontrados:', allOrders.length);
 
     const start = new Date(startDate);
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
-    
-    console.log('[v0] Filtering dates - start:', start.toISOString(), 'end:', end.toISOString());
 
     const orders = allOrders.filter((o: any) => {
         if (!o.criado_em) return false;
         const orderDate = new Date(o.criado_em);
-        const inRange = orderDate >= start && orderDate <= end;
-        return inRange;
+        return orderDate >= start && orderDate <= end;
     });
-    
-    console.log('[v0] Pedidos no período:', orders.length);
-    if (allOrders.length > 0) {
-        console.log('[v0] Amostra de criado_em:', allOrders[0]?.criado_em, 'tipo:', typeof allOrders[0]?.criado_em);
-    }
 
     // Filtrar apenas pedidos finalizados para cálculos financeiros
     const finalizedOrders = orders.filter((o: any) => o.status === 'finalizado');
