@@ -26,8 +26,12 @@ export async function saveProduct(
 ) {
   let finalCategoryId: string | number = formData.get('categoria_id') as string;
 
-  if (isCreatingCategory) {
+  // Verifica se esta criando nova categoria (pelo parametro OU pelo valor "new_category")
+  if (isCreatingCategory || finalCategoryId === 'new_category') {
     const novaCategoriaNome = formData.get('new_category_name') as string;
+    if (!novaCategoriaNome || novaCategoriaNome.trim() === '') {
+      throw new Error('Nome da nova categoria e obrigatorio');
+    }
     const novaCat = await upsertCategory({ nome: novaCategoriaNome });
     finalCategoryId = novaCat.id;
   } else {
