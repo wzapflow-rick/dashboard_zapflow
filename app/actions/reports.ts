@@ -55,8 +55,11 @@ export async function getSalesReport(startDate: string, endDate: string) {
 
     const vendasPorDia: Record<string, number> = {};
     finalizedOrders.forEach((o: any) => {
-        const dia = o.criado_em?.split(' ')[0] || 'unknown';
-        vendasPorDia[dia] = (vendasPorDia[dia] || 0) + Number(o.valor_total || 0);
+        // criado_em pode ser Date ou string - converter para string ISO e pegar apenas a data
+        const criadoEm = o.criado_em instanceof Date 
+            ? o.criado_em.toISOString().split('T')[0] 
+            : (typeof o.criado_em === 'string' ? o.criado_em.split(' ')[0].split('T')[0] : 'unknown');
+        vendasPorDia[criadoEm] = (vendasPorDia[criadoEm] || 0) + Number(o.valor_total || 0);
     });
 
     const produtosCount: Record<string, number> = {};
