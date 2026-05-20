@@ -492,21 +492,21 @@ export async function concederTrialGratuito(empresaId: number, dias: number, pla
     );
 
     if (existing.rows.length === 0) {
-      // Criar nova assinatura
+      // Criar nova assinatura - usar '0000' para trial (4 chars max)
       await db.query(`
         INSERT INTO assinaturas (
           empresa_id, plano, status, valor, 
           data_inicio, data_proxima_cobranca,
           cartao_ultimos_digitos, cartao_bandeira,
           created_at, updated_at
-        ) VALUES ($1, $2, 'authorized', 0, NOW(), $3, 'TRIAL', 'TRIAL', NOW(), NOW())
+        ) VALUES ($1, $2, 'authorized', 0, NOW(), $3, '0000', 'Trial', NOW(), NOW())
       `, [empresaId, plano, dataProxima.toISOString()]);
     } else {
       // Atualizar existente
       await db.query(`
         UPDATE assinaturas 
         SET plano = $1, status = 'authorized', data_proxima_cobranca = $2, 
-            valor = 0, cartao_ultimos_digitos = 'TRIAL', cartao_bandeira = 'TRIAL',
+            valor = 0, cartao_ultimos_digitos = '0000', cartao_bandeira = 'Trial',
             updated_at = NOW()
         WHERE empresa_id = $3
       `, [plano, dataProxima.toISOString(), empresaId]);
