@@ -38,6 +38,7 @@ export async function getBillingStatus(empresaId: number): Promise<BillingStatus
 
 /**
  * Gera cobranca PIX para uma empresa
+ * Usa o valor personalizado da assinatura se existir, senao usa o valor padrao do plano
  */
 export async function generatePixPayment(empresaId: number, plano: SubscriptionPlanId) {
   try {
@@ -51,12 +52,26 @@ export async function generatePixPayment(empresaId: number, plano: SubscriptionP
       return { success: false, error: 'Empresa nao encontrada' };
     }
 
+    // Buscar valor personalizado da assinatura
+    const assinaturaResult = await pg.query(
+      'SELECT valor FROM assinaturas WHERE empresa_id = $1 LIMIT 1',
+      [empresaId]
+    );
+    
+    // Usar valor personalizado se existir e for maior que 0, senao usa preco do plano
+    const assinatura = assinaturaResult?.rows?.[0];
+    const valorCobranca = assinatura?.valor && Number(assinatura.valor) > 0 
+      ? Number(assinatura.valor) 
+      : plan.price;
+
+    console.log(`[Billing] Gerando PIX para empresa ${empresaId}: valor personalizado = ${assinatura?.valor}, valor final = ${valorCobranca}`);
+
     const preference = {
       items: [
         {
           title: `ZapFlow - Plano ${plan.name}`,
           quantity: 1,
-          unit_price: plan.price,
+          unit_price: valorCobranca,
           currency_id: 'BRL',
         },
       ],
@@ -76,6 +91,7 @@ export async function generatePixPayment(empresaId: number, plano: SubscriptionP
         empresaId,
         plano: plano.toLowerCase(),
         tipo: 'pix_mensal',
+        valorPersonalizado: valorCobranca,
       }),
       back_urls: {
         success: `${BASE_URL}/dashboard?payment=success`,
@@ -107,6 +123,7 @@ export async function generatePixPayment(empresaId: number, plano: SubscriptionP
       success: true,
       initPoint: data.init_point,
       preferenceId: data.id,
+      valor: valorCobranca,
     };
   } catch (error: any) {
     console.error('[Billing] Erro ao gerar PIX:', error);

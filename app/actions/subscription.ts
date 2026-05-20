@@ -125,6 +125,16 @@ export async function createSubscription(planId: SubscriptionPlanId, cardToken?:
     // Busca dados da empresa
     const empresa = await pg.findById('empresas', me.empresaId) as any;
     
+    // Buscar valor personalizado da assinatura existente
+    const assinaturaExistente = await getAssinaturaByEmpresaId(me.empresaId);
+    
+    // Usar valor personalizado se existir e for maior que 0, senao usa preco do plano
+    const valorCobranca = assinaturaExistente?.valor && Number(assinaturaExistente.valor) > 0 
+      ? Number(assinaturaExistente.valor) 
+      : plan.price;
+
+    console.log(`[Subscription] Criando assinatura empresa ${me.empresaId}: valor personalizado = ${assinaturaExistente?.valor}, valor final = ${valorCobranca}`);
+    
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://cardapio.wzapflow.com.br';
     
     // Cria a assinatura no Mercado Pago
@@ -133,7 +143,7 @@ export async function createSubscription(planId: SubscriptionPlanId, cardToken?:
       auto_recurring: {
         frequency: 1,
         frequency_type: 'months',
-        transaction_amount: plan.price,
+        transaction_amount: valorCobranca,
         currency_id: 'BRL',
       },
       payer_email: empresa?.email || `empresa${me.empresaId}@zapflow.com.br`,
@@ -172,7 +182,7 @@ export async function createSubscription(planId: SubscriptionPlanId, cardToken?:
       mp_preapproval_plan_id: mpData.preapproval_plan_id || null,
       plano: planId,
       status: mpData.status || 'pending',
-      valor: plan.price,
+      valor: valorCobranca, // Usa valor personalizado
       data_inicio: mpData.date_created || new Date().toISOString(),
       data_proxima_cobranca: mpData.next_payment_date || null,
       cartao_ultimos_digitos: mpData.payment_method_id ? mpData.last_four_digits : null,
@@ -380,8 +390,18 @@ export async function generatePixPayment(planId: SubscriptionPlanId): Promise<{
     const empresa = await pg.findById('empresas', me.empresaId) as any;
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://cardapio.wzapflow.com.br';
 
+    // Buscar valor personalizado da assinatura
+    const assinaturaExistente = await getAssinaturaByEmpresaId(me.empresaId);
+    
+    // Usar valor personalizado se existir e for maior que 0, senao usa preco do plano
+    const valorCobranca = assinaturaExistente?.valor && Number(assinaturaExistente.valor) > 0 
+      ? Number(assinaturaExistente.valor) 
+      : plan.price;
+
+    console.log(`[Subscription] Gerando PIX empresa ${me.empresaId}: valor personalizado = ${assinaturaExistente?.valor}, valor final = ${valorCobranca}`);
+
     const paymentPayload = {
-      transaction_amount: plan.price,
+      transaction_amount: valorCobranca,
       description: `Assinatura ZapFlow - Plano ${plan.name}`,
       payment_method_id: 'pix',
       payer: {
