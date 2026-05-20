@@ -17,37 +17,75 @@ export async function getPublicMenu(slug: string) {
     
     try {
         let empresa: any = null;
-        const possibleName = slug.replace(/-/g, ' ');
-
-        // TENTATIVA 1: Busca simples por nome_fantasia
-        console.log(`[MENU_DEBUG] Tentando buscar por nome_fantasia: ${possibleName}`);
-        const empresasByFantasia = await pg.raw<any>(
-            `SELECT * FROM "${EMPRESAS_TABLE}" WHERE LOWER(nome_fantasia) LIKE LOWER($1) LIMIT 1`,
-            [`%${possibleName}%`]
-        );
         
-        if (empresasByFantasia.length > 0) {
-            empresa = empresasByFantasia[0];
-            console.log(`[MENU_DEBUG] Empresa encontrada por nome_fantasia: ${empresa.nome_fantasia}`);
+        // Converter slug para nome (vr-pizza-show -> VR Pizza Show)
+        const possibleName = slug
+            .split('-')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+        
+        // Converter slug para nome lowercase (vr-pizza-show -> vr pizza show)
+        const possibleNameLower = slug.replace(/-/g, ' ');
+
+        console.log(`[MENU_DEBUG] Buscando por nome: "${possibleName}" ou "${possibleNameLower}"`);
+        
+        // TENTATIVA 1: Busca exata por instancia_evolution (zapflow_ID)
+        if (slug.startsWith('zapflow_')) {
+            const empresaByInstance = await pg.raw<any>(
+                `SELECT * FROM "${EMPRESAS_TABLE}" WHERE instancia_evolution = $1 LIMIT 1`,
+                [slug]
+            );
+            if (empresaByInstance.length > 0) {
+                empresa = empresaByInstance[0];
+                console.log(`[MENU_DEBUG] Empresa encontrada por instancia_evolution: ${empresa.nome_fantasia}`);
+            }
         }
 
-        // TENTATIVA 2: Fallback para ID fixo 4 (VR Pizza Show)
-        if (!empresa && (slug === 'vr-pizza-show' || slug === 'vr-pizza')) {
-            console.log(`[MENU_DEBUG] Fallback ID 4 ativado`);
-            empresa = await pg.findById(EMPRESAS_TABLE, 4);
+        // TENTATIVA 2: Busca exata por nome_fantasia (case insensitive)
+        if (!empresa) {
+            const empresasByFantasia = await pg.raw<any>(
+                `SELECT * FROM "${EMPRESAS_TABLE}" WHERE LOWER(REPLACE(nome_fantasia, ' ', '-')) = LOWER($1) OR LOWER(nome_fantasia) = LOWER($2) LIMIT 1`,
+                [slug, possibleNameLower]
+            );
+            
+            if (empresasByFantasia.length > 0) {
+                empresa = empresasByFantasia[0];
+                console.log(`[MENU_DEBUG] Empresa encontrada por nome_fantasia exato: ${empresa.nome_fantasia}`);
+            }
         }
 
-        // TENTATIVA 3: Fallback final - pegar a primeira se for a única
+        // TENTATIVA 3: Busca parcial por nome_fantasia
+        if (!empresa) {
+            const empresasByFantasiaLike = await pg.raw<any>(
+                `SELECT * FROM "${EMPRESAS_TABLE}" WHERE LOWER(nome_fantasia) LIKE LOWER($1) ORDER BY LENGTH(nome_fantasia) ASC LIMIT 1`,
+                [`%${possibleNameLower}%`]
+            );
+            
+            if (empresasByFantasiaLike.length > 0) {
+                empresa = empresasByFantasiaLike[0];
+                console.log(`[MENU_DEBUG] Empresa encontrada por nome_fantasia parcial: ${empresa.nome_fantasia}`);
+            }
+        }
+
+        // TENTATIVA 4: Fallback para ID numerico (se slug for numero)
+        if (!empresa && /^\d+$/.test(slug)) {
+            empresa = await pg.findById(EMPRESAS_TABLE, parseInt(slug));
+            if (empresa) {
+                console.log(`[MENU_DEBUG] Empresa encontrada por ID: ${empresa.nome_fantasia}`);
+            }
+        }
+
+        // TENTATIVA 5: Fallback final - pegar a primeira se for a unica empresa
         if (!empresa) {
             const todas = await pg.list(EMPRESAS_TABLE, { limit: 2 });
             if (todas.list.length === 1) {
                 empresa = todas.list[0];
-                console.log(`[MENU_DEBUG] Fallback única empresa: ${empresa.nome_fantasia}`);
+                console.log(`[MENU_DEBUG] Fallback unica empresa: ${empresa.nome_fantasia}`);
             }
         }
 
         if (!empresa) {
-            console.error(`[MENU_DEBUG] Nenhuma empresa encontrada.`);
+            console.error(`[MENU_DEBUG] Nenhuma empresa encontrada para slug: ${slug}`);
             return null;
         }
 
