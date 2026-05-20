@@ -232,7 +232,7 @@ export async function getMe() {
 }
 
 /**
- * Busca dados completos da empresa incluindo logo_url
+ * Busca dados completos da empresa incluindo logo da configuracoes_loja
  */
 export async function getEmpresaData() {
     const user = await getMe();
@@ -240,10 +240,13 @@ export async function getEmpresaData() {
     
     try {
         const result = await pg.raw<any>(
-            'SELECT id, nome_fantasia, email, logo_url, banner_url, telefone_loja FROM empresas WHERE id = $1 LIMIT 1',
+            `SELECT e.id, e.nome_fantasia, e.email, e.telefone_loja, 
+                    c.logo as logo_url, c.banner as banner_url
+             FROM empresas e
+             LEFT JOIN configuracoes_loja c ON c.empresa_id = e.id
+             WHERE e.id = $1 LIMIT 1`,
             [user.empresaId]
         );
-        console.log('[v0] getEmpresaData:', { empresaId: user.empresaId, logo_url: result[0]?.logo_url });
         return result[0] || null;
     } catch (error) {
         console.error('Erro ao buscar dados da empresa:', error);

@@ -79,10 +79,7 @@ export function Header({ isOpen, setIsOpen, setIsMobileMenuOpen }: HeaderProps) 
     React.useEffect(() => {
         import('@/app/actions/auth').then(({ getMe, getEmpresaData }) => {
             getMe().then(setUser);
-            getEmpresaData().then(data => {
-                console.log('[v0] Header empresaData:', data);
-                setEmpresaData(data);
-            });
+            getEmpresaData().then(setEmpresaData);
         });
 
         import('@/app/actions/notifications').then(({ getNotifications }) => {
