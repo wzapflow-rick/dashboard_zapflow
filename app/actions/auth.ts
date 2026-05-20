@@ -230,3 +230,22 @@ export async function getMe() {
     const { getMe: getMeServer } = await import('@/lib/session-server');
     return await getMeServer();
 }
+
+/**
+ * Busca dados completos da empresa incluindo logo_url
+ */
+export async function getEmpresaData() {
+    const user = await getMe();
+    if (!user?.empresaId) return null;
+    
+    try {
+        const result = await db.query(
+            'SELECT id, nome_fantasia, email, logo_url, banner_url, telefone_loja FROM empresas WHERE id = $1 LIMIT 1',
+            [user.empresaId]
+        );
+        return result.rows[0] || null;
+    } catch (error) {
+        console.error('Erro ao buscar dados da empresa:', error);
+        return null;
+    }
+}

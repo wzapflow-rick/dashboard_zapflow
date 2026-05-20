@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     LayoutDashboard,
@@ -56,6 +57,7 @@ function playNewOrderSound() {
 
 export function Header({ isOpen, setIsOpen, setIsMobileMenuOpen }: HeaderProps) {
     const [user, setUser] = React.useState<any>(null);
+    const [empresaData, setEmpresaData] = React.useState<any>(null);
     const [notifications, setNotifications] = React.useState<any[]>([]);
     const [newCount, setNewCount] = React.useState<number>(0);
     const [pendingCount, setPendingCount] = React.useState<number>(0);
@@ -75,8 +77,9 @@ export function Header({ isOpen, setIsOpen, setIsMobileMenuOpen }: HeaderProps) 
     }, []);
 
     React.useEffect(() => {
-        import('@/app/actions/auth').then(({ getMe }) => {
+        import('@/app/actions/auth').then(({ getMe, getEmpresaData }) => {
             getMe().then(setUser);
+            getEmpresaData().then(setEmpresaData);
         });
 
         import('@/app/actions/notifications').then(({ getNotifications }) => {
@@ -394,9 +397,21 @@ export function Header({ isOpen, setIsOpen, setIsMobileMenuOpen }: HeaderProps) 
                         >
                             {/* Avatar */}
                             <div className="relative">
-                                <div className="size-8 rounded-lg bg-gradient-to-br from-primary to-emerald-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-primary/20">
-                                    {user?.nome?.charAt(0)?.toUpperCase() || 'Z'}
-                                </div>
+                                {empresaData?.logo_url ? (
+                                    <div className="size-8 rounded-lg overflow-hidden shadow-lg shadow-primary/20 ring-2 ring-primary/20">
+                                        <Image
+                                            src={empresaData.logo_url}
+                                            alt="Logo"
+                                            width={32}
+                                            height={32}
+                                            className="object-cover size-full"
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="size-8 rounded-lg bg-gradient-to-br from-primary to-emerald-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-primary/20">
+                                        {user?.nome?.charAt(0)?.toUpperCase() || 'Z'}
+                                    </div>
+                                )}
                                 <div className="absolute -bottom-0.5 -right-0.5 size-3 bg-emerald-500 rounded-full border-2 border-white dark:border-[#0a1628]" />
                             </div>
                             
@@ -434,9 +449,21 @@ export function Header({ isOpen, setIsOpen, setIsMobileMenuOpen }: HeaderProps) 
                                         {/* User info */}
                                         <div className="p-4 border-b border-slate-200/50 dark:border-white/5">
                                             <div className="flex items-center gap-3">
-                                                <div className="size-12 rounded-xl bg-gradient-to-br from-primary to-emerald-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-primary/20">
-                                                    {user?.nome?.charAt(0)?.toUpperCase() || 'Z'}
-                                                </div>
+                                                {empresaData?.logo_url ? (
+                                                    <div className="size-12 rounded-xl overflow-hidden shadow-lg shadow-primary/20 ring-2 ring-primary/20">
+                                                        <Image
+                                                            src={empresaData.logo_url}
+                                                            alt="Logo"
+                                                            width={48}
+                                                            height={48}
+                                                            className="object-cover size-full"
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <div className="size-12 rounded-xl bg-gradient-to-br from-primary to-emerald-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-primary/20">
+                                                        {user?.nome?.charAt(0)?.toUpperCase() || 'Z'}
+                                                    </div>
+                                                )}
                                                 <div className="flex-1 min-w-0">
                                                     <p className="font-bold text-slate-800 truncate dark:text-white">{user?.nome || 'Minha Loja'}</p>
                                                     <p className="text-xs text-slate-500 truncate dark:text-slate-400">{user?.email}</p>
