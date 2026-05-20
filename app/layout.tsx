@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import { Toaster } from 'sonner';
+import { MetaPixel } from "@/components/meta-pixel";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -53,6 +54,7 @@ export default function RootLayout({
         </ThemeProvider>
         <Toaster position="top-right" richColors />
         <ServiceWorkerRegistration />
+        <MetaPixel />
       </body>
     </html>
   );

@@ -18,6 +18,7 @@ import {
   Sparkles,
   Flame
 } from 'lucide-react';
+import { MetaEvents } from '@/components/meta-pixel';
 
 // Componente de texto com efeito de queijo derretendo
 function MeltingText({ children, className = '' }: { children: string; className?: string }) {
@@ -157,6 +158,8 @@ export default function LandingPage() {
   const handleCTAClick = () => {
     setIsExploding(true);
     setTimeout(() => setIsExploding(false), 1000);
+    // Track Meta Pixel event
+    MetaEvents.startTrial();
   };
 
   return (
