@@ -361,9 +361,14 @@ export async function createTableOrder(data: {
 }): Promise<any> {
   const user = await requireRole(['admin', 'gerente', 'atendente', 'cozinheiro']);
 
+  console.log('[v0] createTableOrder - comanda_id recebido:', data.comanda_id, 'tipo:', typeof data.comanda_id);
+  
   const comanda = await pg.findById('comandas', data.comanda_id) as any;
+  console.log('[v0] createTableOrder - comanda encontrada:', comanda ? 'SIM' : 'NAO', comanda?.id, comanda?.store_id);
+  
   if (!comanda) throw new Error('Comanda não encontrada');
   
+  console.log('[v0] createTableOrder - comparando store_id:', comanda.store_id, 'com empresaId:', user.empresaId);
   if (String(comanda.store_id) !== String(user.empresaId)) {
     throw new Error('Comanda não encontrada');
   }
