@@ -110,7 +110,7 @@ export async function getEmpresas(page = 1, limit = 20, search = '') {
     const params: any[] = [];
     
     if (search) {
-      query += ` WHERE e.nome ILIKE $1 OR e.nome_fantasia ILIKE $1 OR e.slug ILIKE $1 OR e.email ILIKE $1`;
+      query += ` WHERE e.nome_fantasia ILIKE $1 OR e.email ILIKE $1`;
       params.push(`%${search}%`);
     }
     
@@ -124,7 +124,7 @@ export async function getEmpresas(page = 1, limit = 20, search = '') {
     const countParams: any[] = [];
     
     if (search) {
-      countQuery += ` WHERE nome ILIKE $1 OR nome_fantasia ILIKE $1 OR slug ILIKE $1 OR email ILIKE $1`;
+      countQuery += ` WHERE nome_fantasia ILIKE $1 OR email ILIKE $1`;
       countParams.push(`%${search}%`);
     }
     
@@ -357,7 +357,7 @@ export async function getAssinaturas(page = 1, limit = 20, search = '') {
     const offset = (page - 1) * limit;
     
     let query = `
-      SELECT a.*, e.nome as empresa_nome, e.nome_fantasia, e.slug, e.email
+      SELECT a.*, e.nome_fantasia as empresa_nome, e.nome_fantasia, e.email
       FROM assinaturas a
       LEFT JOIN empresas e ON a.empresa_id = e.id
     `;
@@ -365,7 +365,7 @@ export async function getAssinaturas(page = 1, limit = 20, search = '') {
     const params: any[] = [];
     
     if (search) {
-      query += ` WHERE e.nome ILIKE $1 OR e.nome_fantasia ILIKE $1 OR e.slug ILIKE $1`;
+      query += ` WHERE e.nome_fantasia ILIKE $1 OR e.email ILIKE $1`;
       params.push(`%${search}%`);
     }
     
@@ -384,7 +384,7 @@ export async function getAssinaturas(page = 1, limit = 20, search = '') {
     const countParams: any[] = [];
     
     if (search) {
-      countQuery += ` WHERE e.nome ILIKE $1 OR e.nome_fantasia ILIKE $1 OR e.slug ILIKE $1`;
+      countQuery += ` WHERE e.nome_fantasia ILIKE $1 OR e.email ILIKE $1`;
       countParams.push(`%${search}%`);
     }
     
