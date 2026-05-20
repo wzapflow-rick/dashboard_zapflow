@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import {
     LayoutDashboard,
@@ -17,9 +17,11 @@ import {
     LayoutGrid,
     Lightbulb,
     ChevronRight,
+    Home,
+    Menu,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from 'motion/react';
 import Image from 'next/image';
 
 const navItems = [
@@ -41,6 +43,15 @@ const adminItems = [
     { name: 'Relatórios', href: '/dashboard/reports', icon: DollarSign, roles: ['admin', 'gerente'] },
     { name: 'Configurações', href: '/dashboard/settings', icon: Settings, roles: ['admin'] },
     { name: 'Assinatura', href: '/dashboard/subscription', icon: CreditCard, roles: ['admin'] },
+];
+
+// Itens do bottom nav mobile (5 principais)
+const mobileNavItems = [
+    { name: 'Início', href: '/dashboard', icon: Home },
+    { name: 'Cardápio', href: '/dashboard/menu', icon: UtensilsCrossed },
+    { name: 'Expedição', href: '/dashboard/expedition', icon: Truck },
+    { name: 'Mesas', href: '/dashboard/mesas', icon: LayoutGrid },
+    { name: 'Mais', href: '#menu', icon: Menu },
 ];
 
 interface SidebarProps {
@@ -130,8 +141,73 @@ function NavItem({
     );
 }
 
+// Bottom Navigation Mobile
+function MobileBottomNav({ 
+    pathname, 
+    onMenuClick 
+}: { 
+    pathname: string;
+    onMenuClick: () => void;
+}) {
+    return (
+        <nav className="fixed bottom-0 left-0 right-0 z-[80] lg:hidden">
+            {/* Blur background */}
+            <div className="absolute inset-0 bg-[#0c1929]/95 backdrop-blur-xl border-t border-white/10" />
+            
+            {/* Safe area padding for notch devices */}
+            <div className="relative flex items-center justify-around px-2 py-2 pb-safe">
+                {mobileNavItems.map((item) => {
+                    const isActive = item.href === '#menu' 
+                        ? false 
+                        : pathname === item.href;
+                    const isMenuButton = item.href === '#menu';
+                    
+                    return (
+                        <motion.a
+                            key={item.name}
+                            href={isMenuButton ? undefined : item.href}
+                            onClick={isMenuButton ? onMenuClick : undefined}
+                            whileTap={{ scale: 0.9 }}
+                            className={cn(
+                                "flex flex-col items-center justify-center py-2 px-3 rounded-xl transition-all duration-200 min-w-[60px]",
+                                isActive 
+                                    ? "text-primary" 
+                                    : "text-slate-500 active:text-slate-300"
+                            )}
+                        >
+                            <div className={cn(
+                                "relative flex items-center justify-center size-10 rounded-xl transition-all duration-200",
+                                isActive && "bg-primary/20"
+                            )}>
+                                <item.icon className={cn(
+                                    "size-5 transition-all",
+                                    isActive && "text-primary"
+                                )} />
+                                {isActive && (
+                                    <motion.div
+                                        layoutId="mobileActiveIndicator"
+                                        className="absolute -bottom-1 w-1 h-1 bg-primary rounded-full"
+                                    />
+                                )}
+                            </div>
+                            <span className={cn(
+                                "text-[10px] font-medium mt-0.5 transition-colors",
+                                isActive ? "text-primary" : "text-slate-500"
+                            )}>
+                                {item.name}
+                            </span>
+                        </motion.a>
+                    );
+                })}
+            </div>
+        </nav>
+    );
+}
+
 export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen, user }: SidebarProps) {
     const pathname = usePathname();
+    const x = useMotionValue(0);
+    const opacity = useTransform(x, [-300, 0], [0, 1]);
 
     if (user?.role === 'cozinheiro') {
         return null;
@@ -139,6 +215,13 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen, user }:
 
     const closeMobileMenu = () => {
         if (isMobileMenuOpen) {
+            setIsMobileMenuOpen(false);
+        }
+    };
+
+    // Handle swipe to close
+    const handleDragEnd = (event: any, info: PanInfo) => {
+        if (info.offset.x < -100 || info.velocity.x < -500) {
             setIsMobileMenuOpen(false);
         }
     };
@@ -166,6 +249,12 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen, user }:
 
     return (
         <>
+            {/* Mobile Bottom Navigation */}
+            <MobileBottomNav 
+                pathname={pathname} 
+                onMenuClick={() => setIsMobileMenuOpen(true)} 
+            />
+
             {/* Mobile Sidebar Overlay */}
             <AnimatePresence>
                 {isMobileMenuOpen && (
@@ -173,29 +262,153 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen, user }:
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] lg:hidden"
                     />
                 )}
             </AnimatePresence>
 
+            {/* Mobile Sidebar - Slide from left with swipe support */}
+            <AnimatePresence>
+                {isMobileMenuOpen && (
+                    <motion.aside
+                        initial={{ x: '-100%' }}
+                        animate={{ x: 0 }}
+                        exit={{ x: '-100%' }}
+                        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                        drag="x"
+                        dragConstraints={{ left: -300, right: 0 }}
+                        dragElastic={0.1}
+                        onDragEnd={handleDragEnd}
+                        style={{ x }}
+                        className={cn(
+                            "fixed left-0 top-0 h-full w-[280px] z-[70] flex flex-col lg:hidden",
+                            "bg-gradient-to-b from-[#0c1929] via-[#0a1525] to-[#081220]",
+                            "border-r border-white/5",
+                            "shadow-[4px_0_24px_rgba(0,0,0,0.5)]"
+                        )}
+                    >
+                        {/* Header */}
+                        <div className="p-4 flex items-center justify-between gap-3 border-b border-white/5">
+                            <div className="flex items-center gap-3">
+                                <motion.div 
+                                    whileTap={{ scale: 0.95 }}
+                                    className="relative size-10 rounded-xl overflow-hidden shrink-0 shadow-lg ring-2 ring-primary/20"
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent" />
+                                    <Image
+                                        src="/logo-zapflow.png"
+                                        alt="ZapFlow"
+                                        width={40}
+                                        height={40}
+                                        className="object-cover relative z-10"
+                                    />
+                                </motion.div>
+                                
+                                <div className="flex flex-col">
+                                    <h1 className="font-bold text-white leading-none truncate text-sm">
+                                        {user?.nome || 'ZapFlow'}
+                                    </h1>
+                                    <p className="text-[9px] text-primary/80 mt-1 uppercase tracking-widest font-bold flex items-center gap-1">
+                                        <span className="size-1.5 rounded-full bg-primary animate-pulse" />
+                                        Made by ZapFlow
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <motion.button
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => setIsMobileMenuOpen(false)}
+                                className="p-2.5 text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-all"
+                            >
+                                <X className="size-5" />
+                            </motion.button>
+                        </div>
+
+                        {/* Navegacao - scrollable */}
+                        <nav className="flex-1 px-3 py-3 space-y-1 overflow-y-auto custom-scrollbar">
+                            {filteredNavItems.map((item, index) => (
+                                <NavItem
+                                    key={item.name}
+                                    item={item}
+                                    isActive={pathname === item.href}
+                                    isOpen={false}
+                                    isMobileMenuOpen={true}
+                                    onClick={closeMobileMenu}
+                                    index={index}
+                                />
+                            ))}
+
+                            {/* Secao Administracao */}
+                            {filteredAdminItems.length > 0 && (
+                                <div className="pt-3 mt-3">
+                                    <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mb-3" />
+                                    
+                                    <span className="px-3 text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2 block">
+                                        Administração
+                                    </span>
+                                    
+                                    <div className="space-y-1">
+                                        {filteredAdminItems.map((item, index) => (
+                                            <NavItem
+                                                key={item.name}
+                                                item={item}
+                                                isActive={pathname === item.href}
+                                                isOpen={false}
+                                                isMobileMenuOpen={true}
+                                                onClick={closeMobileMenu}
+                                                index={filteredNavItems.length + index}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </nav>
+
+                        {/* Footer - User profile */}
+                        <div className="p-3 border-t border-white/5">
+                            <div className="flex items-center gap-3 p-2.5 bg-white/5 rounded-xl">
+                                <div className="relative">
+                                    <div className="relative size-9 rounded-full overflow-hidden ring-2 ring-white/10">
+                                        <Image
+                                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuDm72iK3QVpJIMCWIHbWsRreh_QjkigiEYJ2gtcc6GqtkJAiL6-wR2AENgEq-Hrh8EA_6Yyyp_9TLAAg2R_RuFBNgiB9XbHm2Ny79MIfLQ3rMDm7alfZlyysgKOr16OG9gZZtvomKL1wz4cO-B6LuKMIBJJGkki0Fl3AbtpFUuZSBCKKgAMPAJZdTLel0MzOOPREwzSyK6_LPuFIa0zv1mHtyb3b_dJJrInLPf58HW0YS2CWO27sZamwhRyxsI0vDyhdFjw9DKBsYM"
+                                            alt="Profile"
+                                            fill
+                                            className="object-cover"
+                                            referrerPolicy="no-referrer"
+                                        />
+                                    </div>
+                                    <span className="absolute -bottom-0.5 -right-0.5 size-2.5 bg-primary rounded-full border-2 border-[#0c1929]" />
+                                </div>
+                                
+                                <div className="flex flex-col overflow-hidden flex-1">
+                                    <span className="text-sm font-semibold text-white leading-tight truncate">
+                                        {user?.nome || 'Minha Loja'}
+                                    </span>
+                                    <span className="text-[10px] text-slate-500 capitalize">
+                                        Plano {user?.plano || 'Iniciante'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.aside>
+                )}
+            </AnimatePresence>
+
+            {/* Desktop Sidebar */}
             <aside
                 className={cn(
-                    "fixed left-0 top-0 h-full transition-all duration-300 z-[70] flex flex-col",
-                    // Background com gradiente sutil e borda
+                    "fixed left-0 top-0 h-full transition-all duration-300 z-[70] flex-col hidden lg:flex",
                     "bg-gradient-to-b from-[#0c1929] via-[#0a1525] to-[#081220]",
                     "border-r border-white/5",
-                    // Sombra sutil
                     "shadow-[4px_0_24px_rgba(0,0,0,0.3)]",
-                    isOpen ? "w-64" : "w-20",
-                    "lg:translate-x-0",
-                    isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+                    isOpen ? "w-64" : "w-20"
                 )}
             >
                 {/* Header com logo */}
                 <div className="p-5 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                        {/* Logo com efeito de glow */}
                         <motion.div 
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
@@ -211,7 +424,7 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen, user }:
                             />
                         </motion.div>
                         
-                        {(isOpen || isMobileMenuOpen) && (
+                        {isOpen && (
                             <motion.div
                                 initial={{ opacity: 0, x: -10 }}
                                 animate={{ opacity: 1, x: 0 }}
@@ -228,13 +441,6 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen, user }:
                             </motion.div>
                         )}
                     </div>
-                    
-                    <button
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="lg:hidden p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all"
-                    >
-                        <X className="size-5" />
-                    </button>
                 </div>
 
                 {/* Navegacao principal */}
@@ -245,7 +451,7 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen, user }:
                             item={item}
                             isActive={pathname === item.href}
                             isOpen={isOpen}
-                            isMobileMenuOpen={isMobileMenuOpen}
+                            isMobileMenuOpen={false}
                             onClick={closeMobileMenu}
                             index={index}
                         />
@@ -254,10 +460,9 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen, user }:
                     {/* Secao Administracao */}
                     {filteredAdminItems.length > 0 && (
                         <div className="pt-4 mt-4">
-                            {/* Separador com gradiente */}
                             <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mb-4" />
                             
-                            {(isOpen || isMobileMenuOpen) && (
+                            {isOpen && (
                                 <motion.span 
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
@@ -274,7 +479,7 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen, user }:
                                         item={item}
                                         isActive={pathname === item.href}
                                         isOpen={isOpen}
-                                        isMobileMenuOpen={isMobileMenuOpen}
+                                        isMobileMenuOpen={false}
                                         onClick={closeMobileMenu}
                                         index={filteredNavItems.length + index}
                                     />
@@ -286,14 +491,12 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen, user }:
 
                 {/* Footer com perfil do usuario */}
                 <div className="p-3 mt-auto">
-                    {/* Separador superior */}
                     <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mb-3" />
                     
                     <motion.div 
                         whileHover={{ scale: 1.02 }}
                         className="flex items-center gap-3 p-2.5 hover:bg-white/5 rounded-xl cursor-pointer transition-all duration-300 group"
                     >
-                        {/* Avatar com ring animado */}
                         <div className="relative">
                             <div className="relative size-10 rounded-full overflow-hidden ring-2 ring-white/10 group-hover:ring-primary/30 transition-all duration-300">
                                 <Image
@@ -304,11 +507,10 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen, user }:
                                     referrerPolicy="no-referrer"
                                 />
                             </div>
-                            {/* Indicador de status online */}
                             <span className="absolute -bottom-0.5 -right-0.5 size-3 bg-primary rounded-full border-2 border-[#0c1929]" />
                         </div>
                         
-                        {(isOpen || isMobileMenuOpen) && (
+                        {isOpen && (
                             <motion.div
                                 initial={{ opacity: 0, x: -10 }}
                                 animate={{ opacity: 1, x: 0 }}

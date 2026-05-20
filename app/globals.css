@@ -59,6 +59,26 @@
   .sidebar-item-active {
     @apply bg-primary/10 text-primary border-r-4 border-primary;
   }
+  
+  /* Safe area for mobile devices with notch/home indicator */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 8px);
+  }
+  
+  /* Custom scrollbar for sidebar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
 }
 
 /* Overrides globais para o tema dark - cores consistentes com a landing page */

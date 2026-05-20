@@ -196,7 +196,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           setIsOpen={setIsOpen}
           setIsMobileMenuOpen={setIsMobileMenuOpen}
         />
-        <div className="p-4 sm:p-6 lg:p-8 flex-1 dark:bg-[#0a1628]">
+        <div className="p-4 sm:p-6 lg:p-8 pb-24 lg:pb-8 flex-1 dark:bg-[#0a1628]">
           {user?.empresaId && <PaymentAlert empresaId={user.empresaId} />}
           {user && (
             <TrialWarningBanner 
