@@ -60,7 +60,7 @@ export default function CustomerBase() {
 
   // Contagem de clientes por bairro - verificar todos os campos possíveis
   const neighborhoodCounts = customers.reduce((acc, c) => {
-    // Tentar diferentes nomes de campo que podem vir do NocoDB
+    // Tentar diferentes nomes de campo que podem vir do banco
     const bairro = c.bairro_entrega || c.bairro || c.neighborhood || c.bairroEntrega || c.delivery_neighborhood;
     if (bairro && typeof bairro === 'string' && bairro.trim() !== '') {
       const bairroTrimmed = bairro.trim();

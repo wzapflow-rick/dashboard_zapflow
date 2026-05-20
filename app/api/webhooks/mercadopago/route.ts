@@ -284,7 +284,7 @@ async function handleSubscriptionPayment(paymentId: string) {
         
         console.log(`[Webhook] Assinatura ATUALIZADA para empresa ${empresaId}`);
       } else {
-        // Cria nova assinatura via SQL direto (evita problema do Link field do NocoDB)
+        // Cria nova assinatura via SQL direto
         await pg.query(`
           INSERT INTO assinaturas (
             empresa_id, plano, status, valor, 

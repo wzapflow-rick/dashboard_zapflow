@@ -176,7 +176,7 @@ export default function ProductFormModal({
             const sizesJson = JSON.stringify(sizes);
             formData.set('tamanhos', sizesJson);
             
-            // FALLBACK: Como a coluna 'tamanhos' pode não existir no NocoDB, 
+            // FALLBACK: Como a coluna 'tamanhos' pode não existir em bancos antigos, 
             // vamos anexar os tamanhos ao final da descrição de forma oculta para persistência garantida.
             const currentDesc = formData.get('descricao') as string || '';
             const cleanDesc = currentDesc.split('[[SIZES:')[0].trim();

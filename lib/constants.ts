@@ -1,147 +1,9 @@
 /**
  * @file lib/constants.ts
- * @description Centralização de todos os IDs de tabelas do NocoDB e constantes globais do sistema.
+ * @description Constantes globais do sistema ZapFlow.
  *
- * IMPORTANTE: Os IDs de tabela são lidos prioritariamente das variáveis de ambiente.
- * Os valores hardcoded abaixo servem apenas como fallback para desenvolvimento local.
- * Em produção, SEMPRE defina as variáveis de ambiente correspondentes.
+ * NOTA: Os nomes de tabelas PostgreSQL estão centralizados em lib/tables.ts
  */
-
-// ============================================================
-// TABELAS PRINCIPAIS DO SISTEMA
-// ============================================================
-
-/** Tabela de empresas/lojistas cadastrados na plataforma */
-export const EMPRESAS_TABLE_ID =
-  process.env.NOCODB_TABLE_EMPRESAS || 'mp08yd7oaxn5xo2';
-
-/** Tabela de usuários internos (atendentes, cozinheiros, gerentes) */
-export const USUARIOS_TABLE_ID =
-  process.env.NOCODB_TABLE_USUARIOS || 'msrjfeb28e07cwx';
-
-/** Tabela de pedidos */
-export const PEDIDOS_TABLE_ID =
-  process.env.NOCODB_TABLE_PEDIDOS || 'mui7bozvx9zb2n9';
-
-/** Tabela de clientes finais */
-export const CLIENTES_TABLE_ID =
-  process.env.NOCODB_TABLE_CLIENTES || 'mkodxks6hpm2bg9';
-
-// ============================================================
-// CARDÁPIO
-// ============================================================
-
-/** Tabela de produtos do cardápio */
-export const PRODUTOS_TABLE_ID =
-  process.env.NOCODB_TABLE_PRODUTOS || 'mh81t2xp1uml6pc';
-
-/** Tabela de categorias do cardápio */
-export const CATEGORIAS_TABLE_ID =
-  process.env.NOCODB_TABLE_CATEGORIAS || 'mo5so5g7gvlbwyo';
-
-/** Tabela de grupos de complementos (ex: "Borda", "Adicionais") */
-export const GRUPOS_COMPLEMENTOS_TABLE_ID =
-  process.env.NOCODB_TABLE_GRUPOS_COMPLEMENTOS || 'm3o1prjcnvi678q';
-
-/** Tabela de itens de complemento (ex: "Borda de Cheddar") */
-export const COMPLEMENTOS_TABLE_ID =
-  process.env.NOCODB_TABLE_COMPLEMENTOS || 'mj3ut032mx8zi72';
-
-/** Tabela de vínculo entre produto e grupos de complementos */
-export const PRODUTO_GRUPOS_COMPLEMENTOS_TABLE_ID =
-  process.env.NOCODB_TABLE_PRODUTO_GRUPOS_COMPLEMENTOS || 'm6muivyaadyh38c';
-
-/** Tabela de grupos de slots para produtos compostos */
-export const GRUPOS_SLOTS_TABLE_ID =
-  process.env.NOCODB_TABLE_GRUPOS_SLOTS || 'm1h9jeye8hcd4k6';
-
-/** Tabela de itens base para produtos compostos */
-export const ITENS_BASE_TABLE_ID =
-  process.env.NOCODB_TABLE_ITENS_BASE || 'mfcp67skbxq4nt5';
-
-/** Tabela de relação item base <-> insumo */
-export const ITEM_BASE_INSUMO_TABLE_ID =
-  process.env.NOCODB_TABLE_ITEM_BASE_INSUMO || '';
-
-// ============================================================
-// ESTOQUE E INSUMOS
-// ============================================================
-
-/** Tabela de insumos/ingredientes */
-export const INSUMOS_TABLE_ID =
-  process.env.NOCODB_TABLE_INSUMOS || 'mvis2y8mlpwqr9q';
-
-/** Tabela de relação produto <-> insumo (receitas) */
-export const PRODUTO_INSUMOS_TABLE_ID =
-  process.env.NOCODB_TABLE_PRODUTO_INSUMOS || 'mev9fkmt1jaapiv';
-
-// ============================================================
-// ENTREGADORES
-// ============================================================
-
-/** Tabela de entregadores/motoboys */
-export const ENTREGADORES_TABLE_ID =
-  process.env.NOCODB_TABLE_ENTREGADORES || 'm4hbqkhwu2qvrry';
-
-/** Tabela de comissões dos entregadores */
-export const COMISSOES_TABLE_ID =
-  process.env.NOCODB_TABLE_COMISSOES || 'me4x6mmfsbndf42';
-
-/** Tabela de histórico de entregas */
-export const HISTORICO_ENTREGAS_TABLE_ID =
-  process.env.NOCODB_TABLE_HISTORICO_ENTREGAS || 'm9lt0hyfnh3c47q';
-
-// ============================================================
-// FIDELIDADE E MARKETING
-// ============================================================
-
-/** Tabela de configuração do programa de fidelidade por empresa */
-export const LOYALTY_CONFIG_TABLE_ID =
-  process.env.NOCODB_TABLE_LOYALTY_CONFIG || 'mjzzdfgdohupgjh';
-
-/** Tabela de pontos de fidelidade por cliente */
-export const LOYALTY_POINTS_TABLE_ID =
-  process.env.NOCODB_TABLE_LOYALTY_POINTS || 'm8slxvm3dp4sup4';
-
-/** Tabela de cupons de desconto */
-export const CUPONS_TABLE_ID =
-  process.env.NOCODB_TABLE_CUPONS || 'm5echqy6luac5g6';
-
-/** Tabela de campanhas automáticas de marketing */
-export const CAMPANHAS_TABLE_ID =
-  process.env.NOCODB_TABLE_CAMPANHAS || '';
-
-/** Tabela de disparos de campanhas */
-export const DISPAROS_TABLE_ID =
-  process.env.NOCODB_TABLE_DISPAROS || '';
-
-// ============================================================
-// CONFIGURAÇÕES OPERACIONAIS
-// ============================================================
-
-/** Tabela de taxas de entrega por bairro/distância */
-export const TAXAS_ENTREGA_TABLE_ID =
-  process.env.NOCODB_TABLE_TAXAS_ENTREGA || 'm9yccghg9s23utv';
-
-/** Tabela de horários de funcionamento */
-export const HORARIOS_TABLE_ID =
-  process.env.NOCODB_TABLE_HORARIOS || 'mpaclmaji3b6dla';
-
-/** Tabela de configurações de pagamento (Mercado Pago OAuth) */
-export const PAGAMENTOS_CONFIG_TABLE_ID =
-  process.env.NOCODB_TABLE_PAGAMENTOS_CONFIG || 'mlev3jx4tj2x74d';
-
-/** Tabela de avaliações de pedidos */
-export const AVALIACOES_TABLE_ID =
-  process.env.NOCODB_TABLE_AVALIACOES || 'm3ebs9cm1yjgmo1';
-
-/** Tabela de configurações extras da loja (logo, etc) */
-export const CONFIGURACOES_LOJA_TABLE_ID =
-  process.env.NOCODB_TABLE_CONFIGURACOES_LOJA || 'mtkx66k8jacnezx';
-
-/** Tabela de configuração do bot de saudação WhatsApp */
-export const BOT_CONFIG_TABLE_ID =
-  process.env.NOCODB_TABLE_BOT_CONFIG || '';
 
 // ============================================================
 // RATE LIMITING - CONFIGURAÇÕES GLOBAIS
@@ -186,26 +48,6 @@ export const DRIVER_STATUS = {
 } as const;
 
 export type DriverStatus = typeof DRIVER_STATUS[keyof typeof DRIVER_STATUS];
-
-/** Tabela de metadados de produtos (Upsell, Tamanhos, etc.) */
-export const PRODUTOS_METADADOS_TABLE_ID =
-  process.env.NOCODB_TABLE_PRODUTOS_METADADOS || 'm97yi797b432f4q';
-
-// ============================================================
-// ASSINATURAS E FATURAS
-// ============================================================
-
-/** Tabela de cadastros pendentes (pos-pagamento) */
-export const PENDING_SIGNUPS_TABLE_ID =
-  process.env.NOCODB_TABLE_PENDING_SIGNUPS || 'm1hq56kbk1zhcrp';
-
-/** Tabela de assinaturas de planos */
-export const ASSINATURAS_TABLE_ID =
-  process.env.NOCODB_TABLE_ASSINATURAS || 'mhpkvk982298q8a';
-
-/** Tabela de faturas de assinaturas */
-export const FATURAS_ASSINATURA_TABLE_ID =
-  process.env.NOCODB_TABLE_FATURAS_ASSINATURA || 'msrjfeb28e07cwx';
 
 // ============================================================
 // PLANOS DISPONÍVEIS
@@ -335,18 +177,6 @@ export function shouldShowTrialWarning(dataInicio: string | Date | null | undefi
   const remaining = getTrialDaysRemaining(dataInicio);
   return remaining <= 1; // Mostrar no dia 6 (1 dia restante) ou dia 7 (0 dias)
 }
-
-// ============================================================
-// MESAS E COMANDAS (CONSUMO LOCAL)
-// ============================================================
-
-/** Tabela de mesas do estabelecimento */
-export const MESAS_TABLE_ID =
-  process.env.NOCODB_TABLE_MESAS || 'mzft45xyoznab9k';
-
-/** Tabela de comandas (contas individuais por pessoa na mesa) */
-export const COMANDAS_TABLE_ID =
-  process.env.NOCODB_TABLE_COMANDAS || 'mkpep3jg6ri9d7x';
 
 // ============================================================
 // STATUS DE MESAS

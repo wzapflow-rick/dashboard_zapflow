@@ -2,11 +2,9 @@
 
 /*
 SETUP NECESSÁRIO:
-1. No NocoDB, criar tabela "campanhas_config" com os campos descritos em /docs/CAMPANHAS.md
-2. Copiar o ID da tabela e colar em NOCODB_TABLE_CAMPANHAS no .env
-3. Criar tabela "campanhas_disparos" e colar ID em NOCODB_TABLE_DISPAROS
-4. Gerar uma string aleatória segura e colocar em N8N_WEBHOOK_SECRET
-5. No N8N, configurar o webhook com a mesma chave
+1. As tabelas "campanhas_config" e "campanhas_disparos" já existem no PostgreSQL
+2. Gerar uma string aleatória segura e colocar em N8N_WEBHOOK_SECRET
+3. No N8N, configurar o webhook com a mesma chave
 */
 
 import React, { useState, useEffect, useRef } from 'react';

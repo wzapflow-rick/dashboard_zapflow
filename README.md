@@ -4,7 +4,7 @@
 
 ![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)
 ![React](https://img.shields.io/badge/React-19-blue?logo=react)
-![NocoDB](https://img.shields.io/badge/Database-NocoDB-green)
+![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-336791?logo=postgresql)
 ![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4-38bdf8?logo=tailwindcss)
 
 ---
@@ -18,7 +18,7 @@ Todas as funcionalidades operacionais do sistema — painéis, pedidos, produtos
 Auditoria completa de cibersegurança seguindo OWASP Top 10, vulnerabilidades corrigidas e checklist de segurança.
 
 ### 🏗️ [Arquitetura Técnica](docs/ARCHITECTURE.md)
-Estrutura de código, stack tecnológica, autenticação JWT, Server Actions, NocoDB e fluxo de dados.
+Estrutura de código, stack tecnológica, autenticação JWT, Server Actions, PostgreSQL e fluxo de dados.
 
 ### 🚀 [Instalação e Deployment](docs/DEPLOY.md)
 Passo a passo de configuração, variáveis de ambiente, deployment Vercel e troubleshooting.
@@ -49,7 +49,7 @@ O **ZapFlow** é um Micro-SaaS de delivery estilo iFood que permite:
 | **Framework** | [Next.js 15](https://nextjs.org/) (App Router) |
 | **Interface** | [React 19](https://react.dev/) + [Tailwind CSS 4](https://tailwindcss.com/) |
 | **Animações** | [Motion](https://motion.dev/) |
-| **Banco de Dados** | [NocoDB](https://nocodb.com/) (API REST) |
+| **Banco de Dados** | [PostgreSQL](https://www.postgresql.org/) (SQL direto via pg) |
 | **WhatsApp** | [Evolution API](https://evolution-api.com/) |
 | **Segurança** | JWT (jose) + BCryptJS + OWASP Top 10 |
 

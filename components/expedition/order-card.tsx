@@ -97,7 +97,7 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
         }
     };
 
-    // Formatar itens do JSON do NocoDB
+    // Formatar itens do JSON
     const formattedItems = Array.isArray(order.itens)
         ? order.itens.map((item: any) => {
             let nome = item.produto || item.nome || 'Item';
@@ -128,7 +128,7 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
     let podeLiberar = false;
     
     if (isAgendado && dataAgendamento) {
-        // Parse da data considering timezone - NocoDB usually stores as ISO or local
+        // Parse da data considering timezone - banco stores as ISO or local
         const agendamentoStr = dataAgendamento.replace(' ', 'T');
         const agendamento = new Date(agendamentoStr);
         const agora = new Date();

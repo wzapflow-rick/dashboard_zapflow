@@ -2,8 +2,8 @@
  * @file lib/postgres.ts
  * @description Cliente centralizado para comunicação direta com o PostgreSQL.
  *
- * Este módulo substitui o NocoDB, oferecendo a mesma interface de API
- * (list, findById, create, update, delete, etc.) mas usando SQL direto.
+ * Este módulo oferece uma interface simples para operações de banco de dados
+ * (list, findById, create, update, delete, etc.) usando SQL direto.
  *
  * @example
  * // Buscar registros
@@ -127,10 +127,10 @@ function getPool(): Pool {
 // ============================================================
 
 /**
- * Converte filtro NocoDB para SQL WHERE clause
- * Formato NocoDB: "(campo,operador,valor)~and(campo2,operador2,valor2)"
+ * Converte filtro legado (string) para SQL WHERE clause
+ * Formato: "(campo,operador,valor)~and(campo2,operador2,valor2)"
  */
-export function parseNocoDBFilter(filter: string): { clause: string; params: unknown[] } {
+export function parseLegacyFilter(filter: string): { clause: string; params: unknown[] } {
   const params: unknown[] = [];
   let paramIndex = 1;
   
@@ -219,7 +219,7 @@ function buildWhereClause(where: Record<string, unknown>): { clause: string; par
 }
 
 /**
- * Mapeia operadores NocoDB para SQL
+ * Mapeia operadores de filtro para SQL
  */
 function mapOperator(op: string): string {
   const operators: Record<string, string> = {
@@ -311,7 +311,7 @@ async function executeQuery<T>(
 
 /**
  * Lista registros de uma tabela com suporte a filtros, ordenação e paginação.
- * Suporta filtros no formato NocoDB (string) ou objeto.
+ * Suporta filtros no formato string (legado) ou objeto.
  */
 async function list<T = Record<string, unknown>>(
   table: string,
@@ -323,9 +323,9 @@ async function list<T = Record<string, unknown>>(
   let whereClause: string;
   let whereParams: unknown[];
   
-  // Suporta tanto string (formato NocoDB) quanto objeto
+  // Suporta tanto string (formato legado) quanto objeto
   if (typeof options.where === 'string') {
-    const parsed = parseNocoDBFilter(options.where);
+    const parsed = parseLegacyFilter(options.where);
     whereClause = parsed.clause;
     whereParams = parsed.params;
   } else if (options.where) {
@@ -392,9 +392,7 @@ async function findOne<T = Record<string, unknown>>(
   table: string,
   options: PgListOptions & { where?: string | Record<string, unknown> } = {},
 ): Promise<T | null> {
-  console.log('[v0] findOne - table:', table, 'where:', JSON.stringify(options.where));
   const result = await list<T>(table, { ...options, limit: 1 });
-  console.log('[v0] findOne - result count:', result.list.length, 'total:', result.pageInfo.totalRows);
   return result.list[0] ?? null;
 }
 
@@ -543,7 +541,7 @@ async function count(
   let whereParams: unknown[];
   
   if (typeof where === 'string') {
-    const parsed = parseNocoDBFilter(where);
+    const parsed = parseLegacyFilter(where);
     whereClause = parsed.clause;
     whereParams = parsed.params;
   } else if (where) {
@@ -632,7 +630,7 @@ async function getClient(): Promise<PoolClient> {
  *
  * const pedidos = await pg.list(PEDIDOS_TABLE, { where: { status: 'pendente' } });
  * 
- * // Ou usando filtro formato NocoDB (para compatibilidade):
+ * // Ou usando filtro formato string (legado):
  * const pedidos = await pg.list(PEDIDOS_TABLE, { where: '(status,eq,pendente)' });
  */
 export const pg = {
