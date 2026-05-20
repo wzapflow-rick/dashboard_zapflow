@@ -27,10 +27,20 @@ export async function getPublicMenu(slug: string) {
         // Converter slug para nome lowercase (vr-pizza-show -> vr pizza show)
         const possibleNameLower = slug.replace(/-/g, ' ');
 
-        console.log(`[MENU_DEBUG] Buscando por nome: "${possibleName}" ou "${possibleNameLower}"`);
+        console.log(`[MENU_DEBUG] Buscando por slug: "${slug}" ou nome: "${possibleName}"`);
         
-        // TENTATIVA 1: Busca exata por instancia_evolution (zapflow_ID)
-        if (slug.startsWith('zapflow_')) {
+        // TENTATIVA 1: Busca exata por coluna slug
+        const empresaBySlug = await pg.raw<any>(
+            `SELECT * FROM "${EMPRESAS_TABLE}" WHERE slug = $1 LIMIT 1`,
+            [slug]
+        );
+        if (empresaBySlug.length > 0) {
+            empresa = empresaBySlug[0];
+            console.log(`[MENU_DEBUG] Empresa encontrada por slug: ${empresa.nome_fantasia}`);
+        }
+        
+        // TENTATIVA 2: Busca exata por instancia_evolution (zapflow_ID)
+        if (!empresa && slug.startsWith('zapflow_')) {
             const empresaByInstance = await pg.raw<any>(
                 `SELECT * FROM "${EMPRESAS_TABLE}" WHERE instancia_evolution = $1 LIMIT 1`,
                 [slug]
@@ -41,7 +51,7 @@ export async function getPublicMenu(slug: string) {
             }
         }
 
-        // TENTATIVA 2: Busca exata por nome_fantasia (case insensitive)
+        // TENTATIVA 3: Busca exata por nome_fantasia (case insensitive)
         if (!empresa) {
             const empresasByFantasia = await pg.raw<any>(
                 `SELECT * FROM "${EMPRESAS_TABLE}" WHERE LOWER(REPLACE(nome_fantasia, ' ', '-')) = LOWER($1) OR LOWER(nome_fantasia) = LOWER($2) LIMIT 1`,
@@ -54,7 +64,7 @@ export async function getPublicMenu(slug: string) {
             }
         }
 
-        // TENTATIVA 3: Busca parcial por nome_fantasia
+        // TENTATIVA 4: Busca parcial por nome_fantasia
         if (!empresa) {
             const empresasByFantasiaLike = await pg.raw<any>(
                 `SELECT * FROM "${EMPRESAS_TABLE}" WHERE LOWER(nome_fantasia) LIKE LOWER($1) ORDER BY LENGTH(nome_fantasia) ASC LIMIT 1`,
@@ -67,7 +77,7 @@ export async function getPublicMenu(slug: string) {
             }
         }
 
-        // TENTATIVA 4: Fallback para ID numerico (se slug for numero)
+        // TENTATIVA 5: Fallback para ID numerico (se slug for numero)
         if (!empresa && /^\d+$/.test(slug)) {
             empresa = await pg.findById(EMPRESAS_TABLE, parseInt(slug));
             if (empresa) {
@@ -75,7 +85,7 @@ export async function getPublicMenu(slug: string) {
             }
         }
 
-        // TENTATIVA 5: Fallback final - pegar a primeira se for a unica empresa
+        // TENTATIVA 6: Fallback final - pegar a primeira se for a unica empresa
         if (!empresa) {
             const todas = await pg.list(EMPRESAS_TABLE, { limit: 2 });
             if (todas.list.length === 1) {
