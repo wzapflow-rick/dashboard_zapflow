@@ -239,7 +239,7 @@ export async function getEmpresaData() {
     if (!user?.empresaId) return null;
     
     try {
-        const result = await db.query(
+        const result = await pg.query(
             'SELECT id, nome_fantasia, email, logo_url, banner_url, telefone_loja FROM empresas WHERE id = $1 LIMIT 1',
             [user.empresaId]
         );
