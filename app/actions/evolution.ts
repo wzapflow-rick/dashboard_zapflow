@@ -149,6 +149,10 @@ export async function setupEvolutionInstance(empresaId: string | number) {
     
     const instanceName = createResult.instanceName;
     
+    if (!instanceName) {
+        return { error: 'Instancia criada mas nome nao retornado' };
+    }
+    
     // 2. Configurar webhook (independente se ja existia ou nao)
     const webhookResult = await configureInstanceWebhook(instanceName);
     
