@@ -667,24 +667,31 @@ function ComandaCard({
                 {todosItens.map((item: any, idx: number) => (
                   <div
                     key={`${item.pedidoId}-${idx}`}
-                    className="flex items-center justify-between text-xs py-1.5 px-2 bg-slate-800/50 rounded"
+                    className="flex flex-col text-xs py-1.5 px-2 bg-slate-800/50 rounded"
                   >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-slate-500">{item.quantidade}x</span>
-                      <span className="text-slate-200 truncate">{item.produto || item.nome}</span>
-                      <span className={cn(
-                        'px-1 py-0.5 rounded text-[9px] font-medium capitalize shrink-0',
-                        item.pedidoStatus === 'pendente' && 'bg-amber-500/20 text-amber-400',
-                        item.pedidoStatus === 'preparando' && 'bg-blue-500/20 text-blue-400',
-                        item.pedidoStatus === 'pronto' && 'bg-emerald-500/20 text-emerald-400',
-                        item.pedidoStatus === 'finalizado' && 'bg-slate-500/20 text-slate-400'
-                      )}>
-                        {item.pedidoStatus}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-slate-500">{item.quantidade}x</span>
+                        <span className="text-slate-200 truncate">{item.produto || item.nome}</span>
+                        <span className={cn(
+                          'px-1 py-0.5 rounded text-[9px] font-medium capitalize shrink-0',
+                          item.pedidoStatus === 'pendente' && 'bg-amber-500/20 text-amber-400',
+                          item.pedidoStatus === 'preparando' && 'bg-blue-500/20 text-blue-400',
+                          item.pedidoStatus === 'pronto' && 'bg-emerald-500/20 text-emerald-400',
+                          item.pedidoStatus === 'finalizado' && 'bg-slate-500/20 text-slate-400'
+                        )}>
+                          {item.pedidoStatus}
+                        </span>
+                      </div>
+                      <span className="text-slate-400 shrink-0">
+                        R$ {((Number(item.preco_unitario) || 0) * (item.quantidade || 1)).toFixed(2).replace('.', ',')}
                       </span>
                     </div>
-                    <span className="text-slate-400 shrink-0">
-                      R$ {((Number(item.preco_unitario) || 0) * (item.quantidade || 1)).toFixed(2).replace('.', ',')}
-                    </span>
+                    {item.observacao && (
+                      <p className="text-[10px] text-amber-400 mt-1 ml-6 italic">
+                        OBS: {item.observacao}
+                      </p>
+                    )}
                   </div>
                 ))}
               </motion.div>

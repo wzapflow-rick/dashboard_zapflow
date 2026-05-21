@@ -79,7 +79,8 @@ export default function PrintModal({ isOpen, onClose, order }: PrintModalProps) 
             ? rawItens.map((item: any) => ({
                 nome: item.produto || item.nome || 'Item',
                 qtd: item.quantidade || 1,
-                preco: item.preco || 0
+                preco: item.preco || 0,
+                observacao: item.observacao || ''
             }))
             : [];
     }, [order?.itens]);
@@ -137,9 +138,14 @@ export default function PrintModal({ isOpen, onClose, order }: PrintModalProps) 
 
                             <div className="mb-2">
                                 {formattedItems.map((item: any, idx: number) => (
-                                    <div key={idx} className="flex justify-between py-1">
-                                        <span className="flex-1">{item.qtd}x {item.nome}</span>
-                                        <span>{formatPrice(item.preco * item.qtd)}</span>
+                                    <div key={idx} className="py-1">
+                                        <div className="flex justify-between">
+                                            <span className="flex-1">{item.qtd}x {item.nome}</span>
+                                            <span>{formatPrice(item.preco * item.qtd)}</span>
+                                        </div>
+                                        {item.observacao && (
+                                            <p className="text-[10px] text-slate-600 ml-4 italic">OBS: {item.observacao}</p>
+                                        )}
                                     </div>
                                 ))}
                             </div>

@@ -103,13 +103,14 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
             let nome = item.produto || item.nome || 'Item';
             const qtd = item.quantidade || 1;
             const tamanho = item.tamanho || '';
+            const observacao = item.observacao || '';
             
             // Se o tamanho existir e não estiver no nome, adiciona
             if (tamanho && !nome.toLowerCase().includes(tamanho.toLowerCase())) {
                 nome = `${nome} (${tamanho})`;
             }
             
-            return `${qtd}x ${nome}`;
+            return { texto: `${qtd}x ${nome}`, observacao };
         })
         : [];
 
@@ -283,14 +284,21 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
             </div>
 
             <div className="py-2 border-y border-slate-100 dark:border-slate-700">
-                <ul className="text-sm font-medium space-y-1 text-slate-700 dark:text-slate-300">
-                    {formattedItems.map((item: string, idx: number) => (
-                        <li key={idx} className="line-clamp-1">• {item}</li>
+                <ul className="text-sm font-medium space-y-1.5 text-slate-700 dark:text-slate-300">
+                    {formattedItems.map((item: { texto: string; observacao: string }, idx: number) => (
+                        <li key={idx} className="space-y-0.5">
+                            <span className="line-clamp-1">• {item.texto}</span>
+                            {item.observacao && (
+                                <p className="text-xs text-amber-600 dark:text-amber-400 font-medium ml-3 italic">
+                                    OBS: {item.observacao}
+                                </p>
+                            )}
+                        </li>
                     ))}
                 </ul>
                 {order.observacoes && (
                     <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/30 rounded border border-red-100 dark:border-red-800">
-                        <p className="text-xs font-bold text-red-600 dark:text-red-400 uppercase">OBS: {order.observacoes}</p>
+                        <p className="text-xs font-bold text-red-600 dark:text-red-400 uppercase">OBS GERAL: {order.observacoes}</p>
                     </div>
                 )}
             </div>
