@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Search, Plus, Minus, ShoppingCart, Loader2, Check } from 'lucide-react';
+import { X, Search, Plus, Minus, ShoppingCart, Loader2, Check, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getProducts, getCategories, type Category } from '@/app/actions/products';
 import { getCompositeProducts, type CompositeProduct, type CompositeItem } from '@/app/actions/grupos-slots';
@@ -19,6 +19,7 @@ interface Product {
 
 interface CartItem extends Product {
   quantidade: number;
+  observacao?: string;
   isComposite?: boolean;
   compositeItems?: CompositeItem[];
   compositeId?: string;
@@ -51,6 +52,11 @@ export default function TableOrderModal({
   const [selectedComposite, setSelectedComposite] = useState<CompositeProduct | null>(null);
   const [selectedItems, setSelectedItems] = useState<CompositeItem[]>([]);
   const [addedProductId, setAddedProductId] = useState<number | null>(null);
+  
+  // Estado para modal de observacao
+  const [isObsModalOpen, setIsObsModalOpen] = useState(false);
+  const [pendingProduct, setPendingProduct] = useState<Product | null>(null);
+  const [observacao, setObservacao] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -75,12 +81,26 @@ export default function TableOrderModal({
     }
   };
 
-  const addToCart = (product: Product) => {
+  // Abre modal de observacao antes de adicionar ao carrinho
+  const handleProductClick = (product: Product) => {
+    setPendingProduct(product);
+    setObservacao('');
+    setIsObsModalOpen(true);
+  };
+
+  // Adiciona produto ao carrinho (com ou sem observacao)
+  const addToCart = (product: Product, obs?: string) => {
     setCart((prev) => {
-      const existing = prev.find((item) => item.id === product.id && !item.isComposite);
+      // Se tem observacao, sempre adiciona como item novo
+      if (obs && obs.trim()) {
+        return [...prev, { ...product, quantidade: 1, observacao: obs.trim() }];
+      }
+      
+      // Se nao tem observacao, agrupa com item existente sem observacao
+      const existing = prev.find((item) => item.id === product.id && !item.isComposite && !item.observacao);
       if (existing) {
         return prev.map((item) =>
-          item.id === product.id && !item.isComposite
+          item.id === product.id && !item.isComposite && !item.observacao
             ? { ...item, quantidade: item.quantidade + 1 }
             : item
         );
@@ -92,6 +112,26 @@ export default function TableOrderModal({
     setAddedProductId(product.id);
     toast.success(`${product.nome} adicionado!`, { duration: 1500 });
     setTimeout(() => setAddedProductId(null), 600);
+  };
+
+  // Confirma adicao do produto com observacao
+  const confirmAddToCart = () => {
+    if (pendingProduct) {
+      addToCart(pendingProduct, observacao);
+      setIsObsModalOpen(false);
+      setPendingProduct(null);
+      setObservacao('');
+    }
+  };
+
+  // Adiciona sem observacao (botao rapido)
+  const addWithoutObs = () => {
+    if (pendingProduct) {
+      addToCart(pendingProduct);
+      setIsObsModalOpen(false);
+      setPendingProduct(null);
+      setObservacao('');
+    }
   };
 
   const removeFromCart = (productId: number, isComposite?: boolean) => {
@@ -130,6 +170,7 @@ export default function TableOrderModal({
           adicionais: [],
           quantidade: item.quantidade,
           preco_unitario: item.preco,
+          observacao: item.observacao || '',
         };
 
         if (item.isComposite && item.compositeItems) {
@@ -346,7 +387,7 @@ export default function TableOrderModal({
                                           return (
                                           <button
                                             key={p.id}
-                                            onClick={() => addToCart(p)}
+                                            onClick={() => handleProductClick(p)}
                                             className={`group p-3 bg-slate-900/50 border rounded-lg text-left transition-all flex items-center justify-between gap-2 ${
                                               isAdded 
                                                 ? 'border-green-500 bg-green-500/10 scale-[0.98]' 
@@ -458,6 +499,12 @@ export default function TableOrderModal({
                           {item.isComposite && item.compositeItems && (
                             <p className="text-xs text-slate-400 truncate">
                               {item.compositeItems.map((c) => c.nome).join(', ')}
+                            </p>
+                          )}
+                          {item.observacao && (
+                            <p className="text-xs text-amber-400 flex items-center gap-1 mt-1">
+                              <MessageSquare className="size-3" />
+                              {item.observacao}
                             </p>
                           )}
                         </div>
@@ -583,6 +630,68 @@ export default function TableOrderModal({
                     className="w-full py-2.5 bg-primary text-white font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
                   >
                     Adicionar ao Carrinho
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Modal de Observacao */}
+        <AnimatePresence>
+          {isObsModalOpen && pendingProduct && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[260] flex items-center justify-center p-4"
+            >
+              <div
+                className="absolute inset-0 bg-black/50"
+                onClick={() => {
+                  setIsObsModalOpen(false);
+                  setPendingProduct(null);
+                }}
+              />
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="relative w-full max-w-sm bg-slate-800 rounded-xl shadow-xl overflow-hidden"
+              >
+                <div className="p-4 border-b border-slate-700">
+                  <h3 className="font-bold text-white">{pendingProduct.nome}</h3>
+                  <p className="text-sm text-slate-400">
+                    R$ {Number(pendingProduct.preco).toFixed(2).replace('.', ',')}
+                  </p>
+                </div>
+
+                <div className="p-4">
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Observacao (opcional)
+                  </label>
+                  <textarea
+                    value={observacao}
+                    onChange={(e) => setObservacao(e.target.value)}
+                    placeholder="Ex: Sem cebola, bem passado, etc..."
+                    className="w-full h-24 px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+                    autoFocus
+                  />
+                </div>
+
+                <div className="p-4 border-t border-slate-700 flex gap-2">
+                  <button
+                    onClick={addWithoutObs}
+                    className="flex-1 py-2.5 bg-slate-700 text-white font-medium rounded-lg hover:bg-slate-600 transition-colors"
+                  >
+                    Sem Obs.
+                  </button>
+                  <button
+                    onClick={confirmAddToCart}
+                    className="flex-1 py-2.5 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Plus className="size-4" />
+                    Adicionar
                   </button>
                 </div>
               </motion.div>
