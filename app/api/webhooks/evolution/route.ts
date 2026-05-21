@@ -442,73 +442,73 @@ export async function POST(req: NextRequest) {
       recentContactsCache.set(lockKey, Date.now());
       console.log(`[BOT] Cliente ${phone} liberado para receber saudacao`);
     
-    // Verificar horario de funcionamento se configurado
-    const respeitar_horario = botConfig.respeitar_horario_funcionamento ?? 
-                              botConfig['respeitar_horario_funcionamento'] ?? 
-                              false;
-    
-    console.log(`[BOT] Respeitar horario funcionamento: ${respeitar_horario}`);
-    
-    let empresaAberta = true;
-    if (respeitar_horario) {
-      empresaAberta = await isEmpresaAberta(empresa.id);
-      console.log(`[BOT] Empresa aberta: ${empresaAberta}`);
-    }
-    
-    // Gerar link do cardapio
-    const linkCardapio = getCardapioLink(empresa);
-    console.log(`[BOT] Link cardapio: ${linkCardapio}`);
-    
-    // Funcao auxiliar para processar mensagem (substituir placeholders e corrigir /loja/ para /menu/)
-    const processarMensagem = (texto: string): string => {
-      return texto
-        .replace('{LINK_CARDAPIO}', linkCardapio)
-        .replace(/\/loja\//g, '/menu/');
-    };
-    
-    // Preparar mensagens
-    const mensagens: string[] = [];
-    
-    // Se empresa esta fechada e tem mensagem de fora de horario
-    if (!empresaAberta && botConfig.mensagem_fora_horario) {
-      console.log(`[BOT] Empresa fechada, enviando mensagem fora de horario`);
-      mensagens.push(processarMensagem(botConfig.mensagem_fora_horario));
-    } else {
-      // Empresa aberta ou nao respeita horario - enviar mensagens normais
-      if (botConfig.mensagem_1_ativa && botConfig.mensagem_1_texto) {
-        mensagens.push(processarMensagem(botConfig.mensagem_1_texto));
+      // Verificar horario de funcionamento se configurado
+      const respeitar_horario = botConfig.respeitar_horario_funcionamento ?? 
+                                botConfig['respeitar_horario_funcionamento'] ?? 
+                                false;
+      
+      console.log(`[BOT] Respeitar horario funcionamento: ${respeitar_horario}`);
+      
+      let empresaAberta = true;
+      if (respeitar_horario) {
+        empresaAberta = await isEmpresaAberta(empresa.id);
+        console.log(`[BOT] Empresa aberta: ${empresaAberta}`);
       }
       
-      if (botConfig.mensagem_2_ativa && botConfig.mensagem_2_texto) {
-        mensagens.push(processarMensagem(botConfig.mensagem_2_texto));
+      // Gerar link do cardapio
+      const linkCardapio = getCardapioLink(empresa);
+      console.log(`[BOT] Link cardapio: ${linkCardapio}`);
+      
+      // Funcao auxiliar para processar mensagem (substituir placeholders e corrigir /loja/ para /menu/)
+      const processarMensagem = (texto: string): string => {
+        return texto
+          .replace('{LINK_CARDAPIO}', linkCardapio)
+          .replace(/\/loja\//g, '/menu/');
+      };
+      
+      // Preparar mensagens
+      const mensagens: string[] = [];
+      
+      // Se empresa esta fechada e tem mensagem de fora de horario
+      if (!empresaAberta && botConfig.mensagem_fora_horario) {
+        console.log(`[BOT] Empresa fechada, enviando mensagem fora de horario`);
+        mensagens.push(processarMensagem(botConfig.mensagem_fora_horario));
+      } else {
+        // Empresa aberta ou nao respeita horario - enviar mensagens normais
+        if (botConfig.mensagem_1_ativa && botConfig.mensagem_1_texto) {
+          mensagens.push(processarMensagem(botConfig.mensagem_1_texto));
+        }
+        
+        if (botConfig.mensagem_2_ativa && botConfig.mensagem_2_texto) {
+          mensagens.push(processarMensagem(botConfig.mensagem_2_texto));
+        }
+        
+        if (botConfig.mensagem_3_ativa && botConfig.mensagem_3_texto) {
+          mensagens.push(processarMensagem(botConfig.mensagem_3_texto));
+        }
       }
       
-      if (botConfig.mensagem_3_ativa && botConfig.mensagem_3_texto) {
-        mensagens.push(processarMensagem(botConfig.mensagem_3_texto));
+      if (mensagens.length === 0) {
+        console.log(`[BOT] Nenhuma mensagem configurada para empresa ${empresa.id}`);
+        return NextResponse.json({ received: true, no_messages: true });
       }
-    }
-    
-    if (mensagens.length === 0) {
-      console.log(`[BOT] Nenhuma mensagem configurada para empresa ${empresa.id}`);
-      return NextResponse.json({ received: true, no_messages: true });
-    }
-    
-    console.log(`[BOT] Enviando ${mensagens.length} mensagem(ns) de saudacao...`);
-    
-    // Enviar mensagens com delay
-    const delayMs = (botConfig.delay_entre_mensagens || 2) * 1000;
-    let enviadas = 0;
-    
-    for (let i = 0; i < mensagens.length; i++) {
-      const success = await sendMessage(instanceName, phone, mensagens[i]);
-      if (success) enviadas++;
       
-      // Delay entre mensagens (exceto na ultima)
-      if (i < mensagens.length - 1) {
-        await delay(delayMs);
+      console.log(`[BOT] Enviando ${mensagens.length} mensagem(ns) de saudacao...`);
+      
+      // Enviar mensagens com delay
+      const delayMs = (botConfig.delay_entre_mensagens || 2) * 1000;
+      let enviadas = 0;
+      
+      for (let i = 0; i < mensagens.length; i++) {
+        const success = await sendMessage(instanceName, phone, mensagens[i]);
+        if (success) enviadas++;
+        
+        // Delay entre mensagens (exceto na ultima)
+        if (i < mensagens.length - 1) {
+          await delay(delayMs);
+        }
       }
-    }
-    
+      
       // Marcar cliente como contatado (persistir no banco)
       await markAsContacted(empresa.id, phone);
       
