@@ -5,8 +5,9 @@ import { useSearchParams } from 'next/navigation';
 import { createCheckoutSession, createPixCheckoutSession } from '@/app/actions/signup';
 import { createTrialAccount } from '@/app/actions/signup-trial';
 import { useRouter } from 'next/navigation';
-import { Loader2, Zap, Mail, User, Phone, CreditCard, QrCode, Check } from 'lucide-react';
+import { Loader2, Mail, User, Phone, CreditCard, QrCode, Check, Lock, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const planDetails: Record<string, { name: string; price: number; trialDays?: number; features: string[] }> = {
   parceria: {
@@ -26,9 +27,9 @@ const planDetails: Record<string, { name: string; price: number; trialDays?: num
     name: 'Start',
     price: 79.90,
     features: [
-      'Cardápio digital (Link + QrCode)',
-      'Painel Kanban básico',
-      'Pix + Cartões',
+      'Cardapio digital (Link + QrCode)',
+      'Painel Kanban basico',
+      'Pix + Cartoes',
       'Taxa Fixa por bairro',
       'Suporte por email',
     ],
@@ -38,11 +39,11 @@ const planDetails: Record<string, { name: string; price: number; trialDays?: num
     price: 149.90,
     features: [
       'Tudo do Start +',
-      'Painel com notificação WhatsApp',
+      'Painel com notificacao WhatsApp',
       'Taxa por Google Maps',
       'Agente de IA no WhatsApp',
       'Cupons de desconto',
-      'Suporte prioritário',
+      'Suporte prioritario',
     ],
   },
   elite: {
@@ -50,10 +51,10 @@ const planDetails: Record<string, { name: string; price: number; trialDays?: num
     price: 297.90,
     features: [
       'Tudo do PRO +',
-      'Customização Total',
+      'Customizacao Total',
       'App para entregadores',
       'Programa de pontos',
-      'Relatórios avançados',
+      'Relatorios avancados',
       'Onboarding VIP',
       'Gerente de conta',
     ],
@@ -75,10 +76,8 @@ function SignupContent() {
   const [error, setError] = useState<string | null>(null);
   
   const isParceria = plano === 'parceria';
-  
   const plan = planDetails[plano] || planDetails.start;
   
-  // Formatar telefone
   function formatPhone(value: string) {
     const numbers = value.replace(/\D/g, '');
     if (numbers.length <= 2) return numbers;
@@ -100,7 +99,6 @@ function SignupContent() {
         return;
       }
       
-      // Plano PARCERIA = criar conta trial direto (sem pagamento)
       if (isParceria) {
         if (!senha || senha.length < 6) {
           setError('Senha deve ter no minimo 6 caracteres');
@@ -121,12 +119,10 @@ function SignupContent() {
           return;
         }
         
-        // Conta criada com sucesso - redirecionar para onboarding
         router.push('/onboarding');
         return;
       }
       
-      // Planos pagos = checkout Mercado Pago
       const data = {
         email,
         nome,
@@ -144,7 +140,6 @@ function SignupContent() {
         return;
       }
       
-      // Redirecionar para o checkout do Mercado Pago
       if (result.initPoint) {
         window.location.href = result.initPoint;
       } else {
@@ -159,25 +154,27 @@ function SignupContent() {
   }
   
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
+    <div className="min-h-screen" style={{ backgroundColor: '#0A0F14' }}>
       {/* Header */}
-      <header className="border-b border-white/10">
+      <header style={{ borderBottom: '1px solid rgba(124, 255, 107, 0.1)' }}>
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
-                <Zap className="w-6 h-6 text-white" />
-              </div>
-              <span className="text-xl font-black">
-                <span className="text-emerald-400">Zap</span>Flow
-              </span>
+              <Image 
+                src="/logo-zapflow.png" 
+                alt="ZapFlow" 
+                width={140} 
+                height={40}
+                className="h-9 w-auto"
+              />
             </Link>
             
             <Link 
               href="/login" 
-              className="text-sm text-gray-400 hover:text-white transition-colors"
+              className="text-sm transition-colors"
+              style={{ color: '#A1A7B3' }}
             >
-              {"Já tem conta? "}<span className="text-emerald-400 font-semibold">Entrar</span>
+              Ja tem conta? <span className="font-semibold" style={{ color: '#7CFF6B' }}>Entrar</span>
             </Link>
           </div>
         </div>
@@ -185,56 +182,90 @@ function SignupContent() {
       
       <main className="max-w-6xl mx-auto px-4 py-8 md:py-12">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
-          {/* Formulário */}
+          {/* Formulario */}
           <div className="order-2 lg:order-1">
-            <div className="bg-[#1a1a1a] rounded-3xl p-6 md:p-8 border border-white/10">
-              <h1 className="text-2xl md:text-3xl font-black mb-2">Criar sua conta</h1>
-              <p className="text-gray-400 mb-8">Preencha seus dados para começar</p>
+            <div 
+              className="rounded-3xl p-6 md:p-8"
+              style={{ 
+                backgroundColor: '#081D10',
+                border: '1px solid rgba(124, 255, 107, 0.15)'
+              }}
+            >
+              <h1 className="text-2xl md:text-3xl font-bold mb-2" style={{ color: '#F5F7FA' }}>
+                Criar sua conta
+              </h1>
+              <p className="mb-8" style={{ color: '#A1A7B3' }}>
+                Preencha seus dados para comecar
+              </p>
               
               <form onSubmit={handleSubmit} className="space-y-5">
                 {/* Nome */}
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">Nome completo</label>
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold" style={{ color: '#F5F7FA' }}>
+                    Nome completo
+                  </label>
                   <div className="relative">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-gray-500" />
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 size-5" style={{ color: '#A1A7B3' }} />
                     <input
                       type="text"
                       value={nome}
                       onChange={(e) => setNome(e.target.value)}
                       placeholder="Seu nome"
-                      className="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-12 py-3.5 text-white placeholder:text-gray-600 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-colors"
+                      className="w-full pl-12 pr-4 py-3.5 rounded-xl outline-none transition-all text-white placeholder:text-slate-500"
+                      style={{ 
+                        backgroundColor: '#0A0F14',
+                        border: '1px solid rgba(124, 255, 107, 0.2)'
+                      }}
+                      onFocus={(e) => e.target.style.borderColor = '#7CFF6B'}
+                      onBlur={(e) => e.target.style.borderColor = 'rgba(124, 255, 107, 0.2)'}
                       required
                     />
                   </div>
                 </div>
                 
                 {/* Email */}
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">E-mail</label>
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold" style={{ color: '#F5F7FA' }}>
+                    E-mail
+                  </label>
                   <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-gray-500" />
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 size-5" style={{ color: '#A1A7B3' }} />
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="seu@email.com"
-                      className="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-12 py-3.5 text-white placeholder:text-gray-600 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-colors"
+                      className="w-full pl-12 pr-4 py-3.5 rounded-xl outline-none transition-all text-white placeholder:text-slate-500"
+                      style={{ 
+                        backgroundColor: '#0A0F14',
+                        border: '1px solid rgba(124, 255, 107, 0.2)'
+                      }}
+                      onFocus={(e) => e.target.style.borderColor = '#7CFF6B'}
+                      onBlur={(e) => e.target.style.borderColor = 'rgba(124, 255, 107, 0.2)'}
                       required
                     />
                   </div>
                 </div>
                 
                 {/* Telefone */}
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">WhatsApp</label>
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold" style={{ color: '#F5F7FA' }}>
+                    WhatsApp
+                  </label>
                   <div className="relative">
-                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-gray-500" />
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 size-5" style={{ color: '#A1A7B3' }} />
                     <input
                       type="tel"
                       value={telefone}
                       onChange={(e) => setTelefone(formatPhone(e.target.value))}
                       placeholder="(11) 99999-9999"
-                      className="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-12 py-3.5 text-white placeholder:text-gray-600 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-colors"
+                      className="w-full pl-12 pr-4 py-3.5 rounded-xl outline-none transition-all text-white placeholder:text-slate-500"
+                      style={{ 
+                        backgroundColor: '#0A0F14',
+                        border: '1px solid rgba(124, 255, 107, 0.2)'
+                      }}
+                      onFocus={(e) => e.target.style.borderColor = '#7CFF6B'}
+                      onBlur={(e) => e.target.style.borderColor = 'rgba(124, 255, 107, 0.2)'}
                       required
                     />
                   </div>
@@ -242,16 +273,24 @@ function SignupContent() {
                 
                 {/* Senha - apenas para plano Parceria */}
                 {isParceria && (
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-2">Crie sua senha</label>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold" style={{ color: '#F5F7FA' }}>
+                      Crie sua senha
+                    </label>
                     <div className="relative">
-                      <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-gray-500" />
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-5" style={{ color: '#A1A7B3' }} />
                       <input
                         type="password"
                         value={senha}
                         onChange={(e) => setSenha(e.target.value)}
                         placeholder="Minimo 6 caracteres"
-                        className="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-12 py-3.5 text-white placeholder:text-gray-600 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-colors"
+                        className="w-full pl-12 pr-4 py-3.5 rounded-xl outline-none transition-all text-white placeholder:text-slate-500"
+                        style={{ 
+                          backgroundColor: '#0A0F14',
+                          border: '1px solid rgba(124, 255, 107, 0.2)'
+                        }}
+                        onFocus={(e) => e.target.style.borderColor = '#7CFF6B'}
+                        onBlur={(e) => e.target.style.borderColor = 'rgba(124, 255, 107, 0.2)'}
                         required
                         minLength={6}
                       />
@@ -259,19 +298,22 @@ function SignupContent() {
                   </div>
                 )}
                 
-                {/* Método de Pagamento - apenas para planos pagos */}
+                {/* Metodo de Pagamento - apenas para planos pagos */}
                 {!isParceria && (
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-2">Forma de pagamento</label>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold" style={{ color: '#F5F7FA' }}>
+                      Forma de pagamento
+                    </label>
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         type="button"
                         onClick={() => setPaymentMethod('cartao')}
-                        className={`flex items-center justify-center gap-2 p-4 rounded-xl border transition-all ${
-                          paymentMethod === 'cartao'
-                            ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400'
-                            : 'bg-[#0a0a0a] border-white/10 text-gray-400 hover:border-white/20'
-                        }`}
+                        className="flex items-center justify-center gap-2 p-4 rounded-xl transition-all"
+                        style={{
+                          backgroundColor: paymentMethod === 'cartao' ? 'rgba(124, 255, 107, 0.1)' : '#0A0F14',
+                          border: paymentMethod === 'cartao' ? '1px solid #7CFF6B' : '1px solid rgba(124, 255, 107, 0.2)',
+                          color: paymentMethod === 'cartao' ? '#7CFF6B' : '#A1A7B3'
+                        }}
                       >
                         <CreditCard className="size-5" />
                         <span className="font-semibold">Cartao</span>
@@ -279,11 +321,12 @@ function SignupContent() {
                       <button
                         type="button"
                         onClick={() => setPaymentMethod('pix')}
-                        className={`flex items-center justify-center gap-2 p-4 rounded-xl border transition-all ${
-                          paymentMethod === 'pix'
-                            ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400'
-                            : 'bg-[#0a0a0a] border-white/10 text-gray-400 hover:border-white/20'
-                        }`}
+                        className="flex items-center justify-center gap-2 p-4 rounded-xl transition-all"
+                        style={{
+                          backgroundColor: paymentMethod === 'pix' ? 'rgba(124, 255, 107, 0.1)' : '#0A0F14',
+                          border: paymentMethod === 'pix' ? '1px solid #7CFF6B' : '1px solid rgba(124, 255, 107, 0.2)',
+                          color: paymentMethod === 'pix' ? '#7CFF6B' : '#A1A7B3'
+                        }}
                       >
                         <QrCode className="size-5" />
                         <span className="font-semibold">Pix</span>
@@ -294,7 +337,14 @@ function SignupContent() {
                 
                 {/* Erro */}
                 {error && (
-                  <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-red-400 text-sm">
+                  <div 
+                    className="rounded-xl p-4 text-sm"
+                    style={{
+                      backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                      border: '1px solid rgba(239, 68, 68, 0.2)',
+                      color: '#f87171'
+                    }}
+                  >
                     {error}
                   </div>
                 )}
@@ -303,7 +353,12 @@ function SignupContent() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25"
+                  className="w-full font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-60 group"
+                  style={{ 
+                    background: 'linear-gradient(135deg, #7CFF6B 0%, #22D15A 100%)',
+                    color: '#081D10',
+                    boxShadow: '0 8px 32px rgba(124, 255, 107, 0.25)'
+                  }}
                 >
                   {loading ? (
                     <>
@@ -313,12 +368,13 @@ function SignupContent() {
                   ) : (
                     <>
                       {isParceria ? 'Comecar meu teste gratis' : 'Continuar para pagamento'}
+                      <ArrowRight className="size-5 group-hover:translate-x-1 transition-transform" />
                     </>
                   )}
                 </button>
                 
-                <p className="text-xs text-gray-500 text-center">
-                  {"Ao continuar, você concorda com nossos Termos de Uso e Política de Privacidade."}
+                <p className="text-xs text-center" style={{ color: '#A1A7B3' }}>
+                  Ao continuar, voce concorda com nossos Termos de Uso e Politica de Privacidade.
                 </p>
               </form>
             </div>
@@ -326,14 +382,29 @@ function SignupContent() {
           
           {/* Resumo do Plano */}
           <div className="order-1 lg:order-2">
-            <div className="bg-gradient-to-br from-emerald-900/30 to-[#1a1a1a] rounded-3xl p-6 md:p-8 border border-emerald-500/30 sticky top-8">
+            <div 
+              className="rounded-3xl p-6 md:p-8 sticky top-8"
+              style={{ 
+                background: 'linear-gradient(135deg, rgba(124, 255, 107, 0.1) 0%, #081D10 100%)',
+                border: '1px solid rgba(124, 255, 107, 0.2)'
+              }}
+            >
               <div className="flex items-center gap-3 mb-6">
-                <div className="size-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-                  <Zap className="size-6 text-emerald-400" />
+                <div 
+                  className="size-12 rounded-xl flex items-center justify-center"
+                  style={{ backgroundColor: 'rgba(124, 255, 107, 0.2)' }}
+                >
+                  <Image 
+                    src="/logo-zapflow.png" 
+                    alt="ZapFlow" 
+                    width={32} 
+                    height={32}
+                    className="h-6 w-auto"
+                  />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-400">Plano selecionado</p>
-                  <h2 className="text-2xl font-black">{plan.name}</h2>
+                  <p className="text-sm" style={{ color: '#A1A7B3' }}>Plano selecionado</p>
+                  <h2 className="text-2xl font-bold" style={{ color: '#F5F7FA' }}>{plan.name}</h2>
                 </div>
               </div>
               
@@ -343,57 +414,75 @@ function SignupContent() {
                   <button
                     key={key}
                     onClick={() => setPlano(key)}
-                    className={`py-2 px-3 rounded-lg text-sm font-semibold transition-all ${
-                      plano === key
-                        ? 'bg-emerald-500 text-white'
-                        : 'bg-white/5 text-gray-400 hover:bg-white/10'
-                    }`}
+                    className="py-2 px-3 rounded-lg text-sm font-semibold transition-all"
+                    style={{
+                      backgroundColor: plano === key ? '#7CFF6B' : 'rgba(255, 255, 255, 0.05)',
+                      color: plano === key ? '#081D10' : '#A1A7B3'
+                    }}
                   >
                     {p.name}
-                    {p.trialDays && <span className="ml-1 text-xs opacity-75">(Grátis)</span>}
+                    {p.trialDays && <span className="ml-1 text-xs opacity-75">(Gratis)</span>}
                   </button>
                 ))}
               </div>
               
-              {/* Preço */}
-              <div className="bg-[#0a0a0a] rounded-2xl p-4 mb-6">
+              {/* Preco */}
+              <div 
+                className="rounded-2xl p-4 mb-6"
+                style={{ backgroundColor: '#0A0F14' }}
+              >
                 {plan.trialDays ? (
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-2xl font-black text-emerald-400">{"GRÁTIS"}</span>
-                      <span className="text-gray-400">por {plan.trialDays} dias</span>
+                      <span className="text-2xl font-bold" style={{ color: '#7CFF6B' }}>GRATIS</span>
+                      <span style={{ color: '#A1A7B3' }}>por {plan.trialDays} dias</span>
                     </div>
-                    <p className="text-sm text-gray-500">{"Depois R$ "}{plan.price.toFixed(2).replace('.', ',')}{"/mês"}</p>
+                    <p className="text-sm" style={{ color: '#A1A7B3' }}>
+                      Depois R$ {plan.price.toFixed(2).replace('.', ',')}/mes
+                    </p>
                   </div>
                 ) : (
                   <div className="flex items-baseline gap-1">
-                    <span className="text-gray-400">{"R$"}</span>
-                    <span className="text-4xl font-black">{plan.price.toFixed(2).replace('.', ',')}</span>
-                    <span className="text-gray-400">{"/mês"}</span>
+                    <span style={{ color: '#A1A7B3' }}>R$</span>
+                    <span className="text-4xl font-bold" style={{ color: '#F5F7FA' }}>
+                      {plan.price.toFixed(2).replace('.', ',')}
+                    </span>
+                    <span style={{ color: '#A1A7B3' }}>/mes</span>
                   </div>
                 )}
               </div>
               
               {/* Features */}
               <div className="space-y-3">
-                <p className="text-sm text-gray-400 font-semibold uppercase tracking-wider">Incluso no plano:</p>
+                <p 
+                  className="text-sm font-semibold uppercase tracking-wider"
+                  style={{ color: '#A1A7B3' }}
+                >
+                  Incluso no plano:
+                </p>
                 {plan.features.map((feature, i) => (
                   <div key={i} className="flex items-start gap-3">
-                    <Check className="size-5 text-emerald-400 shrink-0 mt-0.5" />
-                    <span className="text-gray-300 text-sm">{feature}</span>
+                    <Check className="size-5 shrink-0 mt-0.5" style={{ color: '#7CFF6B' }} />
+                    <span className="text-sm" style={{ color: '#F5F7FA' }}>{feature}</span>
                   </div>
                 ))}
               </div>
               
               {/* Garantia */}
-              <div className="mt-8 pt-6 border-t border-white/10">
-                <div className="flex items-center gap-3 text-sm text-gray-400">
-                  <div className="size-10 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                    <Check className="size-5 text-emerald-400" />
+              <div 
+                className="mt-8 pt-6"
+                style={{ borderTop: '1px solid rgba(124, 255, 107, 0.1)' }}
+              >
+                <div className="flex items-center gap-3 text-sm">
+                  <div 
+                    className="size-10 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: 'rgba(124, 255, 107, 0.1)' }}
+                  >
+                    <Check className="size-5" style={{ color: '#7CFF6B' }} />
                   </div>
                   <div>
-                    <p className="text-white font-semibold">Garantia de 7 dias</p>
-                    <p>Cancele quando quiser, sem burocracia</p>
+                    <p className="font-semibold" style={{ color: '#F5F7FA' }}>Garantia de 7 dias</p>
+                    <p style={{ color: '#A1A7B3' }}>Cancele quando quiser, sem burocracia</p>
                   </div>
                 </div>
               </div>
@@ -407,8 +496,8 @@ function SignupContent() {
 
 function SignupLoading() {
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-      <Loader2 className="size-8 text-emerald-500 animate-spin" />
+    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0A0F14' }}>
+      <Loader2 className="size-8 animate-spin" style={{ color: '#7CFF6B' }} />
     </div>
   );
 }

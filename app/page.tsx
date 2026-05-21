@@ -3,11 +3,16 @@
 import React, { useState } from 'react';
 import {
   ArrowRight,
+  Loader2,
+  User,
+  Mail,
+  Lock,
+  Phone,
+  CheckCircle2,
   Zap,
-  ShieldCheck,
-  Globe,
+  BarChart3,
   MessageSquare,
-  Loader2
+  ShieldCheck
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
@@ -33,8 +38,7 @@ export default function RegistrationPage() {
       toast.error(result.error);
       setLoading(false);
     } else {
-      toast.success('Conta criada com sucesso! 🚀');
-      // Passa os dados do formulário via URL para o onboarding poder pré-preencher
+      toast.success('Conta criada com sucesso!');
       const nome = formData.get('nome') as string;
       const whatsapp = formData.get('whatsapp') as string;
       router.push(`/onboarding?nome=${encodeURIComponent(nome)}&whatsapp=${encodeURIComponent(whatsapp || '')}`);
@@ -42,153 +46,303 @@ export default function RegistrationPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-white dark:bg-slate-900 transition-colors">
-      {/* Left Side: Form */}
-      <div className="flex-1 flex flex-col justify-center px-8 lg:px-24 py-12">
-        <div className="max-w-md w-full mx-auto">
-          <div className="flex items-center gap-2 mb-12">
-            <div className="size-10 bg-primary rounded-lg flex items-center justify-center text-white">
-              <Zap className="size-6 fill-current" />
+    <div className="min-h-screen flex flex-col lg:flex-row" style={{ backgroundColor: '#0A0F14' }}>
+      {/* Left Side: Decorative */}
+      <div className="hidden lg:flex flex-1 relative overflow-hidden items-center justify-center p-16" style={{ backgroundColor: '#081D10' }}>
+        {/* Background Pattern - Flow Lines */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {/* Gradient orbs */}
+          <div 
+            className="absolute -top-32 -left-32 w-96 h-96 rounded-full blur-3xl opacity-30"
+            style={{ background: 'radial-gradient(circle, #7CFF6B 0%, transparent 70%)' }}
+          />
+          <div 
+            className="absolute top-1/2 -right-32 w-80 h-80 rounded-full blur-3xl opacity-20"
+            style={{ background: 'radial-gradient(circle, #22D15A 0%, transparent 70%)' }}
+          />
+          <div 
+            className="absolute -bottom-32 left-1/4 w-64 h-64 rounded-full blur-3xl opacity-25"
+            style={{ background: 'radial-gradient(circle, #7CFF6B 0%, transparent 70%)' }}
+          />
+          
+          {/* Flow lines SVG */}
+          <svg className="absolute inset-0 w-full h-full opacity-10" viewBox="0 0 800 800" preserveAspectRatio="xMidYMid slice">
+            <defs>
+              <linearGradient id="flowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#7CFF6B" />
+                <stop offset="100%" stopColor="#22D15A" />
+              </linearGradient>
+            </defs>
+            <path d="M0,400 Q200,300 400,400 T800,400" stroke="url(#flowGradient)" strokeWidth="2" fill="none" />
+            <path d="M0,500 Q200,400 400,500 T800,500" stroke="url(#flowGradient)" strokeWidth="1.5" fill="none" />
+            <path d="M0,300 Q200,200 400,300 T800,300" stroke="url(#flowGradient)" strokeWidth="1" fill="none" />
+          </svg>
+        </div>
+
+        <div className="relative z-10 max-w-lg">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="space-y-8"
+          >
+            {/* Logo */}
+            <div className="mb-8">
+              <Image 
+                src="/logo-zapflow.png" 
+                alt="ZapFlow" 
+                width={180} 
+                height={50}
+                className="h-12 w-auto"
+              />
+              <p className="mt-3 text-sm font-medium tracking-widest uppercase" style={{ color: '#A1A7B3' }}>
+                O fluxo que <span style={{ color: '#7CFF6B' }}>impulsiona</span> seu negocio
+              </p>
             </div>
-            <span className="text-2xl font-black tracking-tighter text-slate-900 dark:text-white">ZapFlow</span>
+
+            <h2 className="text-4xl font-bold leading-tight" style={{ color: '#F5F7FA' }}>
+              Comece a transformar seu{' '}
+              <span style={{ color: '#7CFF6B' }}>delivery hoje</span>
+            </h2>
+
+            <p className="text-lg leading-relaxed" style={{ color: '#A1A7B3' }}>
+              Crie sua conta em menos de 2 minutos e tenha acesso a todas as ferramentas que seu negocio precisa.
+            </p>
+
+            {/* Features */}
+            <div className="space-y-5 pt-6">
+              {[
+                { icon: MessageSquare, title: 'Integracao com WhatsApp', desc: 'Receba e gerencie pedidos direto no app' },
+                { icon: BarChart3, title: 'Painel de Controle', desc: 'Acompanhe vendas e metricas em tempo real' },
+                { icon: ShieldCheck, title: 'Seguro e Confiavel', desc: 'Seus dados protegidos com criptografia' }
+              ].map((item, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3 + i * 0.1 }}
+                  className="flex items-start gap-4"
+                >
+                  <div 
+                    className="size-10 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ backgroundColor: 'rgba(124, 255, 107, 0.15)' }}
+                  >
+                    <item.icon className="size-5" style={{ color: '#7CFF6B' }} />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold" style={{ color: '#F5F7FA' }}>{item.title}</h4>
+                    <p className="text-sm" style={{ color: '#A1A7B3' }}>{item.desc}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Social Proof */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="pt-8 flex items-center gap-4"
+            >
+              <div className="flex -space-x-3">
+                {[1, 2, 3, 4].map(i => (
+                  <div 
+                    key={i} 
+                    className="size-10 rounded-full border-2 overflow-hidden"
+                    style={{ borderColor: '#081D10', backgroundColor: '#22D15A' }}
+                  >
+                    <Image 
+                      src={`https://i.pravatar.cc/100?img=${i + 10}`} 
+                      alt="User" 
+                      width={40}
+                      height={40}
+                      className="object-cover" 
+                      referrerPolicy="no-referrer" 
+                    />
+                  </div>
+                ))}
+              </div>
+              <p className="text-sm" style={{ color: '#A1A7B3' }}>
+                <span className="font-bold" style={{ color: '#7CFF6B' }}>+500 empresas</span> ja usam o ZapFlow
+              </p>
+            </motion.div>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Right Side: Form */}
+      <div className="flex-1 flex flex-col justify-center px-8 lg:px-16 py-12" style={{ backgroundColor: '#0A0F14' }}>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="max-w-md w-full mx-auto"
+        >
+          {/* Mobile Logo */}
+          <div className="lg:hidden flex items-center justify-center mb-12">
+            <Image 
+              src="/logo-zapflow.png" 
+              alt="ZapFlow" 
+              width={150} 
+              height={40}
+              className="h-10 w-auto"
+            />
           </div>
 
           <div className="mb-8">
-            <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Comece sua automação agora</h1>
-            <p className="text-slate-500 dark:text-slate-400 mt-2">Crie sua conta e conecte seu WhatsApp em menos de 5 minutos.</p>
+            <h1 className="text-3xl font-bold tracking-tight" style={{ color: '#F5F7FA' }}>
+              Crie sua conta gratis
+            </h1>
+            <p className="mt-2" style={{ color: '#A1A7B3' }}>
+              Preencha os dados abaixo para comecar.
+            </p>
           </div>
 
           <form className="space-y-5" onSubmit={handleSubmit}>
-            <div className="space-y-1.5">
-              <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Nome Completo</label>
-              <input
-                name="nome"
-                type="text"
-                placeholder="Ex: Ricardo Oliveira"
-                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
-                required
-              />
+            <div className="space-y-2">
+              <label className="text-sm font-semibold" style={{ color: '#F5F7FA' }}>
+                Nome Completo
+              </label>
+              <div className="relative">
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 size-5" style={{ color: '#A1A7B3' }} />
+                <input
+                  name="nome"
+                  type="text"
+                  placeholder="Ex: Ricardo Oliveira"
+                  className="w-full pl-12 pr-4 py-3.5 rounded-xl outline-none transition-all text-white placeholder:text-slate-500"
+                  style={{ 
+                    backgroundColor: '#081D10',
+                    border: '1px solid rgba(124, 255, 107, 0.2)'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#7CFF6B'}
+                  onBlur={(e) => e.target.style.borderColor = 'rgba(124, 255, 107, 0.2)'}
+                  required
+                />
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-bold text-slate-700 dark:text-slate-300">E-mail</label>
-              <input
-                name="email"
-                type="email"
-                placeholder="nome@empresa.com"
-                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
-                required
-              />
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold" style={{ color: '#F5F7FA' }}>
+                E-mail
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 size-5" style={{ color: '#A1A7B3' }} />
+                <input
+                  name="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  className="w-full pl-12 pr-4 py-3.5 rounded-xl outline-none transition-all text-white placeholder:text-slate-500"
+                  style={{ 
+                    backgroundColor: '#081D10',
+                    border: '1px solid rgba(124, 255, 107, 0.2)'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#7CFF6B'}
+                  onBlur={(e) => e.target.style.borderColor = 'rgba(124, 255, 107, 0.2)'}
+                  required
+                />
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-bold text-slate-700 dark:text-slate-300">WhatsApp (Celular)</label>
-              <input
-                name="whatsapp"
-                type="tel"
-                placeholder="(00) 00000-0000"
-                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
-              />
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold" style={{ color: '#F5F7FA' }}>
+                WhatsApp
+              </label>
+              <div className="relative">
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 size-5" style={{ color: '#A1A7B3' }} />
+                <input
+                  name="whatsapp"
+                  type="tel"
+                  placeholder="(00) 00000-0000"
+                  className="w-full pl-12 pr-4 py-3.5 rounded-xl outline-none transition-all text-white placeholder:text-slate-500"
+                  style={{ 
+                    backgroundColor: '#081D10',
+                    border: '1px solid rgba(124, 255, 107, 0.2)'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#7CFF6B'}
+                  onBlur={(e) => e.target.style.borderColor = 'rgba(124, 255, 107, 0.2)'}
+                />
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Senha</label>
-              <input
-                name="password"
-                type="password"
-                placeholder="Mínimo 6 caracteres"
-                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
-                required
-                minLength={6}
-              />
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold" style={{ color: '#F5F7FA' }}>
+                Senha
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-5" style={{ color: '#A1A7B3' }} />
+                <input
+                  name="password"
+                  type="password"
+                  placeholder="Minimo 6 caracteres"
+                  className="w-full pl-12 pr-4 py-3.5 rounded-xl outline-none transition-all text-white placeholder:text-slate-500"
+                  style={{ 
+                    backgroundColor: '#081D10',
+                    border: '1px solid rgba(124, 255, 107, 0.2)'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#7CFF6B'}
+                  onBlur={(e) => e.target.style.borderColor = 'rgba(124, 255, 107, 0.2)'}
+                  required
+                  minLength={6}
+                />
+              </div>
+            </div>
+
+            {/* Benefits checklist */}
+            <div className="py-4 space-y-2">
+              {['14 dias gratis para testar', 'Sem necessidade de cartao', 'Suporte via WhatsApp'].map((item, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <CheckCircle2 className="size-4" style={{ color: '#7CFF6B' }} />
+                  <span className="text-sm" style={{ color: '#A1A7B3' }}>{item}</span>
+                </div>
+              ))}
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-primary hover:bg-primary/90 disabled:opacity-60 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/25 flex items-center justify-center gap-2 transition-all active:scale-[0.98] mt-4"
+              className="w-full font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-60 group"
+              style={{ 
+                background: 'linear-gradient(135deg, #7CFF6B 0%, #22D15A 100%)',
+                color: '#081D10',
+                boxShadow: '0 8px 32px rgba(124, 255, 107, 0.25)'
+              }}
             >
               {loading ? (
                 <Loader2 className="size-5 animate-spin" />
               ) : (
                 <>
-                  Criar Minha Conta Grátis
-                  <ArrowRight className="size-5" />
+                  Criar Minha Conta Gratis
+                  <ArrowRight className="size-5 group-hover:translate-x-1 transition-transform" />
                 </>
               )}
             </button>
           </form>
 
-          <p className="text-center text-sm text-slate-500 dark:text-slate-400 mt-8">
-            Já possui uma conta? <Link href="/login" className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline">Fazer Login</Link>
-          </p>
+          <div className="mt-8 pt-8" style={{ borderTop: '1px solid rgba(124, 255, 107, 0.1)' }}>
+            <p className="text-center text-sm" style={{ color: '#A1A7B3' }}>
+              Ja possui uma conta?{' '}
+              <Link 
+                href="/login" 
+                className="font-bold hover:underline transition-colors"
+                style={{ color: '#7CFF6B' }}
+              >
+                Fazer Login
+              </Link>
+            </p>
+          </div>
 
-          <div className="mt-12 pt-8 border-t border-slate-100 dark:border-slate-800 flex items-center justify-center gap-6 opacity-50 grayscale dark:invert">
-            <div className="relative h-6 w-24">
-              <Image src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" fill className="object-contain" referrerPolicy="no-referrer" />
+          {/* Indicators */}
+          <div className="mt-12 flex items-center justify-center gap-6">
+            <div className="flex items-center gap-2">
+              <div className="size-2 rounded-full" style={{ backgroundColor: '#7CFF6B' }} />
+              <span className="text-xs" style={{ color: '#A1A7B3' }}>Criptografia SSL</span>
             </div>
-            <div className="relative h-6 w-24">
-              <Image src="https://upload.wikimedia.org/wikipedia/commons/b/ba/Stripe_Logo%2C_revised_2016.svg" alt="Stripe" fill className="object-contain" referrerPolicy="no-referrer" />
+            <div className="flex items-center gap-2">
+              <div className="size-2 rounded-full" style={{ backgroundColor: '#22D15A' }} />
+              <span className="text-xs" style={{ color: '#A1A7B3' }}>Dados Protegidos</span>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Right Side: Decorative */}
-      <div className="hidden lg:flex flex-1 bg-primary relative overflow-hidden items-center justify-center p-24">
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-          <div className="absolute -top-24 -right-24 size-96 bg-white/10 rounded-full blur-3xl"></div>
-          <div className="absolute -bottom-24 -left-24 size-96 bg-black/10 rounded-full blur-3xl"></div>
-        </div>
-
-        <div className="relative z-10 text-white max-w-lg">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-8"
-          >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/10 text-xs font-bold uppercase tracking-widest">
-              <Zap className="size-3 fill-current" />
-              IA Power Delivery
-            </div>
-
-            <h2 className="text-5xl font-black leading-[1.1] tracking-tight">
-              Transforme seu WhatsApp em uma máquina de vendas.
-            </h2>
-
-            <p className="text-xl text-white/80 font-medium leading-relaxed">
-              O ZapFlow automatiza o atendimento, gerencia pedidos e recupera carrinhos abandonados de forma inteligente.
-            </p>
-
-            <div className="space-y-6 pt-8">
-              {[
-                { icon: MessageSquare, title: 'Atendimento 24/7', desc: 'Respostas instantâneas mesmo fora do horário.' },
-                { icon: ShieldCheck, title: 'Gestão Segura', desc: 'Seus dados e de seus clientes protegidos.' },
-                { icon: Globe, title: 'Cardápio Digital', desc: 'Link personalizado para sua loja no WhatsApp.' }
-              ].map((item, i) => (
-                <div key={i} className="flex gap-4">
-                  <div className="size-12 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center shrink-0">
-                    <item.icon className="size-6" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-lg">{item.title}</h4>
-                    <p className="text-white/60 text-sm">{item.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="pt-12 flex items-center gap-4">
-              <div className="flex -space-x-3">
-                {[1, 2, 3, 4].map(i => (
-                  <div key={i} className="relative size-10 rounded-full border-2 border-primary bg-slate-200 overflow-hidden">
-                    <Image src={`https://i.pravatar.cc/100?img=${i + 10}`} alt="User" fill className="object-cover" referrerPolicy="no-referrer" />
-                  </div>
-                ))}
-              </div>
-              <p className="text-sm font-medium text-white/80">
-                <span className="font-bold text-white">+500 empresas</span> já estão escalando com ZapFlow.
-              </p>
-            </div>
-          </motion.div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );
