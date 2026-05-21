@@ -75,10 +75,10 @@ export async function updateCompany(data: any) {
                 });
             } else {
                 // Gerar ID manualmente (tabela nao usa SERIAL)
-                const maxIdResult = await pg.query<{max_id: number}>(
+                const maxIdResult: any = await pg.query(
                     `SELECT COALESCE(MAX(id), 0) + 1 as max_id FROM ${CONFIGURACOES_LOJA_TABLE}`
                 );
-                const newId = maxIdResult[0]?.max_id || 1;
+                const newId = maxIdResult?.rows?.[0]?.max_id || maxIdResult?.[0]?.max_id || 1;
                 
                 await pg.create(CONFIGURACOES_LOJA_TABLE, {
                     id: newId,
