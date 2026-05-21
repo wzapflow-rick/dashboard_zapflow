@@ -351,8 +351,56 @@ async function isEmpresaAberta(empresaId: number): Promise<boolean> {
 }
 
 // ============================================================
-// WEBHOOK HANDLER
+// WEBHOOK EVOLUTION API - Recebe mensagens do WhatsApp
 // ============================================================
+
+/**
+ * GET - Endpoint de diagnostico para verificar se o webhook esta ativo
+ */
+export async function GET(req: NextRequest) {
+  try {
+    // Buscar todas as empresas com instancia configurada
+    const empresas = await pg.list('empresas', {
+      where: {}
+    });
+    
+    const empresasComInstancia = (empresas.list as any[])?.filter(e => e.instancia_evolution) || [];
+    
+    // Buscar configuracoes de bot ativas
+    const botConfigs = await pg.list('bot_config', {
+      where: { bot_ativo: true }
+    });
+    
+    return NextResponse.json({
+      status: 'ok',
+      message: 'Webhook Evolution ativo',
+      timestamp: new Date().toISOString(),
+      config: {
+        evo_url: EVO_API_URL,
+        has_api_key: !!EVO_API_KEY,
+        cooldown_hours: COOLDOWN_HOURS
+      },
+      empresas: {
+        total: empresas.list?.length || 0,
+        com_instancia: empresasComInstancia.map(e => ({
+          id: e.id,
+          nome: e.nome_fantasia || e.nome,
+          instancia: e.instancia_evolution
+        }))
+      },
+      bots_ativos: (botConfigs.list as any[])?.map(b => ({
+        empresa_id: b.empresa_id,
+        mensagens: [b.mensagem_1_ativa, b.mensagem_2_ativa, b.mensagem_3_ativa].filter(Boolean).length
+      })) || []
+    });
+  } catch (error: any) {
+    return NextResponse.json({
+      status: 'error',
+      message: error.message,
+      timestamp: new Date().toISOString()
+    }, { status: 500 });
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
