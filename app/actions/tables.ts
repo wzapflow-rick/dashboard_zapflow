@@ -12,11 +12,14 @@ import {
 // HELPERS
 // ============================================================
 
-function normalizeRecord<T extends { id?: number }>(record: T): T & { id: number } {
-  return { ...record, id: record.id as number };
+function normalizeRecord<T extends { id?: number | null }>(record: T): T & { id: number } {
+  if (record.id === null || record.id === undefined) {
+    console.warn('[Tables] Record com ID null/undefined detectado:', record);
+  }
+  return { ...record, id: Number(record.id) || 0 };
 }
 
-function normalizeRecordList<T extends { id?: number }>(list: T[]): (T & { id: number })[] {
+function normalizeRecordList<T extends { id?: number | null }>(list: T[]): (T & { id: number })[] {
   return list.map(normalizeRecord);
 }
 
