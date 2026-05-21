@@ -297,6 +297,59 @@ function getCardapioLink(empresa: any): string {
   return `https://cardapio.wzapflow.com.br/menu/${slug}`;
 }
 
+/**
+ * Verificar se a empresa esta aberta no momento atual
+ */
+async function isEmpresaAberta(empresaId: number): Promise<boolean> {
+  try {
+    const horarios = await pg.list('horarios', {
+      where: { empresa_id: empresaId }
+    });
+    
+    if (!horarios.list || horarios.list.length === 0) {
+      // Se nao tem horarios configurados, considera aberto
+      console.log(`[BOT] Empresa ${empresaId} sem horarios configurados, considerando aberto`);
+      return true;
+    }
+    
+    // Obter dia da semana atual (0=Domingo, 1=Segunda, etc) no fuso de Brasilia
+    const now = new Date();
+    const brasiliaTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+    const diaSemana = brasiliaTime.getDay();
+    const horaAtual = brasiliaTime.getHours() * 60 + brasiliaTime.getMinutes(); // em minutos
+    
+    console.log(`[BOT] Verificando horario: dia=${diaSemana}, hora=${Math.floor(horaAtual/60)}:${horaAtual%60}`);
+    
+    // Buscar horario do dia atual
+    const horarioHoje = (horarios.list as any[]).find(h => h.dia_semana === diaSemana);
+    
+    if (!horarioHoje) {
+      console.log(`[BOT] Nenhum horario para dia ${diaSemana}, considerando fechado`);
+      return false;
+    }
+    
+    if (horarioHoje.fechado_o_dia_todo) {
+      console.log(`[BOT] Empresa fechada o dia todo (dia ${diaSemana})`);
+      return false;
+    }
+    
+    // Converter horarios de abertura e fechamento para minutos
+    const [horaAb, minAb] = (horarioHoje.hora_abertura || '00:00').split(':').map(Number);
+    const [horaFe, minFe] = (horarioHoje.hora_fechamento || '23:59').split(':').map(Number);
+    const aberturaMin = horaAb * 60 + minAb;
+    const fechamentoMin = horaFe * 60 + minFe;
+    
+    const aberto = horaAtual >= aberturaMin && horaAtual <= fechamentoMin;
+    console.log(`[BOT] Horario: ${horarioHoje.hora_abertura}-${horarioHoje.hora_fechamento}, atual=${Math.floor(horaAtual/60)}:${String(horaAtual%60).padStart(2,'0')}, aberto=${aberto}`);
+    
+    return aberto;
+  } catch (error) {
+    console.error('[BOT] Erro ao verificar horario:', error);
+    // Em caso de erro, considera aberto para nao bloquear
+    return true;
+  }
+}
+
 // ============================================================
 // WEBHOOK HANDLER
 // ============================================================
@@ -389,14 +442,22 @@ export async function POST(req: NextRequest) {
       recentContactsCache.set(lockKey, Date.now());
       console.log(`[BOT] Cliente ${phone} liberado para receber saudacao`);
     
-    // TODO: Verificar horario de funcionamento se configurado
-    // (por enquanto ignora essa verificacao)
+    // Verificar horario de funcionamento se configurado
+    const respeitar_horario = botConfig.respeitar_horario_funcionamento ?? 
+                              botConfig['respeitar_horario_funcionamento'] ?? 
+                              false;
+    
+    console.log(`[BOT] Respeitar horario funcionamento: ${respeitar_horario}`);
+    
+    let empresaAberta = true;
+    if (respeitar_horario) {
+      empresaAberta = await isEmpresaAberta(empresa.id);
+      console.log(`[BOT] Empresa aberta: ${empresaAberta}`);
+    }
     
     // Gerar link do cardapio
     const linkCardapio = getCardapioLink(empresa);
-    
-    // Preparar mensagens
-    const mensagens: string[] = [];
+    console.log(`[BOT] Link cardapio: ${linkCardapio}`);
     
     // Funcao auxiliar para processar mensagem (substituir placeholders e corrigir /loja/ para /menu/)
     const processarMensagem = (texto: string): string => {
@@ -405,16 +466,26 @@ export async function POST(req: NextRequest) {
         .replace(/\/loja\//g, '/menu/');
     };
     
-    if (botConfig.mensagem_1_ativa && botConfig.mensagem_1_texto) {
-      mensagens.push(processarMensagem(botConfig.mensagem_1_texto));
-    }
+    // Preparar mensagens
+    const mensagens: string[] = [];
     
-    if (botConfig.mensagem_2_ativa && botConfig.mensagem_2_texto) {
-      mensagens.push(processarMensagem(botConfig.mensagem_2_texto));
-    }
-    
-    if (botConfig.mensagem_3_ativa && botConfig.mensagem_3_texto) {
-      mensagens.push(processarMensagem(botConfig.mensagem_3_texto));
+    // Se empresa esta fechada e tem mensagem de fora de horario
+    if (!empresaAberta && botConfig.mensagem_fora_horario) {
+      console.log(`[BOT] Empresa fechada, enviando mensagem fora de horario`);
+      mensagens.push(processarMensagem(botConfig.mensagem_fora_horario));
+    } else {
+      // Empresa aberta ou nao respeita horario - enviar mensagens normais
+      if (botConfig.mensagem_1_ativa && botConfig.mensagem_1_texto) {
+        mensagens.push(processarMensagem(botConfig.mensagem_1_texto));
+      }
+      
+      if (botConfig.mensagem_2_ativa && botConfig.mensagem_2_texto) {
+        mensagens.push(processarMensagem(botConfig.mensagem_2_texto));
+      }
+      
+      if (botConfig.mensagem_3_ativa && botConfig.mensagem_3_texto) {
+        mensagens.push(processarMensagem(botConfig.mensagem_3_texto));
+      }
     }
     
     if (mensagens.length === 0) {
