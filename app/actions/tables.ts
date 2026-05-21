@@ -361,14 +361,9 @@ export async function createTableOrder(data: {
 }): Promise<any> {
   const user = await requireRole(['admin', 'gerente', 'atendente', 'cozinheiro']);
 
-  console.log('[v0] createTableOrder - comanda_id recebido:', data.comanda_id, 'tipo:', typeof data.comanda_id);
-  
   const comanda = await pg.findById('comandas', data.comanda_id) as any;
-  console.log('[v0] createTableOrder - comanda encontrada:', comanda ? 'SIM' : 'NAO', comanda?.id, comanda?.store_id);
-  
   if (!comanda) throw new Error('Comanda não encontrada');
   
-  console.log('[v0] createTableOrder - comparando store_id:', comanda.store_id, 'com empresaId:', user.empresaId);
   if (String(comanda.store_id) !== String(user.empresaId)) {
     throw new Error('Comanda não encontrada');
   }
@@ -387,8 +382,12 @@ export async function createTableOrder(data: {
   let result;
 
   if (pedidoExistente) {
-    const itensExistentes = JSON.parse(String(pedidoExistente.itens || '[]'));
-    const novosItens = JSON.parse(data.itens);
+    const itensExistentes = typeof pedidoExistente.itens === 'string' 
+      ? JSON.parse(pedidoExistente.itens || '[]') 
+      : (pedidoExistente.itens || []);
+    const novosItens = typeof data.itens === 'string' 
+      ? JSON.parse(data.itens) 
+      : data.itens;
 
     const itensMerged = [...itensExistentes, ...novosItens];
     const novoValorTotal = (Number(pedidoExistente.valor_total) || 0) + data.valor_total;
@@ -400,10 +399,11 @@ export async function createTableOrder(data: {
 
     result = { ...pedidoExistente, itens: JSON.stringify(itensMerged), valor_total: novoValorTotal };
   } else {
+    const itensString = typeof data.itens === 'string' ? data.itens : JSON.stringify(data.itens);
     const payload = {
       cliente_nome: data.cliente_nome || comanda.nome_cliente || `Mesa ${data.numero_mesa}`,
       telefone_cliente: '',
-      itens: data.itens,
+      itens: itensString,
       valor_total: data.valor_total,
       status: 'pendente',
       canal: 'Mesa',
@@ -433,14 +433,9 @@ export async function createTableOrder(data: {
 export async function abrirMesa(mesaId: number, nomeCliente?: string): Promise<Comanda> {
   const user = await requireRole(['admin', 'gerente', 'atendente']);
 
-  console.log('[v0] abrirMesa - mesaId:', mesaId, 'tipo:', typeof mesaId);
-  
   const mesa = await pg.findById('mesas', mesaId) as any;
-  console.log('[v0] abrirMesa - mesa encontrada:', mesa ? 'SIM' : 'NAO', mesa?.id, mesa?.store_id);
-  
   if (!mesa) throw new Error('Mesa não encontrada');
   
-  console.log('[v0] abrirMesa - comparando store_id:', mesa.store_id, 'com empresaId:', user.empresaId);
   if (String(mesa.store_id) !== String(user.empresaId)) {
     throw new Error('Mesa não encontrada');
   }
