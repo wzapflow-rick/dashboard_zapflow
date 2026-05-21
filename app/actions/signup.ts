@@ -10,6 +10,7 @@ import bcrypt from 'bcryptjs';
 import { encrypt } from '@/lib/session';
 import { cookies } from 'next/headers';
 import { v4 as uuidv4 } from 'uuid';
+import { setupEvolutionInstance } from './evolution';
 
 // Helper para hash de senha
 function hashPassword(password: string): string {
@@ -339,6 +340,26 @@ export async function createTrialAccount(data: {
       console.error('[v0] Erro ao criar assinatura trial:', subError);
     }
     
+    // Criar instancia Evolution automaticamente
+    try {
+      console.log('[Signup] Criando instancia Evolution para empresa:', empresaId);
+      const evolutionResult = await setupEvolutionInstance(empresaId);
+      
+      if (evolutionResult.error) {
+        console.error('[Signup] Erro ao criar instancia Evolution:', evolutionResult.error);
+      } else {
+        // Atualizar empresa com o nome da instancia
+        await pg.update('empresas', empresaId, {
+          instancia_evolution: evolutionResult.instanceName
+        });
+        console.log('[Signup] Instancia Evolution criada:', evolutionResult.instanceName, 
+          'webhook:', evolutionResult.webhookConfigured ? 'configurado' : 'pendente');
+      }
+    } catch (evoError) {
+      console.error('[Signup] Erro ao configurar Evolution:', evoError);
+      // Nao bloqueia o cadastro se falhar
+    }
+    
     const session = await encrypt({
       userId: empresaId,
       email: email,
@@ -538,6 +559,26 @@ export async function completeSignup(token: string, password: string) {
         console.log('[v0] Assinatura criada com sucesso via SQL');
     } catch (subError) {
       console.error('[v0] Erro ao criar assinatura (nao bloqueante):', subError);
+    }
+    
+    // Criar instancia Evolution automaticamente
+    try {
+      console.log('[Signup] Criando instancia Evolution para empresa:', empresaId);
+      const evolutionResult = await setupEvolutionInstance(empresaId);
+      
+      if (evolutionResult.error) {
+        console.error('[Signup] Erro ao criar instancia Evolution:', evolutionResult.error);
+      } else {
+        // Atualizar empresa com o nome da instancia
+        await pg.update('empresas', empresaId, {
+          instancia_evolution: evolutionResult.instanceName
+        });
+        console.log('[Signup] Instancia Evolution criada:', evolutionResult.instanceName, 
+          'webhook:', evolutionResult.webhookConfigured ? 'configurado' : 'pendente');
+      }
+    } catch (evoError) {
+      console.error('[Signup] Erro ao configurar Evolution:', evoError);
+      // Nao bloqueia o cadastro se falhar
     }
     
     await pg.update('pending_signups', signup.id, {

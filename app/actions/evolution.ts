@@ -99,3 +99,67 @@ export async function getInstanceStatus(instanceName: string) {
     const state = result.data?.instance?.state || result.data?.state || 'unknown';
     return { state };
 }
+
+/**
+ * Configura o webhook de uma instância para receber mensagens.
+ */
+export async function configureInstanceWebhook(instanceName: string) {
+    const webhookUrl = process.env.NEXT_PUBLIC_APP_URL 
+        ? `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/evolution`
+        : 'https://cardapio.wzapflow.com.br/api/webhooks/evolution';
+    
+    console.log('[Evolution] Configurando webhook para', instanceName, '-> URL:', webhookUrl);
+    
+    const result = await evoFetch(`/webhook/set/${instanceName}`, 'POST', {
+        webhook: {
+            enabled: true,
+            url: webhookUrl,
+            webhookByEvents: false,
+            webhookBase64: false,
+            events: [
+                'MESSAGES_UPSERT',
+                'CONNECTION_UPDATE'
+            ]
+        }
+    });
+    
+    if (result.error) {
+        console.error('[Evolution] Erro ao configurar webhook:', result.error);
+        return { error: result.error };
+    }
+    
+    console.log('[Evolution] Webhook configurado com sucesso');
+    return { success: true };
+}
+
+/**
+ * Cria instancia Evolution e configura webhook automaticamente.
+ * Usada no signup para configurar tudo de uma vez.
+ */
+export async function setupEvolutionInstance(empresaId: string | number) {
+    console.log('[Evolution] Setup completo para empresa:', empresaId);
+    
+    // 1. Criar instancia
+    const createResult = await createEvolutionInstance(empresaId);
+    
+    if (createResult.error) {
+        console.error('[Evolution] Erro ao criar instancia:', createResult.error);
+        return { error: createResult.error };
+    }
+    
+    const instanceName = createResult.instanceName;
+    
+    // 2. Configurar webhook (independente se ja existia ou nao)
+    const webhookResult = await configureInstanceWebhook(instanceName);
+    
+    if (webhookResult.error) {
+        console.warn('[Evolution] Webhook nao configurado, mas instancia criada:', webhookResult.error);
+        // Nao retorna erro pois a instancia foi criada - webhook pode ser configurado depois
+    }
+    
+    return { 
+        instanceName, 
+        alreadyExists: createResult.alreadyExists,
+        webhookConfigured: !webhookResult.error
+    };
+}
