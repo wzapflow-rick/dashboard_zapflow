@@ -398,16 +398,23 @@ export async function POST(req: NextRequest) {
     // Preparar mensagens
     const mensagens: string[] = [];
     
+    // Funcao auxiliar para processar mensagem (substituir placeholders e corrigir /loja/ para /menu/)
+    const processarMensagem = (texto: string): string => {
+      return texto
+        .replace('{LINK_CARDAPIO}', linkCardapio)
+        .replace(/\/loja\//g, '/menu/');
+    };
+    
     if (botConfig.mensagem_1_ativa && botConfig.mensagem_1_texto) {
-      mensagens.push(botConfig.mensagem_1_texto.replace('{LINK_CARDAPIO}', linkCardapio));
+      mensagens.push(processarMensagem(botConfig.mensagem_1_texto));
     }
     
     if (botConfig.mensagem_2_ativa && botConfig.mensagem_2_texto) {
-      mensagens.push(botConfig.mensagem_2_texto.replace('{LINK_CARDAPIO}', linkCardapio));
+      mensagens.push(processarMensagem(botConfig.mensagem_2_texto));
     }
     
     if (botConfig.mensagem_3_ativa && botConfig.mensagem_3_texto) {
-      mensagens.push(botConfig.mensagem_3_texto.replace('{LINK_CARDAPIO}', linkCardapio));
+      mensagens.push(processarMensagem(botConfig.mensagem_3_texto));
     }
     
     if (mensagens.length === 0) {
