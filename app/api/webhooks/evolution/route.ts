@@ -579,12 +579,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
-
-// GET para verificar se o webhook esta funcionando
-export async function GET() {
-  return NextResponse.json({ 
-    status: 'ok', 
-    service: 'evolution-webhook',
-    timestamp: new Date().toISOString()
-  });
-}
