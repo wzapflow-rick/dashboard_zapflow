@@ -10,6 +10,8 @@ import { RecentOrdersTable } from './recent-orders-table';
 import { cn } from '@/lib/utils';
 import { getMe } from '@/app/actions/auth';
 import { getDashboardData } from '@/app/actions/dashboard';
+import { getOnboardingStatus, OnboardingStatus } from '@/app/actions/onboarding-status';
+import { SetupChecklist } from '@/components/onboarding/setup-checklist';
 
 const OrderDetailsModal = dynamic(() => import('@/components/modals/order-details-modal'), {
   ssr: false,
@@ -67,6 +69,7 @@ export default function DashboardOverview() {
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus | null>(null);
 
   const loadData = async (showRefreshIndicator = false) => {
     if (showRefreshIndicator) {
@@ -78,6 +81,10 @@ export default function DashboardOverview() {
     try {
       const me = await getMe();
       setUser(me);
+      
+      // Buscar status do onboarding
+      const obStatus = await getOnboardingStatus();
+      setOnboardingStatus(obStatus);
 
       try {
         const data = await getDashboardData(selectedPeriod);
@@ -172,6 +179,11 @@ export default function DashboardOverview() {
           </motion.button>
         </div>
       </motion.header>
+
+      {/* Setup Checklist */}
+      {onboardingStatus && onboardingStatus.completedSteps < onboardingStatus.totalSteps && (
+        <SetupChecklist initialStatus={onboardingStatus} />
+      )}
 
       {/* Error alert */}
       <AnimatePresence>

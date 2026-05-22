@@ -12,6 +12,8 @@ import { Plus } from 'lucide-react';
 import OrderCreatorModal from '@/components/modals/order-creator-modal';
 import { useOffline } from '@/hooks/use-offline';
 import { useActionFeedback } from '@/components/ui/action-feedback';
+import { ContextualBanner } from '@/components/ui/contextual-banner';
+import { getOnboardingStatus, OnboardingStatus } from '@/app/actions/onboarding-status';
 
 const PrintModal = dynamic(() => import('@/components/expedition/print-modal'), {
   ssr: false,
@@ -52,6 +54,7 @@ export default function ExpeditionMonitor() {
   const [usingCache, setUsingCache] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedOrderForEdit, setSelectedOrderForEdit] = useState<any>(null);
+  const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus | null>(null);
 
   // Hook de offline
   const { 
@@ -66,6 +69,11 @@ export default function ExpeditionMonitor() {
 
   // Hook de feedback flutuante
   const { success: showSuccess, error: showError, FeedbackComponent } = useActionFeedback();
+
+  // Buscar status do onboarding para banners contextuais
+  useEffect(() => {
+    getOnboardingStatus().then(setOnboardingStatus);
+  }, []);
 
   const loadOrders = useCallback(async () => {
     try {
@@ -496,6 +504,22 @@ export default function ExpeditionMonitor() {
           </button>
         </div>
       </header>
+
+      {/* Banners contextuais */}
+      <div className="px-4 sm:px-8 pt-4 space-y-2 shrink-0">
+        {onboardingStatus && !onboardingStatus.hasMercadoPago && (
+          <ContextualBanner 
+            type="mercadopago" 
+            dismissKey="expedition_mp_banner"
+          />
+        )}
+        {onboardingStatus && !onboardingStatus.hasWhatsApp && (
+          <ContextualBanner 
+            type="whatsapp" 
+            dismissKey="expedition_wa_banner"
+          />
+        )}
+      </div>
 
       <div className="flex-1 overflow-x-auto p-4 sm:p-6 flex gap-4 sm:gap-6 bg-gradient-to-br from-slate-50 via-slate-50 to-slate-100 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 rounded-b-xl border-x border-b border-slate-200 dark:border-slate-800/50 custom-scrollbar">
         {columns.map((col) => {
