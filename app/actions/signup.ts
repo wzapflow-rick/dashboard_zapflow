@@ -400,8 +400,6 @@ export async function createTrialAccount(data: {
         email,
         telefone: cleanPhone,
         plano: 'Trial - Start',
-        cidade: data.cidade,
-        estado: data.estado,
       });
     } catch (discordError) {
       console.error('[Signup] Erro ao notificar Discord:', discordError);
