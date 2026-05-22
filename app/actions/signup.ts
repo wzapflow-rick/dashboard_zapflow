@@ -11,6 +11,7 @@ import { encrypt } from '@/lib/session';
 import { cookies } from 'next/headers';
 import { v4 as uuidv4 } from 'uuid';
 import { setupEvolutionInstance } from './evolution';
+import { notifyNewCompany, notifyError } from '@/lib/discord';
 
 // Helper para hash de senha
 function hashPassword(password: string): string {
@@ -391,6 +392,21 @@ export async function createTrialAccount(data: {
     
     console.log('[v0] Conta trial criada com sucesso:', empresaId);
     
+    // Notificar no Discord
+    try {
+      await notifyNewCompany({
+        empresaId,
+        nomeFantasia: nome,
+        email,
+        telefone: cleanPhone,
+        plano: 'Trial - Start',
+        cidade: data.cidade,
+        estado: data.estado,
+      });
+    } catch (discordError) {
+      console.error('[Signup] Erro ao notificar Discord:', discordError);
+    }
+    
     return {
       success: true,
       empresaId,
@@ -402,6 +418,15 @@ export async function createTrialAccount(data: {
     
   } catch (error: any) {
     console.error('[Signup] Erro ao criar conta trial:', error);
+    
+    // Notificar erro no Discord
+    await notifyError({
+      titulo: 'Erro ao Criar Conta Trial',
+      erro: error.message || String(error),
+      local: 'createTrialAccount',
+      detalhes: `Email: ${data.email}`,
+    });
+    
     return { success: false, error: 'Erro interno ao criar conta' };
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pg } from '@/lib/postgres';
+import { notifyWhatsAppConnected, notifyWhatsAppDisconnected, notifyError } from '@/lib/discord';
 
 const EVO_API_URL = process.env.EVOLUTION_API_URL || 'https://evo.wzapflow.com.br';
 const EVO_API_KEY = process.env.EVOLUTION_API_KEY || '';
@@ -409,13 +410,47 @@ export async function POST(req: NextRequest) {
     console.log('[BOT] Webhook Evolution recebido');
     console.log('[BOT] Event:', body.event);
     
+    const instanceName = body.instance;
+    
+    // Tratar evento de conexao/desconexao
+    if (body.event === 'connection.update') {
+      const state = body.data?.state || body.data?.statusReason;
+      console.log(`[BOT] Connection update para ${instanceName}: ${state}`);
+      
+      // Buscar empresa pela instancia
+      const empresa = await getEmpresaByInstance(instanceName);
+      
+      if (empresa) {
+        if (state === 'open' || state === 'connected') {
+          // WhatsApp conectado
+          await notifyWhatsAppConnected({
+            empresaId: empresa.id,
+            nomeFantasia: empresa.nome_fantasia || empresa.nome || 'N/A',
+            instancia: instanceName,
+            telefone: empresa.telefone_loja || undefined,
+          });
+        } else if (state === 'close' || state === 'disconnected' || state === 'connecting') {
+          // WhatsApp desconectado
+          if (state !== 'connecting') {
+            await notifyWhatsAppDisconnected({
+              empresaId: empresa.id,
+              nomeFantasia: empresa.nome_fantasia || empresa.nome || 'N/A',
+              instancia: instanceName,
+              motivo: state,
+            });
+          }
+        }
+      }
+      
+      return NextResponse.json({ received: true, event: 'connection.update', state });
+    }
+    
     // Apenas processa mensagens recebidas
     if (body.event !== 'messages.upsert') {
       return NextResponse.json({ received: true, ignored: body.event });
     }
     
     const data = body.data;
-    const instanceName = body.instance;
     
     // Ignora mensagens enviadas por nos
     if (data.key?.fromMe) {
