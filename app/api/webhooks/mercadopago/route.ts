@@ -6,6 +6,7 @@ import {
   createAssinatura,
   updateAssinaturaByMpSubscriptionId,
 } from '@/lib/assinaturas';
+import { notifyPayment } from '@/lib/discord';
 
 const MP_ACCESS_TOKEN_FALLBACK = process.env.MP_ACCESS_TOKEN || '';
 const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET || '';
@@ -307,6 +308,25 @@ async function handleSubscriptionPayment(paymentId: string) {
         ]);
         
         console.log(`[Webhook] Nova assinatura CRIADA para empresa ${empresaId}`);
+      }
+      
+      // Notificar pagamento no Discord
+      try {
+        const empresaResult = await pg.query(
+          'SELECT nome_fantasia, nome FROM empresas WHERE id = $1',
+          [empresaId]
+        );
+        const empresa = empresaResult.rows[0];
+        
+        await notifyPayment({
+          empresaId,
+          nomeFantasia: empresa?.nome_fantasia || empresa?.nome || `Empresa ${empresaId}`,
+          plano,
+          valor: paymentData.transaction_amount || 0,
+          metodoPagamento: paymentData.payment_type_id || 'PIX',
+        });
+      } catch (discordError) {
+        console.error('[Webhook] Erro ao notificar Discord:', discordError);
       }
     }
 
