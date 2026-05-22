@@ -17,11 +17,11 @@ export interface OnboardingStatus {
 export async function getOnboardingStatus(): Promise<OnboardingStatus | null> {
   try {
     const user = await getMe();
-    if (!user?.empresa_id) {
+    if (!user?.empresaId) {
       return null;
     }
 
-    const empresaId = user.empresa_id;
+    const empresaId = user.empresaId;
 
     // Buscar dados da empresa
     const empresaResult: any = await pg.query(
