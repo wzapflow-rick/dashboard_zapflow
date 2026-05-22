@@ -48,7 +48,7 @@ export async function getOnboardingStatus(): Promise<OnboardingStatus | null> {
 
     // Verificar se tem produtos cadastrados
     const produtosResult: any = await pg.query(
-      'SELECT COUNT(*) as count FROM produtos WHERE empresa_id = $1 AND ativo = true',
+      'SELECT COUNT(*) as count FROM produtos WHERE empresa_id = $1 AND disponivel = true',
       [empresaId]
     );
     const produtosCount = parseInt(produtosResult?.rows?.[0]?.count || produtosResult?.[0]?.count || '0');
