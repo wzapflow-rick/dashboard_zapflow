@@ -121,7 +121,6 @@ export async function createTrialAccount(data: TrialAccountData) {
     }
     
     // Notificar no Discord
-    console.log('[TrialSignup] Notificando Discord sobre nova empresa...');
     try {
       await notifyNewCompany({
         empresaId,
@@ -130,7 +129,6 @@ export async function createTrialAccount(data: TrialAccountData) {
         telefone,
         plano: 'Trial - Parceria',
       });
-      console.log('[TrialSignup] Notificacao Discord enviada!');
     } catch (discordError) {
       console.error('[TrialSignup] Erro ao notificar Discord:', discordError);
     }
