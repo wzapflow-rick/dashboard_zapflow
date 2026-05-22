@@ -92,9 +92,9 @@ export default function LoginPage() {
                             <Image 
                                 src="/logo-zapflow.png" 
                                 alt="ZapFlow" 
-                                width={180} 
-                                height={50}
-                                className="h-12 w-auto"
+                                width={80} 
+                                height={80}
+                                className="h-16 w-auto"
                             />
                             <p className="mt-3 text-sm font-medium tracking-widest uppercase" style={{ color: '#A1A7B3' }}>
                                 O fluxo que <span style={{ color: '#7CFF6B' }}>impulsiona</span> seu negocio

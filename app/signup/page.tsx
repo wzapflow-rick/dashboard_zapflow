@@ -163,9 +163,9 @@ function SignupContent() {
               <Image 
                 src="/logo-zapflow.png" 
                 alt="ZapFlow" 
-                width={140} 
-                height={40}
-                className="h-9 w-auto"
+                width={56} 
+                height={56}
+                className="h-10 w-auto"
               />
             </Link>
             
@@ -399,7 +399,7 @@ function SignupContent() {
                     alt="ZapFlow" 
                     width={32} 
                     height={32}
-                    className="h-6 w-auto"
+                    className="size-7"
                   />
                 </div>
                 <div>
