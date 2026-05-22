@@ -40,6 +40,9 @@ const COLORS = {
  * Envia mensagem para o Discord
  */
 async function sendToDiscord(message: DiscordMessage): Promise<boolean> {
+  console.log('[Discord] Tentando enviar notificacao...');
+  console.log('[Discord] Webhook URL existe:', !!DISCORD_WEBHOOK_URL);
+  
   if (!DISCORD_WEBHOOK_URL) {
     console.warn('[Discord] Webhook URL nao configurada');
     return false;
@@ -62,6 +65,7 @@ async function sendToDiscord(message: DiscordMessage): Promise<boolean> {
       return false;
     }
 
+    console.log('[Discord] Notificacao enviada com sucesso!');
     return true;
   } catch (error) {
     console.error('[Discord] Erro ao enviar notificacao:', error);
