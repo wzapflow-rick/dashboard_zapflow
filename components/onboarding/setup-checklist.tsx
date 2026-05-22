@@ -115,30 +115,30 @@ export function SetupChecklist({ initialStatus }: SetupChecklistProps) {
     return (
       <button
         onClick={handleExpand}
-        className="mb-4 w-full flex items-center justify-between gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 text-left transition-all hover:bg-emerald-500/10"
+        className="mb-4 w-full flex items-center justify-between gap-2 sm:gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-3 sm:px-4 py-3 text-left transition-all hover:bg-emerald-500/10"
       >
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/20">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/20">
             <Rocket className="h-4 w-4 text-emerald-400" />
           </div>
-          <div>
-            <p className="text-sm font-medium text-white">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-white truncate">
               Configure sua loja
             </p>
             <p className="text-xs text-gray-400">
-              {status.completedSteps} de {status.totalSteps} etapas concluidas
+              {status.completedSteps}/{status.totalSteps} etapas
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="h-2 w-24 overflow-hidden rounded-full bg-gray-700">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="h-2 w-16 sm:w-24 overflow-hidden rounded-full bg-gray-700">
             <div
               className="h-full rounded-full bg-emerald-500 transition-all"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
           <span className="text-sm font-medium text-emerald-400">{progressPercent}%</span>
-          <ChevronRight className="h-4 w-4 text-gray-400" />
+          <ChevronRight className="h-4 w-4 text-gray-400 hidden sm:block" />
         </div>
       </button>
     );
@@ -146,28 +146,28 @@ export function SetupChecklist({ initialStatus }: SetupChecklistProps) {
 
   // Versao expandida
   return (
-    <div className="mb-6 overflow-hidden rounded-xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 via-transparent to-transparent">
+    <div className="mb-4 sm:mb-6 overflow-hidden rounded-xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 via-transparent to-transparent">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-emerald-500/10 px-5 py-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-500/10 px-4 sm:px-5 py-3 sm:py-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/20">
-            <Rocket className="h-5 w-5 text-emerald-400" />
+          <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/20">
+            <Rocket className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-400" />
           </div>
-          <div>
-            <h3 className="font-semibold text-white">
-              {isComplete ? 'Parabens! Configuracao completa!' : 'Configure sua loja para comecar a vender'}
+          <div className="min-w-0">
+            <h3 className="text-sm sm:text-base font-semibold text-white">
+              {isComplete ? 'Configuracao completa!' : 'Configure sua loja'}
             </h3>
-            <p className="text-sm text-gray-400">
+            <p className="text-xs sm:text-sm text-gray-400">
               {isComplete
-                ? 'Sua loja esta pronta para receber pedidos'
-                : `${status.completedSteps} de ${status.totalSteps} etapas concluidas`}
+                ? 'Pronta para receber pedidos'
+                : `${status.completedSteps} de ${status.totalSteps} etapas`}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4">
           {/* Barra de progresso */}
-          <div className="hidden items-center gap-2 sm:flex">
-            <div className="h-2 w-32 overflow-hidden rounded-full bg-gray-700">
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-28 sm:w-32 overflow-hidden rounded-full bg-gray-700">
               <div
                 className={cn(
                   "h-full rounded-full transition-all duration-500",
@@ -192,7 +192,7 @@ export function SetupChecklist({ initialStatus }: SetupChecklistProps) {
       </div>
 
       {/* Steps */}
-      <div className="grid gap-2 p-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-2 p-3 sm:p-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {steps.map((step) => {
           const Icon = step.icon;
           return (
@@ -201,26 +201,26 @@ export function SetupChecklist({ initialStatus }: SetupChecklistProps) {
               onClick={() => !step.completed && handleStepClick(step.id)}
               disabled={step.completed}
               className={cn(
-                "group relative flex items-center gap-3 rounded-xl border p-4 text-left transition-all",
+                "group relative flex items-center gap-3 rounded-xl border p-3 sm:p-4 text-left transition-all",
                 step.completed
                   ? "border-emerald-500/30 bg-emerald-500/10 cursor-default"
-                  : "border-gray-700 bg-gray-800/50 hover:border-emerald-500/50 hover:bg-gray-800"
+                  : "border-gray-700 bg-gray-800/50 hover:border-emerald-500/50 hover:bg-gray-800 active:scale-[0.98]"
               )}
             >
               {/* Icone de status */}
               <div
                 className={cn(
-                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors",
+                  "flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl transition-colors",
                   step.completed
                     ? "bg-emerald-500/20"
                     : "bg-gray-700 group-hover:bg-emerald-500/20"
                 )}
               >
                 {step.completed ? (
-                  <Check className="h-5 w-5 text-emerald-400" />
+                  <Check className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-400" />
                 ) : (
                   <Icon className={cn(
-                    "h-5 w-5 transition-colors",
+                    "h-4 w-4 sm:h-5 sm:w-5 transition-colors",
                     "text-gray-400 group-hover:text-emerald-400"
                   )} />
                 )}

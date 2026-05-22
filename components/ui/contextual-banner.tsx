@@ -126,32 +126,32 @@ export function ContextualBanner({
 
   return (
     <div className={cn(
-      "mb-4 flex items-center justify-between gap-4 rounded-xl border p-4",
+      "mb-3 sm:mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 rounded-xl border p-3 sm:p-4",
       styles.container
     )}>
-      <div className="flex items-center gap-3">
-        <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", styles.icon)}>
-          <Icon className="h-5 w-5" />
+      <div className="flex items-center gap-3 min-w-0">
+        <div className={cn("flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl", styles.icon)}>
+          <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
         </div>
-        <div>
-          <p className={cn("font-medium", styles.title)}>{config.title}</p>
-          <p className="text-sm text-gray-400">{config.description}</p>
+        <div className="min-w-0">
+          <p className={cn("text-sm sm:text-base font-medium truncate", styles.title)}>{config.title}</p>
+          <p className="text-xs sm:text-sm text-gray-400 line-clamp-2">{config.description}</p>
         </div>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 justify-end sm:justify-start shrink-0">
         <button
           onClick={handleAction}
           className={cn(
-            "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+            "flex items-center gap-1.5 sm:gap-2 rounded-lg px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors active:scale-95",
             styles.button
           )}
         >
-          {config.actionLabel}
-          <ArrowRight className="h-4 w-4" />
+          <span className="whitespace-nowrap">{config.actionLabel}</span>
+          <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </button>
         <button
           onClick={handleDismiss}
-          className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-white/5 hover:text-white"
+          className="rounded-lg p-1.5 sm:p-2 text-gray-400 transition-colors hover:bg-white/5 hover:text-white"
           title="Dispensar"
         >
           <X className="h-4 w-4" />
