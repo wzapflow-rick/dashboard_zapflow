@@ -61,7 +61,7 @@ export function SetupChecklist({ initialStatus }: SetupChecklistProps) {
         router.push('/dashboard/settings?tab=loja');
         break;
       case 'products':
-        router.push('/dashboard/products');
+        router.push('/dashboard/menu');
         break;
       case 'mercadopago':
         router.push('/dashboard/settings?tab=pagamentos');
