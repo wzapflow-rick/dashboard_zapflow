@@ -45,6 +45,7 @@ export interface DisparoLog {
     empresa_id: string;
     campanha_id: number;
     cliente_id: number;
+    cliente_nome?: string;
     telefone: string;
     variante_usada: number;
     mensagem_enviada: string;
@@ -152,20 +153,31 @@ export async function getDisparos(campanhaId?: number): Promise<DisparoLog[]> {
     try {
         const user = await requireAdmin();
 
-        const where: any = { empresa_id: user.empresaId };
+        // Query com JOIN para trazer nome do cliente
+        let query = `
+            SELECT 
+                d.*,
+                c.nome as cliente_nome
+            FROM campanhas_disparos d
+            LEFT JOIN clientes c ON c.id = d.cliente_id
+            WHERE d.empresa_id = $1
+        `;
+        const params: any[] = [user.empresaId];
+        
         if (campanhaId) {
-            where.campanha_id = campanhaId;
+            query += ` AND d.campanha_id = $2`;
+            params.push(campanhaId);
         }
+        
+        query += ` ORDER BY d.enviado_em DESC LIMIT 100`;
 
-        const data = await pg.list('campanhas_disparos', {
-            where,
-            sort: '-enviado_em',
-            limit: 100,
-        });
+        const result = await pg.query(query, params);
+        const rows = result.rows || result || [];
 
-        return (data.list || []).map((d: any) => ({
+        return rows.map((d: any) => ({
             ...d,
-            id: d.id
+            id: d.id,
+            cliente_nome: d.cliente_nome || null
         }));
     } catch (error) {
         console.error('getDisparos error:', error);

@@ -7,7 +7,7 @@ SETUP NECESSÁRIO:
 3. No N8N, configurar o webhook com a mesma chave
 */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import DashboardLayout, { SidebarProvider } from '@/components/dashboard-layout';
 import {
     Megaphone,
@@ -24,7 +24,9 @@ import {
     ChevronRight,
     Check,
     Clock,
-    CalendarDays
+    CalendarDays,
+    Filter,
+    Search
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
@@ -106,6 +108,11 @@ export default function CampanhasPage() {
     const [disparoPage, setDisparoPage] = useState(1);
     const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
     const textareaRefs = useRef<Record<number, HTMLTextAreaElement | null>>({});
+    
+    // Filtros do historico
+    const [filtroStatus, setFiltroStatus] = useState<string>('todos');
+    const [filtroCampanha, setFiltroCampanha] = useState<number | null>(null);
+    const [filtroBusca, setFiltroBusca] = useState('');
 
     const DISPAROS_PER_PAGE = 20;
 
@@ -251,11 +258,34 @@ export default function CampanhasPage() {
 
     const getTipoInfo = (tipo: CampanhaTipo) => TIPOS.find(t => t.value === tipo) || TIPOS[0];
 
-    const pageCount = Math.max(1, Math.ceil(disparos.length / DISPAROS_PER_PAGE));
-    const paginatedDisparos = disparos.slice(
+    // Disparos filtrados
+    const filteredDisparos = useMemo(() => {
+        return disparos.filter(d => {
+            // Filtro por status
+            if (filtroStatus !== 'todos' && d.status !== filtroStatus) return false;
+            // Filtro por campanha
+            if (filtroCampanha !== null && d.campanha_id !== filtroCampanha) return false;
+            // Filtro por busca (nome do cliente ou telefone)
+            if (filtroBusca) {
+                const busca = filtroBusca.toLowerCase();
+                const nomeMatch = d.cliente_nome?.toLowerCase().includes(busca);
+                const telefoneMatch = d.telefone?.includes(busca);
+                if (!nomeMatch && !telefoneMatch) return false;
+            }
+            return true;
+        });
+    }, [disparos, filtroStatus, filtroCampanha, filtroBusca]);
+
+    const pageCount = Math.max(1, Math.ceil(filteredDisparos.length / DISPAROS_PER_PAGE));
+    const paginatedDisparos = filteredDisparos.slice(
         (disparoPage - 1) * DISPAROS_PER_PAGE,
         disparoPage * DISPAROS_PER_PAGE
     );
+    
+    // Reset pagina quando filtros mudam
+    useEffect(() => {
+        setDisparoPage(1);
+    }, [filtroStatus, filtroCampanha, filtroBusca]);
 
     const taxaErro = stats.total_enviados + stats.total_erros > 0
         ? ((stats.total_erros / (stats.total_enviados + stats.total_erros)) * 100).toFixed(1)
@@ -470,7 +500,65 @@ export default function CampanhasPage() {
                         <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                             <TrendingUp className="size-5 text-violet-500" />
                             Histórico de disparos
+                            {filteredDisparos.length !== disparos.length && (
+                                <span className="text-sm font-normal text-slate-500 ml-2">
+                                    ({filteredDisparos.length} de {disparos.length})
+                                </span>
+                            )}
                         </h2>
+
+                        {/* Filtros */}
+                        <div className="flex flex-wrap gap-3 mb-4">
+                            {/* Busca */}
+                            <div className="relative flex-1 min-w-[200px] max-w-xs">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Buscar cliente ou telefone..."
+                                    value={filtroBusca}
+                                    onChange={(e) => setFiltroBusca(e.target.value)}
+                                    className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
+                                />
+                            </div>
+                            
+                            {/* Filtro por campanha */}
+                            <select
+                                value={filtroCampanha ?? ''}
+                                onChange={(e) => setFiltroCampanha(e.target.value ? Number(e.target.value) : null)}
+                                className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
+                            >
+                                <option value="">Todas as campanhas</option>
+                                {campanhas.map(c => (
+                                    <option key={c.id} value={c.id}>{c.nome}</option>
+                                ))}
+                            </select>
+                            
+                            {/* Filtro por status */}
+                            <select
+                                value={filtroStatus}
+                                onChange={(e) => setFiltroStatus(e.target.value)}
+                                className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
+                            >
+                                <option value="todos">Todos os status</option>
+                                <option value="enviado">Enviado</option>
+                                <option value="erro">Erro</option>
+                                <option value="ignorado">Ignorado</option>
+                            </select>
+                            
+                            {/* Limpar filtros */}
+                            {(filtroStatus !== 'todos' || filtroCampanha !== null || filtroBusca) && (
+                                <button
+                                    onClick={() => {
+                                        setFiltroStatus('todos');
+                                        setFiltroCampanha(null);
+                                        setFiltroBusca('');
+                                    }}
+                                    className="px-3 py-2 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors"
+                                >
+                                    Limpar filtros
+                                </button>
+                            )}
+                        </div>
 
                         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
                             <div className="overflow-x-auto">
@@ -490,7 +578,10 @@ export default function CampanhasPage() {
                                         {paginatedDisparos.length === 0 ? (
                                             <tr>
                                                 <td colSpan={7} className="px-4 py-8 text-center text-slate-400 dark:text-slate-500">
-                                                    Nenhum disparo registrado ainda.
+                                                    {disparos.length === 0 
+                                                        ? 'Nenhum disparo registrado ainda.'
+                                                        : 'Nenhum disparo encontrado com os filtros aplicados.'
+                                                    }
                                                 </td>
                                             </tr>
                                         ) : (
@@ -505,7 +596,7 @@ export default function CampanhasPage() {
                                                             {campanha ? campanha.nome : `#${d.campanha_id}`}
                                                         </td>
                                                         <td className="px-4 py-3 text-slate-600 dark:text-slate-300">
-                                                            #{d.cliente_id}
+                                                            {d.cliente_nome || `#${d.cliente_id}`}
                                                         </td>
                                                         <td className="px-4 py-3 text-slate-600 dark:text-slate-300 font-mono text-xs">
                                                             {d.telefone}
