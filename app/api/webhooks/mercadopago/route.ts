@@ -312,11 +312,11 @@ async function handleSubscriptionPayment(paymentId: string) {
       
       // Notificar pagamento no Discord
       try {
-        const empresaResult = await pg.query<{nome_fantasia: string; nome: string}>(
+        const empresaResult: any = await pg.query(
           'SELECT nome_fantasia, nome FROM empresas WHERE id = $1',
           [empresaId]
         );
-        const empresa = (empresaResult as any).rows?.[0] || empresaResult[0];
+        const empresa = empresaResult?.rows?.[0] || empresaResult?.[0];
         const nomeEmpresa = String(empresa?.nome_fantasia || empresa?.nome || `Empresa ${empresaId}`);
         
         await notifyPayment({
