@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs';
 import { encrypt } from '@/lib/session';
 import { cookies } from 'next/headers';
 import { createAssinatura } from '@/lib/assinaturas';
+import { notifyNewCompany, notifyError } from '@/lib/discord';
 
 function hashPassword(password: string): string {
   return bcrypt.hashSync(password, 10);
@@ -119,6 +120,21 @@ export async function createTrialAccount(data: TrialAccountData) {
       console.error('[TrialSignup] Erro ao enviar WhatsApp:', waError);
     }
     
+    // Notificar no Discord
+    console.log('[TrialSignup] Notificando Discord sobre nova empresa...');
+    try {
+      await notifyNewCompany({
+        empresaId,
+        nomeFantasia: nome,
+        email,
+        telefone,
+        plano: 'Trial - Parceria',
+      });
+      console.log('[TrialSignup] Notificacao Discord enviada!');
+    } catch (discordError) {
+      console.error('[TrialSignup] Erro ao notificar Discord:', discordError);
+    }
+    
     return {
       success: true,
       empresaId,
@@ -129,6 +145,15 @@ export async function createTrialAccount(data: TrialAccountData) {
     
   } catch (error: any) {
     console.error('[TrialSignup] Erro:', error);
+    
+    // Notificar erro no Discord
+    await notifyError({
+      titulo: 'Erro ao Criar Conta Trial',
+      erro: error.message || String(error),
+      local: 'createTrialAccount (signup-trial.ts)',
+      detalhes: `Email: ${data.email}`,
+    });
+    
     return { success: false, error: 'Erro ao criar conta' };
   }
 }
