@@ -63,7 +63,7 @@ export async function getCampanhas(): Promise<CampanhaConfig[]> {
     try {
         const user = await requireAdmin();
 
-        const data = await pg.list('campanhas', {
+        const data = await pg.list('campanhas_config', {
             where: { empresa_id: user.empresaId },
             sort: '-id',
             limit: 100,
@@ -91,7 +91,7 @@ export async function createCampanha(data: CampanhaFormData): Promise<{ success:
             max_envios_semana: data.max_envios_semana || 2,
         };
 
-        const result = await pg.create('campanhas', payload);
+        const result = await pg.create('campanhas_config', payload);
 
         revalidatePath('/dashboard/campanhas');
         return { success: true, data: result };
@@ -110,7 +110,7 @@ export async function updateCampanha(id: number, data: Partial<CampanhaFormData>
             dias_semana: data.dias_semana ? JSON.stringify(data.dias_semana) : undefined,
         };
 
-        await pg.update('campanhas', id, payload);
+        await pg.update('campanhas_config', id, payload);
 
         revalidatePath('/dashboard/campanhas');
         return { success: true };
@@ -124,7 +124,7 @@ export async function deleteCampanha(id: number): Promise<{ success: boolean; er
     try {
         await requireAdmin();
 
-        await pg.delete('campanhas', id);
+        await pg.delete('campanhas_config', id);
 
         revalidatePath('/dashboard/campanhas');
         return { success: true };
@@ -138,7 +138,7 @@ export async function toggleCampanha(id: number, ativo: boolean): Promise<{ succ
     try {
         await requireAdmin();
 
-        await pg.update('campanhas', id, { ativo });
+        await pg.update('campanhas_config', id, { ativo });
 
         revalidatePath('/dashboard/campanhas');
         return { success: true };
@@ -157,7 +157,7 @@ export async function getDisparos(campanhaId?: number): Promise<DisparoLog[]> {
             where.campanha_id = campanhaId;
         }
 
-        const data = await pg.list('disparos', {
+        const data = await pg.list('campanhas_disparos', {
             where,
             sort: '-enviado_em',
             limit: 100,
@@ -182,7 +182,7 @@ export async function getDisparosStats(): Promise<DisparoStats> {
         const dataStr = thirtyDaysAgo.toISOString();
 
         const result = await pg.query(
-            `SELECT * FROM disparos WHERE empresa_id = $1 AND enviado_em > $2`,
+            `SELECT * FROM campanhas_disparos WHERE empresa_id = $1 AND enviado_em > $2`,
             [user.empresaId, dataStr]
         );
 
@@ -215,7 +215,7 @@ export async function getCampanhasParaN8N(empresaId: string, apiKey: string): Pr
         }
 
         const data = await pg.query(
-            `SELECT * FROM campanhas WHERE empresa_id = $1 AND ativo = true LIMIT 100`,
+            `SELECT * FROM campanhas_config WHERE empresa_id = $1 AND ativo = true LIMIT 100`,
             [empresaId]
         );
 
@@ -253,7 +253,7 @@ export async function registrarDisparo(data: {
             enviado_em: new Date().toISOString(),
         };
 
-        await pg.create('disparos', payload);
+        await pg.create('campanhas_disparos', payload);
 
         revalidatePath('/dashboard/campanhas');
         return { success: true };

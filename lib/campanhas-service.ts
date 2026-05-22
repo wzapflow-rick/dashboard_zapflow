@@ -186,7 +186,7 @@ async function clienteJaRecebeuRecentemente(
         const dataStr = umaSemanaAtras.toISOString();
         
         const data = await pg.query(
-            `SELECT id FROM disparos WHERE empresa_id = $1 AND cliente_id = $2 AND campanha_id = $3 AND enviado_em > $4 AND status = 'enviado' LIMIT $5`,
+            `SELECT id FROM campanhas_disparos WHERE empresa_id = $1 AND cliente_id = $2 AND campanha_id = $3 AND enviado_em > $4 AND status = 'enviado' LIMIT $5`,
             [empresaId, clienteId, campanhaId, dataStr, maxEnviosSemana + 1]
         );
         
@@ -236,7 +236,7 @@ async function registrarDisparo(
     erroDetalhe?: string
 ): Promise<void> {
     try {
-        await pg.create('disparos', {
+        await pg.create('campanhas_disparos', {
             empresa_id: empresaId,
             campanha_id: campanhaId,
             cliente_id: clienteId,
@@ -416,7 +416,7 @@ export async function executarDisparoCampanhas(ignorarHorario: boolean = true): 
         console.log(`[CAMPANHAS] Buscando campanhas ativas`);
         
         const campanhasData = await pg.query(
-            `SELECT * FROM campanhas WHERE ativo = true LIMIT 100`,
+            `SELECT * FROM campanhas_config WHERE ativo = true LIMIT 100`,
             []
         );
         
