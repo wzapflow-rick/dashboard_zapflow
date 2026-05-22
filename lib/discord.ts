@@ -211,8 +211,10 @@ export async function notifyPayment(data: {
   nomeFantasia: string;
   plano: string;
   valor: number;
-  status: 'approved' | 'pending' | 'rejected';
+  status?: 'approved' | 'pending' | 'rejected';
+  metodoPagamento?: string;
 }): Promise<boolean> {
+  const status = data.status || 'approved';
   const statusText = {
     approved: '✅ Aprovado',
     pending: '⏳ Pendente',
@@ -225,17 +227,23 @@ export async function notifyPayment(data: {
     rejected: COLORS.error,
   };
 
+  const fields = [
+    { name: 'Empresa', value: data.nomeFantasia, inline: true },
+    { name: 'ID', value: String(data.empresaId), inline: true },
+    { name: 'Plano', value: data.plano, inline: true },
+    { name: 'Valor', value: `R$ ${data.valor.toFixed(2)}`, inline: true },
+    { name: 'Status', value: statusText[status], inline: true },
+  ];
+  
+  if (data.metodoPagamento) {
+    fields.push({ name: 'Metodo', value: data.metodoPagamento.toUpperCase(), inline: true });
+  }
+
   return sendToDiscord({
     embeds: [{
       title: '💳 Pagamento de Assinatura',
-      color: statusColor[data.status],
-      fields: [
-        { name: 'Empresa', value: data.nomeFantasia, inline: true },
-        { name: 'ID', value: String(data.empresaId), inline: true },
-        { name: 'Plano', value: data.plano, inline: true },
-        { name: 'Valor', value: `R$ ${data.valor.toFixed(2)}`, inline: true },
-        { name: 'Status', value: statusText[data.status], inline: true },
-      ],
+      color: statusColor[status],
+      fields,
       footer: { text: 'Mercado Pago' },
       timestamp: new Date().toISOString(),
     }],
