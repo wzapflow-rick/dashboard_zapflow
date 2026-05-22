@@ -27,7 +27,6 @@ export async function getOnboardingStatus(): Promise<OnboardingStatus | null> {
     const empresaResult: any = await pg.query(
       `SELECT 
         nome_fantasia, 
-        nome, 
         endereco, 
         telefone_loja,
         instancia_evolution
@@ -42,7 +41,7 @@ export async function getOnboardingStatus(): Promise<OnboardingStatus | null> {
 
     // Verificar dados da loja (nome e endereco preenchidos)
     const hasCompanyData = !!(
-      (empresa.nome_fantasia || empresa.nome) && 
+      empresa.nome_fantasia && 
       empresa.endereco && 
       empresa.telefone_loja
     );
@@ -114,7 +113,7 @@ export async function getOnboardingStatus(): Promise<OnboardingStatus | null> {
       whatsAppStatus,
       completedSteps,
       totalSteps,
-      companyName: empresa.nome_fantasia || empresa.nome || 'Sua Loja',
+      companyName: empresa.nome_fantasia || 'Sua Loja',
     };
   } catch (error) {
     console.error('[OnboardingStatus] Erro:', error);
