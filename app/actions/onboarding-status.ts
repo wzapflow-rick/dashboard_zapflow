@@ -1,7 +1,7 @@
 'use server';
 
 import { pg } from '@/lib/postgres';
-import { getSession } from '@/lib/session';
+import { getMe } from '@/lib/session-server';
 
 export interface OnboardingStatus {
   hasCompanyData: boolean;
@@ -16,12 +16,12 @@ export interface OnboardingStatus {
 
 export async function getOnboardingStatus(): Promise<OnboardingStatus | null> {
   try {
-    const session = await getSession();
-    if (!session?.empresa_id) {
+    const user = await getMe();
+    if (!user?.empresa_id) {
       return null;
     }
 
-    const empresaId = session.empresa_id;
+    const empresaId = user.empresa_id;
 
     // Buscar dados da empresa
     const empresaResult: any = await pg.query(
