@@ -9,6 +9,7 @@ import { LoginSchema } from '@/lib/validations';
 import { pg } from '@/lib/postgres';
 import { EMPRESAS_TABLE, USUARIOS_TABLE } from '@/lib/tables';
 import { checkRateLimit, clearRateLimitAttempts, checkLoginRateLimit, clearLoginRateLimits, getClientIp } from '@/lib/rate-limit';
+import { notifySecurityRateLimitBlocked } from '@/lib/discord';
 
 export async function login(data: any) {
     try {
@@ -27,6 +28,15 @@ export async function login(data: any) {
 
         if (!rateLimitResult.allowed) {
             logger.securityLoginFailure(email, 'RATE_LIMIT_EXCEEDED', `Blocked by ${rateLimitResult.blockedBy}, IP: ${clientIp}`);
+            
+            // Notificar no Discord sobre bloqueio
+            notifySecurityRateLimitBlocked({
+                email,
+                ip: clientIp,
+                blockedBy: rateLimitResult.blockedBy || 'email',
+                tentativas: 5, // maxAttempts
+            }).catch(() => {}); // Nao bloqueia se falhar
+            
             return { error: rateLimitResult.error };
         }
 

@@ -34,6 +34,7 @@ const COLORS = {
   error: 0xef4444,    // Vermelho
   info: 0x3b82f6,     // Azul
   primary: 0x7CFF6B,  // Verde ZapFlow
+  security: 0x9333ea, // Roxo - Seguranca
 };
 
 /**
@@ -264,6 +265,128 @@ export async function notifyCustom(
       description,
       color: COLORS[color],
       footer: { text: 'ZapFlow' },
+      timestamp: new Date().toISOString(),
+    }],
+  });
+}
+
+// ============================================
+// ALERTAS DE SEGURANCA
+// ============================================
+
+/**
+ * Notifica tentativa de login bloqueada por rate limit
+ */
+export async function notifySecurityRateLimitBlocked(data: {
+  email: string;
+  ip: string;
+  blockedBy: 'email' | 'ip';
+  tentativas: number;
+}): Promise<boolean> {
+  const emoji = data.blockedBy === 'ip' ? '🚫' : '⚠️';
+  const tipoBloqueo = data.blockedBy === 'ip' 
+    ? 'IP Suspeito Bloqueado' 
+    : 'Email Bloqueado por Tentativas';
+
+  return sendToDiscord({
+    embeds: [{
+      title: `${emoji} ${tipoBloqueo}`,
+      description: data.blockedBy === 'ip' 
+        ? 'Um IP foi bloqueado por muitas tentativas de login em contas diferentes.'
+        : 'Um email foi bloqueado por muitas tentativas de login falhas.',
+      color: COLORS.security,
+      fields: [
+        { name: 'Email', value: data.email || 'N/A', inline: true },
+        { name: 'IP', value: data.ip, inline: true },
+        { name: 'Tentativas', value: String(data.tentativas), inline: true },
+        { name: 'Bloqueado por', value: data.blockedBy.toUpperCase(), inline: true },
+      ],
+      footer: { text: 'ZapFlow - Seguranca' },
+      timestamp: new Date().toISOString(),
+    }],
+  });
+}
+
+/**
+ * Notifica multiplas tentativas de login falhas (antes de bloquear)
+ */
+export async function notifySecurityLoginAttempts(data: {
+  email: string;
+  ip: string;
+  tentativas: number;
+  maxTentativas: number;
+}): Promise<boolean> {
+  // So notifica quando estiver perto do limite (80%+)
+  if (data.tentativas < data.maxTentativas * 0.8) {
+    return false;
+  }
+
+  return sendToDiscord({
+    embeds: [{
+      title: '🔐 Tentativas de Login Suspeitas',
+      description: `Varias tentativas de login falhas detectadas para **${data.email}**`,
+      color: COLORS.warning,
+      fields: [
+        { name: 'Email', value: data.email, inline: true },
+        { name: 'IP', value: data.ip, inline: true },
+        { name: 'Tentativas', value: `${data.tentativas}/${data.maxTentativas}`, inline: true },
+      ],
+      footer: { text: 'ZapFlow - Seguranca' },
+      timestamp: new Date().toISOString(),
+    }],
+  });
+}
+
+/**
+ * Notifica login bem-sucedido de IP novo ou suspeito
+ */
+export async function notifySecurityNewIpLogin(data: {
+  email: string;
+  ip: string;
+  empresaId?: number | string;
+  nomeEmpresa?: string;
+  userAgent?: string;
+}): Promise<boolean> {
+  return sendToDiscord({
+    embeds: [{
+      title: '👤 Login de Novo IP',
+      description: `Login realizado de um IP nao reconhecido.`,
+      color: COLORS.info,
+      fields: [
+        { name: 'Email', value: data.email, inline: true },
+        { name: 'IP', value: data.ip, inline: true },
+        ...(data.nomeEmpresa ? [{ name: 'Empresa', value: data.nomeEmpresa, inline: true }] : []),
+        ...(data.userAgent ? [{ name: 'Dispositivo', value: data.userAgent.slice(0, 50), inline: false }] : []),
+      ],
+      footer: { text: 'ZapFlow - Seguranca' },
+      timestamp: new Date().toISOString(),
+    }],
+  });
+}
+
+/**
+ * Notifica acesso a rota admin de IP suspeito
+ */
+export async function notifySecurityAdminAccess(data: {
+  rota: string;
+  ip: string;
+  email?: string;
+  sucesso: boolean;
+}): Promise<boolean> {
+  const emoji = data.sucesso ? '✅' : '🚨';
+  const titulo = data.sucesso ? 'Acesso Admin Registrado' : 'Tentativa de Acesso Admin Bloqueada';
+
+  return sendToDiscord({
+    embeds: [{
+      title: `${emoji} ${titulo}`,
+      color: data.sucesso ? COLORS.info : COLORS.error,
+      fields: [
+        { name: 'Rota', value: data.rota, inline: true },
+        { name: 'IP', value: data.ip, inline: true },
+        ...(data.email ? [{ name: 'Email', value: data.email, inline: true }] : []),
+        { name: 'Status', value: data.sucesso ? 'Autorizado' : 'Bloqueado', inline: true },
+      ],
+      footer: { text: 'ZapFlow - Seguranca Admin' },
       timestamp: new Date().toISOString(),
     }],
   });
