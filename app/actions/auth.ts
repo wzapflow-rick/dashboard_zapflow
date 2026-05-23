@@ -8,7 +8,7 @@ import { logger } from '@/lib/logger';
 import { LoginSchema } from '@/lib/validations';
 import { pg } from '@/lib/postgres';
 import { EMPRESAS_TABLE, USUARIOS_TABLE } from '@/lib/tables';
-import { checkRateLimit, clearRateLimitAttempts } from '@/lib/rate-limit';
+import { checkRateLimit, clearRateLimitAttempts, checkLoginRateLimit, clearLoginRateLimits, getClientIp } from '@/lib/rate-limit';
 
 export async function login(data: any) {
     try {
@@ -21,17 +21,13 @@ export async function login(data: any) {
 
         const { email, password } = validated.data;
 
-        // Rate limiting distribuido usando PostgreSQL
-        const rateLimitResult = await checkRateLimit(email.toLowerCase(), 'login', {
-            maxAttempts: 5,
-            windowMs: 15 * 60 * 1000,
-            blockDurationMs: 30 * 60 * 1000,
-        });
+        // Rate limiting combinado (email + IP)
+        const clientIp = await getClientIp();
+        const rateLimitResult = await checkLoginRateLimit(email, clientIp);
 
         if (!rateLimitResult.allowed) {
-            const remainingTime = Math.ceil((rateLimitResult.retryAfterMs || 0) / 1000 / 60);
-            logger.securityLoginFailure(email, 'RATE_LIMIT_EXCEEDED', `Blocked for ${remainingTime} minutes`);
-            return { error: `Muitas tentativas de login. Tente novamente em ${remainingTime} minutos.` };
+            logger.securityLoginFailure(email, 'RATE_LIMIT_EXCEEDED', `Blocked by ${rateLimitResult.blockedBy}, IP: ${clientIp}`);
+            return { error: rateLimitResult.error };
         }
 
         // 1. Tentar login como empresa/admin - busca por email ou login
@@ -66,7 +62,7 @@ export async function login(data: any) {
                 sameSite: 'strict',
                 path: '/',
             });
-            await clearRateLimitAttempts(email.toLowerCase(), 'login');
+            await clearLoginRateLimits(email.toLowerCase(), clientIp);
             return { success: true, role: 'admin' };
         }
 
@@ -106,7 +102,7 @@ export async function login(data: any) {
                 sameSite: 'strict',
                 path: '/',
             });
-            await clearRateLimitAttempts(email.toLowerCase(), 'login');
+            await clearLoginRateLimits(email.toLowerCase(), clientIp);
             return { success: true, role: usuario.role || 'atendente' };
         }
 
