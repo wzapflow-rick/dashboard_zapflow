@@ -1,0 +1,24 @@
+# ZapFlow - Robots.txt
+# Bloqueia crawlers de acessar areas sensiveis
+
+User-agent: *
+# Permitir pagina inicial e cardapio publico
+Allow: /
+Allow: /cardapio/
+
+# Bloquear areas administrativas e sensiveis
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /api/
+Disallow: /painel/
+
+# Bloquear paginas de checkout e pagamento
+Disallow: /checkout/
+Disallow: /pagamento/
+
+# Sitemap (opcional - se tiver)
+# Sitemap: https://cardapio.wzapflow.com.br/sitemap.xml
