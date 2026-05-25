@@ -82,7 +82,7 @@ export async function validateWebhookToken(token: string): Promise<{ valid: bool
     return { valid: false };
   }
 
-  const result = await pg.query(
+  const result: any = await pg.query(
     `SELECT id FROM ${EMPRESAS_TABLE} WHERE webhook_token = $1 LIMIT 1`,
     [token]
   );
