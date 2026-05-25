@@ -31,7 +31,7 @@ export async function getIntegrationStatus(): Promise<IntegrationStatus> {
   }
 
   // Buscar dados da empresa
-  const empresaResult = await pg.query(
+  const empresaResult: any = await pg.query(
     `SELECT instancia_evolution, mp_access_token, webhook_token FROM ${EMPRESAS_TABLE} WHERE id = $1`,
     [user.empresaId]
   );
