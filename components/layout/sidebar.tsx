@@ -19,6 +19,7 @@ import {
     ChevronRight,
     Home,
     Menu,
+    Link2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from 'motion/react';
@@ -41,6 +42,7 @@ const adminItems = [
     { name: 'Usuários', href: '/dashboard/users', icon: Users, roles: ['admin'] },
     { name: 'Acertos', href: '/dashboard/acertos', icon: DollarSign, roles: ['admin', 'gerente'] },
     { name: 'Relatórios', href: '/dashboard/reports', icon: DollarSign, roles: ['admin', 'gerente'] },
+    { name: 'Integrações', href: '/dashboard/integracoes', icon: Link2, roles: ['admin'] },
     { name: 'Configurações', href: '/dashboard/settings', icon: Settings, roles: ['admin'] },
     { name: 'Assinatura', href: '/dashboard/subscription', icon: CreditCard, roles: ['admin'] },
 ];
