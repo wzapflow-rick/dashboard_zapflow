@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar empresa pelo token
-    const empresaResult = await pg.query(
+    const empresaResult: any = await pg.query(
       `SELECT id, nome_fantasia, instancia_evolution FROM ${EMPRESAS_TABLE} WHERE webhook_token = $1 LIMIT 1`,
       [body.empresa_token]
     );
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar se pedido ja existe (evitar duplicatas)
-    const pedidoExistente = await pg.query(
+    const pedidoExistente: any = await pg.query(
       `SELECT id FROM ${PEDIDOS_TABLE} WHERE empresa_id = $1 AND pedido_externo_id = $2 AND origem = $3 LIMIT 1`,
       [empresa.id, body.pedido_externo_id, body.plataforma]
     );
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
     if (body.cliente_telefone) {
       const telefone = body.cliente_telefone.replace(/\D/g, '');
       
-      const clienteExistente = await pg.query(
+      const clienteExistente: any = await pg.query(
         `SELECT id FROM ${CLIENTES_TABLE} WHERE empresa_id = $1 AND telefone = $2 LIMIT 1`,
         [empresa.id, telefone]
       );
