@@ -1,5 +1,3 @@
-'use server';
-
 /**
  * Servico de integracao com iFood
  * Documentacao: https://developer.ifood.com.br
