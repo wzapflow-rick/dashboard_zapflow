@@ -5,7 +5,7 @@ import { pg } from '@/lib/postgres';
 import { EMPRESAS_TABLE } from '@/lib/tables';
 import crypto from 'crypto';
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://cardapio.wzapflow.com.br';
+const BASE_URL = 'https://cardapio.wzapflow.com.br';
 
 interface IntegrationStatus {
   whatsapp: {
