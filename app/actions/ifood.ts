@@ -2,7 +2,7 @@
 
 import { pg } from '@/lib/postgres';
 import { EMPRESAS_TABLE, PEDIDOS_TABLE, CLIENTES_TABLE } from '@/lib/tables';
-import { requireAdmin } from '@/lib/auth-utils';
+import { requireAdmin } from '@/lib/session-server';
 import { 
   getIFoodAccessToken, 
   pollIFoodOrders, 
