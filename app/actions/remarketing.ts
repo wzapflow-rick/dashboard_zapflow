@@ -564,6 +564,15 @@ export async function importarContato(data: {
   origem?: string;
 }): Promise<{ success: boolean; contato?: RemarketingContato; error?: string }> {
   try {
+    // Extract phone number from remote_jid or telefone (remove @s.whatsapp.net, @lid, etc)
+    let telefone = data.telefone || data.remote_jid;
+    telefone = telefone.split('@')[0].replace(/\D/g, ''); // Keep only digits
+    
+    // Ensure phone doesn't exceed 20 chars
+    if (telefone.length > 20) {
+      telefone = telefone.substring(0, 20);
+    }
+    
     // Check if already exists
     const existing = await pg.findOne<RemarketingContato>(REMARKETING_CONTATOS_TABLE, {
       where: { remote_jid: data.remote_jid }
@@ -582,7 +591,7 @@ export async function importarContato(data: {
     // Create new
     const contato = await pg.create<RemarketingContato>(REMARKETING_CONTATOS_TABLE, {
       remote_jid: data.remote_jid,
-      telefone: data.telefone,
+      telefone: telefone,
       nome: data.nome || null,
       foto_url: data.foto_url || null,
       origem: data.origem || 'importado',
