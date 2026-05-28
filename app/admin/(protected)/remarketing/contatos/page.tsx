@@ -62,6 +62,10 @@ export default function ContatosPage() {
   const [showCategoriasModal, setShowCategoriasModal] = useState(false);
   const [selectedContato, setSelectedContato] = useState<RemarketingContato | null>(null);
   
+  // Bulk selection state
+  const [selectedContatos, setSelectedContatos] = useState<Set<number>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  
   // Import state
   const [evolutionContacts, setEvolutionContacts] = useState<EvolutionContact[]>([]);
   const [filteredEvolutionContacts, setFilteredEvolutionContacts] = useState<EvolutionContact[]>([]);
@@ -209,6 +213,37 @@ export default function ContatosPage() {
     loadContatos(pagination.page);
   };
 
+  const toggleSelectContato = (id: number) => {
+    const newSet = new Set(selectedContatos);
+    if (newSet.has(id)) {
+      newSet.delete(id);
+    } else {
+      newSet.add(id);
+    }
+    setSelectedContatos(newSet);
+  };
+
+  const toggleSelectAllContatos = () => {
+    if (selectedContatos.size === contatos.length) {
+      setSelectedContatos(new Set());
+    } else {
+      setSelectedContatos(new Set(contatos.map(c => c.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedContatos.size === 0) return;
+    if (!confirm(`Excluir ${selectedContatos.size} contatos selecionados?`)) return;
+    
+    setBulkDeleting(true);
+    for (const id of selectedContatos) {
+      await deleteContato(id);
+    }
+    setSelectedContatos(new Set());
+    setBulkDeleting(false);
+    loadContatos(1);
+  };
+
   const openEtiquetasModal = (contato: RemarketingContato) => {
     setSelectedContato(contato);
     setShowEtiquetasModal(true);
@@ -280,6 +315,16 @@ export default function ContatosPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          {selectedContatos.size > 0 && (
+            <button
+              onClick={handleBulkDelete}
+              disabled={bulkDeleting}
+              className="flex items-center justify-center gap-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 px-4 py-2.5 rounded-lg font-medium transition-all border border-red-500/30"
+            >
+              <Trash2 className={cn("size-5", bulkDeleting && "animate-pulse")} />
+              <span>{bulkDeleting ? 'Excluindo...' : `Excluir ${selectedContatos.size}`}</span>
+            </button>
+          )}
           <button
             onClick={() => setShowImportModal(true)}
             className="flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2.5 rounded-lg font-medium transition-all"
@@ -321,9 +366,35 @@ export default function ContatosPage() {
           </div>
         ) : (
           <div className="divide-y divide-[#1e3a5f]/50">
+            {/* Header with select all */}
+            <div className="px-4 py-3 bg-[#0a1628]/50 flex items-center gap-4">
+              <input
+                type="checkbox"
+                checked={selectedContatos.size === contatos.length && contatos.length > 0}
+                onChange={toggleSelectAllContatos}
+                className="rounded border-[#1e3a5f] bg-[#0a1628] text-orange-500 focus:ring-orange-500"
+              />
+              <span className="text-sm text-slate-400">
+                {selectedContatos.size > 0 
+                  ? `${selectedContatos.size} selecionados` 
+                  : 'Selecionar todos'}
+              </span>
+            </div>
+            
             {contatos.map((contato) => (
-              <div key={contato.id} className="p-4 hover:bg-[#162438]/50">
+              <div key={contato.id} className={cn(
+                "p-4 hover:bg-[#162438]/50",
+                selectedContatos.has(contato.id) && "bg-orange-500/5"
+              )}>
                 <div className="flex items-start gap-4">
+                  {/* Checkbox */}
+                  <input
+                    type="checkbox"
+                    checked={selectedContatos.has(contato.id)}
+                    onChange={() => toggleSelectContato(contato.id)}
+                    className="mt-3 rounded border-[#1e3a5f] bg-[#0a1628] text-orange-500 focus:ring-orange-500"
+                  />
+                  
                   {/* Avatar */}
                   <div className="size-12 bg-[#1e3a5f] rounded-full flex items-center justify-center flex-shrink-0">
                     {contato.foto_url ? (
