@@ -1035,22 +1035,28 @@ export async function fetchEvolutionChats(instanceName: string): Promise<{
     
     const data = await response.json();
     
-    // Debug: log first chat to see structure
-    console.log('[v0] Evolution API response sample:', JSON.stringify(data[0], null, 2));
-    
-    // Transform chats
-    const chats = (Array.isArray(data) ? data : []).map((chat: { id?: string; remoteJid?: string; name?: string; pushName?: string; profilePictureUrl?: string; lastMessage?: { content?: string } }) => {
-      const jid = chat.id || chat.remoteJid || '';
-      const telefone = jid.replace('@s.whatsapp.net', '').replace('@g.us', '');
+    // Transform chats based on actual Evolution API response structure
+    const chats = (Array.isArray(data) ? data : []).map((chat: { 
+      remoteJid?: string; 
+      pushName?: string; 
+      profilePicUrl?: string; 
+      lastMessage?: { 
+        message?: { conversation?: string };
+        pushName?: string;
+      } 
+    }) => {
+      const jid = chat.remoteJid || '';
+      // Extract phone number: "5519992552576@s.whatsapp.net" -> "5519992552576"
+      const telefone = jid.split('@')[0];
       
       return {
         remote_jid: jid,
         telefone,
-        nome: chat.name || chat.pushName || null,
-        foto_url: chat.profilePictureUrl || null,
-        ultima_mensagem: chat.lastMessage?.content || null,
+        nome: chat.pushName || null,
+        foto_url: chat.profilePicUrl || null,
+        ultima_mensagem: chat.lastMessage?.message?.conversation || null,
       };
-    }).filter((c: { remote_jid: string }) => c.remote_jid && !c.remote_jid.includes('@g.us')); // Exclude groups
+    }).filter((c: { remote_jid: string }) => c.remote_jid && !c.remote_jid.includes('@g.us') && !c.remote_jid.includes('@lid')); // Exclude groups and lid
     
     return { success: true, chats };
   } catch (error) {
