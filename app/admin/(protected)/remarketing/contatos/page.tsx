@@ -64,14 +64,41 @@ export default function ContatosPage() {
   
   // Import state
   const [evolutionContacts, setEvolutionContacts] = useState<EvolutionContact[]>([]);
+  const [filteredEvolutionContacts, setFilteredEvolutionContacts] = useState<EvolutionContact[]>([]);
   const [selectedForImport, setSelectedForImport] = useState<Set<string>>(new Set());
   const [importLoading, setImportLoading] = useState(false);
   const [importing, setImporting] = useState(false);
   const [instanceName, setInstanceName] = useState('');
+  const [importSearch, setImportSearch] = useState('');
+  const [importFilter, setImportFilter] = useState<'all' | 'with_name' | 'without_name'>('all');
 
   useEffect(() => {
     loadData();
   }, []);
+
+  // Filter evolution contacts when search or filter changes
+  useEffect(() => {
+    let filtered = evolutionContacts;
+    
+    // Apply search filter
+    if (importSearch.trim()) {
+      const searchLower = importSearch.toLowerCase().trim();
+      filtered = filtered.filter(c => 
+        (c.nome && c.nome.toLowerCase().includes(searchLower)) ||
+        c.telefone.includes(searchLower) ||
+        c.remote_jid.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    // Apply name filter
+    if (importFilter === 'with_name') {
+      filtered = filtered.filter(c => c.nome && c.nome.trim() !== '');
+    } else if (importFilter === 'without_name') {
+      filtered = filtered.filter(c => !c.nome || c.nome.trim() === '');
+    }
+    
+    setFilteredEvolutionContacts(filtered);
+  }, [evolutionContacts, importSearch, importFilter]);
 
   const loadData = async () => {
     setLoading(true);
@@ -122,7 +149,10 @@ export default function ContatosPage() {
     const result = await fetchEvolutionChats(instanceName);
     if (result.success && result.chats) {
       setEvolutionContacts(result.chats);
+      setFilteredEvolutionContacts(result.chats);
       setSelectedForImport(new Set());
+      setImportSearch('');
+      setImportFilter('all');
     } else {
       alert(result.error || 'Erro ao buscar contatos');
     }
@@ -133,7 +163,7 @@ export default function ContatosPage() {
     if (selectedForImport.size === 0) return;
     
     setImporting(true);
-    const toImport = evolutionContacts.filter(c => selectedForImport.has(c.remote_jid));
+    const toImport = filteredEvolutionContacts.filter(c => selectedForImport.has(c.remote_jid));
     
     for (const contact of toImport) {
       await importarContato({
@@ -151,10 +181,10 @@ export default function ContatosPage() {
   };
 
   const toggleSelectAll = () => {
-    if (selectedForImport.size === evolutionContacts.length) {
+    if (selectedForImport.size === filteredEvolutionContacts.length) {
       setSelectedForImport(new Set());
     } else {
-      setSelectedForImport(new Set(evolutionContacts.map(c => c.remote_jid)));
+      setSelectedForImport(new Set(filteredEvolutionContacts.map(c => c.remote_jid)));
     }
   };
 
@@ -473,57 +503,114 @@ export default function ContatosPage() {
 
               {evolutionContacts.length > 0 && (
                 <>
+                  {/* Search and Filter */}
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-500" />
+                      <input
+                        type="text"
+                        value={importSearch}
+                        onChange={(e) => setImportSearch(e.target.value)}
+                        placeholder="Buscar por nome ou telefone..."
+                        className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg pl-10 pr-4 py-2 text-white text-sm placeholder:text-slate-500 focus:outline-none focus:border-orange-500"
+                      />
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setImportFilter('all')}
+                        className={cn(
+                          "px-3 py-1.5 rounded-lg text-sm transition-colors",
+                          importFilter === 'all'
+                            ? "bg-orange-500/20 text-orange-400 border border-orange-500/50"
+                            : "bg-[#0a1628] text-slate-400 border border-[#1e3a5f] hover:bg-[#162438]"
+                        )}
+                      >
+                        Todos ({evolutionContacts.length})
+                      </button>
+                      <button
+                        onClick={() => setImportFilter('with_name')}
+                        className={cn(
+                          "px-3 py-1.5 rounded-lg text-sm transition-colors",
+                          importFilter === 'with_name'
+                            ? "bg-green-500/20 text-green-400 border border-green-500/50"
+                            : "bg-[#0a1628] text-slate-400 border border-[#1e3a5f] hover:bg-[#162438]"
+                        )}
+                      >
+                        Com nome ({evolutionContacts.filter(c => c.nome && c.nome.trim()).length})
+                      </button>
+                      <button
+                        onClick={() => setImportFilter('without_name')}
+                        className={cn(
+                          "px-3 py-1.5 rounded-lg text-sm transition-colors",
+                          importFilter === 'without_name'
+                            ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/50"
+                            : "bg-[#0a1628] text-slate-400 border border-[#1e3a5f] hover:bg-[#162438]"
+                        )}
+                      >
+                        Sem nome ({evolutionContacts.filter(c => !c.nome || !c.nome.trim()).length})
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="flex items-center justify-between">
                     <label className="flex items-center gap-2 text-sm text-slate-400">
                       <input
                         type="checkbox"
-                        checked={selectedForImport.size === evolutionContacts.length}
+                        checked={selectedForImport.size === filteredEvolutionContacts.length && filteredEvolutionContacts.length > 0}
                         onChange={toggleSelectAll}
                         className="rounded border-[#1e3a5f] bg-[#0a1628] text-orange-500 focus:ring-orange-500"
                       />
-                      Selecionar todos ({evolutionContacts.length})
+                      Selecionar todos ({filteredEvolutionContacts.length})
                     </label>
                     <span className="text-sm text-slate-500">
                       {selectedForImport.size} selecionados
                     </span>
                   </div>
 
-                  <div className="space-y-2 max-h-96 overflow-y-auto">
-                    {evolutionContacts.map((contact) => (
-                      <label
-                        key={contact.remote_jid}
-                        className={cn(
-                          "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
-                          selectedForImport.has(contact.remote_jid)
-                            ? "bg-orange-500/10 border-orange-500/50"
-                            : "bg-[#0a1628] border-[#1e3a5f] hover:bg-[#162438]"
-                        )}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedForImport.has(contact.remote_jid)}
-                          onChange={() => toggleSelect(contact.remote_jid)}
-                          className="rounded border-[#1e3a5f] bg-[#0a1628] text-orange-500 focus:ring-orange-500"
-                        />
-                        <div className="size-10 bg-[#1e3a5f] rounded-full flex items-center justify-center flex-shrink-0">
-                          {contact.foto_url ? (
-                            <img 
-                              src={contact.foto_url} 
-                              alt="" 
-                              className="size-10 rounded-full object-cover"
-                            />
-                          ) : (
-                            <Users className="size-5 text-slate-400" />
+                  <div className="space-y-2 max-h-80 overflow-y-auto">
+                    {filteredEvolutionContacts.length === 0 ? (
+                      <div className="text-center py-8 text-slate-400">
+                        <Search className="size-8 mx-auto mb-2 opacity-50" />
+                        <p>Nenhum contato encontrado com os filtros aplicados</p>
+                      </div>
+                    ) : (
+                      filteredEvolutionContacts.map((contact) => (
+                        <label
+                          key={contact.remote_jid}
+                          className={cn(
+                            "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
+                            selectedForImport.has(contact.remote_jid)
+                              ? "bg-orange-500/10 border-orange-500/50"
+                              : "bg-[#0a1628] border-[#1e3a5f] hover:bg-[#162438]"
                           )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-white truncate">
-                            {contact.nome || 'Sem nome'}
-                          </p>
-                          <p className="text-sm text-slate-400">{contact.telefone}</p>
-                        </div>
-                      </label>
-                    ))}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedForImport.has(contact.remote_jid)}
+                            onChange={() => toggleSelect(contact.remote_jid)}
+                            className="rounded border-[#1e3a5f] bg-[#0a1628] text-orange-500 focus:ring-orange-500"
+                          />
+                          <div className="size-10 bg-[#1e3a5f] rounded-full flex items-center justify-center flex-shrink-0">
+                            {contact.foto_url ? (
+                              <img 
+                                src={contact.foto_url} 
+                                alt="" 
+                                className="size-10 rounded-full object-cover"
+                              />
+                            ) : (
+                              <Users className="size-5 text-slate-400" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-white truncate">
+                              {contact.nome || 'Sem nome'}
+                            </p>
+                            <p className="text-sm text-slate-400">{contact.telefone}</p>
+                          </div>
+                        </label>
+                      ))
+                    )}
                   </div>
                 </>
               )}
