@@ -112,6 +112,35 @@ async function handleRequest(cronKey: string | null) {
   
   const limiteRestante = config.limite_por_hora - totalUltimaHora;
   
+  const EVO_URL = process.env.EVOLUTION_URL || 'https://evo.wzapflow.com.br';
+  const EVO_KEY = process.env.EVOLUTION_API_KEY || '';
+  
+  // Verificar se a instancia Evolution esta conectada antes de processar
+  try {
+    const statusResponse = await fetch(`${EVO_URL}/instance/connectionState/${config.instance_name}`, {
+      method: 'GET',
+      headers: { 'apikey': EVO_KEY },
+    });
+    
+    const statusData = await statusResponse.json();
+    const connectionState = statusData?.instance?.state || statusData?.state;
+    
+    if (connectionState !== 'open') {
+      return NextResponse.json({
+        success: false,
+        message: `Instancia Evolution desconectada (state: ${connectionState}). Reconecte o WhatsApp no painel da Evolution.`,
+        enviados: 0,
+        connection_state: connectionState,
+      });
+    }
+  } catch (err) {
+    return NextResponse.json({
+      success: false,
+      message: `Erro ao verificar status da Evolution API: ${err instanceof Error ? err.message : 'Desconhecido'}`,
+      enviados: 0,
+    });
+  }
+  
   // Buscar itens pendentes da fila (ordenados por prioridade e data)
   const fila = await pg.raw<FilaItem>(`
     SELECT id, contato_id, conteudo_final, tipo_midia, midia_url, prioridade, tentativas, max_tentativas
@@ -129,9 +158,6 @@ async function handleRequest(cronKey: string | null) {
       enviados: 0,
     });
   }
-  
-  const EVO_URL = process.env.EVOLUTION_URL || 'https://evo.wzapflow.com.br';
-  const EVO_KEY = process.env.EVOLUTION_API_KEY || '';
   
   let totalEnviados = 0;
   let totalErros = 0;
