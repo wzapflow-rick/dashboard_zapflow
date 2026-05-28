@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { getMe } from './lib/session-server'
+import { getMeEdge } from './lib/session-edge'
 
 const protectedRoutes = ['/dashboard']
 const authRoutes = ['/login', '/register']
@@ -25,7 +25,7 @@ export async function middleware(req: NextRequest) {
     const isProtectedRoute = protectedRoutes.some(route => path.startsWith(route))
     const isAuthRoute = authRoutes.some(route => path.startsWith(route)) || path === '/'
 
-    const session = await getMe()
+    const session = await getMeEdge()
 
     // 1. Se não logado e tentar acessar rota protegida -> login
     if (isProtectedRoute && !session) {
