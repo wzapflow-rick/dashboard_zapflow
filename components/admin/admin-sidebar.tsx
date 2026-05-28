@@ -20,6 +20,7 @@ import {
   ListTodo,
   History,
   Settings,
+  HelpCircle,
   ChevronDown,
   ChevronRight,
 } from 'lucide-react';
@@ -60,6 +61,7 @@ const remarketingMenu: MenuGroup = {
     { href: '/admin/remarketing/fila', label: 'Fila', icon: ListTodo },
     { href: '/admin/remarketing/historico', label: 'Historico', icon: History },
     { href: '/admin/remarketing/config', label: 'Configuracoes', icon: Settings },
+    { href: '/admin/remarketing/ajuda', label: 'Ajuda', icon: HelpCircle },
   ],
 };
 
