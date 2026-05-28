@@ -18,7 +18,6 @@ import {
   Ban,
   Check,
   Trash2,
-  Send,
   Loader2,
   UserPlus,
 } from 'lucide-react';
@@ -95,6 +94,26 @@ export default function ContatosPage() {
     });
   };
 
+  const loadData = async () => {
+    setLoading(true);
+    const [contatosRes, etiquetasRes, categoriasRes, configRes] = await Promise.all([
+      getContatos(1, 50),
+      getEtiquetas(),
+      getCategorias(),
+      getConfig(),
+    ]);
+    
+    if (contatosRes.success) {
+      setContatos(contatosRes.contatos || []);
+      setPagination(contatosRes.pagination || { page: 1, limit: 50, total: 0, totalPages: 0 });
+    }
+    if (etiquetasRes.success) setEtiquetas(etiquetasRes.etiquetas || []);
+    if (categoriasRes.success) setCategorias(categoriasRes.categorias || []);
+    if (configRes.success && configRes.config) setInstanceName(configRes.config.instance_name || '');
+    
+    setLoading(false);
+  };
+
   useEffect(() => {
     loadData();
   }, []);
@@ -120,26 +139,6 @@ export default function ContatosPage() {
     
     setFilteredEvolutionContacts(filtered);
   }, [evolutionContacts, importSearch, importFilter]);
-
-  const loadData = async () => {
-    setLoading(true);
-    const [contatosRes, etiquetasRes, categoriasRes, configRes] = await Promise.all([
-      getContatos(1, 50),
-      getEtiquetas(),
-      getCategorias(),
-      getConfig(),
-    ]);
-    
-    if (contatosRes.success) {
-      setContatos(contatosRes.contatos || []);
-      setPagination(contatosRes.pagination || { page: 1, limit: 50, total: 0, totalPages: 0 });
-    }
-    if (etiquetasRes.success) setEtiquetas(etiquetasRes.etiquetas || []);
-    if (categoriasRes.success) setCategorias(categoriasRes.categorias || []);
-    if (configRes.success && configRes.config) setInstanceName(configRes.config.instance_name || '');
-    
-    setLoading(false);
-  };
 
   const loadContatos = async (page: number, searchTerm = search) => {
     setLoading(true);
