@@ -802,8 +802,14 @@ export async function cancelarFilaItem(id: number): Promise<{ success: boolean; 
 
 export async function processarFilaItem(id: number): Promise<{ success: boolean; error?: string }> {
   try {
+    // Tipo para resultado do JOIN
+    interface FilaItemComContato extends RemarketingFilaItem {
+      contato_telefone?: string;
+      contato_remote_jid?: string;
+    }
+    
     // Buscar o item da fila
-    const items = await pg.raw<RemarketingFilaItem>(`
+    const items = await pg.raw<FilaItemComContato>(`
       SELECT f.*, 
         c.telefone as contato_telefone, 
         c.remote_jid as contato_remote_jid
