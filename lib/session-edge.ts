@@ -4,7 +4,7 @@
  */
 
 import { cookies } from 'next/headers';
-import { SignJWT, jwtVerify } from 'jose';
+import { jwtVerify } from 'jose';
 import type { User } from './validations';
 
 function getJWTSecret(): string {
