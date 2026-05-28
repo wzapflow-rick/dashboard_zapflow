@@ -38,6 +38,7 @@ interface Mensagem {
   tipo_midia: string;
   midia_url: string | null;
   tipo_dor_id: number | null;
+  ativo: boolean;
 }
 
 /**
