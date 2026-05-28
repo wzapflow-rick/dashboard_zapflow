@@ -172,15 +172,21 @@ export async function saveConfig(data: Partial<RemarketingConfig>): Promise<{ su
   try {
     const existing = await pg.findOne<RemarketingConfig>(REMARKETING_CONFIG_TABLE);
     
+    // Serialize dias_semana as JSON if it's an array
+    const dataToSave = {
+      ...data,
+      dias_semana: Array.isArray(data.dias_semana) ? JSON.stringify(data.dias_semana) : data.dias_semana,
+    };
+    
     let config: RemarketingConfig;
     if (existing) {
       config = await pg.update<RemarketingConfig>(REMARKETING_CONFIG_TABLE, existing.id, {
-        ...data,
+        ...dataToSave,
         updated_at: new Date().toISOString(),
       });
     } else {
       config = await pg.create<RemarketingConfig>(REMARKETING_CONFIG_TABLE, {
-        ...data,
+        ...dataToSave,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
