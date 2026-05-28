@@ -12,6 +12,9 @@ import {
   Calendar,
   MessageSquare,
   Zap,
+  Play,
+  Loader2,
+  ExternalLink,
 } from 'lucide-react';
 import { 
   getConfig,
@@ -36,6 +39,8 @@ export default function ConfigPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [cronRunning, setCronRunning] = useState<string | null>(null);
+  const [cronResult, setCronResult] = useState<{ type: string; message: string; data?: Record<string, unknown> } | null>(null);
   
   const [formData, setFormData] = useState({
     instance_name: '',
@@ -112,6 +117,35 @@ export default function ConfigPage() {
       key += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     setFormData({ ...formData, api_key_cron: key });
+  };
+
+  const executeCron = async (endpoint: string) => {
+    if (!formData.api_key_cron) {
+      setError('Configure a chave API primeiro');
+      return;
+    }
+    
+    setCronRunning(endpoint);
+    setCronResult(null);
+    
+    try {
+      const baseUrl = window.location.origin;
+      const response = await fetch(`${baseUrl}/api/cron/remarketing/${endpoint}?key=${formData.api_key_cron}`);
+      const data = await response.json();
+      
+      setCronResult({
+        type: endpoint,
+        message: data.message || (data.error ? `Erro: ${data.error}` : 'Executado'),
+        data: data,
+      });
+    } catch (err) {
+      setCronResult({
+        type: endpoint,
+        message: `Erro de conexao: ${err instanceof Error ? err.message : 'Desconhecido'}`,
+      });
+    } finally {
+      setCronRunning(null);
+    }
   };
 
   if (loading) {
@@ -356,6 +390,108 @@ export default function ConfigPage() {
             <p>0 * * * * curl -X POST -H &quot;x-cron-key: {formData.api_key_cron || 'SUA_CHAVE'}&quot; https://seusite.com/api/cron/remarketing/agendar</p>
             <p className="mt-2 text-slate-500"># Processar fila a cada 5 minutos</p>
             <p>*/5 * * * * curl -X POST -H &quot;x-cron-key: {formData.api_key_cron || 'SUA_CHAVE'}&quot; https://seusite.com/api/cron/remarketing/processar</p>
+          </div>
+        </div>
+
+        {/* Executar Crons Manualmente */}
+        <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Play className="size-5 text-green-400" />
+            <h2 className="text-lg font-semibold text-white">Executar Manualmente</h2>
+          </div>
+          
+          <p className="text-sm text-slate-400 mb-4">
+            Execute os endpoints manualmente para testar ou forcar uma execucao.
+          </p>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <button
+              type="button"
+              onClick={() => executeCron('classificar')}
+              disabled={cronRunning !== null}
+              className="flex items-center justify-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 px-4 py-3 rounded-lg font-medium transition-all disabled:opacity-50"
+            >
+              {cronRunning === 'classificar' ? (
+                <Loader2 className="size-5 animate-spin" />
+              ) : (
+                <Play className="size-5" />
+              )}
+              <span>Classificar</span>
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => executeCron('agendar')}
+              disabled={cronRunning !== null}
+              className="flex items-center justify-center gap-2 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-400 px-4 py-3 rounded-lg font-medium transition-all disabled:opacity-50"
+            >
+              {cronRunning === 'agendar' ? (
+                <Loader2 className="size-5 animate-spin" />
+              ) : (
+                <Play className="size-5" />
+              )}
+              <span>Agendar</span>
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => executeCron('processar')}
+              disabled={cronRunning !== null}
+              className="flex items-center justify-center gap-2 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 text-green-400 px-4 py-3 rounded-lg font-medium transition-all disabled:opacity-50"
+            >
+              {cronRunning === 'processar' ? (
+                <Loader2 className="size-5 animate-spin" />
+              ) : (
+                <Play className="size-5" />
+              )}
+              <span>Processar</span>
+            </button>
+          </div>
+          
+          {cronResult && (
+            <div className={cn(
+              "mt-4 p-4 rounded-lg border",
+              cronResult.message.includes('Erro') 
+                ? "bg-red-500/10 border-red-500/30 text-red-400"
+                : "bg-green-500/10 border-green-500/30 text-green-400"
+            )}>
+              <p className="font-medium">{cronResult.type}: {cronResult.message}</p>
+              {cronResult.data && (
+                <pre className="mt-2 text-xs overflow-x-auto bg-[#0a1628] p-2 rounded">
+                  {JSON.stringify(cronResult.data, null, 2)}
+                </pre>
+              )}
+            </div>
+          )}
+          
+          <div className="mt-4 flex flex-wrap gap-2">
+            <a
+              href={`/api/cron/remarketing/classificar?key=${formData.api_key_cron}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300"
+            >
+              <ExternalLink className="size-3" />
+              Abrir /classificar
+            </a>
+            <a
+              href={`/api/cron/remarketing/agendar?key=${formData.api_key_cron}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300"
+            >
+              <ExternalLink className="size-3" />
+              Abrir /agendar
+            </a>
+            <a
+              href={`/api/cron/remarketing/processar?key=${formData.api_key_cron}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300"
+            >
+              <ExternalLink className="size-3" />
+              Abrir /processar
+            </a>
           </div>
         </div>
 
