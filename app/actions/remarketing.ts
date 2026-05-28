@@ -1035,6 +1035,9 @@ export async function fetchEvolutionChats(instanceName: string): Promise<{
     
     const data = await response.json();
     
+    // Debug: log first chat to see structure
+    console.log('[v0] Evolution API response sample:', JSON.stringify(data[0], null, 2));
+    
     // Transform chats
     const chats = (Array.isArray(data) ? data : []).map((chat: { id?: string; remoteJid?: string; name?: string; pushName?: string; profilePictureUrl?: string; lastMessage?: { content?: string } }) => {
       const jid = chat.id || chat.remoteJid || '';
