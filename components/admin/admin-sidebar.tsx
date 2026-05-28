@@ -11,7 +11,16 @@ import {
   LogOut,
   Shield,
   Menu,
-  X
+  X,
+  Target,
+  Users,
+  Tags,
+  MessageSquare,
+  ListTodo,
+  History,
+  Settings,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import { logoutAdmin } from '@/app/actions/admin-auth';
 import { cn } from '@/lib/utils';
@@ -20,16 +29,43 @@ interface AdminSidebarProps {
   username: string;
 }
 
-const menuItems = [
+interface MenuItem {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+interface MenuGroup {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  items: MenuItem[];
+}
+
+const menuItems: MenuItem[] = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/empresas', label: 'Empresas', icon: Building2 },
   { href: '/admin/assinaturas', label: 'Assinaturas', icon: CreditCard },
 ];
 
+const remarketingMenu: MenuGroup = {
+  label: 'Remarketing',
+  icon: Target,
+  items: [
+    { href: '/admin/remarketing', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/admin/remarketing/contatos', label: 'Contatos', icon: Users },
+    { href: '/admin/remarketing/categorias', label: 'Categorias', icon: Tags },
+    { href: '/admin/remarketing/mensagens', label: 'Mensagens', icon: MessageSquare },
+    { href: '/admin/remarketing/fila', label: 'Fila', icon: ListTodo },
+    { href: '/admin/remarketing/historico', label: 'Historico', icon: History },
+    { href: '/admin/remarketing/config', label: 'Configuracoes', icon: Settings },
+  ],
+};
+
 export default function AdminSidebar({ username }: AdminSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [remarketingOpen, setRemarketingOpen] = useState(pathname.startsWith('/admin/remarketing'));
 
   const handleLogout = async () => {
     await logoutAdmin();
@@ -37,6 +73,8 @@ export default function AdminSidebar({ username }: AdminSidebarProps) {
   };
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
+
+  const isRemarketingActive = pathname.startsWith('/admin/remarketing');
 
   return (
     <>
@@ -93,7 +131,7 @@ export default function AdminSidebar({ username }: AdminSidebarProps) {
         </div>
 
         {/* Menu */}
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {menuItems.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -113,6 +151,53 @@ export default function AdminSidebar({ username }: AdminSidebarProps) {
               </Link>
             );
           })}
+
+          {/* Remarketing Submenu */}
+          <div className="pt-2">
+            <button
+              onClick={() => setRemarketingOpen(!remarketingOpen)}
+              className={cn(
+                'w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-all duration-200',
+                isRemarketingActive
+                  ? 'bg-orange-500/10 text-orange-400'
+                  : 'text-slate-400 hover:bg-[#162438] hover:text-white'
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <remarketingMenu.icon className="size-5" />
+                <span className="font-medium">{remarketingMenu.label}</span>
+              </div>
+              {remarketingOpen ? (
+                <ChevronDown className="size-4" />
+              ) : (
+                <ChevronRight className="size-4" />
+              )}
+            </button>
+            
+            {remarketingOpen && (
+              <div className="ml-4 mt-1 space-y-1 border-l border-[#1e3a5f]/50 pl-4">
+                {remarketingMenu.items.map((item) => {
+                  const isActive = pathname === item.href;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={closeMobileMenu}
+                      className={cn(
+                        'flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-sm',
+                        isActive
+                          ? 'bg-orange-500/10 text-orange-400'
+                          : 'text-slate-400 hover:bg-[#162438] hover:text-white'
+                      )}
+                    >
+                      <item.icon className="size-4" />
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </nav>
 
         {/* Footer */}

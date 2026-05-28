@@ -158,3 +158,40 @@ export const MESAS_TABLE = 'mesas';
 
 /** Tabela de comandas (contas individuais por pessoa na mesa) */
 export const COMANDAS_TABLE = 'comandas';
+
+// ============================================================
+// REMARKETING CRM
+// ============================================================
+
+/** Tabela de configuracoes gerais do remarketing */
+export const REMARKETING_CONFIG_TABLE = 'remarketing_config';
+
+/** Tabela de categorias de remarketing */
+export const REMARKETING_CATEGORIAS_TABLE = 'remarketing_categorias';
+
+/** Tabela de tipos de dor (saudade, oferta, etc) */
+export const REMARKETING_TIPOS_DOR_TABLE = 'remarketing_tipos_dor';
+
+/** Tabela de etiquetas manuais */
+export const REMARKETING_ETIQUETAS_TABLE = 'remarketing_etiquetas';
+
+/** Tabela de templates de mensagem */
+export const REMARKETING_MENSAGENS_TABLE = 'remarketing_mensagens';
+
+/** Tabela de combinacoes categoria + tipo_dor + mensagem */
+export const REMARKETING_COMBINACOES_TABLE = 'remarketing_mensagens_combinacoes';
+
+/** Tabela de contatos do remarketing */
+export const REMARKETING_CONTATOS_TABLE = 'remarketing_contatos';
+
+/** Tabela de relacao contato <-> etiquetas */
+export const REMARKETING_CONTATOS_ETIQUETAS_TABLE = 'remarketing_contatos_etiquetas';
+
+/** Tabela de relacao contato <-> categorias */
+export const REMARKETING_CONTATOS_CATEGORIAS_TABLE = 'remarketing_contatos_categorias';
+
+/** Tabela de fila de disparos */
+export const REMARKETING_FILA_TABLE = 'remarketing_fila';
+
+/** Tabela de historico de acoes */
+export const REMARKETING_HISTORICO_TABLE = 'remarketing_historico';

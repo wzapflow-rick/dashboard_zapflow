@@ -1,0 +1,169 @@
+import { NextResponse } from 'next/server';
+import { pg } from '@/lib/postgres';
+import {
+  REMARKETING_CONFIG_TABLE,
+  REMARKETING_CONTATOS_TABLE,
+  REMARKETING_CATEGORIAS_TABLE,
+  REMARKETING_CONTATOS_CATEGORIAS_TABLE,
+  REMARKETING_HISTORICO_TABLE,
+} from '@/lib/tables';
+
+/**
+ * POST /api/cron/remarketing/classificar
+ * 
+ * Classifica contatos nas categorias baseado nas regras automaticas.
+ * Deve ser executado periodicamente (ex: a cada 6 horas).
+ * 
+ * Headers:
+ *   x-cron-key: SUA_CHAVE_API
+ */
+export async function POST(request: Request) {
+  try {
+    // Verificar autenticacao
+    const cronKey = request.headers.get('x-cron-key');
+    
+    const config = await pg.findOne<{ api_key_cron: string; ativo: boolean }>(REMARKETING_CONFIG_TABLE);
+    
+    if (!config) {
+      return NextResponse.json({ error: 'Sistema nao configurado' }, { status: 400 });
+    }
+    
+    if (!config.ativo) {
+      return NextResponse.json({ error: 'Sistema desativado' }, { status: 400 });
+    }
+    
+    if (cronKey !== config.api_key_cron) {
+      return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 });
+    }
+    
+    // Buscar categorias automaticas
+    const categoriasResult = await pg.list<{
+      id: number;
+      nome: string;
+      regras: {
+        tipo?: string;
+        dias_sem_interacao?: number;
+        excluir_etiquetas?: string[];
+      } | null;
+    }>(REMARKETING_CATEGORIAS_TABLE, {
+      where: { tipo_selecao: 'automatica', ativo: true },
+    });
+    
+    const categorias = categoriasResult.list;
+    
+    if (categorias.length === 0) {
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Nenhuma categoria automatica ativa',
+        processados: 0,
+      });
+    }
+    
+    let totalProcessados = 0;
+    let totalAdicionados = 0;
+    let totalRemovidos = 0;
+    
+    for (const categoria of categorias) {
+      if (!categoria.regras) continue;
+      
+      const regras = categoria.regras;
+      
+      // Processar regra de inatividade
+      if (regras.tipo === 'inativo' && regras.dias_sem_interacao) {
+        const diasLimite = regras.dias_sem_interacao;
+        
+        // Buscar contatos inativos
+        const contatosInativos = await pg.raw<{ id: number }>(`
+          SELECT id FROM "${REMARKETING_CONTATOS_TABLE}"
+          WHERE ativo = true 
+            AND bloqueado = false
+            AND (
+              ultima_interacao IS NULL 
+              OR ultima_interacao < NOW() - INTERVAL '${diasLimite} days'
+            )
+        `);
+        
+        for (const contato of contatosInativos) {
+          // Verificar se ja esta na categoria
+          const existe = await pg.raw<{ contato_id: number }>(`
+            SELECT contato_id FROM "${REMARKETING_CONTATOS_CATEGORIAS_TABLE}"
+            WHERE contato_id = $1 AND categoria_id = $2
+          `, [contato.id, categoria.id]);
+          
+          if (existe.length === 0) {
+            // Adicionar na categoria
+            await pg.raw(`
+              INSERT INTO "${REMARKETING_CONTATOS_CATEGORIAS_TABLE}" 
+              (contato_id, categoria_id, adicionado_em, origem)
+              VALUES ($1, $2, NOW(), 'regra_automatica')
+            `, [contato.id, categoria.id]);
+            
+            totalAdicionados++;
+            
+            // Registrar no historico
+            await pg.create(REMARKETING_HISTORICO_TABLE, {
+              contato_id: contato.id,
+              tipo: 'categoria_add',
+              descricao: `Adicionado automaticamente a categoria "${categoria.nome}"`,
+              dados: JSON.stringify({ categoria_id: categoria.id, regra: 'inativo', dias: diasLimite }),
+              created_at: new Date().toISOString(),
+            });
+          }
+          
+          totalProcessados++;
+        }
+        
+        // Remover contatos que nao se encaixam mais (ficaram ativos)
+        const contatosAtivos = await pg.raw<{ id: number }>(`
+          SELECT c.id FROM "${REMARKETING_CONTATOS_TABLE}" c
+          INNER JOIN "${REMARKETING_CONTATOS_CATEGORIAS_TABLE}" cc ON cc.contato_id = c.id
+          WHERE cc.categoria_id = $1
+            AND cc.origem = 'regra_automatica'
+            AND c.ultima_interacao >= NOW() - INTERVAL '${diasLimite} days'
+        `, [categoria.id]);
+        
+        for (const contato of contatosAtivos) {
+          await pg.raw(`
+            DELETE FROM "${REMARKETING_CONTATOS_CATEGORIAS_TABLE}"
+            WHERE contato_id = $1 AND categoria_id = $2 AND origem = 'regra_automatica'
+          `, [contato.id, categoria.id]);
+          
+          totalRemovidos++;
+          
+          // Registrar no historico
+          await pg.create(REMARKETING_HISTORICO_TABLE, {
+            contato_id: contato.id,
+            tipo: 'categoria_remove',
+            descricao: `Removido automaticamente da categoria "${categoria.nome}" (voltou a interagir)`,
+            dados: JSON.stringify({ categoria_id: categoria.id }),
+            created_at: new Date().toISOString(),
+          });
+        }
+      }
+      
+      // Adicione mais regras aqui conforme necessario (VIP, aniversario, etc)
+    }
+    
+    // Registrar execucao no historico
+    await pg.create(REMARKETING_HISTORICO_TABLE, {
+      tipo: 'cron_classificar',
+      descricao: `Classificacao executada: ${totalProcessados} analisados, ${totalAdicionados} adicionados, ${totalRemovidos} removidos`,
+      dados: JSON.stringify({ totalProcessados, totalAdicionados, totalRemovidos }),
+      created_at: new Date().toISOString(),
+    });
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Classificacao concluida',
+      stats: {
+        processados: totalProcessados,
+        adicionados: totalAdicionados,
+        removidos: totalRemovidos,
+      }
+    });
+    
+  } catch (error) {
+    console.error('[Cron Classificar] Erro:', error);
+    return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
+  }
+}
