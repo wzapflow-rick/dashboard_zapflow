@@ -800,6 +800,113 @@ export async function cancelarFilaItem(id: number): Promise<{ success: boolean; 
   }
 }
 
+export async function processarFilaItem(id: number): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Buscar o item da fila
+    const items = await pg.raw<RemarketingFilaItem>(`
+      SELECT f.*, 
+        c.telefone as contato_telefone, 
+        c.remote_jid as contato_remote_jid
+      FROM "${REMARKETING_FILA_TABLE}" f
+      LEFT JOIN "${REMARKETING_CONTATOS_TABLE}" c ON c.id = f.contato_id
+      WHERE f.id = $1
+    `, [id]);
+    
+    if (!items || items.length === 0) {
+      return { success: false, error: 'Item nao encontrado' };
+    }
+    
+    const item = items[0];
+    
+    if (item.status !== 'pendente' && item.status !== 'erro') {
+      return { success: false, error: 'Item ja foi processado ou cancelado' };
+    }
+    
+    // Buscar config
+    const configRes = await getConfig();
+    if (!configRes.success || !configRes.config) {
+      return { success: false, error: 'Configuracao nao encontrada' };
+    }
+    
+    const config = configRes.config;
+    const EVO_URL = process.env.EVOLUTION_URL || 'https://evo.wzapflow.com.br';
+    const EVO_KEY = process.env.EVOLUTION_API_KEY || '';
+    
+    if (!EVO_KEY || !config.instance_name) {
+      return { success: false, error: 'Evolution API nao configurada' };
+    }
+    
+    // Atualizar status para enviando
+    await pg.update(REMARKETING_FILA_TABLE, id, { 
+      status: 'enviando',
+      tentativas: (item.tentativas || 0) + 1,
+    });
+    
+    // Enviar mensagem via Evolution API
+    const remoteJid = item.contato_remote_jid || `${item.contato_telefone}@s.whatsapp.net`;
+    
+    try {
+      const response = await fetch(`${EVO_URL}/message/sendText/${config.instance_name}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': EVO_KEY,
+        },
+        body: JSON.stringify({
+          number: remoteJid,
+          text: item.conteudo_final,
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Evolution API error: ${response.status} - ${errorText}`);
+      }
+      
+      // Sucesso - atualizar item
+      await pg.update(REMARKETING_FILA_TABLE, id, { 
+        status: 'enviado',
+        enviado_em: new Date().toISOString(),
+      });
+      
+      // Atualizar contato
+      if (item.contato_id) {
+        await pg.raw(`
+          UPDATE "${REMARKETING_CONTATOS_TABLE}" 
+          SET total_msgs_enviadas = COALESCE(total_msgs_enviadas, 0) + 1,
+              ultima_interacao = NOW()
+          WHERE id = $1
+        `, [item.contato_id]);
+      }
+      
+      // Adicionar ao historico
+      await pg.create(REMARKETING_HISTORICO_TABLE, {
+        contato_id: item.contato_id,
+        tipo: 'enviado',
+        descricao: `Mensagem enviada: ${item.conteudo_final?.substring(0, 100)}...`,
+        dados: JSON.stringify({ fila_id: id, mensagem_id: item.mensagem_id }),
+      });
+      
+      return { success: true };
+      
+    } catch (sendError) {
+      // Erro ao enviar - atualizar item
+      const errorMessage = sendError instanceof Error ? sendError.message : 'Erro desconhecido';
+      
+      await pg.update(REMARKETING_FILA_TABLE, id, { 
+        status: 'erro',
+        erro: errorMessage,
+      });
+      
+      return { success: false, error: errorMessage };
+    }
+    
+  } catch (error) {
+    console.error('[Remarketing] Erro ao processar item da fila:', error);
+    return { success: false, error: 'Erro ao processar item da fila' };
+  }
+}
+
 // ============================================================
 // HISTORICO
 // ============================================================
