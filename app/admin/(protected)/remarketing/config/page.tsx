@@ -448,6 +448,23 @@ export default function ConfigPage() {
             </button>
           </div>
           
+          {/* Botao de Status separado */}
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={() => executeCron('status')}
+              disabled={cronRunning !== null}
+              className="flex items-center justify-center gap-2 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 text-yellow-400 px-4 py-3 rounded-lg font-medium transition-all disabled:opacity-50 w-full"
+            >
+              {cronRunning === 'status' ? (
+                <Loader2 className="size-5 animate-spin" />
+              ) : (
+                <Zap className="size-5" />
+              )}
+              <span>Verificar Status da Instancia Evolution</span>
+            </button>
+          </div>
+          
           {cronResult && (
             <div className={cn(
               "mt-4 p-4 rounded-lg border",
@@ -491,6 +508,15 @@ export default function ConfigPage() {
             >
               <ExternalLink className="size-3" />
               Abrir /processar
+            </a>
+            <a
+              href={`/api/cron/remarketing/status?key=${formData.api_key_cron}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-yellow-500 hover:text-yellow-300"
+            >
+              <ExternalLink className="size-3" />
+              Abrir /status
             </a>
           </div>
         </div>
