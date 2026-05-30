@@ -6,6 +6,7 @@ import { Header } from './layout/header';
 import { PaymentAlert } from './dashboard/payment-alert';
 import { TrialWarningBanner } from './dashboard/trial-warning-banner';
 import { OfflineIndicator } from './offline-indicator';
+import { InstallPrompt } from './install-prompt';
 import { cn } from '@/lib/utils';
 import { RefreshCw, AlertTriangle } from 'lucide-react';
 import { Component, ReactNode, ErrorInfo } from 'react';
@@ -213,6 +214,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       
       {/* Indicador global de status offline */}
       <OfflineIndicator />
+
+      {/* Banner de instalacao do PWA - so aparece apos login */}
+      {!isLoading && user && <InstallPrompt />}
     </div>
   );
 }

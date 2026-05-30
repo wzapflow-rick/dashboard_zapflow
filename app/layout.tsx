@@ -3,7 +3,6 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
-import { InstallPrompt } from "@/components/install-prompt";
 import { Toaster } from 'sonner';
 import { MetaPixel } from "@/components/meta-pixel";
 
@@ -55,7 +54,6 @@ export default function RootLayout({
         </ThemeProvider>
         <Toaster position="top-right" richColors />
         <ServiceWorkerRegistration />
-        <InstallPrompt />
         <MetaPixel />
       </body>
     </html>
