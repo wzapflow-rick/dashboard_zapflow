@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Search, Plus, Minus, ShoppingCart, Loader2, Check, MessageSquare } from 'lucide-react';
+import { X, Search, Plus, Minus, ShoppingCart, Loader2, Check, MessageSquare, ChevronLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getProducts, getCategories, type Category } from '@/app/actions/products';
 import { getCompositeProducts, type CompositeProduct, type CompositeItem } from '@/app/actions/grupos-slots';
@@ -58,9 +58,13 @@ export default function TableOrderModal({
   const [pendingProduct, setPendingProduct] = useState<Product | null>(null);
   const [observacao, setObservacao] = useState('');
 
+  // Estado para alternar visualizacao do carrinho no mobile
+  const [showCartMobile, setShowCartMobile] = useState(false);
+
   useEffect(() => {
     if (isOpen) {
       fetchProducts();
+      setShowCartMobile(false);
     }
   }, [isOpen]);
 
@@ -201,6 +205,7 @@ export default function TableOrderModal({
 
       toast.success('Pedido enviado para a cozinha!');
       setCart([]);
+      setShowCartMobile(false);
       onSuccess();
     } catch (error: any) {
       console.error('Erro ao criar pedido:', error);
@@ -309,7 +314,7 @@ export default function TableOrderModal({
           className="relative w-full max-w-4xl h-[85vh] bg-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row"
         >
           {/* Products List */}
-          <div className="flex-1 flex flex-col min-w-0 border-r border-slate-700">
+          <div className="flex-1 flex flex-col min-w-0 min-h-0 border-r border-slate-700">
             <header className="p-4 border-b border-slate-700 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold text-white">
@@ -456,11 +461,40 @@ export default function TableOrderModal({
                 </>
               )}
             </div>
+
+            {/* Barra inferior mobile - Ver Carrinho */}
+            <div className="md:hidden p-3 border-t border-slate-700 bg-slate-900">
+              <button
+                onClick={() => setShowCartMobile(true)}
+                disabled={cart.length === 0}
+                className="w-full py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+              >
+                <ShoppingCart className="size-4" />
+                {cart.length === 0 ? (
+                  'Carrinho vazio'
+                ) : (
+                  <>
+                    Ver Carrinho ({cart.reduce((acc, i) => acc + i.quantidade, 0)}) - R$ {total.toFixed(2).replace('.', ',')}
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Cart */}
-          <div className="w-full md:w-80 flex flex-col bg-slate-900">
+          <div
+            className={`${
+              showCartMobile ? 'flex' : 'hidden'
+            } md:flex absolute inset-0 z-20 md:relative md:z-auto w-full md:w-80 flex-col bg-slate-900`}
+          >
             <header className="p-4 border-b border-slate-700 flex items-center gap-2">
+              <button
+                onClick={() => setShowCartMobile(false)}
+                className="p-1 -ml-1 hover:bg-slate-800 rounded-lg transition-colors md:hidden"
+                aria-label="Voltar para produtos"
+              >
+                <ChevronLeft className="size-5 text-slate-300" />
+              </button>
               <ShoppingCart className="size-5 text-primary" />
               <span className="font-semibold text-white">Carrinho</span>
               <AnimatePresence mode="wait">
