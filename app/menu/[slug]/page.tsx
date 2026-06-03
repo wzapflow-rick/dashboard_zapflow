@@ -132,6 +132,7 @@ export default async function PublicMenuPage({
     const empresaNincho = typeof empresa.nincho === 'string' ? empresa.nincho : null;
     const empresaCidade = typeof empresa.cidade === 'string' ? empresa.cidade : null;
     const empresaEstado = typeof empresa.estado === 'string' ? empresa.estado : null;
+    const pagamentoIntegrado = empresa.pagamento_integrado !== false;
     
     let empresaId: number | undefined = undefined;
     if (typeof empresa.id === 'number') empresaId = empresa.id;
@@ -179,6 +180,7 @@ export default async function PublicMenuPage({
             empresaEstado={empresaEstado}
             pontosPorReal={pontosPorReal}
             upsellProducts={safeUpsell}
+            pagamentoIntegrado={pagamentoIntegrado}
         >
             <div className="min-h-screen bg-[#0a0a0a] pb-32">
                 {/* Header */}

@@ -48,6 +48,7 @@ interface CartProps {
   empresaEstado?: string | null;
   clienteTelefone?: string;
   upsellProducts?: UpsellProduct[];
+  pagamentoIntegrado?: boolean;
 }
 
 interface UpsellProduct {
@@ -71,7 +72,7 @@ const formatPhone = (value: string) => {
   return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
 };
 
-export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCidade, empresaEstado, clienteTelefone, upsellProducts = [] }: CartProps) {
+export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCidade, empresaEstado, clienteTelefone, upsellProducts = [], pagamentoIntegrado = true }: CartProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState<CheckoutStep>('cart');
   const [cupomInput, setCupomInput] = useState('');
@@ -400,12 +401,19 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
         dataAgendamento: agendarPedido && dataAgendamento && horaAgendamento
           ? `${dataAgendamento}T${horaAgendamento}:00`
           : null,
+        pagamentoIntegrado,
       });
 
       const newOrderId = orderResult.orderId;
       setOrderId(newOrderId);
 
-      if (paymentData.forma === 'pix') {
+      // Pagamento integrado DESATIVADO: o cliente escolhe a forma de pagamento,
+      // mas a cobranca online e pulada. O pedido ja foi criado como 'pendente'
+      // e vai direto para o painel (Kanban).
+      if (!pagamentoIntegrado) {
+        setStep('success');
+        clearCart();
+      } else if (paymentData.forma === 'pix') {
         const paymentResult = await createPayment({
           pedidoId: newOrderId,
           paymentMethodId: 'pix',
@@ -747,6 +755,15 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
                       </div>
                     ) : (
                       <div className="space-y-3">
+                        {!pagamentoIntegrado && (
+                          <div className="rounded-xl bg-[#1a1a1a] border border-[#2a2a2a] p-3 flex items-start gap-2">
+                            <AlertCircle className="size-4 text-[#22c55e] mt-0.5 shrink-0" />
+                            <p className="text-xs text-gray-400 leading-relaxed">
+                              Escolha a forma de pagamento. O pagamento será combinado diretamente com a loja na{' '}
+                              {isDelivery ? 'entrega' : 'retirada'}.
+                            </p>
+                          </div>
+                        )}
                         {['pix', 'cartao', 'dinheiro'].map((method) => (
                           <button
                             key={method}

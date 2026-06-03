@@ -44,6 +44,7 @@ interface CreatePublicOrderData {
     troco?: number;
     observacoes?: string;
     dataAgendamento?: string | null;
+    pagamentoIntegrado?: boolean;
 }
 
 export async function checkCustomerByPhone(empresaId: number, telefone: string) {
@@ -177,7 +178,14 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
             forma_pagamento: data.formaPagamento,
             tipo_pagamento: data.formaPagamento,
             troco_necessario: data.troco || 0,
-            status: data.dataAgendamento ? 'agendado' : (data.formaPagamento === 'dinheiro' ? 'pendente' : 'pagamento_pendente'),
+            // Quando o pagamento integrado esta DESATIVADO, a loja recebe o pagamento por fora,
+            // entao o pedido vai direto para o painel (Kanban) como 'pendente', sem etapa de cobranca online.
+            // Quando ATIVADO, mantem o comportamento anterior: dinheiro vai direto, demais aguardam pagamento.
+            status: data.dataAgendamento
+                ? 'agendado'
+                : (data.pagamentoIntegrado === false || data.formaPagamento === 'dinheiro'
+                    ? 'pendente'
+                    : 'pagamento_pendente'),
             origem: 'cardapio_publico',
             criado_em: new Date().toISOString(),
             endereco_entrega: enderecoCompleto,

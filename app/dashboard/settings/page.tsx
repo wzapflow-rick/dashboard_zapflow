@@ -83,6 +83,8 @@ export default function SettingsPage() {
   const [loading, setLoading] = React.useState(true);
   const [valorEmbalagem, setValorEmbalagem] = React.useState<number>(0);
   const [inventoryControlEnabled, setInventoryControlEnabled] = React.useState(false);
+  const [paymentIntegrationEnabled, setPaymentIntegrationEnabled] = React.useState(true);
+  const [savingPaymentIntegration, setSavingPaymentIntegration] = React.useState(false);
   const [newPassword, setNewPassword] = React.useState('');
   const [confirmPassword, setConfirmPassword] = React.useState('');
   const [logoUrl, setLogoUrl] = React.useState<string | null>(null);
@@ -126,6 +128,7 @@ export default function SettingsPage() {
           setValorPorKm(Number(compData.valor_por_km || 0));
           setTaxaEntregaFixa(Number(compData.taxa_entrega_fixa || 0));
           setInventoryControlEnabled(!!compData.controle_estoque);
+          setPaymentIntegrationEnabled(compData.pagamento_integrado !== false);
           setLogoUrl((compData.logo && typeof compData.logo === 'string') ? compData.logo : null);
           setBannerUrl((compData.banner && typeof compData.banner === 'string') ? compData.banner : null);
         }
@@ -377,6 +380,28 @@ export default function SettingsPage() {
     } catch (err: any) {
       console.error('Erro ao salvar:', err);
       toast.error(err.message || 'Ocorreu um erro ao salvar.');
+    }
+  };
+
+  // Salva o toggle de pagamento integrado imediatamente ao alternar
+  const handleTogglePaymentIntegration = async (enabled: boolean) => {
+    const previous = paymentIntegrationEnabled;
+    setPaymentIntegrationEnabled(enabled);
+    setSavingPaymentIntegration(true);
+    try {
+      await updateCompany({ pagamento_integrado: enabled });
+      setCompany((prev: any) => (prev ? { ...prev, pagamento_integrado: enabled } : prev));
+      toast.success(
+        enabled
+          ? 'Pagamento integrado ativado. Os clientes pagarão pelo cardápio.'
+          : 'Pagamento integrado desativado. Os pedidos irão direto para o painel.'
+      );
+    } catch (err: any) {
+      console.error('Erro ao atualizar pagamento integrado:', err);
+      setPaymentIntegrationEnabled(previous);
+      toast.error(err.message || 'Não foi possível atualizar a configuração.');
+    } finally {
+      setSavingPaymentIntegration(false);
     }
   };
 
@@ -642,7 +667,43 @@ export default function SettingsPage() {
               )}
 
               {activeSection === 'payments' && (
-                <MercadoPagoConnection />
+                <div className="space-y-8">
+                  <div className="p-6 bg-slate-50 dark:bg-slate-700 rounded-2xl border border-slate-100 dark:border-slate-600 space-y-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="size-10 bg-white dark:bg-slate-600 rounded-xl shadow-sm flex items-center justify-center text-slate-600 dark:text-slate-300">
+                          <PaymentIcon className="size-5" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-900 dark:text-white">Pagamento integrado</p>
+                          <p className="text-sm text-slate-500 dark:text-slate-400">
+                            Quando ativo, o cliente paga diretamente pelo cardápio (Mercado Pago / Pix).
+                          </p>
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={paymentIntegrationEnabled}
+                          disabled={savingPaymentIntegration}
+                          onChange={(e) => handleTogglePaymentIntegration(e.target.checked)}
+                        />
+                        <div className="w-11 h-6 bg-slate-200 dark:bg-slate-500 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary peer-disabled:opacity-50"></div>
+                      </label>
+                    </div>
+
+                    {!paymentIntegrationEnabled && (
+                      <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 text-sm text-amber-800 dark:text-amber-300">
+                        O pagamento online está <strong>desativado</strong>. No cardápio, o cliente escolhe a
+                        forma de pagamento e o pedido é enviado direto para o painel (Kanban), sem cobrança pela
+                        plataforma. A cobrança fica por sua conta.
+                      </div>
+                    )}
+                  </div>
+
+                  {paymentIntegrationEnabled && <MercadoPagoConnection />}
+                </div>
               )}
 
               {activeSection === 'delivery' && (
