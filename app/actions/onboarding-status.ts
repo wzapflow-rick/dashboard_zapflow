@@ -29,7 +29,8 @@ export async function getOnboardingStatus(): Promise<OnboardingStatus | null> {
         nome_fantasia, 
         endereco, 
         telefone_loja,
-        instancia_evolution
+        instancia_evolution,
+        pagamento_integrado
       FROM empresas WHERE id = $1`,
       [empresaId]
     );
@@ -60,7 +61,10 @@ export async function getOnboardingStatus(): Promise<OnboardingStatus | null> {
       [empresaId]
     );
     const mpConfig = mpResult?.rows?.[0] || mpResult?.[0];
-    const hasMercadoPago = !!(mpConfig?.mp_access_token);
+    // Se o pagamento integrado estiver desativado, a etapa do Mercado Pago e
+    // considerada concluida automaticamente (a loja nao recebe pagamentos online).
+    const pagamentoIntegrado = empresa.pagamento_integrado !== false;
+    const hasMercadoPago = !pagamentoIntegrado || !!(mpConfig?.mp_access_token);
 
     // Verificar WhatsApp (instancia Evolution)
     let hasWhatsApp = false;
