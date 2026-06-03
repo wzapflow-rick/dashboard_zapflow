@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit3, Trash2, Check, X, Loader2, ImageIcon, UploadCloud } from 'lucide-react';
+import { Plus, Edit3, Trash2, Check, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
-import { getCategories, upsertCategory, deleteCategory, uploadImageAction, applyImageToCategory, type Category } from '@/app/actions/products';
+import { getCategories, upsertCategory, deleteCategory, type Category } from '@/app/actions/products';
 import { toast } from 'sonner';
 
 export default function CategoryManagement() {
@@ -12,56 +12,6 @@ export default function CategoryManagement() {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-
-    // Modal "aplicar foto a categoria"
-    const [imageCategory, setImageCategory] = useState<Category | null>(null);
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-    const [somenteVazios, setSomenteVazios] = useState(false);
-    const [applyingImage, setApplyingImage] = useState(false);
-
-    const openImageModal = (cat: Category) => {
-        setImageCategory(cat);
-        setSelectedFile(null);
-        setPreviewUrl(null);
-        setSomenteVazios(false);
-    };
-
-    const closeImageModal = () => {
-        setImageCategory(null);
-        setSelectedFile(null);
-        setPreviewUrl(null);
-    };
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        setSelectedFile(file);
-        setPreviewUrl(URL.createObjectURL(file));
-    };
-
-    const handleApplyImage = async () => {
-        if (!imageCategory || !selectedFile) {
-            toast.error('Selecione uma imagem primeiro.');
-            return;
-        }
-        setApplyingImage(true);
-        try {
-            const formData = new FormData();
-            formData.append('image', selectedFile);
-            const url = await uploadImageAction(formData);
-            if (!url) throw new Error('Falha no upload da imagem.');
-
-            const result = await applyImageToCategory(imageCategory.id, url, { somenteVazios });
-            toast.success(`Imagem aplicada a ${result.updated} produto(s) de "${imageCategory.nome}".`);
-            closeImageModal();
-        } catch (error: any) {
-            console.error('Erro ao aplicar imagem:', error);
-            toast.error(error?.message || 'Erro ao aplicar imagem à categoria.');
-        } finally {
-            setApplyingImage(false);
-        }
-    };
 
     const fetchData = async () => {
         try {
@@ -158,13 +108,6 @@ export default function CategoryManagement() {
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex items-center justify-end gap-2">
                                         <button
-                                            onClick={() => openImageModal(cat)}
-                                            title="Aplicar uma foto a todos os produtos desta categoria"
-                                            className="p-2 text-slate-400 dark:text-slate-500 hover:text-primary hover:bg-primary/10 dark:hover:bg-primary/20 rounded-lg transition-all"
-                                        >
-                                            <ImageIcon className="size-4" />
-                                        </button>
-                                        <button
                                             onClick={() => { setEditingCategory(cat); setIsModalOpen(true); }}
                                             className="p-2 text-slate-400 dark:text-slate-500 hover:text-primary hover:bg-primary/10 dark:hover:bg-primary/20 rounded-lg transition-all"
                                         >
@@ -246,76 +189,6 @@ export default function CategoryManagement() {
                                     </button>
                                 </div>
                             </form>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
-
-            {/* Modal: aplicar foto a todos os produtos da categoria */}
-            <AnimatePresence>
-                {imageCategory && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={closeImageModal}
-                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-                        />
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="relative w-full max-w-sm bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-slate-200 dark:border-slate-700"
-                        >
-                            <div className="p-4 sm:p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-700/50">
-                                <div>
-                                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">Foto da categoria</h2>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{imageCategory.nome}</p>
-                                </div>
-                                <button type="button" onClick={closeImageModal} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-full transition-colors">
-                                    <X className="size-5 text-slate-500 dark:text-slate-400" />
-                                </button>
-                            </div>
-
-                            <div className="p-4 sm:p-6 space-y-4">
-                                <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                                    A imagem escolhida será aplicada a <strong>todos os produtos</strong> desta categoria.
-                                </p>
-
-                                <label className="group relative flex flex-col items-center justify-center gap-2 w-full aspect-video rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-primary cursor-pointer overflow-hidden transition-colors bg-slate-50 dark:bg-slate-700/50">
-                                    {previewUrl ? (
-                                        // eslint-disable-next-line @next/next/no-img-element
-                                        <img src={previewUrl} alt="Pré-visualização" className="absolute inset-0 w-full h-full object-cover" />
-                                    ) : (
-                                        <>
-                                            <UploadCloud className="size-7 text-slate-400 group-hover:text-primary transition-colors" />
-                                            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Clique para escolher uma imagem</span>
-                                        </>
-                                    )}
-                                    <input type="file" accept="image/*" onChange={handleFileChange} className="sr-only" />
-                                </label>
-
-                                <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                                    <input
-                                        type="checkbox"
-                                        checked={somenteVazios}
-                                        onChange={(e) => setSomenteVazios(e.target.checked)}
-                                        className="size-4 rounded border-slate-300 text-primary focus:ring-primary/30"
-                                    />
-                                    <span className="text-sm text-slate-600 dark:text-slate-300">Aplicar apenas em produtos sem foto</span>
-                                </label>
-
-                                <button
-                                    type="button"
-                                    onClick={handleApplyImage}
-                                    disabled={!selectedFile || applyingImage}
-                                    className="w-full px-6 py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {applyingImage ? <Loader2 className="size-4 animate-spin" /> : <ImageIcon className="size-4" />}
-                                    {applyingImage ? 'Aplicando...' : 'Aplicar a todos os produtos'}
-                                </button>
-                            </div>
                         </motion.div>
                     </div>
                 )}
