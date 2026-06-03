@@ -2,7 +2,7 @@
 -- CATEGORIZAR PRODUTOS SEM CATEGORIA
 -- Cliente: TROPICAL ACAI -> empresa_id = 63
 -- Objetivo: mover todos os produtos com categoria_id NULL para a
---           categoria "Hamburguer".
+--           UNICA categoria existente dessa empresa.
 -- O app (admin e cardapio publico) filtra SOMENTE por categoria_id.
 -- A coluna legada "categorias" e ignorada e nao precisa ser alterada.
 -- =====================================================================
@@ -17,7 +17,7 @@ SELECT id AS empresa_id, nome_fantasia, nome_admin, telefone_loja
 FROM empresas
 WHERE id = 63;
 
--- 0.2 Lista as categorias dessa empresa (confirme que ha UMA "Hamburguer")
+-- 0.2 Confirma que ha EXATAMENTE UMA categoria nessa empresa
 SELECT id AS categoria_id, nome, ordem, disponivel
 FROM categorias
 WHERE empresa_id = 63
@@ -39,20 +39,19 @@ ORDER BY id;
 
 -- ---------------------------------------------------------------------
 -- STEP 1 — UPDATE (transacional e auto-localizado).
--- Localiza a categoria "Hamburguer" da empresa 63 automaticamente
--- (nome comecando com "hamburg", ignorando emoji/maiusculas) e move
--- todos os produtos sem categoria para ela.
+-- Usa a UNICA categoria da empresa 63 e move todos os produtos sem
+-- categoria para ela. Se houver mais de uma categoria, o UPDATE NAO
+-- altera nada (protecao) e voce vera o aviso abaixo.
 -- ---------------------------------------------------------------------
 
 BEGIN;
 
 WITH cat AS (
-  SELECT id
+  -- Pega a categoria somente se existir EXATAMENTE uma para a empresa 63
+  SELECT max(id) AS id
   FROM categorias
   WHERE empresa_id = 63
-    AND nome ILIKE 'hamburg%'
-  ORDER BY id
-  LIMIT 1
+  HAVING count(*) = 1
 )
 UPDATE produtos p
 SET categoria_id = (SELECT id FROM cat)
