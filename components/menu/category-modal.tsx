@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Edit3, Trash2, Check, GripVertical, ChevronUp, ChevronDown, ImageIcon, UploadCloud, Loader2 } from 'lucide-react';
 import { MobileDrawer } from '@/components/ui/mobile-drawer';
 import { uploadImageAction, applyImageToCategory, type Category } from '@/app/actions/products';
+import { processImage, isValidImageFile } from '@/lib/image-utils';
 import { toast } from 'sonner';
 
 interface CategoryModalProps {
@@ -51,6 +52,10 @@ export default function CategoryModal({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!isValidImageFile(file)) {
+      toast.error('Arquivo inválido. Use JPG, PNG, WEBP ou GIF (até 10MB).');
+      return;
+    }
     setSelectedFile(file);
     setPreviewUrl(URL.createObjectURL(file));
   };
@@ -62,8 +67,11 @@ export default function CategoryModal({
     }
     setApplyingImage(true);
     try {
+      // Redimensiona/comprime no cliente para nao estourar o limite de 1MB do Server Action
+      const optimized = await processImage(selectedFile, { maxWidth: 800, maxHeight: 800, quality: 0.8 });
+
       const formData = new FormData();
-      formData.append('image', selectedFile);
+      formData.append('image', optimized);
       const url = await uploadImageAction(formData);
       if (!url) throw new Error('Falha no upload da imagem.');
 
