@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/campanhas",
       "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/funil/scheduler",
+      "schedule": "*/15 * * * *"
     }
   ]
 }

@@ -195,3 +195,13 @@ export const REMARKETING_FILA_TABLE = 'remarketing_fila';
 
 /** Tabela de historico de acoes */
 export const REMARKETING_HISTORICO_TABLE = 'remarketing_historico';
+
+// ============================================================
+// FUNIL / CADENCIAS (sistema de follow-up)
+// ============================================================
+
+/** Tabela de cadencias do funil (passos automaticos por estagio) */
+export const REMARKETING_CADENCIAS_TABLE = 'remarketing_cadencias';
+
+/** Tabela de controle de envios de cadencia (anti-duplicidade) */
+export const REMARKETING_CADENCIA_ENVIOS_TABLE = 'remarketing_cadencia_envios';
