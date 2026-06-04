@@ -267,10 +267,23 @@ async function tryClaimSaudacao(
     );
 
     return rows.length > 0;
-  } catch (error) {
+  } catch (error: any) {
+    const code = error?.code || error?.cause?.code;
+    const msg = String(error?.message || '');
+    const tabelaInexistente = code === '42P01' || msg.includes('does not exist');
+
     console.error('[BOT] Erro na trava de seguranca (tryClaimSaudacao):', error);
-    // Em caso de falha na trava, NAO envia para evitar duplicatas em massa.
-    return false;
+
+    // FAIL-OPEN: se a trava nao esta disponivel (ex.: tabela bot_saudacao_log
+    // ainda nao criada), NAO podemos bloquear o bot inteiro. E preferivel
+    // arriscar uma eventual duplicata do que deixar o bot mudo para todos.
+    if (tabelaInexistente) {
+      console.warn('[BOT] Tabela bot_saudacao_log inexistente — liberando envio (fail-open). Crie a tabela no banco correto para reativar a protecao anti-duplicata.');
+      return true;
+    }
+
+    // Outros erros transitorios: tambem liberamos o envio para nao travar o bot.
+    return true;
   }
 }
 
