@@ -110,7 +110,14 @@ async function handleRequest(cronKey: string | null, authHeader: string | null) 
   const assinaturas = await listAssinaturasAtivas();
 
   for (const ass of assinaturas) {
-    const estagio: 'trial' | 'cliente' = ass.cartao_bandeira === 'TRIA' ? 'trial' : 'cliente';
+    // Trial = assinatura gratuita (valor 0). Os trials sao criados com valor 0
+    // e cartao_bandeira 'TRIA' (signup-trial) ou 'Trial' (concessao via admin).
+    // Clientes pagantes tem valor > 0. Usamos o valor como sinal principal e a
+    // bandeira como fallback para cobrir os dois fluxos de criacao.
+    const valorNum = Number(ass.valor) || 0;
+    const bandeira = (ass.cartao_bandeira || '').toUpperCase();
+    const ehTrial = valorNum <= 0 || bandeira === 'TRIA' || bandeira === 'TRIAL';
+    const estagio: 'trial' | 'cliente' = ehTrial ? 'trial' : 'cliente';
     const dataInicio = ass.data_inicio ? new Date(ass.data_inicio).getTime() : agora;
     marcoPorEmpresa.set(ass.empresa_id, { dataInicio, estagio });
 
