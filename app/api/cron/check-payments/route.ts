@@ -6,11 +6,24 @@ import { sendPaymentReminder } from '@/app/actions/whatsapp';
 // Protege o endpoint com uma chave secreta
 const CRON_SECRET = process.env.CRON_SECRET;
 
-export async function GET(request: NextRequest) {
-  // Verificar autorizacao
+/**
+ * Aceita autenticacao por:
+ *   - header  x-cron-key: <CRON_SECRET>      (padrao usado pelo crontab da VPS)
+ *   - header  Authorization: Bearer <CRON_SECRET>  (compatibilidade)
+ */
+function isAuthorized(request: NextRequest): boolean {
+  if (!CRON_SECRET) {
+    console.warn('[Cron] CRON_SECRET nao configurado — negando acesso por seguranca');
+    return false;
+  }
+  const cronKey = request.headers.get('x-cron-key');
   const authHeader = request.headers.get('authorization');
-  
-  if (authHeader !== `Bearer ${CRON_SECRET}`) {
+  return cronKey === CRON_SECRET || authHeader === `Bearer ${CRON_SECRET}`;
+}
+
+async function handleCheckPayments(request: NextRequest) {
+  // Verificar autorizacao
+  if (!isAuthorized(request)) {
     console.log('[Cron] Acesso nao autorizado');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -110,4 +123,12 @@ export async function GET(request: NextRequest) {
     console.error('[Cron] Erro:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+}
+
+export async function GET(request: NextRequest) {
+  return handleCheckPayments(request);
+}
+
+export async function POST(request: NextRequest) {
+  return handleCheckPayments(request);
 }
