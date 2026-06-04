@@ -114,7 +114,14 @@ export default function SettingsPage() {
           getCardapioLink()
         ]);
         setCompany(compData);
-        setNeighborhoods(rates || []);
+        // Normaliza os dados dos bairros para garantir que os campos sejam strings validas
+        const normalizedRates = (rates || []).map((r: any) => ({
+          ...r,
+          bairro: String(r.bairro || ''),
+          valor_taxa: r.valor_taxa ?? 0,
+          tempo_estimado: String(r.tempo_estimado || '')
+        }));
+        setNeighborhoods(normalizedRates);
         if (hoursRes && 'horarios' in hoursRes) {
           setHorarios(hoursRes.horarios as HorarioItem[]);
         }
@@ -340,13 +347,16 @@ export default function SettingsPage() {
       }
 
       if (activeSection === 'delivery') {
-        const res = await saveDeliveryRatesBatch(neighborhoods);
-        if (!res || !res.success) {
-           throw new Error('Falha ao salvar os bairros. Verifique se os dados estão corretos.');
+        // Filtra bairros validos antes de enviar
+        const bairrosValidos = neighborhoods.filter(n => n.bairro && String(n.bairro).trim() !== '');
+        
+        if (bairrosValidos.length === 0 && neighborhoods.length > 0) {
+           throw new Error('Nenhum bairro foi salvo. Verifique se os nomes dos bairros estão preenchidos.');
         }
         
-        if (res.count === 0 && neighborhoods.length > 0) {
-           throw new Error('Nenhum bairro foi salvo. Verifique se os nomes dos bairros estão preenchidos.');
+        const res = await saveDeliveryRatesBatch(bairrosValidos);
+        if (!res || !res.success) {
+           throw new Error('Falha ao salvar os bairros. Verifique se os dados estão corretos.');
         }
 
         const form = document.getElementById('delivery-form') as HTMLFormElement;
@@ -406,11 +416,11 @@ export default function SettingsPage() {
   };
 
   const addNeighborhood = () => {
-    setNeighborhoods([...neighborhoods, { id: null, bairro: '', valor_taxa: 0, tempo_estimado: '' }]);
+    setNeighborhoods([...neighborhoods, { id: `temp-${Date.now()}`, bairro: '', valor_taxa: 0, tempo_estimado: '' }]);
   };
 
-  const removeNeighborhood = async (id: number | null) => {
-    if (id) {
+  const removeNeighborhood = async (id: number | string | null) => {
+    if (id && typeof id === 'number') {
       await deleteDeliveryRate(id);
     }
     setNeighborhoods(neighborhoods.filter(n => n.id !== id));
