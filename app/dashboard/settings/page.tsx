@@ -369,7 +369,6 @@ export default function SettingsPage() {
           taxa_entrega_fixa: taxaEntregaFixa,
           lat_loja: deliveryData.lat_loja ? parseFloat(deliveryData.lat_loja as string) : undefined,
           lng_loja: deliveryData.lng_loja ? parseFloat(deliveryData.lng_loja as string) : undefined,
-          raio_maximo_km: deliveryData.raio_maximo_km ? parseFloat(deliveryData.raio_maximo_km as string) : 10,
         });
       }
 
