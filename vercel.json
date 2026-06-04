@@ -1,16 +1,1 @@
-{
-  "crons": [
-    {
-      "path": "/api/cron/check-payments",
-      "schedule": "0 9 * * *"
-    },
-    {
-      "path": "/api/cron/campanhas",
-      "schedule": "0 10 * * *"
-    },
-    {
-      "path": "/api/cron/funil/scheduler",
-      "schedule": "0 11 * * *"
-    }
-  ]
-}
+{}
