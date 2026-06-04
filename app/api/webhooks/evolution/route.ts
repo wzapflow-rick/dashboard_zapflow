@@ -232,6 +232,48 @@ async function markAsContacted(empresaId: number, phone: string): Promise<void> 
 }
 
 /**
+ * TEMPO DE SEGURANCA (trava atomica no banco).
+ *
+ * Reivindica o direito de enviar a saudacao para (empresa, telefone) de forma
+ * atomica. Funciona mesmo com webhooks simultaneos em instancias serverless
+ * diferentes, onde os locks/cache em memoria NAO sao compartilhados.
+ *
+ * Usa INSERT ... ON CONFLICT DO UPDATE ... WHERE ... RETURNING:
+ * - 1a mensagem (sem registro): INSERT sucede -> retorna linha -> pode enviar.
+ * - Dentro do cooldown: a clausula WHERE falha -> nenhuma linha -> NAO envia.
+ * - Apos o cooldown: UPDATE sucede -> retorna linha -> pode enviar de novo.
+ *
+ * So UMA execucao concorrente vence o claim; as demais sao bloqueadas.
+ *
+ * @returns true se ESTA execucao venceu o claim (deve enviar), false caso contrario.
+ */
+async function tryClaimSaudacao(
+  empresaId: number,
+  phone: string,
+  cooldownMinutes: number,
+): Promise<boolean> {
+  try {
+    const thresholdIso = new Date(Date.now() - cooldownMinutes * 60 * 1000).toISOString();
+
+    const rows = await pg.raw(
+      `INSERT INTO bot_saudacao_log (empresa_id, telefone, ultima_saudacao)
+       VALUES ($1, $2, NOW())
+       ON CONFLICT (empresa_id, telefone)
+       DO UPDATE SET ultima_saudacao = NOW()
+       WHERE bot_saudacao_log.ultima_saudacao < $3
+       RETURNING telefone`,
+      [empresaId, phone, thresholdIso],
+    );
+
+    return rows.length > 0;
+  } catch (error) {
+    console.error('[BOT] Erro na trava de seguranca (tryClaimSaudacao):', error);
+    // Em caso de falha na trava, NAO envia para evitar duplicatas em massa.
+    return false;
+  }
+}
+
+/**
  * Buscar empresa pela instancia Evolution
  */
 async function getEmpresaByInstance(instanceName: string): Promise<any> {
@@ -574,6 +616,16 @@ export async function POST(req: NextRequest) {
       if (mensagens.length === 0) {
         console.log(`[BOT] Nenhuma mensagem configurada para empresa ${empresa.id}`);
         return NextResponse.json({ received: true, no_messages: true });
+      }
+      
+      // ========== TEMPO DE SEGURANCA: trava atomica no banco ==========
+      // Garante que, mesmo com webhooks simultaneos em instancias serverless
+      // diferentes (ou reenvios da Evolution), apenas UMA execucao envie a
+      // saudacao. As demais sao bloqueadas aqui, ANTES de qualquer envio.
+      const claimed = await tryClaimSaudacao(empresa.id, phone, COOLDOWN_HOURS * 60);
+      if (!claimed) {
+        console.log(`[BOT] Saudacao ja reivindicada para ${phone} (trava de seguranca), ignorando duplicata`);
+        return NextResponse.json({ received: true, duplicate_blocked: true });
       }
       
       console.log(`[BOT] Enviando ${mensagens.length} mensagem(ns) de saudacao...`);
