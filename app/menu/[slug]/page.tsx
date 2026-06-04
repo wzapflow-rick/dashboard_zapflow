@@ -125,6 +125,8 @@ export default async function PublicMenuPage({
     }
 
     const { empresa, grouped, compositeProducts, upsellProducts, loyaltyConfig, allGroups } = data;
+    const lojaAberta = 'lojaAberta' in data ? (data.lojaAberta as boolean) : true;
+    const proximaAbertura = 'proximaAbertura' in data ? (data.proximaAbertura as { iso: string; label: string; hora: string } | null) : null;
 
     const empresaNome = String(empresa.nome || 'ZapFlow');
     const empresaBanner = typeof empresa.banner === 'string' ? empresa.banner : null;
@@ -181,6 +183,9 @@ export default async function PublicMenuPage({
             pontosPorReal={pontosPorReal}
             upsellProducts={safeUpsell}
             pagamentoIntegrado={pagamentoIntegrado}
+            lojaAberta={lojaAberta}
+            proximaAberturaIso={proximaAbertura?.iso ?? null}
+            proximaAberturaLabel={proximaAbertura?.label ?? null}
         >
             <div className="min-h-screen bg-[#0a0a0a] pb-32">
                 {/* Header */}
@@ -239,10 +244,17 @@ export default async function PublicMenuPage({
                                     {empresaCidade}
                                 </span>
                             )}
-                            <span className="flex items-center gap-1.5 text-xs text-[#22c55e] font-semibold bg-[#22c55e]/10 px-3 py-1.5 rounded-full border border-[#22c55e]/20">
-                                <Clock className="size-3" />
-                                Aberto agora
-                            </span>
+                            {lojaAberta ? (
+                                <span className="flex items-center gap-1.5 text-xs text-[#22c55e] font-semibold bg-[#22c55e]/10 px-3 py-1.5 rounded-full border border-[#22c55e]/20">
+                                    <Clock className="size-3" />
+                                    Aberto agora
+                                </span>
+                            ) : (
+                                <span className="flex items-center gap-1.5 text-xs text-red-400 font-semibold bg-red-500/10 px-3 py-1.5 rounded-full border border-red-500/20">
+                                    <Clock className="size-3" />
+                                    {proximaAbertura ? `Fechado · abre ${proximaAbertura.label}` : 'Fechado agora'}
+                                </span>
+                            )}
                         </div>
                     </div>
                 </header>

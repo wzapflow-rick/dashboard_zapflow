@@ -21,6 +21,9 @@ interface MenuClientWrapperProps {
   pontosPorReal?: number;
   upsellProducts?: UpsellProduct[];
   pagamentoIntegrado?: boolean;
+  lojaAberta?: boolean;
+  proximaAberturaIso?: string | null;
+  proximaAberturaLabel?: string | null;
 }
 
 export default function MenuClientWrapper({ 
@@ -32,7 +35,10 @@ export default function MenuClientWrapper({
   empresaEstado,
   pontosPorReal = 1,
   upsellProducts = [],
-  pagamentoIntegrado = true
+  pagamentoIntegrado = true,
+  lojaAberta = true,
+  proximaAberturaIso = null,
+  proximaAberturaLabel = null
 }: MenuClientWrapperProps) {
   return (
     <CartProvider pontosPorReal={pontosPorReal} empresaId={empresaId}>
@@ -45,6 +51,9 @@ export default function MenuClientWrapper({
         empresaEstado={empresaEstado}
         upsellProducts={upsellProducts}
         pagamentoIntegrado={pagamentoIntegrado}
+        lojaAberta={lojaAberta}
+        proximaAberturaIso={proximaAberturaIso}
+        proximaAberturaLabel={proximaAberturaLabel}
       />
     </CartProvider>
   );

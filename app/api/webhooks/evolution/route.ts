@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pg } from '@/lib/postgres';
 import { notifyWhatsAppConnected, notifyWhatsAppDisconnected, notifyError } from '@/lib/discord';
+import { isAbertoAgora, type Horario } from '@/lib/horarios';
 
 const EVO_API_URL = process.env.EVOLUTION_API_URL || 'https://evo.wzapflow.com.br';
 const EVO_API_KEY = process.env.EVOLUTION_API_KEY || '';
@@ -354,37 +355,11 @@ async function isEmpresaAberta(empresaId: number): Promise<boolean> {
       console.log(`[BOT] Empresa ${empresaId} sem horarios configurados, considerando aberto`);
       return true;
     }
-    
-    // Obter dia da semana atual (0=Domingo, 1=Segunda, etc) no fuso de Brasilia
-    const now = new Date();
-    const brasiliaTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
-    const diaSemana = brasiliaTime.getDay();
-    const horaAtual = brasiliaTime.getHours() * 60 + brasiliaTime.getMinutes(); // em minutos
-    
-    console.log(`[BOT] Verificando horario: dia=${diaSemana}, hora=${Math.floor(horaAtual/60)}:${horaAtual%60}`);
-    
-    // Buscar horario do dia atual
-    const horarioHoje = (horarios.list as any[]).find(h => h.dia_semana === diaSemana);
-    
-    if (!horarioHoje) {
-      console.log(`[BOT] Nenhum horario para dia ${diaSemana}, considerando fechado`);
-      return false;
-    }
-    
-    if (horarioHoje.fechado_o_dia_todo) {
-      console.log(`[BOT] Empresa fechada o dia todo (dia ${diaSemana})`);
-      return false;
-    }
-    
-    // Converter horarios de abertura e fechamento para minutos
-    const [horaAb, minAb] = (horarioHoje.hora_abertura || '00:00').split(':').map(Number);
-    const [horaFe, minFe] = (horarioHoje.hora_fechamento || '23:59').split(':').map(Number);
-    const aberturaMin = horaAb * 60 + minAb;
-    const fechamentoMin = horaFe * 60 + minFe;
-    
-    const aberto = horaAtual >= aberturaMin && horaAtual <= fechamentoMin;
-    console.log(`[BOT] Horario: ${horarioHoje.hora_abertura}-${horarioHoje.hora_fechamento}, atual=${Math.floor(horaAtual/60)}:${String(horaAtual%60).padStart(2,'0')}, aberto=${aberto}`);
-    
+
+    // Usa o helper compartilhado (mesma logica do cardapio), que trata
+    // corretamente janelas que cruzam a meia-noite (ex.: 17:00 -> 00:00).
+    const aberto = isAbertoAgora(horarios.list as unknown as Horario[]);
+    console.log(`[BOT] Empresa ${empresaId} aberta=${aberto}`);
     return aberto;
   } catch (error) {
     console.error('[BOT] Erro ao verificar horario:', error);
