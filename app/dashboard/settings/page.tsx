@@ -84,6 +84,8 @@ export default function SettingsPage() {
   const [valorEmbalagem, setValorEmbalagem] = React.useState<number>(0);
   const [inventoryControlEnabled, setInventoryControlEnabled] = React.useState(false);
   const [paymentIntegrationEnabled, setPaymentIntegrationEnabled] = React.useState(true);
+  const [notifyOrderWhatsappEnabled, setNotifyOrderWhatsappEnabled] = React.useState(false);
+  const [savingOrderNotify, setSavingOrderNotify] = React.useState(false);
   const [savingPaymentIntegration, setSavingPaymentIntegration] = React.useState(false);
   const [newPassword, setNewPassword] = React.useState('');
   const [confirmPassword, setConfirmPassword] = React.useState('');
@@ -129,6 +131,7 @@ export default function SettingsPage() {
           setTaxaEntregaFixa(Number(compData.taxa_entrega_fixa || 0));
           setInventoryControlEnabled(!!compData.controle_estoque);
           setPaymentIntegrationEnabled(compData.pagamento_integrado !== false);
+          setNotifyOrderWhatsappEnabled(!!compData.notificar_pedido_whatsapp);
           setLogoUrl((compData.logo && typeof compData.logo === 'string') ? compData.logo : null);
           setBannerUrl((compData.banner && typeof compData.banner === 'string') ? compData.banner : null);
         }
@@ -402,6 +405,28 @@ export default function SettingsPage() {
       toast.error(err.message || 'Não foi possível atualizar a configuração.');
     } finally {
       setSavingPaymentIntegration(false);
+    }
+  };
+
+  // Salva o toggle de "receber pedidos no meu WhatsApp" imediatamente ao alternar
+  const handleToggleOrderNotify = async (enabled: boolean) => {
+    const previous = notifyOrderWhatsappEnabled;
+    setNotifyOrderWhatsappEnabled(enabled);
+    setSavingOrderNotify(true);
+    try {
+      await updateCompany({ notificar_pedido_whatsapp: enabled });
+      setCompany((prev: any) => (prev ? { ...prev, notificar_pedido_whatsapp: enabled } : prev));
+      toast.success(
+        enabled
+          ? 'Pronto! Você receberá os novos pedidos do cardápio no WhatsApp da loja.'
+          : 'Notificação de pedidos no WhatsApp desativada.'
+      );
+    } catch (err: any) {
+      console.error('Erro ao atualizar notificação de pedidos:', err);
+      setNotifyOrderWhatsappEnabled(previous);
+      toast.error(err.message || 'Não foi possível atualizar a configuração.');
+    } finally {
+      setSavingOrderNotify(false);
     }
   };
 
@@ -1026,6 +1051,44 @@ export default function SettingsPage() {
                     <Bell className="size-5 text-primary" />
                     Notificacoes WhatsApp
                   </h3>
+
+                  {/* Card: receber pedidos no WhatsApp da loja */}
+                  <div className="p-5 border border-slate-200 dark:border-slate-700 rounded-2xl bg-white dark:bg-slate-800/50 space-y-3">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-3">
+                        <div className="size-11 rounded-xl flex items-center justify-center bg-primary/10 shrink-0">
+                          <Bell className="size-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-800 dark:text-white">Receber pedidos no meu WhatsApp</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                            Toda vez que um cliente fizer um pedido pelo cardápio online, enviamos um
+                            resumo completo (cliente, itens, total e entrega) para o WhatsApp da loja.
+                          </p>
+                          {company?.telefone_loja ? (
+                            <p className="text-xs text-slate-600 dark:text-slate-300 mt-2">
+                              Enviaremos para: <span className="font-semibold">{company.telefone_loja}</span>
+                            </p>
+                          ) : (
+                            <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                              Cadastre o telefone da loja na aba Geral para receber os avisos.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={notifyOrderWhatsappEnabled}
+                          disabled={savingOrderNotify}
+                          onChange={(e) => handleToggleOrderNotify(e.target.checked)}
+                        />
+                        <div className="w-11 h-6 bg-slate-200 dark:bg-slate-500 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary peer-disabled:opacity-50"></div>
+                      </label>
+                    </div>
+                  </div>
 
                   {/* Card de Conexao WhatsApp */}
                   <div className="p-5 border border-slate-200 dark:border-slate-700 rounded-2xl bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 space-y-4">

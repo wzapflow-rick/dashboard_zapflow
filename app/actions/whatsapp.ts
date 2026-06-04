@@ -1,6 +1,6 @@
 'use server';
 
-import { getOrderCreatedMessage, getStatusMessage, WhatsAppMessages } from '@/llm/messages';
+import { getOrderCreatedMessage, getOwnerNewOrderMessage, getStatusMessage, WhatsAppMessages } from '@/llm/messages';
 
 const EVO_API_URL = process.env.EVOLUTION_API_URL || 'https://evo.wzapflow.com.br';
 const EVO_API_KEY = process.env.EVOLUTION_API_KEY || '';
@@ -97,6 +97,40 @@ export async function sendOrderCreatedMessage(
     
     // Fallback para instancia padrao (nao recomendado)
     return sendWhatsAppMessage(phone, message);
+}
+
+/**
+ * Avisar o DONO da loja sobre um novo pedido do cardapio online.
+ * Envia SEMPRE pelo numero central (zapflow_ativacao) para o telefone da loja,
+ * independentemente de a empresa ter conectado o proprio WhatsApp.
+ */
+export async function sendOwnerNewOrderMessage(params: {
+    ownerPhone: string;
+    orderId: number;
+    total: number;
+    clienteNome: string;
+    clienteTelefone?: string;
+    isDelivery: boolean;
+    endereco?: string;
+    itens?: any[];
+    pagamento?: string;
+    observacoes?: string;
+}): Promise<boolean> {
+    const itensFormatados = params.itens ? formatItensForWhatsApp(params.itens) : '';
+    const message = getOwnerNewOrderMessage({
+        orderId: params.orderId,
+        total: params.total,
+        clienteNome: params.clienteNome,
+        clienteTelefone: params.clienteTelefone,
+        isDelivery: params.isDelivery,
+        endereco: params.endereco,
+        itens: itensFormatados,
+        pagamento: params.pagamento,
+        observacoes: params.observacoes,
+    });
+
+    // Sempre pela instancia central (numero da ZapFlow)
+    return sendWhatsAppMessage(params.ownerPhone, message);
 }
 
 /**

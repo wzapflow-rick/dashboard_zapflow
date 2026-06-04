@@ -147,6 +147,52 @@ export function getOrderCreatedMessage(
   return WhatsAppMessages.orderCreated(orderId, total, trackUrl, itens);
 }
 
+// Mensagem enviada ao DONO da loja quando um novo pedido entra pelo cardapio online
+export function getOwnerNewOrderMessage(params: {
+  orderId: number;
+  total: number;
+  clienteNome: string;
+  clienteTelefone?: string;
+  isDelivery: boolean;
+  endereco?: string;
+  itens?: string;
+  pagamento?: string;
+  observacoes?: string;
+}): string {
+  const {
+    orderId,
+    total,
+    clienteNome,
+    clienteTelefone,
+    isDelivery,
+    endereco,
+    itens,
+    pagamento,
+    observacoes,
+  } = params;
+
+  const totalFmt = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const tipoEntrega = isDelivery ? '🛵 Entrega' : '🏪 Retirada no local';
+
+  let msg = `🔔 *Novo pedido recebido!*\n\n`;
+  msg += `📋 *Pedido #${orderId}*\n`;
+  msg += `👤 *Cliente:* ${clienteNome || 'Não informado'}\n`;
+  if (clienteTelefone) msg += `📱 *Telefone:* ${clienteTelefone}\n`;
+  msg += `\n${tipoEntrega}\n`;
+  if (isDelivery && endereco) msg += `📍 *Endereço:* ${endereco}\n`;
+
+  if (itens && itens.trim()) {
+    msg += `\n🧾 *Itens:*\n${itens}\n`;
+  }
+
+  if (pagamento) msg += `\n💳 *Pagamento:* ${pagamento}\n`;
+  if (observacoes && observacoes.trim()) msg += `📝 *Obs.:* ${observacoes}\n`;
+
+  msg += `\n💰 *Total: ${totalFmt}*`;
+
+  return msg;
+}
+
 export function getStatusMessage(
   status: string,
   orderId: number,
