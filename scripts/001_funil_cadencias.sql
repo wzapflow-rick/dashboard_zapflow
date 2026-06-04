@@ -38,6 +38,19 @@ CREATE TABLE IF NOT EXISTS remarketing_cadencias (
   CONSTRAINT uq_cadencia_estagio_passo UNIQUE (estagio, passo_ordem)
 );
 
+-- Garante a constraint UNIQUE mesmo quando a tabela ja existia de uma execucao
+-- anterior (o CREATE TABLE IF NOT EXISTS acima nao recria/altera tabelas
+-- existentes, entao a UNIQUE poderia estar faltando e quebrar o ON CONFLICT).
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'uq_cadencia_estagio_passo'
+  ) THEN
+    ALTER TABLE remarketing_cadencias
+      ADD CONSTRAINT uq_cadencia_estagio_passo UNIQUE (estagio, passo_ordem);
+  END IF;
+END $$;
+
 CREATE INDEX IF NOT EXISTS idx_cadencias_estagio_ativo
   ON remarketing_cadencias (estagio, ativo);
 
