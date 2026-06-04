@@ -30,11 +30,14 @@ export async function upsertDeliveryRate(data: any) {
 
         const sanitizedData = {
             ...data,
-            valor_taxa: typeof data.valor_taxa === 'string' 
+            taxa: typeof data.valor_taxa === 'string' 
                 ? (parseFloat(data.valor_taxa.replace(/R\$\s?/g, '').replace(/\./g, '').replace(',', '.').trim()) || 0)
                 : Number(data.valor_taxa || 0),
             empresa_id: Number(user.empresaId)
         };
+        
+        // Remove valor_taxa pois a coluna no banco e 'taxa'
+        delete sanitizedData.valor_taxa;
 
         const recordId = data.id;
 
@@ -174,9 +177,9 @@ export async function getDeliveryRateByBairro(empresaId: number, bairro: string)
         }
         
         if (match) {
-            console.log(`[Delivery] Taxa encontrada: R$ ${match.valor_taxa} | Tempo: ${match.tempo_estimado}`);
+            console.log(`[Delivery] Taxa encontrada: R$ ${match.taxa} | Tempo: ${match.tempo_estimado}`);
             return {
-                taxa: Number(match.valor_taxa) || 0,
+                taxa: Number(match.taxa) || 0,
                 tempo_estimado: String(match.tempo_estimado || '')
             };
         }
@@ -200,7 +203,7 @@ export async function getAvailableBairros(empresaId: number): Promise<Array<{ ba
         
         return (data.list || []).map((t: any) => ({
             bairro: String(t.bairro || ''),
-            taxa: Number(t.valor_taxa) || 0,
+            taxa: Number(t.taxa) || 0,
             tempo_estimado: String(t.tempo_estimado || '')
         })).filter((t: { bairro: string }) => t.bairro.trim() !== '');
     } catch (error) {
@@ -350,7 +353,7 @@ export async function saveDeliveryRatesBatch(rates: any[]) {
 
             const payload = {
                 bairro: data.bairro.trim(),
-                valor_taxa: valorTaxa,
+                taxa: valorTaxa,
                 tempo_estimado: String(data.tempo_estimado || '').trim(),
                 empresa_id: Number(user.empresaId)
             };

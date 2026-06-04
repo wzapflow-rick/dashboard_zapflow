@@ -115,10 +115,11 @@ export default function SettingsPage() {
         ]);
         setCompany(compData);
         // Normaliza os dados dos bairros para garantir que os campos sejam strings validas
+        // A coluna no banco e 'taxa', mas o frontend usa 'valor_taxa'
         const normalizedRates = (rates || []).map((r: any) => ({
           ...r,
           bairro: String(r.bairro || ''),
-          valor_taxa: r.valor_taxa ?? 0,
+          valor_taxa: r.taxa ?? r.valor_taxa ?? 0,
           tempo_estimado: String(r.tempo_estimado || '')
         }));
         setNeighborhoods(normalizedRates);
