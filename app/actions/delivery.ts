@@ -338,15 +338,27 @@ export async function saveDeliveryRatesBatch(rates: any[]) {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        console.log(`[saveDeliveryRatesBatch] Empresa: ${user.empresaId}, Bairros: ${rates.length}`);
+        console.log(`[saveDeliveryRatesBatch] Empresa: ${user.empresaId}, Bairros recebidos: ${rates.length}`);
+        console.log(`[saveDeliveryRatesBatch] Dados:`, JSON.stringify(rates, null, 2));
 
         const results = [];
+        const errors = [];
+        
         for (const data of rates) {
-            if (!data.bairro || data.bairro.trim() === '') continue;
+            if (!data.bairro || data.bairro.trim() === '') {
+                console.log('[saveDeliveryRatesBatch] Bairro vazio, pulando...');
+                continue;
+            }
 
-            let valorStr = String(data.valor_taxa || '0');
-            valorStr = valorStr.replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.');
-            const valorTaxa = parseFloat(valorStr) || 0;
+            // Converter valor_taxa para numero de forma robusta
+            let valorTaxa = 0;
+            if (typeof data.valor_taxa === 'number') {
+                valorTaxa = data.valor_taxa;
+            } else if (typeof data.valor_taxa === 'string') {
+                // Remove R$, espacos, pontos de milhar e converte virgula em ponto
+                let valorStr = data.valor_taxa.replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.');
+                valorTaxa = parseFloat(valorStr) || 0;
+            }
 
             const payload = {
                 bairro: data.bairro.trim(),
@@ -355,28 +367,40 @@ export async function saveDeliveryRatesBatch(rates: any[]) {
                 empresa_id: Number(user.empresaId)
             };
 
-            console.log('[saveDeliveryRatesBatch] Enviando payload:', JSON.stringify(payload));
+            console.log('[saveDeliveryRatesBatch] Processando:', JSON.stringify(payload));
 
             const recordId = data.id;
 
             try {
                 if (recordId && !String(recordId).startsWith('temp-')) {
-                    const updatePayload = { ...payload, id: recordId };
-                    const res = await pg.update(TAXAS_ENTREGA_TABLE, updatePayload);
-                    results.push(res);
+                    // Update existente
+                    const { empresa_id, ...updateData } = payload;
+                    const res = await pg.update(TAXAS_ENTREGA_TABLE, { id: recordId, ...updateData });
+                    console.log('[saveDeliveryRatesBatch] Atualizado:', recordId);
+                    results.push({ id: recordId, bairro: payload.bairro, action: 'updated', ...res });
                 } else {
+                    // Criar novo
                     const res = await pg.create(TAXAS_ENTREGA_TABLE, payload);
-                    results.push({ bairro: payload.bairro, saved: true, ...res });
+                    console.log('[saveDeliveryRatesBatch] Criado:', res);
+                    results.push({ bairro: payload.bairro, action: 'created', ...res });
                 }
             } catch (innerError: any) {
-                console.error('[saveDeliveryRatesBatch] Erro no item individual:', innerError.message);
+                console.error('[saveDeliveryRatesBatch] Erro ao salvar bairro:', payload.bairro, innerError.message);
+                errors.push({ bairro: payload.bairro, error: innerError.message });
             }
         }
 
         revalidatePath('/dashboard/settings');
-        return { success: true, count: results.length };
+        
+        console.log(`[saveDeliveryRatesBatch] Resultado: ${results.length} salvos, ${errors.length} erros`);
+        
+        return { 
+            success: true, 
+            count: results.length,
+            errors: errors.length > 0 ? errors : undefined
+        };
     } catch (error: any) {
         console.error('API Error (saveDeliveryRatesBatch) FATAL:', error);
-        throw new Error('Erro crítico ao salvar taxas de entrega. Verifique os logs do servidor.');
+        throw new Error(`Erro ao salvar taxas de entrega: ${error.message}`);
     }
 }

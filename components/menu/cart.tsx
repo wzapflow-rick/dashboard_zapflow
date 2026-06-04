@@ -786,9 +786,55 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
   {/* Footer Button */}
   {step !== 'success' && !mpQrCode && (
     <div className="px-5 py-4 sm:p-5 border-t border-[#1a1a1a] bg-[#0a0a0a] pb-8 sm:pb-5">
+      {/* Aviso de bairro obrigatorio */}
+      {step === 'customer' && isDelivery && !customerData.bairro && (
+        <div className="mb-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center gap-2">
+          <AlertCircle className="size-4 text-amber-400 shrink-0" />
+          <p className="text-xs text-amber-400">Selecione o bairro para calcular a taxa de entrega</p>
+        </div>
+      )}
+      {/* Aviso de taxa nao calculada */}
+      {step === 'customer' && isDelivery && customerData.bairro && deliveryFee === 0 && !deliveryLoading && availableBairros.length > 0 && (
+        <div className="mb-3 p-3 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-2">
+          <AlertCircle className="size-4 text-red-400 shrink-0" />
+          <p className="text-xs text-red-400">Bairro nao encontrado. Selecione um bairro da lista.</p>
+        </div>
+      )}
       <button
-        onClick={step === 'cart' ? () => setStep('customer') : step === 'customer' ? () => setStep('payment') : finishOrder}
-        disabled={loading || items.length === 0}
+        onClick={() => {
+          if (step === 'cart') {
+            setStep('customer');
+          } else if (step === 'customer') {
+            // Validar dados obrigatorios
+            if (!customerData.nome.trim()) {
+              toast.error('Informe seu nome');
+              return;
+            }
+            if (!customerData.telefone || customerData.telefone.replace(/\D/g, '').length < 10) {
+              toast.error('Informe um telefone valido');
+              return;
+            }
+            if (isDelivery) {
+              if (!customerData.bairro.trim()) {
+                toast.error('Selecione o bairro para entrega');
+                return;
+              }
+              if (!customerData.endereco.trim()) {
+                toast.error('Informe o endereco completo');
+                return;
+              }
+              // Verificar se tem bairros cadastrados e a taxa foi calculada
+              if (availableBairros.length > 0 && deliveryFee === 0) {
+                toast.error('Selecione um bairro valido da lista');
+                return;
+              }
+            }
+            setStep('payment');
+          } else {
+            finishOrder();
+          }
+        }}
+        disabled={loading || items.length === 0 || (step === 'customer' && isDelivery && !customerData.bairro)}
         className="w-full p-4 bg-[#22c55e] hover:bg-[#1ea34d] disabled:bg-[#1a1a1a] disabled:text-gray-600 text-white font-black rounded-xl shadow-lg shadow-green-900/30 transition-all flex items-center justify-center gap-2"
       >
         {loading ? <Loader2 className="animate-spin size-5" /> : (
