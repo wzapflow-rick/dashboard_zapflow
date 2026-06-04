@@ -38,35 +38,59 @@ function extractPhoneFromJid(jid: string): string {
  * Enviar mensagem via Evolution API
  */
 async function sendMessage(instanceName: string, phone: string, text: string): Promise<boolean> {
-  try {
-    const url = `${EVO_API_URL}/message/sendText/${instanceName}`;
-    
-    console.log(`[BOT] Enviando mensagem para ${phone} via ${instanceName}`);
-    
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'apikey': EVO_API_KEY,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        number: formatPhoneForEvolution(phone),
-        text: text
-      })
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[BOT] Erro ao enviar: ${response.status} - ${errorText}`);
-      return false;
-    }
-    
-    console.log(`[BOT] Mensagem enviada com sucesso`);
-    return true;
-  } catch (error) {
-    console.error('[BOT] Erro ao enviar mensagem:', error);
+  const url = `${EVO_API_URL}/message/sendText/${instanceName}`;
+  const MAX_TENTATIVAS = 3;
+
+  if (!EVO_API_KEY) {
+    console.error('[BOT] EVOLUTION_API_KEY ausente — impossivel enviar mensagem. Configure a variavel de ambiente.');
     return false;
   }
+
+  for (let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++) {
+    try {
+      console.log(`[BOT] Enviando mensagem para ${phone} via ${instanceName} (tentativa ${tentativa}/${MAX_TENTATIVAS})`);
+
+      // Timeout para nao travar o webhook se a Evolution nao responder
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'apikey': EVO_API_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          number: formatPhoneForEvolution(phone),
+          text: text
+        }),
+        signal: controller.signal,
+      }).finally(() => clearTimeout(timeoutId));
+
+      if (response.ok) {
+        console.log(`[BOT] Mensagem enviada com sucesso`);
+        return true;
+      }
+
+      const errorText = await response.text();
+      console.error(`[BOT] Erro ao enviar (tentativa ${tentativa}): ${response.status} - ${errorText}`);
+
+      // Erros 4xx (exceto 429) sao definitivos — nao adianta repetir.
+      if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+        return false;
+      }
+    } catch (error) {
+      console.error(`[BOT] Falha de rede ao enviar (tentativa ${tentativa}):`, error);
+    }
+
+    // Backoff antes da proxima tentativa (exceto na ultima)
+    if (tentativa < MAX_TENTATIVAS) {
+      await delay(1000 * tentativa);
+    }
+  }
+
+  console.error(`[BOT] Esgotadas as ${MAX_TENTATIVAS} tentativas de envio para ${phone}`);
+  return false;
 }
 
 /**
@@ -284,6 +308,26 @@ async function tryClaimSaudacao(
 
     // Outros erros transitorios: tambem liberamos o envio para nao travar o bot.
     return true;
+  }
+}
+
+/**
+ * Libera (faz rollback) a trava de saudacao.
+ *
+ * Usado quando reivindicamos o claim mas TODAS as tentativas de envio falharam.
+ * Remove o registro para que o cliente NAO fique bloqueado por 6 horas sem ter
+ * recebido nenhuma mensagem — assim a proxima mensagem dele dispara nova
+ * tentativa de saudacao.
+ */
+async function releaseSaudacao(empresaId: number, phone: string): Promise<void> {
+  try {
+    await pg.raw(
+      `DELETE FROM bot_saudacao_log WHERE empresa_id = $1 AND telefone = $2`,
+      [empresaId, phone],
+    );
+    console.log(`[BOT] Trava liberada (rollback) para ${phone} apos falha de envio`);
+  } catch (error) {
+    console.warn('[BOT] Nao foi possivel liberar a trava de saudacao:', error);
   }
 }
 
@@ -631,7 +675,17 @@ export async function POST(req: NextRequest) {
           await delay(delayMs);
         }
       }
-      
+
+      // Se NENHUMA mensagem foi enviada (ex.: Evolution fora do ar), faz rollback
+      // da trava e limpa o cache para que a proxima mensagem do cliente tente de
+      // novo — em vez de deixa-lo bloqueado por 6h sem ter recebido nada.
+      if (enviadas === 0) {
+        console.error(`[BOT] Nenhuma mensagem enviada para ${phone} — revertendo trava para permitir nova tentativa`);
+        await releaseSaudacao(empresa.id, phone);
+        recentContactsCache.delete(lockKey);
+        return NextResponse.json({ received: true, messages_sent: 0, send_failed: true }, { status: 200 });
+      }
+
       // Marcar cliente como contatado (persistir no banco)
       await markAsContacted(empresa.id, phone);
       
