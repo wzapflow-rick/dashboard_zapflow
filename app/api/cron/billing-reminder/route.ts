@@ -23,14 +23,6 @@ function isAuthorized(request: NextRequest): boolean {
     return cronKey === CRON_SECRET || authHeader === `Bearer ${CRON_SECRET}`;
 }
 
-/**
- * Garante (de forma idempotente) que a coluna de controle exista.
- * Evita exigir migracao manual no banco self-hosted da VPS.
- */
-async function ensureColumn() {
-    await pg.raw('ALTER TABLE assinaturas ADD COLUMN IF NOT EXISTS ultimo_aviso_renovacao DATE');
-}
-
 async function handleBillingReminder(request: NextRequest) {
     if (!isAuthorized(request)) {
         console.log('[CRON billing-reminder] Autorizacao invalida');
@@ -38,8 +30,6 @@ async function handleBillingReminder(request: NextRequest) {
     }
 
     try {
-        await ensureColumn();
-
         const hojeStr = new Date().toISOString().split('T')[0];
 
         // Buscar assinaturas ativas cuja proxima cobranca cai em 3 ou 1 dia(s),
