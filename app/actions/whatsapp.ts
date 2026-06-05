@@ -455,16 +455,16 @@ export async function sendRenewalReminder(
     const valorFmt = valor != null && valor > 0
         ? `R$ ${valor.toFixed(2).replace('.', ',')}`
         : null;
-    const cartaoInfo = finalCartao ? ` no cartao final ${finalCartao}` : '';
+    const cartaoInfo = finalCartao ? ` no cartão final ${finalCartao}` : '';
     const linkAssinatura = `${BASE_URL}/dashboard/subscription`;
 
     let message: string;
 
     if (diasRestantes <= 1) {
-        // Reforco: 1 dia antes
-        message = `Ola ${nome}! Passando para avisar: ${valorFmt ? `a renovacao da sua assinatura ZapFlow (${valorFmt})` : 'a renovacao da sua assinatura ZapFlow'} sera cobrada amanha${cartaoInfo}. ✅
+        // Reforço: 1 dia antes
+        message = `Olá ${nome}! Passando para avisar: ${valorFmt ? `a renovação da sua assinatura ZapFlow (${valorFmt})` : 'a renovação da sua assinatura ZapFlow'} será cobrada amanhã${cartaoInfo}. ✅
 
-Para nao perder o acesso ao seu sistema, garanta que o cartao tenha saldo disponivel.
+Para não perder o acesso ao seu sistema, garanta que o cartão tenha saldo disponível.
 
 Veja os detalhes da sua assinatura:
 ${linkAssinatura}
@@ -472,11 +472,11 @@ ${linkAssinatura}
 Equipe ZapFlow`;
     } else {
         // Aviso: 3 dias antes
-        message = `Ola ${nome}! 👋
+        message = `Olá ${nome}! 👋
 
-${valorFmt ? `Faltam ${diasRestantes} dias para a renovacao da sua assinatura ZapFlow (${valorFmt})` : `Faltam ${diasRestantes} dias para a renovacao da sua assinatura ZapFlow`}${cartaoInfo}.
+${valorFmt ? `Faltam ${diasRestantes} dias para a renovação da sua assinatura ZapFlow (${valorFmt})` : `Faltam ${diasRestantes} dias para a renovação da sua assinatura ZapFlow`}${cartaoInfo}.
 
-Nao precisa fazer nada: a cobranca e automatica. Só garanta que o cartao tenha saldo para manter seu sistema funcionando sem interrupcoes.
+Não precisa fazer nada: a cobrança é automática. Só garanta que o cartão tenha saldo para manter seu sistema funcionando sem interrupções.
 
 Detalhes da assinatura:
 ${linkAssinatura}

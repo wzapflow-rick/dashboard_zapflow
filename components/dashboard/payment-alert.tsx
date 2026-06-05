@@ -45,19 +45,19 @@ export function PaymentAlert({ empresaId }: PaymentAlertProps) {
       ? `R$ ${billing.valor.toFixed(2).replace('.', ',')}`
       : null;
     const finalCartao = billing.cartao_ultimos_digitos
-      ? ` no cartao final ${billing.cartao_ultimos_digitos}`
+      ? ` no cartão final ${billing.cartao_ultimos_digitos}`
       : '';
 
     const quando =
       diasParaRenovar === 0
         ? 'hoje'
         : diasParaRenovar === 1
-          ? 'amanha'
+          ? 'amanhã'
           : `em ${diasParaRenovar} dias`;
 
     const renewMessage = valorFmt
-      ? `Sua renovacao de ${valorFmt}${finalCartao} sera cobrada ${quando}. Garanta que o cartao tenha saldo para nao perder o acesso.`
-      : `Sua assinatura sera renovada ${quando}${finalCartao}. Garanta que o cartao tenha saldo para nao perder o acesso.`;
+      ? `Sua renovação de ${valorFmt}${finalCartao} será cobrada ${quando}. Garanta que o cartão tenha saldo para não perder o acesso.`
+      : `Sua assinatura será renovada ${quando}${finalCartao}. Garanta que o cartão tenha saldo para não perder o acesso.`;
 
     return (
       <div className="w-full px-4 py-3 bg-amber-500/10 border border-amber-500/30 rounded-lg mb-4">
