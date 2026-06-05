@@ -186,12 +186,20 @@ export async function getPublicMenu(slug: string) {
         const categoriasOrdenadas = [...(categorias || [])].sort((a: any, b: any) => (a.ordem || 0) - (b.ordem || 0));
         
         const grouped = categoriasOrdenadas.map((cat: any) => {
+            // Ordena os produtos pela coluna "ordem" (menor primeiro) e, como
+            // criterio de desempate, pelo id. Lojas que nao definiram "ordem"
+            // (todos os produtos com ordem = 0) mantem a ordem atual.
+            const ordenarPorOrdem = (a: any, b: any) => {
+                const diff = (Number(a.ordem) || 0) - (Number(b.ordem) || 0);
+                return diff !== 0 ? diff : (Number(a.id) || 0) - (Number(b.id) || 0);
+            };
+
             const productsInCategory = (todosProdutos || []).filter((p: any) => 
                 (p.categoria_id === cat.id) && p.tipo !== 'composto'
-            );
+            ).sort(ordenarPorOrdem);
             const compositeInCategory = (todosProdutos || []).filter((p: any) => 
                 (p.categoria_id === cat.id) && p.tipo === 'composto'
-            );
+            ).sort(ordenarPorOrdem);
 
             return {
                 id: cat.id,
