@@ -430,3 +430,59 @@ export async function sendPaymentReminder(
     const message = getMessage(nome, paymentLink);
     return sendWhatsAppMessage(phone, message);
 }
+
+// ============================================================
+// LEMBRETE DE RENOVACAO (antes da cobranca - cartao/assinatura)
+// ============================================================
+
+/**
+ * Enviar lembrete de renovacao da assinatura ANTES da cobranca.
+ * Disparado pelo cron billing-reminder a 3 e 1 dia(s) do vencimento.
+ *
+ * @param phone Telefone da loja
+ * @param nome Nome da loja/responsavel
+ * @param diasRestantes Quantos dias faltam para a cobranca (3 ou 1)
+ * @param valor Valor da assinatura (numero)
+ * @param finalCartao Ultimos 4 digitos do cartao (opcional)
+ */
+export async function sendRenewalReminder(
+    phone: string,
+    nome: string,
+    diasRestantes: number,
+    valor?: number | null,
+    finalCartao?: string | null
+): Promise<boolean> {
+    const valorFmt = valor != null && valor > 0
+        ? `R$ ${valor.toFixed(2).replace('.', ',')}`
+        : null;
+    const cartaoInfo = finalCartao ? ` no cartao final ${finalCartao}` : '';
+    const linkAssinatura = `${BASE_URL}/dashboard/subscription`;
+
+    let message: string;
+
+    if (diasRestantes <= 1) {
+        // Reforco: 1 dia antes
+        message = `Ola ${nome}! Passando para avisar: ${valorFmt ? `a renovacao da sua assinatura ZapFlow (${valorFmt})` : 'a renovacao da sua assinatura ZapFlow'} sera cobrada amanha${cartaoInfo}. ✅
+
+Para nao perder o acesso ao seu sistema, garanta que o cartao tenha saldo disponivel.
+
+Veja os detalhes da sua assinatura:
+${linkAssinatura}
+
+Equipe ZapFlow`;
+    } else {
+        // Aviso: 3 dias antes
+        message = `Ola ${nome}! 👋
+
+${valorFmt ? `Faltam ${diasRestantes} dias para a renovacao da sua assinatura ZapFlow (${valorFmt})` : `Faltam ${diasRestantes} dias para a renovacao da sua assinatura ZapFlow`}${cartaoInfo}.
+
+Nao precisa fazer nada: a cobranca e automatica. Só garanta que o cartao tenha saldo para manter seu sistema funcionando sem interrupcoes.
+
+Detalhes da assinatura:
+${linkAssinatura}
+
+Equipe ZapFlow`;
+    }
+
+    return sendWhatsAppMessage(phone, message);
+}

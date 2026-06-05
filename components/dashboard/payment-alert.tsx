@@ -24,13 +24,64 @@ export function PaymentAlert({ empresaId }: PaymentAlertProps) {
 
   if (loading || !billing) return null;
 
-  // Se pagamento por cartao, nao mostra alerta (cobranca automatica)
-  if (billing.tipo_pagamento === 'cartao') return null;
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
 
+  // ============================================================
+  // CARTAO: lembrete de renovacao automatica (3 dias ou menos)
+  // Usa a data da proxima cobranca vinda da tabela assinaturas.
+  // ============================================================
+  if (billing.tipo_pagamento === 'cartao') {
+    if (!billing.data_proxima_cobranca) return null;
+
+    const renovacao = new Date(billing.data_proxima_cobranca);
+    renovacao.setHours(0, 0, 0, 0);
+    const diasParaRenovar = Math.ceil((renovacao.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+
+    // So mostra quando faltam 3 dias ou menos (e ainda nao venceu)
+    if (diasParaRenovar < 0 || diasParaRenovar > 3) return null;
+
+    const valorFmt = billing.valor != null
+      ? `R$ ${billing.valor.toFixed(2).replace('.', ',')}`
+      : null;
+    const finalCartao = billing.cartao_ultimos_digitos
+      ? ` no cartao final ${billing.cartao_ultimos_digitos}`
+      : '';
+
+    const quando =
+      diasParaRenovar === 0
+        ? 'hoje'
+        : diasParaRenovar === 1
+          ? 'amanha'
+          : `em ${diasParaRenovar} dias`;
+
+    const renewMessage = valorFmt
+      ? `Sua renovacao de ${valorFmt}${finalCartao} sera cobrada ${quando}. Garanta que o cartao tenha saldo para nao perder o acesso.`
+      : `Sua assinatura sera renovada ${quando}${finalCartao}. Garanta que o cartao tenha saldo para nao perder o acesso.`;
+
+    return (
+      <div className="w-full px-4 py-3 bg-amber-500/10 border border-amber-500/30 rounded-lg mb-4">
+        <div className="flex items-center gap-3">
+          <Clock className="size-5 text-amber-400 shrink-0" />
+          <p className="text-sm text-amber-400 flex-1">{renewMessage}</p>
+          <Link
+            href="/dashboard/subscription"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-amber-500 hover:bg-amber-600 text-black"
+          >
+            <CreditCard className="size-4" />
+            Ver assinatura
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================
+  // PIX: aviso de vencimento / inadimplencia
+  // ============================================================
   // Se nao tem vencimento definido, nao mostra
   if (!billing.data_vencimento) return null;
 
-  const hoje = new Date();
   const vencimento = new Date(billing.data_vencimento);
   const diasParaVencer = Math.ceil((vencimento.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
 
