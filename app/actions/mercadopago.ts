@@ -173,6 +173,26 @@ export async function createPayment(input: CreatePaymentInput): Promise<CreatePa
                 amount: amount,
                 empresaId: pedido.empresa_id
             }, null, 2));
+
+            // Mensagem amigavel quando a conta do recebedor (lojista) nao tem
+            // chave PIX habilitada para gerar o QR Code. O Mercado Pago retorna
+            // o codigo 13253 / "Collector user without key enabled for QR render".
+            const rawMessage = `${errorData.message || ''} ${errorData.error || ''}`.toLowerCase();
+            const causes = Array.isArray(errorData.cause) ? errorData.cause : [];
+            const isPixKeyError =
+                causes.some((c: any) => Number(c?.code) === 13253) ||
+                rawMessage.includes('key enabled for qr') ||
+                rawMessage.includes('financial identity');
+
+            const isPix = paymentMethodId === 'pix';
+
+            if (isPixKeyError || (isPix && mpResponse.status === 400)) {
+                return {
+                    success: false,
+                    error: 'PIX indisponível no momento, escolha outra forma de pagamento.'
+                };
+            }
+
             return {
                 success: false,
                 error: errorData.message || errorData.error || 'Erro ao processar pagamento'
