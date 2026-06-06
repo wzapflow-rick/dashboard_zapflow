@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { incrementCouponUsage } from './coupons';
 import { deductPointsForOrder } from './loyalty';
-import { sendOrderCreatedMessage } from './whatsapp';
+import { sendOrderCreatedMessage, sendOwnerNewOrderMessage } from './whatsapp';
 import { pg } from '@/lib/postgres';
 
 interface OrderItem {
@@ -230,6 +230,11 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
         sendOrderCreatedMessage(data.clienteTelefone, order.id, data.total, data.dataAgendamento, itensFormatados, data.empresaId)
             .catch(err => console.error('Erro ao enviar mensagem WhatsApp:', err));
 
+        // Avisar o DONO da loja sobre o novo pedido (opt-in), pelo numero central da ZapFlow.
+        // Best-effort: nunca bloqueia ou derruba a criacao do pedido.
+        notifyOwnerNewOrder(data, order.id, itensFormatados, enderecoCompleto)
+            .catch(err => console.error('Erro ao notificar dono sobre novo pedido:', err));
+
         revalidatePath('/dashboard/expedition');
 
         return {
@@ -240,6 +245,49 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
     } catch (error: any) {
         console.error('Erro ao criar pedido público:', error);
         throw new Error(error.message || 'Erro ao criar pedido');
+    }
+}
+
+/**
+ * Notifica o dono da loja sobre um novo pedido do cardapio online.
+ * - Opt-in: so envia se empresa.notificar_pedido_whatsapp = true
+ * - Destino: telefone_loja da empresa
+ * - Remetente: numero central da ZapFlow (zapflow_ativacao)
+ */
+async function notifyOwnerNewOrder(
+    data: CreatePublicOrderData,
+    orderId: number,
+    itensFormatados: any[],
+    enderecoCompleto: string,
+) {
+    try {
+        const empresa = await pg.findById('empresas', data.empresaId) as any;
+        if (!empresa) return;
+
+        const ativado = empresa.notificar_pedido_whatsapp === true;
+        const ownerPhone = (empresa.telefone_loja || '').toString().trim();
+        if (!ativado || !ownerPhone) return;
+
+        const pagamentoLabel: Record<string, string> = {
+            pix: 'PIX',
+            dinheiro: 'Dinheiro',
+            cartao: 'Cartão',
+        };
+
+        await sendOwnerNewOrderMessage({
+            ownerPhone,
+            orderId,
+            total: data.total,
+            clienteNome: data.clienteNome,
+            clienteTelefone: data.clienteTelefone,
+            isDelivery: data.tipoEntrega === 'delivery',
+            endereco: enderecoCompleto,
+            itens: itensFormatados,
+            pagamento: pagamentoLabel[data.formaPagamento] || data.formaPagamento,
+            observacoes: data.observacoes,
+        });
+    } catch (err) {
+        console.error('[notifyOwnerNewOrder] Falha:', err);
     }
 }
 

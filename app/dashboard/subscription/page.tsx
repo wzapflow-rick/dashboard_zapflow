@@ -119,7 +119,7 @@ export default function SubscriptionPage() {
         toast.error(String(result.error) || 'Erro ao alterar plano');
       }
     } catch (error) {
-      toast.error('Erro ao processar solicitacao');
+      toast.error('Erro ao processar solicitação');
     } finally {
       setProcessingPlan(null);
     }
@@ -151,7 +151,7 @@ export default function SubscriptionPage() {
     if (pixData?.copyPaste) {
       navigator.clipboard.writeText(pixData.copyPaste);
       setPixCopied(true);
-      toast.success('Codigo PIX copiado!');
+      toast.success('Código PIX copiado!');
       setTimeout(() => setPixCopied(false), 3000);
     }
   }
@@ -177,8 +177,12 @@ export default function SubscriptionPage() {
     }
   }
 
-  // Plans array (apenas planos pagos, exclui o iniciante)
-  const plans = Object.values(SUBSCRIPTION_PLANS).filter(p => p.id !== 'iniciante');
+  // Plans array (apenas planos pagos comercializaveis).
+  // Exclui o 'iniciante' e o 'parceria' (este e o plano de trial/cortesia,
+  // usado apenas quando concedemos dias de teste — nao deve aparecer na vitrine).
+  const plans = Object.values(SUBSCRIPTION_PLANS).filter(
+    (p) => !('trial' in p && p.trial)
+  );
   const currentPlan = subscription?.plano || null;
   
   // Verifica se usuario veio do trial para mostrar preco promocional
@@ -209,8 +213,8 @@ export default function SubscriptionPage() {
       <DashboardLayout>
         <div className="space-y-8">
           <header>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Assinatura e Cobranca</h1>
-            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Gerencie seu plano, metodos de pagamento e historico de faturas.</p>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Assinatura e Cobrança</h1>
+            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Gerencie seu plano, métodos de pagamento e histórico de faturas.</p>
           </header>
 
           {/* Current Plan Status */}
@@ -223,13 +227,13 @@ export default function SubscriptionPage() {
                 </div>
                 <h2 className="text-2xl md:text-3xl font-black">
                   {subscription.data_proxima_cobranca 
-                    ? `Proxima fatura em ${formatDate(subscription.data_proxima_cobranca)}`
+                    ? `Próxima fatura em ${formatDate(subscription.data_proxima_cobranca)}`
                     : 'Assinatura ativa'
                   }
                 </h2>
                 <p className="text-white/70 font-medium">
                   Valor: {formatCurrency(subscription.valor)}
-                  {subscription.cartao_ultimos_digitos && ` • Cartao final ${subscription.cartao_ultimos_digitos}`}
+                  {subscription.cartao_ultimos_digitos && ` • Cartão final ${subscription.cartao_ultimos_digitos}`}
                 </p>
               </div>
               <div className="flex gap-3 shrink-0">
@@ -255,9 +259,9 @@ export default function SubscriptionPage() {
             <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-6 flex items-start gap-4">
               <AlertCircle className="size-6 text-amber-600 shrink-0 mt-0.5" />
               <div>
-                <h3 className="font-bold text-amber-800 dark:text-amber-200">Voce nao possui uma assinatura ativa</h3>
+                <h3 className="font-bold text-amber-800 dark:text-amber-200">Você não possui uma assinatura ativa</h3>
                 <p className="text-amber-700 dark:text-amber-300 text-sm mt-1">
-                  Escolha um dos planos abaixo para comecar a usar todos os recursos do ZapFlow.
+                  Escolha um dos planos abaixo para começar a usar todos os recursos do ZapFlow.
                 </p>
               </div>
             </div>
@@ -291,12 +295,12 @@ export default function SubscriptionPage() {
                   <div className="mb-6 md:mb-8">
                     <div className="flex items-baseline gap-1">
                       <span className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white">{formatCurrency(getDisplayPrice(plan))}</span>
-                      <span className="text-slate-400 font-bold">/mes</span>
+                      <span className="text-slate-400 font-bold">/mês</span>
                     </div>
                     {isFromTrial && plan.id === 'start' && 'promoPrice' in plan && (
                       <div className="mt-2">
                         <span className="text-xs text-slate-400 line-through">{formatCurrency(plan.price)}</span>
-                        <span className="ml-2 text-xs font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-900/40 px-2 py-0.5 rounded">Preco Promocional</span>
+                        <span className="ml-2 text-xs font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-900/40 px-2 py-0.5 rounded">Preço Promocional</span>
                       </div>
                     )}
                   </div>
@@ -329,7 +333,7 @@ export default function SubscriptionPage() {
                         'Plano Atual'
                       ) : (
                         <>
-                          Assinar com Cartao
+                          Assinar com Cartão
                           <ArrowRight className="size-4" />
                         </>
                       )}
@@ -355,12 +359,12 @@ export default function SubscriptionPage() {
           {subscription && subscription.cartao_ultimos_digitos && (
             <section className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
               <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
-                <h4 className="font-bold text-slate-800 dark:text-white">Metodos de Pagamento</h4>
+                <h4 className="font-bold text-slate-800 dark:text-white">Métodos de Pagamento</h4>
                 <button 
                   onClick={() => setShowCardModal(true)}
                   className="text-sm font-bold text-primary hover:underline"
                 >
-                  Alterar Cartao
+                  Alterar Cartão
                 </button>
               </div>
               <div className="p-6">
@@ -371,9 +375,9 @@ export default function SubscriptionPage() {
                     </div>
                     <div>
                       <p className="font-bold text-slate-900 dark:text-white">
-                        {subscription.cartao_bandeira?.toUpperCase() || 'Cartao'} final {subscription.cartao_ultimos_digitos}
+                        {subscription.cartao_bandeira?.toUpperCase() || 'Cartão'} final {subscription.cartao_ultimos_digitos}
                       </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">Cartao principal</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Cartão principal</p>
                     </div>
                   </div>
                   <span className="text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/40 px-2 py-1 rounded uppercase">Principal</span>
@@ -387,7 +391,7 @@ export default function SubscriptionPage() {
             <section className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
               <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center gap-3">
                 <Receipt className="size-5 text-slate-400" />
-                <h4 className="font-bold text-slate-800 dark:text-white">Historico de Faturas</h4>
+                <h4 className="font-bold text-slate-800 dark:text-white">Histórico de Faturas</h4>
               </div>
               <div className="divide-y divide-slate-100 dark:divide-slate-700">
                 {invoices.map((invoice) => (
@@ -430,7 +434,7 @@ export default function SubscriptionPage() {
               <button onClick={() => setShowChangePlanModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
                 <X className="size-5" />
               </button>
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Confirmar Alteracao</h3>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Confirmar Alteração</h3>
               <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">
                 {selectedPlan && (() => {
                   const planData = SUBSCRIPTION_PLANS[selectedPlan.toUpperCase() as keyof typeof SUBSCRIPTION_PLANS];
@@ -439,11 +443,11 @@ export default function SubscriptionPage() {
                     : planData?.price || 0;
                   return (
                     <>
-                      Voce esta prestes a {subscription?.mp_subscription_id ? 'migrar para' : 'assinar'} o plano{' '}
+                      Você está prestes a {subscription?.mp_subscription_id ? 'migrar para' : 'assinar'} o plano{' '}
                       <strong>{planData?.name}</strong> por{' '}
-                      <strong>{formatCurrency(displayPrice)}/mes</strong>.
+                      <strong>{formatCurrency(displayPrice)}/mês</strong>.
                       {isFromTrial && selectedPlan === 'start' && (
-                        <span className="block mt-2 text-emerald-600 font-medium">Preco promocional exclusivo para parceiros!</span>
+                        <span className="block mt-2 text-emerald-600 font-medium">Preço promocional exclusivo para parceiros!</span>
                       )}
                     </>
                   );
@@ -482,7 +486,7 @@ export default function SubscriptionPage() {
                 <h3 className="text-xl font-bold text-slate-900 dark:text-white">Cancelar Assinatura</h3>
               </div>
               <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">
-                Tem certeza que deseja cancelar sua assinatura? Voce perdera acesso aos recursos do seu plano atual ao final do periodo ja pago.
+                Tem certeza que deseja cancelar sua assinatura? Você perderá acesso aos recursos do seu plano atual ao final do período já pago.
               </p>
               <div className="flex gap-3">
                 <button 
@@ -513,7 +517,7 @@ export default function SubscriptionPage() {
               <div className="text-center mb-6">
                 <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Pague com PIX</h3>
                 <p className="text-slate-500 dark:text-slate-400 text-sm">
-                  Escaneie o QR Code ou copie o codigo para pagar
+                  Escaneie o QR Code ou copie o código para pagar
                 </p>
               </div>
               
@@ -534,19 +538,19 @@ export default function SubscriptionPage() {
                 {pixCopied ? (
                   <>
                     <CheckCircle2 className="size-5 text-emerald-600" />
-                    Codigo Copiado!
+                    Código Copiado!
                   </>
                 ) : (
                   <>
                     <Copy className="size-5" />
-                    Copiar Codigo PIX
+                    Copiar Código PIX
                   </>
                 )}
               </button>
 
               {pixData.expirationDate && (
                 <p className="text-center text-xs text-slate-400">
-                  Valido ate: {new Date(pixData.expirationDate).toLocaleString('pt-BR')}
+                  Válido até: {new Date(pixData.expirationDate).toLocaleString('pt-BR')}
                 </p>
               )}
             </div>

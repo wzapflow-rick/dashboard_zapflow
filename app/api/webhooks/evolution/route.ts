@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pg } from '@/lib/postgres';
 import { notifyWhatsAppConnected, notifyWhatsAppDisconnected, notifyError } from '@/lib/discord';
+import { isAbertoAgora, type Horario } from '@/lib/horarios';
 
 const EVO_API_URL = process.env.EVOLUTION_API_URL || 'https://evo.wzapflow.com.br';
 const EVO_API_KEY = process.env.EVOLUTION_API_KEY || '';
@@ -37,35 +38,59 @@ function extractPhoneFromJid(jid: string): string {
  * Enviar mensagem via Evolution API
  */
 async function sendMessage(instanceName: string, phone: string, text: string): Promise<boolean> {
-  try {
-    const url = `${EVO_API_URL}/message/sendText/${instanceName}`;
-    
-    console.log(`[BOT] Enviando mensagem para ${phone} via ${instanceName}`);
-    
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'apikey': EVO_API_KEY,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        number: formatPhoneForEvolution(phone),
-        text: text
-      })
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[BOT] Erro ao enviar: ${response.status} - ${errorText}`);
-      return false;
-    }
-    
-    console.log(`[BOT] Mensagem enviada com sucesso`);
-    return true;
-  } catch (error) {
-    console.error('[BOT] Erro ao enviar mensagem:', error);
+  const url = `${EVO_API_URL}/message/sendText/${instanceName}`;
+  const MAX_TENTATIVAS = 3;
+
+  if (!EVO_API_KEY) {
+    console.error('[BOT] EVOLUTION_API_KEY ausente — impossivel enviar mensagem. Configure a variavel de ambiente.');
     return false;
   }
+
+  for (let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++) {
+    try {
+      console.log(`[BOT] Enviando mensagem para ${phone} via ${instanceName} (tentativa ${tentativa}/${MAX_TENTATIVAS})`);
+
+      // Timeout para nao travar o webhook se a Evolution nao responder
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'apikey': EVO_API_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          number: formatPhoneForEvolution(phone),
+          text: text
+        }),
+        signal: controller.signal,
+      }).finally(() => clearTimeout(timeoutId));
+
+      if (response.ok) {
+        console.log(`[BOT] Mensagem enviada com sucesso`);
+        return true;
+      }
+
+      const errorText = await response.text();
+      console.error(`[BOT] Erro ao enviar (tentativa ${tentativa}): ${response.status} - ${errorText}`);
+
+      // Erros 4xx (exceto 429) sao definitivos — nao adianta repetir.
+      if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+        return false;
+      }
+    } catch (error) {
+      console.error(`[BOT] Falha de rede ao enviar (tentativa ${tentativa}):`, error);
+    }
+
+    // Backoff antes da proxima tentativa (exceto na ultima)
+    if (tentativa < MAX_TENTATIVAS) {
+      await delay(1000 * tentativa);
+    }
+  }
+
+  console.error(`[BOT] Esgotadas as ${MAX_TENTATIVAS} tentativas de envio para ${phone}`);
+  return false;
 }
 
 /**
@@ -232,6 +257,81 @@ async function markAsContacted(empresaId: number, phone: string): Promise<void> 
 }
 
 /**
+ * TEMPO DE SEGURANCA (trava atomica no banco).
+ *
+ * Reivindica o direito de enviar a saudacao para (empresa, telefone) de forma
+ * atomica. Funciona mesmo com webhooks simultaneos em instancias serverless
+ * diferentes, onde os locks/cache em memoria NAO sao compartilhados.
+ *
+ * Usa INSERT ... ON CONFLICT DO UPDATE ... WHERE ... RETURNING:
+ * - 1a mensagem (sem registro): INSERT sucede -> retorna linha -> pode enviar.
+ * - Dentro do cooldown: a clausula WHERE falha -> nenhuma linha -> NAO envia.
+ * - Apos o cooldown: UPDATE sucede -> retorna linha -> pode enviar de novo.
+ *
+ * So UMA execucao concorrente vence o claim; as demais sao bloqueadas.
+ *
+ * @returns true se ESTA execucao venceu o claim (deve enviar), false caso contrario.
+ */
+async function tryClaimSaudacao(
+  empresaId: number,
+  phone: string,
+  cooldownMinutes: number,
+): Promise<boolean> {
+  try {
+    const thresholdIso = new Date(Date.now() - cooldownMinutes * 60 * 1000).toISOString();
+
+    const rows = await pg.raw(
+      `INSERT INTO bot_saudacao_log (empresa_id, telefone, ultima_saudacao)
+       VALUES ($1, $2, NOW())
+       ON CONFLICT (empresa_id, telefone)
+       DO UPDATE SET ultima_saudacao = NOW()
+       WHERE bot_saudacao_log.ultima_saudacao < $3
+       RETURNING telefone`,
+      [empresaId, phone, thresholdIso],
+    );
+
+    return rows.length > 0;
+  } catch (error: any) {
+    const code = error?.code || error?.cause?.code;
+    const msg = String(error?.message || '');
+    const tabelaInexistente = code === '42P01' || msg.includes('does not exist');
+
+    console.error('[BOT] Erro na trava de seguranca (tryClaimSaudacao):', error);
+
+    // FAIL-OPEN: se a trava nao esta disponivel (ex.: tabela bot_saudacao_log
+    // ainda nao criada), NAO podemos bloquear o bot inteiro. E preferivel
+    // arriscar uma eventual duplicata do que deixar o bot mudo para todos.
+    if (tabelaInexistente) {
+      console.warn('[BOT] Tabela bot_saudacao_log inexistente — liberando envio (fail-open). Crie a tabela no banco correto para reativar a protecao anti-duplicata.');
+      return true;
+    }
+
+    // Outros erros transitorios: tambem liberamos o envio para nao travar o bot.
+    return true;
+  }
+}
+
+/**
+ * Libera (faz rollback) a trava de saudacao.
+ *
+ * Usado quando reivindicamos o claim mas TODAS as tentativas de envio falharam.
+ * Remove o registro para que o cliente NAO fique bloqueado por 6 horas sem ter
+ * recebido nenhuma mensagem — assim a proxima mensagem dele dispara nova
+ * tentativa de saudacao.
+ */
+async function releaseSaudacao(empresaId: number, phone: string): Promise<void> {
+  try {
+    await pg.raw(
+      `DELETE FROM bot_saudacao_log WHERE empresa_id = $1 AND telefone = $2`,
+      [empresaId, phone],
+    );
+    console.log(`[BOT] Trava liberada (rollback) para ${phone} apos falha de envio`);
+  } catch (error) {
+    console.warn('[BOT] Nao foi possivel liberar a trava de saudacao:', error);
+  }
+}
+
+/**
  * Buscar empresa pela instancia Evolution
  */
 async function getEmpresaByInstance(instanceName: string): Promise<any> {
@@ -312,37 +412,11 @@ async function isEmpresaAberta(empresaId: number): Promise<boolean> {
       console.log(`[BOT] Empresa ${empresaId} sem horarios configurados, considerando aberto`);
       return true;
     }
-    
-    // Obter dia da semana atual (0=Domingo, 1=Segunda, etc) no fuso de Brasilia
-    const now = new Date();
-    const brasiliaTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
-    const diaSemana = brasiliaTime.getDay();
-    const horaAtual = brasiliaTime.getHours() * 60 + brasiliaTime.getMinutes(); // em minutos
-    
-    console.log(`[BOT] Verificando horario: dia=${diaSemana}, hora=${Math.floor(horaAtual/60)}:${horaAtual%60}`);
-    
-    // Buscar horario do dia atual
-    const horarioHoje = (horarios.list as any[]).find(h => h.dia_semana === diaSemana);
-    
-    if (!horarioHoje) {
-      console.log(`[BOT] Nenhum horario para dia ${diaSemana}, considerando fechado`);
-      return false;
-    }
-    
-    if (horarioHoje.fechado_o_dia_todo) {
-      console.log(`[BOT] Empresa fechada o dia todo (dia ${diaSemana})`);
-      return false;
-    }
-    
-    // Converter horarios de abertura e fechamento para minutos
-    const [horaAb, minAb] = (horarioHoje.hora_abertura || '00:00').split(':').map(Number);
-    const [horaFe, minFe] = (horarioHoje.hora_fechamento || '23:59').split(':').map(Number);
-    const aberturaMin = horaAb * 60 + minAb;
-    const fechamentoMin = horaFe * 60 + minFe;
-    
-    const aberto = horaAtual >= aberturaMin && horaAtual <= fechamentoMin;
-    console.log(`[BOT] Horario: ${horarioHoje.hora_abertura}-${horarioHoje.hora_fechamento}, atual=${Math.floor(horaAtual/60)}:${String(horaAtual%60).padStart(2,'0')}, aberto=${aberto}`);
-    
+
+    // Usa o helper compartilhado (mesma logica do cardapio), que trata
+    // corretamente janelas que cruzam a meia-noite (ex.: 17:00 -> 00:00).
+    const aberto = isAbertoAgora(horarios.list as unknown as Horario[]);
+    console.log(`[BOT] Empresa ${empresaId} aberta=${aberto}`);
     return aberto;
   } catch (error) {
     console.error('[BOT] Erro ao verificar horario:', error);
@@ -576,6 +650,16 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ received: true, no_messages: true });
       }
       
+      // ========== TEMPO DE SEGURANCA: trava atomica no banco ==========
+      // Garante que, mesmo com webhooks simultaneos em instancias serverless
+      // diferentes (ou reenvios da Evolution), apenas UMA execucao envie a
+      // saudacao. As demais sao bloqueadas aqui, ANTES de qualquer envio.
+      const claimed = await tryClaimSaudacao(empresa.id, phone, COOLDOWN_HOURS * 60);
+      if (!claimed) {
+        console.log(`[BOT] Saudacao ja reivindicada para ${phone} (trava de seguranca), ignorando duplicata`);
+        return NextResponse.json({ received: true, duplicate_blocked: true });
+      }
+      
       console.log(`[BOT] Enviando ${mensagens.length} mensagem(ns) de saudacao...`);
       
       // Enviar mensagens com delay
@@ -591,7 +675,17 @@ export async function POST(req: NextRequest) {
           await delay(delayMs);
         }
       }
-      
+
+      // Se NENHUMA mensagem foi enviada (ex.: Evolution fora do ar), faz rollback
+      // da trava e limpa o cache para que a proxima mensagem do cliente tente de
+      // novo — em vez de deixa-lo bloqueado por 6h sem ter recebido nada.
+      if (enviadas === 0) {
+        console.error(`[BOT] Nenhuma mensagem enviada para ${phone} — revertendo trava para permitir nova tentativa`);
+        await releaseSaudacao(empresa.id, phone);
+        recentContactsCache.delete(lockKey);
+        return NextResponse.json({ received: true, messages_sent: 0, send_failed: true }, { status: 200 });
+      }
+
       // Marcar cliente como contatado (persistir no banco)
       await markAsContacted(empresa.id, phone);
       

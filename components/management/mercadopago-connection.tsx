@@ -1,21 +1,37 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getMPAuthorizationUrl, getMPConnectionStatus, disconnectMP } from '@/app/actions/mercadopago';
-import { CreditCard, CheckCircle, XCircle, Loader2, ExternalLink, RefreshCw } from 'lucide-react';
+import { getMPAuthorizationUrl, getMPConnectionStatus, disconnectMP, checkPixAvailability } from '@/app/actions/mercadopago';
+import { CreditCard, CheckCircle, XCircle, Loader2, ExternalLink, RefreshCw, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSearchParams } from 'next/navigation';
 
 export default function MercadoPagoConnection() {
     const [loading, setLoading] = useState(true);
     const [status, setStatus] = useState<{ connected: boolean; userId: string | null; publicKey: string | null } | null>(null);
+    const [pixCheck, setPixCheck] = useState<{ checking: boolean; available: boolean | null; reason?: string }>({ checking: false, available: null });
     const searchParams = useSearchParams();
+
+    const verifyPix = async () => {
+        setPixCheck({ checking: true, available: null });
+        try {
+            const res = await checkPixAvailability();
+            setPixCheck({ checking: false, available: res.available, reason: res.reason });
+        } catch (error) {
+            console.error('Erro ao verificar PIX:', error);
+            setPixCheck({ checking: false, available: null, reason: 'Erro ao verificar o PIX.' });
+        }
+    };
 
     const loadStatus = async () => {
         setLoading(true);
         try {
             const res = await getMPConnectionStatus();
             setStatus(res);
+            // Se a conta esta conectada, verifica se o PIX esta habilitado.
+            if (res?.connected) {
+                verifyPix();
+            }
         } catch (error) {
             console.error('Erro ao carregar status MP:', error);
         } finally {
@@ -104,6 +120,43 @@ export default function MercadoPagoConnection() {
                                 </p>
                             </div>
                         </div>
+
+                        {/* Aviso quando a conta nao tem chave PIX habilitada no Mercado Pago */}
+                        {pixCheck.available === false && (
+                            <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+                                <AlertTriangle className="size-5 text-amber-500 shrink-0 mt-0.5" />
+                                <div className="space-y-1">
+                                    <p className="font-bold text-amber-800 dark:text-amber-300 text-sm">PIX indisponível para seus clientes</p>
+                                    <p className="text-sm text-amber-700 dark:text-amber-400">
+                                        Sua conta do Mercado Pago não tem uma chave PIX habilitada, então o QR Code não é gerado no cardápio.
+                                        Cadastre uma chave PIX no app do Mercado Pago (Seu negócio → PIX → Minhas chaves) e verifique novamente.
+                                    </p>
+                                    <button
+                                        onClick={verifyPix}
+                                        disabled={pixCheck.checking}
+                                        className="inline-flex items-center gap-2 mt-2 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-60 text-white rounded-lg text-xs font-bold transition-all"
+                                    >
+                                        {pixCheck.checking ? <Loader2 className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" />}
+                                        Verificar novamente
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Confirmacao quando o PIX esta funcionando */}
+                        {pixCheck.available === true && (
+                            <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 font-medium">
+                                <CheckCircle className="size-4" />
+                                PIX habilitado e funcionando.
+                            </div>
+                        )}
+
+                        {pixCheck.checking && pixCheck.available === null && (
+                            <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                                <Loader2 className="size-4 animate-spin" />
+                                Verificando disponibilidade do PIX...
+                            </div>
+                        )}
 
                         <div className="pt-4 flex flex-wrap gap-3">
                             <button

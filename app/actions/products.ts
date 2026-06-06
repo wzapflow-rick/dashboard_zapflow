@@ -107,6 +107,60 @@ export async function uploadImageAction(formData: FormData) {
   }
 }
 
+/**
+ * Aplica uma mesma imagem (URL ja hospedada, ex: Cloudinary) a todos os produtos
+ * de uma categoria da empresa logada.
+ *
+ * @param categoriaId  ID da categoria alvo
+ * @param imageUrl     URL da imagem (secure_url do Cloudinary)
+ * @param options.somenteVazios  Se true, so preenche produtos que ainda nao tem imagem
+ */
+export async function applyImageToCategory(
+  categoriaId: number | string,
+  imageUrl: string,
+  options?: { somenteVazios?: boolean },
+) {
+  try {
+    const user = await requireAdmin();
+    if (!user?.empresaId) throw new Error('Não autorizado');
+
+    if (!imageUrl || typeof imageUrl !== 'string') {
+      throw new Error('URL da imagem inválida');
+    }
+
+    // Garante que a categoria pertence a esta empresa (evita cross-tenant)
+    const categoria = await pg.findById(CATEGORIAS_TABLE, categoriaId) as any;
+    if (!categoria || Number(categoria.empresa_id) !== Number(user.empresaId)) {
+      throw new Error('Acesso negado: categoria não pertence a esta empresa');
+    }
+
+    const filtroVazios = options?.somenteVazios
+      ? `AND (imagem IS NULL OR imagem = '' OR imagem_url IS NULL OR imagem_url = '')`
+      : '';
+
+    const rows = await pg.raw<{ id: number }>(
+      `UPDATE ${PRODUTOS_TABLE}
+       SET imagem = $1, imagem_url = $1
+       WHERE categoria_id = $2 AND empresa_id = $3 ${filtroVazios}
+       RETURNING id`,
+      [imageUrl, categoriaId, user.empresaId],
+    );
+
+    await logAction(
+      'BULK_PRODUCT_IMAGE',
+      `Imagem aplicada a ${rows.length} produto(s) da categoria "${categoria.nome}"`,
+    );
+
+    revalidatePath('/dashboard/menu');
+    revalidatePath('/dashboard/products');
+
+    return { success: true, updated: rows.length };
+  } catch (error: any) {
+    console.error('applyImageToCategory Error:', error);
+    throw new Error(error.message || 'Falha ao aplicar imagem à categoria');
+  }
+}
+
 export async function getCategories(): Promise<Category[]> {
   try {
     const user = await getMe();

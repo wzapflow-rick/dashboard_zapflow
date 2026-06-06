@@ -11,6 +11,8 @@ import {
 } from '@/lib/tables';
 import { isPaidPlan } from '@/lib/constants';
 import { getAssinaturaByEmpresaId } from '@/lib/assinaturas';
+import { HORARIOS_TABLE } from '@/lib/tables';
+import { isAbertoAgora, getProximaAbertura, type Horario } from '@/lib/horarios';
 
 export async function getPublicMenu(slug: string) {
     console.log(`[MENU_DEBUG] Iniciando busca para slug: ${slug}`);
@@ -155,7 +157,7 @@ export async function getPublicMenu(slug: string) {
         }
 
         // 2. BUSCA DE DADOS EM PARALELO
-        const [configData, categorias, todosProdutos, todosGrupos, todosItens, loyaltyConfig, produtosMetadados] = await Promise.all([
+        const [configData, categorias, todosProdutos, todosGrupos, todosItens, loyaltyConfig, produtosMetadados, horariosData] = await Promise.all([
             pg.list(CONFIGURACOES_LOJA_TABLE, { 
                 where: { empresa_id: empresaId } 
             }).catch(() => ({ list: [] })),
@@ -165,9 +167,15 @@ export async function getPublicMenu(slug: string) {
             pg.listAll(COMPLEMENTOS_TABLE, { where: { empresa_id: empresaId } }).catch(() => []),
             pg.findOne(LOYALTY_CONFIG_TABLE, { where: { empresa_id: empresaId } }).catch(() => null),
             pg.listAll(PRODUTOS_METADADOS_TABLE).catch(() => []),
+            pg.listAll(HORARIOS_TABLE, { where: { empresa_id: empresaId } }).catch(() => []),
         ]);
 
         const config = configData.list && configData.list.length > 0 ? configData.list[0] : null;
+
+        // Status de funcionamento (sempre respeita os horarios se houver algum configurado)
+        const horarios = (horariosData || []) as Horario[];
+        const lojaAberta = isAbertoAgora(horarios);
+        const proximaAbertura = lojaAberta ? null : getProximaAbertura(horarios);
 
         if (config) {
             if (config.logo) empresa.logo = config.logo;
@@ -178,12 +186,20 @@ export async function getPublicMenu(slug: string) {
         const categoriasOrdenadas = [...(categorias || [])].sort((a: any, b: any) => (a.ordem || 0) - (b.ordem || 0));
         
         const grouped = categoriasOrdenadas.map((cat: any) => {
+            // Ordena os produtos pela coluna "ordem" (menor primeiro) e, como
+            // criterio de desempate, pelo id. Lojas que nao definiram "ordem"
+            // (todos os produtos com ordem = 0) mantem a ordem atual.
+            const ordenarPorOrdem = (a: any, b: any) => {
+                const diff = (Number(a.ordem) || 0) - (Number(b.ordem) || 0);
+                return diff !== 0 ? diff : (Number(a.id) || 0) - (Number(b.id) || 0);
+            };
+
             const productsInCategory = (todosProdutos || []).filter((p: any) => 
                 (p.categoria_id === cat.id) && p.tipo !== 'composto'
-            );
+            ).sort(ordenarPorOrdem);
             const compositeInCategory = (todosProdutos || []).filter((p: any) => 
                 (p.categoria_id === cat.id) && p.tipo === 'composto'
-            );
+            ).sort(ordenarPorOrdem);
 
             return {
                 id: cat.id,
@@ -299,6 +315,8 @@ export async function getPublicMenu(slug: string) {
 
         return {
             empresa,
+            lojaAberta,
+            proximaAbertura,
             grouped,
             compositeProducts: (todosProdutos || []).filter((p: any) => p.tipo === 'composto'),
             upsellProducts: (todosProdutos || []).map((p: any) => ({

@@ -49,6 +49,9 @@ interface CartProps {
   clienteTelefone?: string;
   upsellProducts?: UpsellProduct[];
   pagamentoIntegrado?: boolean;
+  lojaAberta?: boolean;
+  proximaAberturaIso?: string | null;
+  proximaAberturaLabel?: string | null;
 }
 
 interface UpsellProduct {
@@ -72,7 +75,7 @@ const formatPhone = (value: string) => {
   return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
 };
 
-export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCidade, empresaEstado, clienteTelefone, upsellProducts = [], pagamentoIntegrado = true }: CartProps) {
+export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCidade, empresaEstado, clienteTelefone, upsellProducts = [], pagamentoIntegrado = true, lojaAberta = true, proximaAberturaIso = null, proximaAberturaLabel = null }: CartProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState<CheckoutStep>('cart');
   const [cupomInput, setCupomInput] = useState('');
@@ -398,9 +401,12 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
         descontoPontos: descontoPontos,
         formaPagamento: paymentData.forma,
         troco: paymentData.troco || undefined,
+        // Prioridade: agendamento manual escolhido pelo cliente.
+        // Se a loja estiver fechada e nao houver agendamento manual, agenda
+        // automaticamente para a proxima abertura.
         dataAgendamento: agendarPedido && dataAgendamento && horaAgendamento
           ? `${dataAgendamento}T${horaAgendamento}:00`
-          : null,
+          : (!lojaAberta && proximaAberturaIso ? proximaAberturaIso : null),
         pagamentoIntegrado,
       });
 
@@ -536,6 +542,19 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
               <div className="flex-1 overflow-y-auto custom-scrollbar px-5 py-4 sm:p-6">
                 {step === 'cart' && (
                   <div className="space-y-5">
+                    {!lojaAberta && items.length > 0 && (
+                      <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex items-start gap-3">
+                        <AlertCircle className="size-5 text-amber-400 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-bold text-amber-300">A loja está fechada agora</p>
+                          <p className="text-xs text-gray-400 mt-1 leading-relaxed">
+                            {proximaAberturaLabel
+                              ? `Você pode finalizar mesmo assim — seu pedido será agendado para a próxima abertura (${proximaAberturaLabel}).`
+                              : 'Você pode finalizar mesmo assim — seu pedido será agendado para a próxima abertura.'}
+                          </p>
+                        </div>
+                      </div>
+                    )}
                     {items.length === 0 ? (
                       <div className="py-10 text-center">
                         <ShoppingCart className="size-14 text-[#1a1a1a] mx-auto mb-3" />
@@ -793,7 +812,11 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
                     </div>
                     <div>
                       <h2 className="text-2xl font-black text-white">Pedido Recebido!</h2>
-                      <p className="text-gray-500 mt-2">Estamos preparando tudo com muito carinho.</p>
+                      <p className="text-gray-500 mt-2">
+                        {!lojaAberta && proximaAberturaLabel
+                          ? `Seu pedido foi agendado para a próxima abertura (${proximaAberturaLabel}).`
+                          : 'Estamos preparando tudo com muito carinho.'}
+                      </p>
                     </div>
                     <button onClick={() => setIsOpen(false)} className="w-full p-5 bg-white text-black font-black rounded-2xl hover:bg-gray-100 transition-colors">VOLTAR AO CARDÁPIO</button>
                   </div>

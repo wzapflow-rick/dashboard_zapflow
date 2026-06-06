@@ -12,23 +12,41 @@ export interface BillingStatus {
   dias_inadimplente: number;
   bloqueado: boolean;
   plano: string | null;
+  /** Data da proxima cobranca (renovacao automatica no cartao), vinda da tabela assinaturas */
+  data_proxima_cobranca: string | null;
+  /** Valor da assinatura */
+  valor: number | null;
+  /** Ultimos 4 digitos do cartao usado na assinatura */
+  cartao_ultimos_digitos: string | null;
 }
 
 /**
- * Busca status de cobranca de uma empresa
+ * Busca status de cobranca de uma empresa.
+ * Combina dados da tabela `empresas` (PIX/inadimplencia) com a tabela
+ * `assinaturas` (renovacao automatica no cartao).
  */
 export async function getBillingStatus(empresaId: number): Promise<BillingStatus | null> {
   try {
     const empresa = await pg.findById('empresas', empresaId) as any;
     
     if (!empresa) return null;
+
+    // Dados da assinatura (renovacao no cartao)
+    const assinaturaResult = await pg.query(
+      'SELECT plano, valor, data_proxima_cobranca, cartao_ultimos_digitos FROM assinaturas WHERE empresa_id = $1 ORDER BY id DESC LIMIT 1',
+      [empresaId]
+    );
+    const assinatura = assinaturaResult?.rows?.[0] as any;
     
     return {
       tipo_pagamento: empresa.tipo_pagamento || null,
       data_vencimento: empresa.data_vencimento || null,
       dias_inadimplente: empresa.dias_inadimplente || 0,
       bloqueado: empresa.bloqueado || false,
-      plano: empresa.planos || null,
+      plano: empresa.planos || assinatura?.plano || null,
+      data_proxima_cobranca: assinatura?.data_proxima_cobranca || null,
+      valor: assinatura?.valor != null ? Number(assinatura.valor) : null,
+      cartao_ultimos_digitos: assinatura?.cartao_ultimos_digitos || null,
     };
   } catch (error) {
     console.error('[Billing] Erro ao buscar status:', error);

@@ -101,6 +101,7 @@ export const CompanyUpdateSchema = z.object({
     cobra_embalagem: z.any().optional(),
     valor_embalagem: z.any().optional(),
     controle_estoque: z.any().optional(),
+    notificar_pedido_whatsapp: z.any().optional(),
 }).passthrough();
 
 // Orders (Admin update)

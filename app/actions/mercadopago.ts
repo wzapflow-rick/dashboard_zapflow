@@ -58,6 +58,90 @@ async function getCompanyMPCredentials(empresaId: number) {
     };
 }
 
+/**
+ * Verifica, em tempo real, se a conta do Mercado Pago do lojista logado
+ * consegue gerar cobrancas PIX (QR Code).
+ *
+ * Faz isso criando um pagamento PIX de teste de valor minimo e cancelando-o
+ * em seguida. Se o MP retornar o erro 13253 / "Collector user without key
+ * enabled for QR render", significa que a conta nao tem uma chave PIX
+ * habilitada e o PIX nao funcionara no cardapio.
+ */
+export async function checkPixAvailability(): Promise<{ available: boolean; reason?: string }> {
+    const { getMe } = await import('./auth');
+    const me = await getMe();
+
+    if (!me || !me.empresaId) {
+        return { available: false, reason: 'Nao autorizado' };
+    }
+
+    const { accessToken } = await getCompanyMPCredentials(me.empresaId);
+    if (!accessToken) {
+        return { available: false, reason: 'Conta do Mercado Pago nao conectada' };
+    }
+
+    try {
+        const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}`,
+                'X-Idempotency-Key': `pix-check-${me.empresaId}-${Date.now()}`
+            },
+            body: JSON.stringify({
+                transaction_amount: 1,
+                description: 'Verificacao de chave PIX (ZapFlow)',
+                payment_method_id: 'pix',
+                payer: { email: 'verificacao-pix@zapflow.com.br' }
+            })
+        });
+
+        const data = await mpResponse.json();
+
+        if (mpResponse.ok) {
+            // Cancela imediatamente o pagamento de teste para nao deixar pendencia.
+            if (data?.id) {
+                try {
+                    await fetch(`https://api.mercadopago.com/v1/payments/${data.id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${accessToken}`
+                        },
+                        body: JSON.stringify({ status: 'cancelled' })
+                    });
+                } catch (cancelErr) {
+                    console.error('[MercadoPago] Falha ao cancelar pagamento de teste PIX:', cancelErr);
+                }
+            }
+            return { available: true };
+        }
+
+        const rawMessage = `${data.message || ''} ${data.error || ''}`.toLowerCase();
+        const causes = Array.isArray(data.cause) ? data.cause : [];
+        const isPixKeyError =
+            causes.some((c: any) => Number(c?.code) === 13253) ||
+            rawMessage.includes('key enabled for qr') ||
+            rawMessage.includes('financial identity');
+
+        if (isPixKeyError) {
+            return {
+                available: false,
+                reason: 'A conta do Mercado Pago nao tem uma chave PIX habilitada para gerar QR Code.'
+            };
+        }
+
+        console.error('[MercadoPago] checkPixAvailability erro inesperado:', JSON.stringify(data));
+        return {
+            available: false,
+            reason: data.message || 'Nao foi possivel verificar o PIX agora. Tente novamente.'
+        };
+    } catch (error: any) {
+        console.error('[MercadoPago] checkPixAvailability falhou:', error);
+        return { available: false, reason: 'Erro de conexao ao verificar o PIX.' };
+    }
+}
+
 export async function getMPPublicKey(empresaId?: number): Promise<string> {
     if (empresaId) {
         const creds = await getCompanyMPCredentials(empresaId);
@@ -173,6 +257,26 @@ export async function createPayment(input: CreatePaymentInput): Promise<CreatePa
                 amount: amount,
                 empresaId: pedido.empresa_id
             }, null, 2));
+
+            // Mensagem amigavel quando a conta do recebedor (lojista) nao tem
+            // chave PIX habilitada para gerar o QR Code. O Mercado Pago retorna
+            // o codigo 13253 / "Collector user without key enabled for QR render".
+            const rawMessage = `${errorData.message || ''} ${errorData.error || ''}`.toLowerCase();
+            const causes = Array.isArray(errorData.cause) ? errorData.cause : [];
+            const isPixKeyError =
+                causes.some((c: any) => Number(c?.code) === 13253) ||
+                rawMessage.includes('key enabled for qr') ||
+                rawMessage.includes('financial identity');
+
+            const isPix = paymentMethodId === 'pix';
+
+            if (isPixKeyError || (isPix && mpResponse.status === 400)) {
+                return {
+                    success: false,
+                    error: 'PIX indisponível no momento, escolha outra forma de pagamento.'
+                };
+            }
+
             return {
                 success: false,
                 error: errorData.message || errorData.error || 'Erro ao processar pagamento'
