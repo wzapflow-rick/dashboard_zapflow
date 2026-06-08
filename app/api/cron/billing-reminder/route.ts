@@ -71,6 +71,7 @@ async function handleBillingReminder(request: NextRequest) {
         let enviados = 0;
         let semTelefone = 0;
         let falhas = 0;
+        const errosDetalhe: string[] = [];
 
         for (const a of assinaturas) {
             const telefone = a.telefone_loja?.trim();
@@ -82,7 +83,7 @@ async function handleBillingReminder(request: NextRequest) {
                 continue;
             }
 
-            const ok = await sendRenewalReminder(
+            const res = await sendRenewalReminder(
                 telefone,
                 nome,
                 Number(a.dias_restantes),
@@ -90,7 +91,7 @@ async function handleBillingReminder(request: NextRequest) {
                 a.cartao_ultimos_digitos
             );
 
-            if (ok) {
+            if (res.success) {
                 enviados++;
                 // Marca que ja avisou hoje (evita duplicar no mesmo dia)
                 await pg.raw(
@@ -99,16 +100,23 @@ async function handleBillingReminder(request: NextRequest) {
                 );
             } else {
                 falhas++;
-                console.error(`[CRON billing-reminder] Falha ao enviar para empresa ${a.empresa_id}`);
+                const nomeEmpresa = a.nome_fantasia || `empresa ${a.empresa_id}`;
+                const detalhe = `${nomeEmpresa}: ${res.error ?? 'falha desconhecida'}`;
+                errosDetalhe.push(detalhe);
+                console.error(`[CRON billing-reminder] Falha ao enviar para ${nomeEmpresa}: ${res.error}`);
             }
         }
 
-        const summary = {
+        const summary: Record<string, any> = {
             candidatos: assinaturas.length,
             enviados,
             semTelefone,
             falhas,
         };
+        if (errosDetalhe.length > 0) {
+            // Mostra ate 5 motivos no painel de monitoramento
+            summary.motivoFalhas = errosDetalhe.slice(0, 5).join(' | ');
+        }
 
         await logCronRun({
             jobName: 'billing-reminder',

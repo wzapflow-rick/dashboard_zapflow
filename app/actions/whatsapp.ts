@@ -27,9 +27,19 @@ function formatPhoneForEvolution(phone: string): string {
 }
 
 /**
- * Enviar mensagem via Evolution API
+ * Enviar mensagem via Evolution API (instancia central da ZapFlow).
+ * Retorna detalhes do resultado para que o chamador possa registrar o motivo da falha.
  */
-export async function sendWhatsAppMessage(phone: string, message: string): Promise<boolean> {
+export async function sendWhatsAppMessageDetailed(
+    phone: string,
+    message: string
+): Promise<{ success: boolean; status: number; error: string | null }> {
+    if (!EVO_API_KEY) {
+        const error = 'EVOLUTION_API_KEY nao configurada';
+        console.error(`[WhatsApp] ${error}`);
+        return { success: false, status: 0, error };
+    }
+
     try {
         const formattedPhone = formatPhoneForEvolution(phone);
 
@@ -50,14 +60,39 @@ export async function sendWhatsAppMessage(phone: string, message: string): Promi
             })
         });
 
-        const result = await response.json();
+        const rawText = await response.text();
+        let result: any = rawText;
+        try {
+            result = JSON.parse(rawText);
+        } catch {
+            // resposta nao-JSON; mantem texto cru
+        }
         console.log(`[WhatsApp] Resposta (${response.status}):`, JSON.stringify(result).substring(0, 200));
 
-        return response.ok;
-    } catch (error) {
+        if (response.ok) {
+            return { success: true, status: response.status, error: null };
+        }
+
+        // Extrai a mensagem de erro mais util da resposta da Evolution
+        const errMsg =
+            (result && (result.message || result.error || result.response?.message)) ||
+            rawText ||
+            `HTTP ${response.status}`;
+        const error = `HTTP ${response.status}: ${typeof errMsg === 'string' ? errMsg : JSON.stringify(errMsg)}`.substring(0, 300);
+        return { success: false, status: response.status, error };
+    } catch (error: any) {
+        const msg = error?.message ?? 'erro de rede';
         console.error('[WhatsApp] Erro ao enviar:', error);
-        return false;
+        return { success: false, status: 0, error: msg };
     }
+}
+
+/**
+ * Enviar mensagem via Evolution API
+ */
+export async function sendWhatsAppMessage(phone: string, message: string): Promise<boolean> {
+    const { success } = await sendWhatsAppMessageDetailed(phone, message);
+    return success;
 }
 
 /**
@@ -451,7 +486,7 @@ export async function sendRenewalReminder(
     diasRestantes: number,
     valor?: number | null,
     finalCartao?: string | null
-): Promise<boolean> {
+): Promise<{ success: boolean; status: number; error: string | null }> {
     const valorFmt = valor != null && valor > 0
         ? `R$ ${valor.toFixed(2).replace('.', ',')}`
         : null;
@@ -484,5 +519,5 @@ ${linkAssinatura}
 Equipe ZapFlow`;
     }
 
-    return sendWhatsAppMessage(phone, message);
+    return sendWhatsAppMessageDetailed(phone, message);
 }

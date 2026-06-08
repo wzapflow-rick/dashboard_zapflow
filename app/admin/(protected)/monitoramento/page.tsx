@@ -59,16 +59,35 @@ function SummaryBadges({ summary }: { summary: Record<string, unknown> | null })
     if (!summary || Object.keys(summary).length === 0) {
         return <span className="text-slate-500 text-sm">Sem dados</span>;
     }
+    // Chaves de texto longo (motivos de erro/falha) sao exibidas como alerta, nao como badge.
+    const textKeys = ['motivoFalhas', 'error', 'erro'];
+    const entries = Object.entries(summary);
+    const badges = entries.filter(([k]) => !textKeys.includes(k));
+    const texts = entries.filter(([k]) => textKeys.includes(k));
+
     return (
-        <div className="flex flex-wrap gap-2">
-            {Object.entries(summary).map(([k, v]) => (
-                <span
+        <div className="flex flex-col gap-2">
+            {badges.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                    {badges.map(([k, v]) => (
+                        <span
+                            key={k}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#0a1628] border border-[#1e3a5f] text-xs text-slate-300"
+                        >
+                            <span className="text-slate-500">{k}:</span>
+                            <span className="font-semibold text-white">{String(v)}</span>
+                        </span>
+                    ))}
+                </div>
+            )}
+            {texts.map(([k, v]) => (
+                <div
                     key={k}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#0a1628] border border-[#1e3a5f] text-xs text-slate-300"
+                    className="flex items-start gap-1.5 text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-md px-2.5 py-1.5"
                 >
-                    <span className="text-slate-500">{k}:</span>
-                    <span className="font-semibold text-white">{String(v)}</span>
-                </span>
+                    <AlertTriangle className="size-3.5 shrink-0 mt-0.5" />
+                    <span className="break-words">{String(v)}</span>
+                </div>
             ))}
         </div>
     );
