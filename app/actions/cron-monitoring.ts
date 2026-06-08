@@ -3,8 +3,10 @@
 import { getAdminSession } from '@/app/actions/admin-auth';
 import { getLastCronRuns, getCronHistory, type CronLastRun } from '@/lib/cron-logger';
 
-/** Crons de cobranca monitorados no painel. */
-export const MONITORED_CRONS = [
+/** Crons de cobranca monitorados no painel.
+ *  IMPORTANTE: este arquivo e 'use server', entao so pode EXPORTAR funcoes
+ *  assincronas. Por isso esta const NAO e exportada. */
+const MONITORED_CRONS = [
     {
         jobName: 'billing-reminder',
         label: 'Lembrete de Renovação (Cartão)',
