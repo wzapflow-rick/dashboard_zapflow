@@ -73,6 +73,17 @@ export async function sendWhatsAppMessageDetailed(
             return { success: true, status: response.status, error: null };
         }
 
+        // Caso especifico: Evolution confirma que o numero NAO tem conta no WhatsApp.
+        // Resposta: { response: { message: [{ jid, exists: false, number }] } }
+        const existsCheck = result?.response?.message;
+        if (Array.isArray(existsCheck) && existsCheck.some((m: any) => m?.exists === false)) {
+            return {
+                success: false,
+                status: response.status,
+                error: 'numero nao tem WhatsApp (verifique o telefone cadastrado)',
+            };
+        }
+
         // Extrai a mensagem de erro mais util da resposta da Evolution
         const errMsg =
             (result && (result.message || result.error || result.response?.message)) ||
