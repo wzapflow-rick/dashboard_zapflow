@@ -23,6 +23,7 @@ import {
   HelpCircle,
   ChevronDown,
   ChevronRight,
+  Activity,
 } from 'lucide-react';
 import { logoutAdmin } from '@/app/actions/admin-auth';
 import { cn } from '@/lib/utils';
@@ -47,6 +48,7 @@ const menuItems: MenuItem[] = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/empresas', label: 'Empresas', icon: Building2 },
   { href: '/admin/assinaturas', label: 'Assinaturas', icon: CreditCard },
+  { href: '/admin/monitoramento', label: 'Monitoramento', icon: Activity },
 ];
 
 const remarketingMenu: MenuGroup = {
