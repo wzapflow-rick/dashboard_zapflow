@@ -4,13 +4,16 @@ import { pg } from '@/lib/postgres';
 import { importarContato } from '@/app/actions/remarketing';
 
 // ---------------------------------------------------------------------------
-// Captacao de Delivery ATIVO via Google Places API (New)
-// Busca lojas de delivery por cidade + tipo de comida, filtra leads bons
-// (operante + com telefone + com avaliacoes) e joga no funil de remarketing.
+// Captacao de Delivery ATIVO via OpenStreetMap (Nominatim + Overpass) - GRATIS
+// Busca lojas de comida por cidade + tipo, filtra leads com telefone e joga
+// no funil de remarketing. Nao usa chave de API nem cobranca.
 // ---------------------------------------------------------------------------
 
 const CAPTACAO_TABLE = 'captacao_places';
-const PLACES_ENDPOINT = 'https://places.googleapis.com/v1/places:searchText';
+const NOMINATIM_ENDPOINT = 'https://nominatim.openstreetmap.org/search';
+const OVERPASS_ENDPOINT = 'https://overpass-api.de/api/interpreter';
+// User-Agent obrigatorio pela politica de uso do Nominatim/Overpass
+const HTTP_UA = 'ZapFlow-Captacao/1.0 (contato@zapflow.app)';
 
 export interface LeadCaptado {
     place_id: string;
@@ -25,37 +28,120 @@ export interface LeadCaptado {
     jaExiste: boolean;
 }
 
-interface GooglePlace {
-    id: string;
-    displayName?: { text?: string };
-    nationalPhoneNumber?: string;
-    internationalPhoneNumber?: string;
-    formattedAddress?: string;
-    rating?: number;
-    userRatingCount?: number;
-    primaryTypeDisplayName?: { text?: string };
-    googleMapsUri?: string;
-    businessStatus?: string;
+interface OsmElement {
+    type: 'node' | 'way' | 'relation';
+    id: number;
+    lat?: number;
+    lon?: number;
+    center?: { lat: number; lon: number };
+    tags?: Record<string, string>;
 }
 
-/** Converte telefone nacional (ex "(79) 99804-9790") em digitos com DDI 55. */
+/** Remove acentos e baixa caixa para comparacoes tolerantes. */
+function normalizar(txt: string): string {
+    return txt
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+}
+
+/**
+ * Mapa de termos digitados (em pt-BR) -> palavras que aparecem em name/cuisine
+ * do OpenStreetMap. Deixa a busca tolerante a sinonimos.
+ */
+const SINONIMOS: Record<string, string[]> = {
+    pizza: ['pizza', 'pizzaria'],
+    pizzaria: ['pizza', 'pizzaria'],
+    hamburguer: ['burger', 'hamburguer', 'hamburgueria', 'lanche'],
+    hamburgueria: ['burger', 'hamburguer', 'hamburgueria', 'lanche'],
+    lanche: ['burger', 'hamburguer', 'lanche', 'lanchonete', 'sandwich'],
+    lanchonete: ['lanche', 'lanchonete', 'sandwich', 'burger'],
+    acai: ['acai', 'ice_cream', 'sorvete'],
+    sorvete: ['ice_cream', 'sorvete', 'gelato', 'acai'],
+    sushi: ['sushi', 'japanese', 'japones'],
+    japones: ['sushi', 'japanese', 'japones'],
+    japonesa: ['sushi', 'japanese', 'japones'],
+    pastel: ['pastel', 'pastelaria'],
+    pastelaria: ['pastel', 'pastelaria'],
+    churrasco: ['churrasco', 'barbecue', 'bbq', 'steak', 'grill'],
+    marmita: ['marmita', 'comida', 'restaurant', 'self_service', 'brazilian'],
+    comida: ['comida', 'restaurant', 'brazilian', 'regional'],
+    cafe: ['cafe', 'coffee', 'cafeteria'],
+    cafeteria: ['cafe', 'coffee', 'cafeteria'],
+    doce: ['doce', 'doceria', 'confeitaria', 'dessert', 'cake'],
+    confeitaria: ['confeitaria', 'doceria', 'cake', 'dessert', 'bakery'],
+    padaria: ['padaria', 'bakery', 'pao'],
+    espetinho: ['espetinho', 'espeto', 'barbecue', 'grill'],
+    tapioca: ['tapioca', 'crepe'],
+};
+
+/** Tokens de busca a partir do termo digitado (termo + sinonimos conhecidos). */
+function tokensDeBusca(termo: string): string[] {
+    const base = normalizar(termo);
+    const partes = base.split(/\s+/).filter(Boolean);
+    const tokens = new Set<string>([base, ...partes]);
+    for (const p of partes) {
+        const syn = SINONIMOS[p];
+        if (syn) syn.forEach((s) => tokens.add(s));
+    }
+    return [...tokens].filter((t) => t.length >= 3);
+}
+
+/** Verifica se o estabelecimento bate com o termo (em name ou cuisine). */
+function combinaComTermo(tags: Record<string, string>, tokens: string[]): boolean {
+    if (tokens.length === 0) return true;
+    const alvo = normalizar(
+        [tags.name, tags.cuisine, tags.amenity, tags['cuisine:type']].filter(Boolean).join(' '),
+    );
+    return tokens.some((t) => alvo.includes(t));
+}
+
+/** Monta o endereco a partir das tags addr:* do OSM. */
+function montarEndereco(tags: Record<string, string>): string | null {
+    const rua = tags['addr:street'];
+    const numero = tags['addr:housenumber'];
+    const bairro = tags['addr:suburb'] || tags['addr:neighbourhood'];
+    const cidade = tags['addr:city'];
+    const partes = [
+        [rua, numero].filter(Boolean).join(', '),
+        bairro,
+        cidade,
+    ].filter(Boolean);
+    return partes.length ? partes.join(' - ') : null;
+}
+
+/** Converte telefone em digitos com DDI 55 + remote_jid de WhatsApp. */
 function montarWhatsApp(telefone: string | null | undefined): { remote_jid: string; telefone: string } | null {
     if (!telefone) return null;
-    let digitos = telefone.replace(/\D/g, '');
-    // remove DDI se ja vier com 55 na frente (numeros internacionais)
+    // pode vir varios numeros separados por ; - pega o primeiro
+    const primeiro = telefone.split(';')[0];
+    let digitos = primeiro.replace(/\D/g, '');
     if (digitos.startsWith('55') && digitos.length > 11) {
         digitos = digitos.slice(2);
     }
-    // precisa ter DDD (2) + numero (8 ou 9 digitos)
     if (digitos.length < 10 || digitos.length > 11) return null;
     const comDdi = `55${digitos}`;
     return { remote_jid: `${comDdi}@s.whatsapp.net`, telefone: comDdi };
 }
 
+/** Pega o melhor telefone disponivel nas tags. */
+function extrairTelefone(tags: Record<string, string>): string | null {
+    return (
+        tags.phone ||
+        tags['contact:phone'] ||
+        tags['contact:mobile'] ||
+        tags.mobile ||
+        tags['phone:mobile'] ||
+        null
+    );
+}
+
 /**
- * Busca lojas no Google Places por cidade + termo (tipo de comida).
- * NAO grava contatos - so retorna os leads para revisao, ja marcando
- * quais ja existem na base para evitar reimportacao.
+ * Busca lojas no OpenStreetMap por cidade + termo (tipo de comida).
+ * 1) Geocodifica a cidade no Nominatim para obter a bounding box.
+ * 2) Busca estabelecimentos de comida nessa area via Overpass.
+ * NAO grava nada - so retorna os leads, marcando os que ja existem.
  */
 export async function buscarLeads(input: {
     cidade: string;
@@ -64,97 +150,92 @@ export async function buscarLeads(input: {
     minAvaliacoes?: number;
 }): Promise<{ success: boolean; leads?: LeadCaptado[]; total?: number; error?: string }> {
     try {
-        const apiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.GCP_API_KEY;
-        if (!apiKey) {
-            return { success: false, error: 'GOOGLE_MAPS_API_KEY nao configurada no projeto.' };
-        }
         if (!input.cidade.trim() || !input.tipoComida.trim()) {
             return { success: false, error: 'Informe a cidade e o tipo de comida.' };
         }
 
         const soComTelefone = input.soComTelefone ?? true;
-        const minAvaliacoes = input.minAvaliacoes ?? 0;
-        const textQuery = `${input.tipoComida.trim()} delivery em ${input.cidade.trim()}`;
 
-        const fieldMask = [
-            'places.id',
-            'places.displayName',
-            'places.nationalPhoneNumber',
-            'places.internationalPhoneNumber',
-            'places.formattedAddress',
-            'places.rating',
-            'places.userRatingCount',
-            'places.primaryTypeDisplayName',
-            'places.googleMapsUri',
-            'places.businessStatus',
-            'nextPageToken',
-        ].join(',');
+        // 1) Geocodifica a cidade -> bounding box
+        const geoUrl =
+            `${NOMINATIM_ENDPOINT}?` +
+            new URLSearchParams({
+                q: input.cidade.trim(),
+                format: 'json',
+                limit: '1',
+                countrycodes: 'br',
+                'accept-language': 'pt-BR',
+            }).toString();
 
-        // Busca ate 3 paginas (60 resultados) para ter volume
-        const placesBrutos: GooglePlace[] = [];
-        let pageToken: string | undefined;
-        for (let pagina = 0; pagina < 3; pagina++) {
-            const body: Record<string, unknown> = {
-                textQuery,
-                languageCode: 'pt-BR',
-                regionCode: 'BR',
-                pageSize: 20,
-            };
-            if (pageToken) body.pageToken = pageToken;
+        const geoResp = await fetch(geoUrl, {
+            headers: { 'User-Agent': HTTP_UA, Accept: 'application/json' },
+        });
+        if (!geoResp.ok) {
+            return { success: false, error: 'Falha ao localizar a cidade no mapa. Tente novamente em instantes.' };
+        }
+        const geoData = (await geoResp.json()) as Array<{ boundingbox?: string[]; display_name?: string }>;
+        if (!geoData.length || !geoData[0].boundingbox) {
+            return { success: false, error: `Cidade "${input.cidade}" nao encontrada. Tente "Cidade, UF".` };
+        }
+        // boundingbox = [south, north, west, east]
+        const [south, north, west, east] = geoData[0].boundingbox.map(Number);
 
-            const resp = await fetch(PLACES_ENDPOINT, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Goog-Api-Key': apiKey,
-                    'X-Goog-FieldMask': fieldMask,
-                },
-                body: JSON.stringify(body),
-            });
+        // 2) Busca estabelecimentos de comida na bbox via Overpass
+        const amenities = 'restaurant|fast_food|cafe|ice_cream|bar|food_court';
+        const bbox = `${south},${west},${north},${east}`;
+        const query = `
+            [out:json][timeout:25];
+            (
+              node["amenity"~"^(${amenities})$"](${bbox});
+              way["amenity"~"^(${amenities})$"](${bbox});
+            );
+            out tags center 250;
+        `.trim();
 
-            if (!resp.ok) {
-                const txt = await resp.text();
-                console.error('[Captacao] Google Places erro:', resp.status, txt);
-                let detalhe = `HTTP ${resp.status}`;
-                try {
-                    const j = JSON.parse(txt);
-                    detalhe = j?.error?.message || detalhe;
-                } catch {
-                    /* ignore */
-                }
-                // mensagens amigaveis para os erros mais comuns
-                if (resp.status === 403 || /not.*enabled|SERVICE_DISABLED|API key not valid/i.test(detalhe)) {
-                    return {
-                        success: false,
-                        error:
-                            'O Google recusou a chave. Verifique se a "Places API (New)" esta ATIVADA no projeto e se a chave permite essa API. Detalhe: ' +
-                            detalhe,
-                    };
-                }
-                return { success: false, error: 'Falha na busca do Google: ' + detalhe };
+        const overpassResp = await fetch(OVERPASS_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': HTTP_UA },
+            body: 'data=' + encodeURIComponent(query),
+        });
+
+        if (!overpassResp.ok) {
+            const txt = await overpassResp.text();
+            console.error('[Captacao] Overpass erro:', overpassResp.status, txt.slice(0, 300));
+            if (overpassResp.status === 429) {
+                return {
+                    success: false,
+                    error: 'O servidor de mapas esta ocupado (muitas buscas). Aguarde alguns segundos e tente de novo.',
+                };
             }
-
-            const data = (await resp.json()) as { places?: GooglePlace[]; nextPageToken?: string };
-            if (data.places?.length) placesBrutos.push(...data.places);
-            pageToken = data.nextPageToken;
-            if (!pageToken) break;
+            return { success: false, error: 'Falha na busca de estabelecimentos. Tente novamente.' };
         }
 
-        if (placesBrutos.length === 0) {
+        const overpassData = (await overpassResp.json()) as { elements?: OsmElement[] };
+        const elementos = overpassData.elements ?? [];
+        if (elementos.length === 0) {
             return { success: true, leads: [], total: 0 };
         }
 
-        // Filtros de qualidade
-        const filtrados = placesBrutos.filter((p) => {
-            if (p.businessStatus && p.businessStatus !== 'OPERATIONAL') return false;
-            const tel = p.nationalPhoneNumber || p.internationalPhoneNumber;
-            if (soComTelefone && !tel) return false;
-            if (minAvaliacoes > 0 && (p.userRatingCount ?? 0) < minAvaliacoes) return false;
+        const tokens = tokensDeBusca(input.tipoComida);
+
+        // Filtros: bate com o termo + (opcional) tem telefone
+        const filtrados = elementos.filter((el) => {
+            const tags = el.tags;
+            if (!tags || !tags.name) return false;
+            if (!combinaComTermo(tags, tokens)) return false;
+            if (soComTelefone && !extrairTelefone(tags)) return false;
             return true;
         });
 
-        // Dedupe contra a tabela de captacao (place_id) e remarketing (telefone)
-        const placeIds = filtrados.map((p) => p.id);
+        if (filtrados.length === 0) {
+            return { success: true, leads: [], total: 0 };
+        }
+
+        // place_id estavel: "osm:node:123"
+        const placeIdDe = (el: OsmElement) => `osm:${el.type}:${el.id}`;
+        const placeIds = filtrados.map(placeIdDe);
+
+        // Dedupe contra captacao (place_id) e remarketing (telefone)
         const jaCaptados = new Set<string>();
         const telefonesExistentes = new Set<string>();
 
@@ -165,9 +246,8 @@ export async function buscarLeads(input: {
             );
             existentes.forEach((e) => jaCaptados.add(e.place_id));
 
-            // telefones que ja estao no remarketing
             const telsBusca = filtrados
-                .map((p) => montarWhatsApp(p.nationalPhoneNumber || p.internationalPhoneNumber)?.telefone)
+                .map((el) => montarWhatsApp(extrairTelefone(el.tags!))?.telefone)
                 .filter(Boolean) as string[];
             if (telsBusca.length) {
                 const remk = await pg.raw<{ telefone: string }>(
@@ -178,27 +258,36 @@ export async function buscarLeads(input: {
             }
         }
 
-        const leads: LeadCaptado[] = filtrados.map((p) => {
-            const telBruto = p.nationalPhoneNumber || p.internationalPhoneNumber || null;
+        const leads: LeadCaptado[] = filtrados.map((el) => {
+            const tags = el.tags!;
+            const place_id = placeIdDe(el);
+            const telBruto = extrairTelefone(tags);
             const wa = montarWhatsApp(telBruto);
-            const jaExiste = jaCaptados.has(p.id) || (wa ? telefonesExistentes.has(wa.telefone) : false);
+            const jaExiste = jaCaptados.has(place_id) || (wa ? telefonesExistentes.has(wa.telefone) : false);
+            const lat = el.lat ?? el.center?.lat;
+            const lon = el.lon ?? el.center?.lon;
+            const mapsUri =
+                lat != null && lon != null
+                    ? `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`
+                    : null;
             return {
-                place_id: p.id,
-                nome: p.displayName?.text || 'Sem nome',
+                place_id,
+                nome: tags.name || 'Sem nome',
                 telefone: telBruto,
-                endereco: p.formattedAddress || null,
-                rating: p.rating ?? null,
-                total_avaliacoes: p.userRatingCount ?? null,
-                tipo: p.primaryTypeDisplayName?.text || null,
-                google_maps_uri: p.googleMapsUri || null,
+                endereco: montarEndereco(tags),
+                rating: null, // OpenStreetMap nao tem avaliacoes
+                total_avaliacoes: null,
+                tipo: tags.cuisine ? tags.cuisine.split(';')[0].replace(/_/g, ' ') : tags.amenity?.replace(/_/g, ' ') || null,
+                google_maps_uri: mapsUri,
                 jaExiste,
             };
         });
 
-        // ordena: novos primeiro, depois por numero de avaliacoes
+        // novos primeiro, depois com telefone, depois alfabetico
         leads.sort((a, b) => {
             if (a.jaExiste !== b.jaExiste) return a.jaExiste ? 1 : -1;
-            return (b.total_avaliacoes ?? 0) - (a.total_avaliacoes ?? 0);
+            if (!!a.telefone !== !!b.telefone) return a.telefone ? -1 : 1;
+            return a.nome.localeCompare(b.nome);
         });
 
         return { success: true, leads, total: leads.length };
@@ -232,7 +321,6 @@ export async function importarLeads(input: {
                 continue;
             }
 
-            // joga no funil de remarketing
             const res = await importarContato({
                 remote_jid: wa.remote_jid,
                 telefone: wa.telefone,
@@ -244,7 +332,6 @@ export async function importarLeads(input: {
                 continue;
             }
 
-            // grava/atualiza na tabela de captacao para dedupe futuro
             const existente = await pg.findOne<{ id: number }>(CAPTACAO_TABLE, {
                 where: { place_id: lead.place_id },
             });

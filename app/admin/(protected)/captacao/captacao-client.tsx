@@ -7,7 +7,6 @@ import {
     Loader2,
     MapPin,
     Phone,
-    Star,
     Radar,
     Send,
     CheckCircle2,
@@ -19,7 +18,6 @@ export default function CaptacaoClient() {
     const [cidade, setCidade] = useState('');
     const [tipoComida, setTipoComida] = useState('');
     const [soComTelefone, setSoComTelefone] = useState(true);
-    const [minAvaliacoes, setMinAvaliacoes] = useState(0);
 
     const [buscando, setBuscando] = useState(false);
     const [importando, setImportando] = useState(false);
@@ -42,7 +40,6 @@ export default function CaptacaoClient() {
             cidade: cidade.trim(),
             tipoComida: tipoComida.trim(),
             soComTelefone,
-            minAvaliacoes,
         });
         setBuscando(false);
         setBuscou(true);
@@ -120,8 +117,8 @@ export default function CaptacaoClient() {
                     <div>
                         <h1 className="text-2xl font-bold text-white text-balance">Captação de Delivery Ativo</h1>
                         <p className="text-slate-400 text-sm mt-1 text-pretty">
-                            Busque lojas de delivery por cidade e tipo de comida no Google, filtre os melhores leads e
-                            jogue direto no funil de remarketing.
+                            Busque lojas de delivery por cidade e tipo de comida no mapa (OpenStreetMap), filtre os
+                            melhores leads e jogue direto no funil de remarketing. Gratuito e sem limites.
                         </p>
                     </div>
                 </div>
@@ -165,19 +162,6 @@ export default function CaptacaoClient() {
                             />
                             Só lojas com telefone
                         </label>
-                        <label className="flex items-center gap-2 text-sm text-slate-300">
-                            Mín. de avaliações:
-                            <select
-                                value={minAvaliacoes}
-                                onChange={(e) => setMinAvaliacoes(Number(e.target.value))}
-                                className="rounded-lg bg-[#0a1628] border border-[#1e3a5f] text-white px-3 py-1.5 text-sm focus:outline-none focus:border-emerald-500/50"
-                            >
-                                <option value={0}>Qualquer</option>
-                                <option value={10}>10+</option>
-                                <option value={50}>50+</option>
-                                <option value={100}>100+</option>
-                            </select>
-                        </label>
                     </div>
 
                     <button
@@ -187,7 +171,7 @@ export default function CaptacaoClient() {
                     >
                         {buscando ? (
                             <>
-                                <Loader2 className="size-5 animate-spin" /> Procurando lojas no Google...
+                                <Loader2 className="size-5 animate-spin" /> Procurando lojas no mapa...
                             </>
                         ) : (
                             <>
@@ -297,7 +281,6 @@ export default function CaptacaoClient() {
                                                 )}
                                                 {lead.rating != null && (
                                                     <span className="flex items-center gap-1">
-                                                        <Star className="size-3.5 fill-amber-400 text-amber-400" />
                                                         {lead.rating.toFixed(1)}
                                                         {lead.total_avaliacoes != null && (
                                                             <span className="text-slate-600">
