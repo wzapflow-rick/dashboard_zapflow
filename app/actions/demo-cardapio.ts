@@ -3,11 +3,16 @@
 import db from '@/lib/db';
 import { pg } from '@/lib/postgres';
 import { generateText, Output } from 'ai';
+import { createOpenAI } from '@ai-sdk/openai';
 import { z } from 'zod';
 import { CATEGORIAS_TABLE, PRODUTOS_TABLE, EMPRESAS_TABLE } from '@/lib/tables';
 
-// Modelo multimodal barato e rapido (le print de cardapio + texto)
-const MODELO_IA = 'google/gemini-3.5-flash';
+// Provider OpenAI usando a chave propria do usuario (OPENAI_API_KEY),
+// fora do AI Gateway da Vercel (que exige cartao cadastrado).
+const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+// Modelo multimodal (le print de cardapio + texto)
+const MODELO_IA = openai('gpt-4o');
 
 // ---------------------------------------------------------------------------
 // Schema do cardapio estruturado pela IA
