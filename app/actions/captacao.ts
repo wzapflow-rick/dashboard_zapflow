@@ -181,15 +181,35 @@ export async function buscarLeads(input: {
         const [south, north, west, east] = geoData[0].boundingbox.map(Number);
 
         // 2) Busca estabelecimentos de comida na bbox via Overpass
-        const amenities = 'restaurant|fast_food|cafe|ice_cream|bar|food_court';
+        // IMPORTANTE: filtramos por nome/culinaria DENTRO da query (server-side),
+        // senao o Overpass devolve so uma amostra dos primeiros N lugares e quase
+        // nenhum bate com o termo. Assim pegamos TODAS as lojas do nicho na cidade.
+        const amenities = 'restaurant|fast_food|cafe|ice_cream|bar|food_court|pub';
         const bbox = `${south},${west},${north},${east}`;
-        const query = `
-            [out:json][timeout:25];
-            (
+        const tokens = tokensDeBusca(input.tipoComida);
+        // regex para o Overpass (case-insensitive). Escapa caracteres especiais.
+        const regexTermo = tokens
+            .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+            .join('|');
+
+        // Se temos tokens, filtra por name OU cuisine batendo o regex.
+        // Sem tokens (raro), cai no modo generico (todas as lojas de comida).
+        const filtroOverpass = regexTermo
+            ? `(
+              node["amenity"~"^(${amenities})$"]["name"~"${regexTermo}",i](${bbox});
+              way["amenity"~"^(${amenities})$"]["name"~"${regexTermo}",i](${bbox});
+              node["amenity"~"^(${amenities})$"]["cuisine"~"${regexTermo}",i](${bbox});
+              way["amenity"~"^(${amenities})$"]["cuisine"~"${regexTermo}",i](${bbox});
+            )`
+            : `(
               node["amenity"~"^(${amenities})$"](${bbox});
               way["amenity"~"^(${amenities})$"](${bbox});
-            );
-            out tags center 250;
+            )`;
+
+        const query = `
+            [out:json][timeout:50];
+            ${filtroOverpass};
+            out tags center 800;
         `.trim();
 
         const overpassResp = await fetch(OVERPASS_ENDPOINT, {
@@ -216,9 +236,8 @@ export async function buscarLeads(input: {
             return { success: true, leads: [], total: 0 };
         }
 
-        const tokens = tokensDeBusca(input.tipoComida);
-
-        // Filtros: bate com o termo + (opcional) tem telefone
+        // Filtros finais no cliente: confirma o termo (o Overpass ja filtrou,
+        // mas reforcamos por cuisine/amenity) + (opcional) tem telefone.
         const filtrados = elementos.filter((el) => {
             const tags = el.tags;
             if (!tags || !tags.name) return false;
