@@ -64,9 +64,9 @@ export async function buscarLeads(input: {
     minAvaliacoes?: number;
 }): Promise<{ success: boolean; leads?: LeadCaptado[]; total?: number; error?: string }> {
     try {
-        const apiKey = process.env.GCP_API_KEY;
+        const apiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.GCP_API_KEY;
         if (!apiKey) {
-            return { success: false, error: 'GCP_API_KEY nao configurada no projeto.' };
+            return { success: false, error: 'GOOGLE_MAPS_API_KEY nao configurada no projeto.' };
         }
         if (!input.cidade.trim() || !input.tipoComida.trim()) {
             return { success: false, error: 'Informe a cidade e o tipo de comida.' };
