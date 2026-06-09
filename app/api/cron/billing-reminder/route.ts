@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pg } from '@/lib/postgres';
 import { sendRenewalReminder } from '@/app/actions/whatsapp';
+import { logCronRun } from '@/lib/cron-logger';
 
 // Protege o endpoint para ser chamado apenas pelo cron (crontab da VPS)
 const CRON_SECRET = process.env.CRON_SECRET;
@@ -30,6 +31,7 @@ async function handleBillingReminder(request: NextRequest) {
     }
 
     try {
+        const startedAt = Date.now();
         const hojeStr = new Date().toISOString().split('T')[0];
 
         // Buscar assinaturas ativas cuja proxima cobranca cai em 3 ou 1 dia(s),
@@ -69,6 +71,7 @@ async function handleBillingReminder(request: NextRequest) {
         let enviados = 0;
         let semTelefone = 0;
         let falhas = 0;
+        const errosDetalhe: string[] = [];
 
         for (const a of assinaturas) {
             const telefone = a.telefone_loja?.trim();
@@ -80,7 +83,7 @@ async function handleBillingReminder(request: NextRequest) {
                 continue;
             }
 
-            const ok = await sendRenewalReminder(
+            const res = await sendRenewalReminder(
                 telefone,
                 nome,
                 Number(a.dias_restantes),
@@ -88,7 +91,7 @@ async function handleBillingReminder(request: NextRequest) {
                 a.cartao_ultimos_digitos
             );
 
-            if (ok) {
+            if (res.success) {
                 enviados++;
                 // Marca que ja avisou hoje (evita duplicar no mesmo dia)
                 await pg.raw(
@@ -97,21 +100,44 @@ async function handleBillingReminder(request: NextRequest) {
                 );
             } else {
                 falhas++;
-                console.error(`[CRON billing-reminder] Falha ao enviar para empresa ${a.empresa_id}`);
+                const nomeEmpresa = a.nome_fantasia || `empresa ${a.empresa_id}`;
+                const detalhe = `${nomeEmpresa}: ${res.error ?? 'falha desconhecida'}`;
+                errosDetalhe.push(detalhe);
+                console.error(`[CRON billing-reminder] Falha ao enviar para ${nomeEmpresa}: ${res.error}`);
             }
         }
 
-        return NextResponse.json({
-            success: true,
-            message: 'Lembretes de renovacao processados',
+        const summary: Record<string, any> = {
             candidatos: assinaturas.length,
             enviados,
             semTelefone,
             falhas,
+        };
+        if (errosDetalhe.length > 0) {
+            // Mostra ate 5 motivos no painel de monitoramento
+            summary.motivoFalhas = errosDetalhe.slice(0, 5).join(' | ');
+        }
+
+        await logCronRun({
+            jobName: 'billing-reminder',
+            status: 'success',
+            summary,
+            durationMs: Date.now() - startedAt,
+        });
+
+        return NextResponse.json({
+            success: true,
+            message: 'Lembretes de renovacao processados',
+            ...summary,
             timestamp: new Date().toISOString(),
         });
     } catch (error: any) {
         console.error('[CRON billing-reminder] Erro:', error);
+        await logCronRun({
+            jobName: 'billing-reminder',
+            status: 'error',
+            summary: { error: error?.message ?? 'erro desconhecido' },
+        });
         return NextResponse.json(
             { success: false, error: error.message },
             { status: 500 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { pg } from '@/lib/postgres';
 import { blockCompany, updatePaymentStatus } from '@/app/actions/billing';
 import { sendPaymentReminder } from '@/app/actions/whatsapp';
+import { logCronRun } from '@/lib/cron-logger';
 
 // Protege o endpoint com uma chave secreta
 const CRON_SECRET = process.env.CRON_SECRET;
@@ -29,6 +30,7 @@ async function handleCheckPayments(request: NextRequest) {
   }
   
   console.log('[Cron] Iniciando verificacao de pagamentos...');
+  const startedAt = Date.now();
   
   try {
     const today = new Date();
@@ -111,16 +113,27 @@ async function handleCheckPayments(request: NextRequest) {
     
     console.log(`[Cron] Finalizado: ${processed} processadas, ${notified} notificadas, ${blocked} bloqueadas`);
     
+    const summary = { processed, notified, blocked, total: empresas.length };
+
+    await logCronRun({
+      jobName: 'check-payments',
+      status: 'success',
+      summary,
+      durationMs: Date.now() - startedAt,
+    });
+
     return NextResponse.json({
       success: true,
-      processed,
-      notified,
-      blocked,
-      total: empresas.length,
+      ...summary,
     });
     
   } catch (error: any) {
     console.error('[Cron] Erro:', error);
+    await logCronRun({
+      jobName: 'check-payments',
+      status: 'error',
+      summary: { error: error?.message ?? 'erro desconhecido' },
+    });
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
