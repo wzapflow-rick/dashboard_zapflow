@@ -25,6 +25,7 @@ import {
   ChevronRight,
   Activity,
   UtensilsCrossed,
+  Radar,
 } from 'lucide-react';
 import { logoutAdmin } from '@/app/actions/admin-auth';
 import { cn } from '@/lib/utils';
@@ -51,6 +52,7 @@ const menuItems: MenuItem[] = [
   { href: '/admin/assinaturas', label: 'Assinaturas', icon: CreditCard },
   { href: '/admin/monitoramento', label: 'Monitoramento', icon: Activity },
   { href: '/admin/demo', label: 'Demo de Cardápio', icon: UtensilsCrossed },
+  { href: '/admin/captacao', label: 'Captação de Leads', icon: Radar },
 ];
 
 const remarketingMenu: MenuGroup = {
