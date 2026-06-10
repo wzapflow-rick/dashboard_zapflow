@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Printer, X, ChevronLeft } from 'lucide-react';
+import { printThermal, getReceiptCss, getLarguraPadrao, setLarguraPadrao, type LarguraPapel } from '@/lib/thermal-print';
 
 interface PrintModalProps {
     isOpen: boolean;
@@ -14,54 +15,27 @@ const formatPrice = (value: number) => `R$ ${Number(value || 0).toFixed(2).repla
 
 export default function PrintModal({ isOpen, onClose, order }: PrintModalProps) {
     const printRef = useRef<HTMLDivElement>(null);
+    const [largura, setLargura] = useState<LarguraPapel>('58mm');
+
+    React.useEffect(() => {
+        setLargura(getLarguraPadrao());
+    }, []);
 
     if (!isOpen) return null;
+
+    const handleLarguraChange = (l: LarguraPapel) => {
+        setLargura(l);
+        setLarguraPadrao(l);
+    };
 
     const handlePrint = () => {
         const printContent = printRef.current;
         if (!printContent) return;
-
-        const printWindow = window.open('', '_blank', 'width=400,height=600');
-        if (!printWindow) {
-            alert('Bloqueador de pop-ups impede a impressão. Permita pop-ups para este site.');
-            return;
-        }
-
-        printWindow.document.write(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Pedido #${order?.id}</title>
-                <style>
-                    * { margin: 0; padding: 0; box-sizing: border-box; }
-                    body { 
-                        font-family: 'Courier New', monospace; 
-                        padding: 10px;
-                        font-size: 12px;
-                        width: 58mm;
-                    }
-                    .header { text-align: center; margin-bottom: 10px; }
-                    .header h1 { font-size: 16px; font-weight: bold; }
-                    .divider { border-bottom: 1px dashed #000; margin: 8px 0; }
-                    .item { display: flex; justify-content: space-between; margin: 4px 0; }
-                    .item-name { flex: 1; }
-                    .item-qty { margin-right: 10px; }
-                    .total { font-weight: bold; font-size: 14px; margin-top: 10px; }
-                    .footer { text-align: center; margin-top: 15px; font-size: 10px; }
-                    @media print {
-                        body { width: 58mm !important; }
-                    }
-                </style>
-            </head>
-            <body>${printContent.innerHTML}</body>
-            </html>
-        `);
-        printWindow.document.close();
-        setTimeout(() => {
-            printWindow.focus();
-            printWindow.print();
-            printWindow.close();
-        }, 250);
+        printThermal({
+            title: `Pedido #${order?.id}`,
+            bodyHtml: `<div class="zf-receipt">${printContent.innerHTML}</div>`,
+            largura,
+        });
     };
 
     const formattedItems = useMemo(() => {
@@ -116,94 +90,139 @@ export default function PrintModal({ isOpen, onClose, order }: PrintModalProps) 
                     </div>
 
                     {/* Ticket Preview */}
-                    <div className="p-4">
-	                        <div 
-	                            ref={printRef}
-	                            className="bg-white border-2 border-dashed border-slate-300 rounded-lg p-4 text-sm font-mono text-slate-900"
-	                        >
-	                            <div className="text-center mb-4">
-	                                <h1 className="text-lg font-bold text-slate-900">PEDIDO #{order?.id}</h1>
-	                                <p className="text-xs text-slate-600">{new Date().toLocaleString('pt-BR')}</p>
-	                            </div>
-	                            
-	                            <div className="border-t border-b border-dashed border-slate-300 py-2 mb-2 text-slate-900">
-	                                <p><strong className="text-slate-900">Cliente:</strong> {order?.nome_cliente || order?.cliente_nome || 'Cliente'}</p>
-	                                <p><strong className="text-slate-900">Tel:</strong> {order?.telefone_cliente || '-'}</p>
-	                                {isDelivery ? (
-	                                    <p><strong className="text-slate-900">End:</strong> {order?.endereco_entrega} {order?.bairro_entrega && `- ${order.bairro_entrega}`}</p>
-	                                ) : (
-	                                    <p><strong className="text-slate-900">Retirada no balcão</strong></p>
-	                                )}
-	                            </div>
+                    <div className="p-4 flex justify-center bg-slate-100 dark:bg-slate-900/50">
+                        <div
+                            ref={printRef}
+                            className="zf-receipt bg-white shadow-lg"
+                            style={{ width: largura === '58mm' ? '240px' : '300px', padding: '10px 12px' }}
+                        >
+                            <style dangerouslySetInnerHTML={{ __html: getReceiptCss(largura) }} />
 
-                            <div className="mb-2">
-                                {formattedItems.map((item: any, idx: number) => (
-                                    <div key={idx} className="py-1">
-                                        <div className="flex justify-between">
-                                            <span className="flex-1">{item.qtd}x {item.nome}</span>
-                                            <span>{formatPrice(item.preco * item.qtd)}</span>
-                                        </div>
-                                        {item.observacao && (
-                                            <p className="text-[10px] text-slate-600 ml-4 italic">OBS: {item.observacao}</p>
-                                        )}
-                                    </div>
-                                ))}
+                            {/* Cabeçalho da loja (bloco invertido) */}
+                            <div className="zf-brand">
+                                <div className="zf-name">{(order?.empresa_nome || order?.nome_empresa || 'PEDIDO').toUpperCase()}</div>
+                                <div className="zf-sub">{new Date().toLocaleString('pt-BR')}</div>
                             </div>
 
-	                            {order?.observacoes && (
-	                                <div className="border-t border-dashed border-slate-300 py-2 my-2 text-slate-900">
-	                                    <p className="text-xs"><strong className="text-slate-900">OBS:</strong> {order.observacoes}</p>
-	                                </div>
-	                            )}
+                            {/* Badge de tipo */}
+                            <div className="zf-badge-wrap">
+                                <span className="zf-badge">{isDelivery ? 'DELIVERY' : 'RETIRADA'}</span>
+                            </div>
 
-	                            <div className="border-t border-dashed border-slate-300 py-2 mt-2 text-slate-900">
-	                                <div className="flex justify-between">
-	                                    <span>Subtotal:</span>
-	                                    <span>{formatPrice(order?.valor_total || order?.total || 0)}</span>
-	                                </div>
-	                                {order?.taxa_entrega > 0 && (
-	                                    <div className="flex justify-between">
-	                                        <span>Entrega:</span>
-	                                        <span>{formatPrice(order.taxa_entrega)}</span>
-	                                    </div>
-	                                )}
-	                                {order?.desconto > 0 && (
-	                                    <div className="flex justify-between text-green-700">
-	                                        <span>Desconto:</span>
-	                                        <span>-{formatPrice(order.desconto)}</span>
-	                                    </div>
-	                                )}
-	                                <div className="flex justify-between font-bold text-lg mt-1 text-slate-900">
-	                                    <span>TOTAL:</span>
-	                                    <span>{formatPrice(order?.valor_total || order?.total || 0)}</span>
-	                                </div>
-	                            </div>
+                            {/* Número do pedido em destaque */}
+                            <div className="zf-bignum-label">PEDIDO</div>
+                            <div className="zf-bignum">#{order?.id}</div>
 
-	                            <div className="text-center mt-4 text-xs text-slate-600">
-	                                <p>Pagamento: {order?.forma_pagamento || 'Não informado'}</p>
-	                                {order?.forma_pagamento === 'dinheiro' && order?.troco && (
-	                                    <p>Troco para: {formatPrice(order.troco)}</p>
-	                                )}
-	                                <p className="mt-2">Obrigado pela preferência!</p>
-	                            </div>
+                            <hr className="zf-dash" />
+
+                            {/* Dados do cliente */}
+                            <div className="zf-section">Cliente</div>
+                            <div className="zf-meta"><b>Nome:</b> {order?.nome_cliente || order?.cliente_nome || 'Cliente'}</div>
+                            <div className="zf-meta"><b>Tel:</b> {order?.telefone_cliente || '-'}</div>
+                            {isDelivery ? (
+                                <div className="zf-meta"><b>End:</b> {order?.endereco_entrega}{order?.bairro_entrega ? ` - ${order.bairro_entrega}` : ''}</div>
+                            ) : (
+                                <div className="zf-meta"><b>Retirada no balcão</b></div>
+                            )}
+
+                            <hr className="zf-dash" />
+
+                            {/* Itens */}
+                            <div className="zf-section">Itens</div>
+                            {formattedItems.map((item: any, idx: number) => (
+                                <div key={idx}>
+                                    <div className="zf-li">
+                                        <span className="zf-nm"><span className="zf-qbox">{item.qtd}</span>{item.nome}</span>
+                                        <span className="zf-pr">{formatPrice(item.preco * item.qtd)}</span>
+                                    </div>
+                                    {item.observacao && (
+                                        <div className="zf-obs">&gt; {item.observacao}</div>
+                                    )}
+                                </div>
+                            ))}
+
+                            {order?.observacoes && (
+                                <>
+                                    <hr className="zf-dash" />
+                                    <div className="zf-section">Observações</div>
+                                    <div className="zf-meta">{order.observacoes}</div>
+                                </>
+                            )}
+
+                            <hr className="zf-dash" />
+
+                            {/* Subtotais */}
+                            <div className="zf-row">
+                                <span>Subtotal</span>
+                                <span>{formatPrice(order?.valor_total || order?.total || 0)}</span>
+                            </div>
+                            {order?.taxa_entrega > 0 && (
+                                <div className="zf-row">
+                                    <span>Entrega</span>
+                                    <span>{formatPrice(order.taxa_entrega)}</span>
+                                </div>
+                            )}
+                            {order?.desconto > 0 && (
+                                <div className="zf-row">
+                                    <span>Desconto</span>
+                                    <span>-{formatPrice(order.desconto)}</span>
+                                </div>
+                            )}
+
+                            {/* TOTAL em caixa invertida */}
+                            <div className="zf-total">
+                                <span>TOTAL</span>
+                                <span>{formatPrice(order?.valor_total || order?.total || 0)}</span>
+                            </div>
+
+                            {/* Pagamento */}
+                            <div className="zf-meta"><b>Pagamento:</b> {order?.forma_pagamento || 'Não informado'}</div>
+                            {order?.forma_pagamento === 'dinheiro' && order?.troco && (
+                                <div className="zf-meta"><b>Troco para:</b> {formatPrice(order.troco)}</div>
+                            )}
+
+                            {/* Rodapé */}
+                            <div className="zf-foot">
+                                <div className="zf-thanks">Obrigado pela preferência!</div>
+                                <div>ZapFlow</div>
+                            </div>
+                            <div className="zf-cut">- - - - - - - - - - - -</div>
                         </div>
                     </div>
 
                     {/* Actions */}
-                    <div className="p-4 border-t border-slate-200 dark:border-slate-700 flex gap-3">
-                        <button
-                            onClick={onClose}
-                            className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            onClick={handlePrint}
-                            className="flex-1 px-4 py-2.5 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2"
-                        >
-                            <Printer className="size-4" />
-                            Imprimir
-                        </button>
+                    <div className="p-4 border-t border-slate-200 dark:border-slate-700 space-y-3">
+                        <div className="flex items-center justify-center gap-2">
+                            <span className="text-xs text-slate-500 dark:text-slate-400">Largura do papel:</span>
+                            {(['58mm', '80mm'] as const).map((l) => (
+                                <button
+                                    key={l}
+                                    onClick={() => handleLarguraChange(l)}
+                                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                                        largura === l
+                                            ? 'bg-primary text-white'
+                                            : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                                    }`}
+                                >
+                                    {l}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={onClose}
+                                className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handlePrint}
+                                className="flex-1 px-4 py-2.5 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2"
+                            >
+                                <Printer className="size-4" />
+                                Imprimir
+                            </button>
+                        </div>
                     </div>
                 </motion.div>
             </div>

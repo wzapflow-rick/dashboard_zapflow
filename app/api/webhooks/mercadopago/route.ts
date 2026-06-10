@@ -53,9 +53,10 @@ function validateWebhookSignature(
 
   // Montar o manifest para validacao
   // Formato: id:[data.id];request-id:[x-request-id];ts:[ts];
+  // IMPORTANTE: o MercadoPago exige que data.id alfanumerico seja em MINUSCULAS.
   let manifest = '';
   if (dataId) {
-    manifest += `id:${dataId};`;
+    manifest += `id:${dataId.toLowerCase()};`;
   }
   if (xRequestId) {
     manifest += `request-id:${xRequestId};`;
@@ -352,9 +353,13 @@ export async function POST(req: NextRequest) {
     const xSignature = req.headers.get('x-signature');
     const xRequestId = req.headers.get('x-request-id');
     
-    // Extrair data.id da query string (MercadoPago envia assim)
+    // Extrair data.id da query string (MercadoPago envia de formas diferentes
+    // dependendo do tipo de notificacao: ?data.id=, ?id=, ?data_id=)
     const url = new URL(req.url);
-    const dataIdFromQuery = url.searchParams.get('data.id');
+    const dataIdFromQuery =
+      url.searchParams.get('data.id') ||
+      url.searchParams.get('data_id') ||
+      url.searchParams.get('id');
     
     // Ler o body como texto primeiro para debug
     const bodyText = await req.text();
@@ -368,8 +373,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
     }
     
-    // Obter data.id do body se nao veio na query
-    const dataId = dataIdFromQuery || body?.data?.id?.toString() || null;
+    // Obter data.id do body se nao veio na query.
+    // O MP pode mandar em body.data.id ou (em alguns eventos) em body.id.
+    const dataId =
+      dataIdFromQuery ||
+      body?.data?.id?.toString() ||
+      body?.id?.toString() ||
+      null;
+
+    console.log('[Webhook] data.id resolvido para o manifest:', dataId);
     
     // Validar assinatura do webhook
     const signatureValidation = validateWebhookSignature(xSignature, xRequestId, dataId);

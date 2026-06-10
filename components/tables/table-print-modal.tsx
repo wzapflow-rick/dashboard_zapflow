@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Printer, X, ChevronLeft } from 'lucide-react';
 import { type MesaComDetalhes, type ComandaComPedidos } from '@/app/actions/tables';
+import { printThermal, getReceiptCss, getLarguraPadrao, setLarguraPadrao, type LarguraPapel } from '@/lib/thermal-print';
 
 interface TablePrintModalProps {
   isOpen: boolean;
@@ -17,8 +18,18 @@ const formatPrice = (value: number) => `R$ ${Number(value || 0).toFixed(2).repla
 
 export default function TablePrintModal({ isOpen, onClose, mesa, comanda, tipo }: TablePrintModalProps) {
   const printRef = useRef<HTMLDivElement>(null);
+  const [largura, setLargura] = useState<LarguraPapel>('58mm');
+
+  React.useEffect(() => {
+    setLargura(getLarguraPadrao());
+  }, []);
 
   if (!isOpen) return null;
+
+  const handleLarguraChange = (l: LarguraPapel) => {
+    setLargura(l);
+    setLarguraPadrao(l);
+  };
 
   // Determinar quais comandas mostrar
   const comandasParaImprimir = tipo === 'comanda' && comanda 
@@ -51,52 +62,11 @@ export default function TablePrintModal({ isOpen, onClose, mesa, comanda, tipo }
   const handlePrint = () => {
     const printContent = printRef.current;
     if (!printContent) return;
-
-    const printWindow = window.open('', '_blank', 'width=400,height=600');
-    if (!printWindow) {
-      alert('Bloqueador de pop-ups impede a impressão. Permita pop-ups para este site.');
-      return;
-    }
-
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>${tipo === 'mesa' ? `Mesa ${mesa.numero}` : `Comanda - ${comanda?.nome_cliente || comanda?.id}`}</title>
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { 
-            font-family: 'Courier New', monospace; 
-            padding: 10px;
-            font-size: 12px;
-            width: 80mm;
-          }
-          .header { text-align: center; margin-bottom: 10px; }
-          .header h1 { font-size: 18px; font-weight: bold; }
-          .header h2 { font-size: 14px; margin-top: 4px; }
-          .divider { border-bottom: 1px dashed #000; margin: 8px 0; }
-          .section-title { font-weight: bold; font-size: 13px; margin: 10px 0 5px 0; }
-          .item { display: flex; justify-content: space-between; margin: 3px 0; padding: 2px 0; }
-          .item-name { flex: 1; }
-          .item-qty { width: 30px; text-align: center; }
-          .item-price { width: 70px; text-align: right; }
-          .subtotal { display: flex; justify-content: space-between; font-weight: bold; margin-top: 5px; padding-top: 5px; border-top: 1px dashed #000; }
-          .total { display: flex; justify-content: space-between; font-weight: bold; font-size: 16px; margin-top: 10px; padding: 8px 0; border-top: 2px solid #000; border-bottom: 2px solid #000; }
-          .footer { text-align: center; margin-top: 15px; font-size: 10px; }
-          @media print {
-            body { width: 80mm !important; }
-          }
-        </style>
-      </head>
-      <body>${printContent.innerHTML}</body>
-      </html>
-    `);
-    printWindow.document.close();
-    setTimeout(() => {
-      printWindow.focus();
-      printWindow.print();
-      printWindow.close();
-    }, 250);
+    printThermal({
+      title: tipo === 'mesa' ? `Mesa ${mesa.numero}` : `Comanda - ${comanda?.nome_cliente || comanda?.id}`,
+      bodyHtml: `<div class="zf-receipt">${printContent.innerHTML}</div>`,
+      largura,
+    });
   };
 
   return (
@@ -130,23 +100,30 @@ export default function TablePrintModal({ isOpen, onClose, mesa, comanda, tipo }
           </div>
 
           {/* Ticket Preview */}
-          <div className="p-4 overflow-y-auto flex-1">
-            <div 
+          <div className="p-4 overflow-y-auto flex-1 flex justify-center bg-slate-100 dark:bg-slate-900/50">
+            <div
               ref={printRef}
-              className="bg-white border-2 border-dashed border-slate-300 rounded-lg p-4 text-sm font-mono text-slate-900"
+              className="zf-receipt bg-white shadow-lg h-fit"
+              style={{ width: largura === '58mm' ? '240px' : '300px', padding: '10px 12px' }}
             >
-              {/* Cabeçalho */}
-              <div className="text-center mb-4">
-                <h1 className="text-lg font-bold text-slate-900">
-                  MESA {mesa.numero}
-                </h1>
-                {mesa.nome && (
-                  <p className="text-sm text-slate-600">{mesa.nome}</p>
-                )}
-                <p className="text-xs text-slate-600 mt-1">{new Date().toLocaleString('pt-BR')}</p>
+              <style dangerouslySetInnerHTML={{ __html: getReceiptCss(largura) }} />
+
+              {/* Cabeçalho invertido */}
+              <div className="zf-brand">
+                <div className="zf-name">{tipo === 'mesa' ? `MESA ${mesa.numero}` : 'COMANDA'}</div>
+                <div className="zf-sub">{new Date().toLocaleString('pt-BR')}</div>
               </div>
 
-              <div className="border-t border-dashed border-slate-300 my-2" />
+              {/* Badge de tipo */}
+              <div className="zf-badge-wrap">
+                <span className="zf-badge">{tipo === 'mesa' ? 'CONTA DA MESA' : 'CONTA INDIVIDUAL'}</span>
+              </div>
+
+              {mesa.nome && tipo === 'mesa' && (
+                <div className="zf-meta zf-center"><b>{mesa.nome}</b></div>
+              )}
+
+              <hr className="zf-dash" />
 
               {/* Itens por Comanda */}
               {comandasParaImprimir.map((cmd) => {
@@ -164,69 +141,83 @@ export default function TablePrintModal({ isOpen, onClose, mesa, comanda, tipo }
                 );
 
                 return (
-                  <div key={cmd.id} className="mb-4">
-                    <p className="font-bold text-slate-900 mb-2">
-                      {cmd.nome_cliente || `Comanda ${cmd.id}`}
-                    </p>
-                    
+                  <div key={cmd.id}>
+                    <div className="zf-section">{cmd.nome_cliente || `Comanda ${cmd.id}`}</div>
+
                     {itensComanda.length > 0 ? (
                       <>
                         {itensComanda.map((item: any, idx: number) => (
-                          <div key={idx} className="flex justify-between py-1 text-slate-800">
-                            <span className="flex-1">
-                              {item.quantidade}x {item.produto || item.nome}
-                            </span>
-                            <span>
-                              {formatPrice((Number(item.preco_unitario) || Number(item.preco) || 0) * (item.quantidade || 1))}
-                            </span>
+                          <div className="zf-li" key={idx}>
+                            <span className="zf-nm"><span className="zf-qbox">{item.quantidade}</span>{item.produto || item.nome}</span>
+                            <span className="zf-pr">{formatPrice((Number(item.preco_unitario) || Number(item.preco) || 0) * (item.quantidade || 1))}</span>
                           </div>
                         ))}
-                        <div className="flex justify-between font-bold mt-2 pt-2 border-t border-dashed border-slate-300 text-slate-900">
-                          <span>Subtotal:</span>
+                        <div className="zf-row zf-strong">
+                          <span>Subtotal</span>
                           <span>{formatPrice(totalComanda)}</span>
                         </div>
                       </>
                     ) : (
-                      <p className="text-slate-500 text-xs">Nenhum item</p>
+                      <div className="zf-meta">Nenhum item</div>
                     )}
 
                     {tipo === 'mesa' && comandasParaImprimir.length > 1 && (
-                      <div className="border-t border-dashed border-slate-300 my-3" />
+                      <hr className="zf-dash" />
                     )}
                   </div>
                 );
               })}
 
-              {/* Total Geral */}
+              {/* Total Geral em caixa invertida */}
               {(tipo === 'mesa' || comandasParaImprimir.length > 1) && (
-                <div className="flex justify-between font-bold text-lg mt-4 pt-3 border-t-2 border-slate-900 text-slate-900">
-                  <span>TOTAL:</span>
+                <div className="zf-total">
+                  <span>TOTAL</span>
                   <span>{formatPrice(totalGeral)}</span>
                 </div>
               )}
 
               {/* Rodapé */}
-              <div className="text-center mt-6 text-xs text-slate-600">
-                <p>Obrigado pela preferência!</p>
+              <div className="zf-foot">
+                <div className="zf-thanks">Obrigado pela preferência!</div>
+                <div>ZapFlow</div>
               </div>
+              <div className="zf-cut">- - - - - - - - - - - -</div>
             </div>
           </div>
 
           {/* Actions */}
-          <div className="p-4 border-t border-slate-200 dark:border-slate-700 flex gap-3 shrink-0">
-            <button
-              onClick={onClose}
-              className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={handlePrint}
-              className="flex-1 px-4 py-2.5 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2"
-            >
-              <Printer className="size-4" />
-              Imprimir
-            </button>
+          <div className="p-4 border-t border-slate-200 dark:border-slate-700 space-y-3 shrink-0">
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-xs text-slate-500 dark:text-slate-400">Largura do papel:</span>
+              {(['58mm', '80mm'] as const).map((l) => (
+                <button
+                  key={l}
+                  onClick={() => handleLarguraChange(l)}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                    largura === l
+                      ? 'bg-primary text-white'
+                      : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                  }`}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={onClose}
+                className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handlePrint}
+                className="flex-1 px-4 py-2.5 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2"
+              >
+                <Printer className="size-4" />
+                Imprimir
+              </button>
+            </div>
           </div>
         </motion.div>
       </div>

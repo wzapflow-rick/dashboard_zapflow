@@ -17,6 +17,7 @@
     "security:scan": "npm audit --json | grep -E '(vulnerability|critical|high)' | head -20"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.69",
     "@google/genai": "^1.17.0",
     "@hookform/resolvers": "^5.2.1",
     "@mercadopago/sdk-js": "^0.0.3",
