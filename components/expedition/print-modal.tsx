@@ -3,7 +3,7 @@
 import React, { useRef, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Printer, X, ChevronLeft } from 'lucide-react';
-import { printThermal, getLarguraPadrao, setLarguraPadrao, type LarguraPapel } from '@/lib/thermal-print';
+import { printThermal, getReceiptCss, getLarguraPadrao, setLarguraPadrao, type LarguraPapel } from '@/lib/thermal-print';
 
 interface PrintModalProps {
     isOpen: boolean;
@@ -33,7 +33,7 @@ export default function PrintModal({ isOpen, onClose, order }: PrintModalProps) 
         if (!printContent) return;
         printThermal({
             title: `Pedido #${order?.id}`,
-            bodyHtml: printContent.innerHTML,
+            bodyHtml: `<div class="zf-receipt">${printContent.innerHTML}</div>`,
             largura,
         });
     };
@@ -90,76 +90,103 @@ export default function PrintModal({ isOpen, onClose, order }: PrintModalProps) 
                     </div>
 
                     {/* Ticket Preview */}
-                    <div className="p-4">
-	                        <div 
-	                            ref={printRef}
-	                            className="bg-white border-2 border-dashed border-slate-300 rounded-lg p-4 text-sm font-mono text-slate-900"
-	                        >
-	                            <div className="text-center mb-4">
-	                                <h1 className="text-lg font-bold text-slate-900">PEDIDO #{order?.id}</h1>
-	                                <p className="text-xs text-slate-600">{new Date().toLocaleString('pt-BR')}</p>
-	                            </div>
-	                            
-	                            <div className="border-t border-b border-dashed border-slate-300 py-2 mb-2 text-slate-900">
-	                                <p><strong className="text-slate-900">Cliente:</strong> {order?.nome_cliente || order?.cliente_nome || 'Cliente'}</p>
-	                                <p><strong className="text-slate-900">Tel:</strong> {order?.telefone_cliente || '-'}</p>
-	                                {isDelivery ? (
-	                                    <p><strong className="text-slate-900">End:</strong> {order?.endereco_entrega} {order?.bairro_entrega && `- ${order.bairro_entrega}`}</p>
-	                                ) : (
-	                                    <p><strong className="text-slate-900">Retirada no balcão</strong></p>
-	                                )}
-	                            </div>
+                    <div className="p-4 flex justify-center bg-slate-100 dark:bg-slate-900/50">
+                        <div
+                            ref={printRef}
+                            className="zf-receipt bg-white shadow-lg"
+                            style={{ width: largura === '58mm' ? '240px' : '300px', padding: '10px 12px' }}
+                        >
+                            <style dangerouslySetInnerHTML={{ __html: getReceiptCss(largura) }} />
 
-                            <div className="mb-2">
-                                {formattedItems.map((item: any, idx: number) => (
-                                    <div key={idx} className="py-1">
-                                        <div className="flex justify-between">
-                                            <span className="flex-1">{item.qtd}x {item.nome}</span>
-                                            <span>{formatPrice(item.preco * item.qtd)}</span>
-                                        </div>
-                                        {item.observacao && (
-                                            <p className="text-[10px] text-slate-600 ml-4 italic">OBS: {item.observacao}</p>
-                                        )}
-                                    </div>
-                                ))}
+                            {/* Cabeçalho da loja (bloco invertido) */}
+                            <div className="zf-brand">
+                                <div className="zf-name">{(order?.empresa_nome || order?.nome_empresa || 'PEDIDO').toUpperCase()}</div>
+                                <div className="zf-sub">{new Date().toLocaleString('pt-BR')}</div>
                             </div>
 
-	                            {order?.observacoes && (
-	                                <div className="border-t border-dashed border-slate-300 py-2 my-2 text-slate-900">
-	                                    <p className="text-xs"><strong className="text-slate-900">OBS:</strong> {order.observacoes}</p>
-	                                </div>
-	                            )}
+                            {/* Badge de tipo */}
+                            <div className="zf-badge-wrap">
+                                <span className="zf-badge">{isDelivery ? 'DELIVERY' : 'RETIRADA'}</span>
+                            </div>
 
-	                            <div className="border-t border-dashed border-slate-300 py-2 mt-2 text-slate-900">
-	                                <div className="flex justify-between">
-	                                    <span>Subtotal:</span>
-	                                    <span>{formatPrice(order?.valor_total || order?.total || 0)}</span>
-	                                </div>
-	                                {order?.taxa_entrega > 0 && (
-	                                    <div className="flex justify-between">
-	                                        <span>Entrega:</span>
-	                                        <span>{formatPrice(order.taxa_entrega)}</span>
-	                                    </div>
-	                                )}
-	                                {order?.desconto > 0 && (
-	                                    <div className="flex justify-between text-green-700">
-	                                        <span>Desconto:</span>
-	                                        <span>-{formatPrice(order.desconto)}</span>
-	                                    </div>
-	                                )}
-	                                <div className="total-line flex justify-between font-bold text-lg mt-1 text-slate-900">
-	                                    <span>TOTAL:</span>
-	                                    <span>{formatPrice(order?.valor_total || order?.total || 0)}</span>
-	                                </div>
-	                            </div>
+                            {/* Número do pedido em destaque */}
+                            <div className="zf-bignum-label">PEDIDO</div>
+                            <div className="zf-bignum">#{order?.id}</div>
 
-	                            <div className="text-center mt-4 text-xs text-slate-600">
-	                                <p>Pagamento: {order?.forma_pagamento || 'Não informado'}</p>
-	                                {order?.forma_pagamento === 'dinheiro' && order?.troco && (
-	                                    <p>Troco para: {formatPrice(order.troco)}</p>
-	                                )}
-	                                <p className="mt-2">Obrigado pela preferência!</p>
-	                            </div>
+                            <hr className="zf-dash" />
+
+                            {/* Dados do cliente */}
+                            <div className="zf-section">Cliente</div>
+                            <div className="zf-meta"><b>Nome:</b> {order?.nome_cliente || order?.cliente_nome || 'Cliente'}</div>
+                            <div className="zf-meta"><b>Tel:</b> {order?.telefone_cliente || '-'}</div>
+                            {isDelivery ? (
+                                <div className="zf-meta"><b>End:</b> {order?.endereco_entrega}{order?.bairro_entrega ? ` - ${order.bairro_entrega}` : ''}</div>
+                            ) : (
+                                <div className="zf-meta"><b>Retirada no balcão</b></div>
+                            )}
+
+                            <hr className="zf-dash" />
+
+                            {/* Itens */}
+                            <div className="zf-section">Itens</div>
+                            {formattedItems.map((item: any, idx: number) => (
+                                <div key={idx}>
+                                    <div className="zf-li">
+                                        <span className="zf-nm"><span className="zf-qbox">{item.qtd}</span>{item.nome}</span>
+                                        <span className="zf-pr">{formatPrice(item.preco * item.qtd)}</span>
+                                    </div>
+                                    {item.observacao && (
+                                        <div className="zf-obs">&gt; {item.observacao}</div>
+                                    )}
+                                </div>
+                            ))}
+
+                            {order?.observacoes && (
+                                <>
+                                    <hr className="zf-dash" />
+                                    <div className="zf-section">Observações</div>
+                                    <div className="zf-meta">{order.observacoes}</div>
+                                </>
+                            )}
+
+                            <hr className="zf-dash" />
+
+                            {/* Subtotais */}
+                            <div className="zf-row">
+                                <span>Subtotal</span>
+                                <span>{formatPrice(order?.valor_total || order?.total || 0)}</span>
+                            </div>
+                            {order?.taxa_entrega > 0 && (
+                                <div className="zf-row">
+                                    <span>Entrega</span>
+                                    <span>{formatPrice(order.taxa_entrega)}</span>
+                                </div>
+                            )}
+                            {order?.desconto > 0 && (
+                                <div className="zf-row">
+                                    <span>Desconto</span>
+                                    <span>-{formatPrice(order.desconto)}</span>
+                                </div>
+                            )}
+
+                            {/* TOTAL em caixa invertida */}
+                            <div className="zf-total">
+                                <span>TOTAL</span>
+                                <span>{formatPrice(order?.valor_total || order?.total || 0)}</span>
+                            </div>
+
+                            {/* Pagamento */}
+                            <div className="zf-meta"><b>Pagamento:</b> {order?.forma_pagamento || 'Não informado'}</div>
+                            {order?.forma_pagamento === 'dinheiro' && order?.troco && (
+                                <div className="zf-meta"><b>Troco para:</b> {formatPrice(order.troco)}</div>
+                            )}
+
+                            {/* Rodapé */}
+                            <div className="zf-foot">
+                                <div className="zf-thanks">Obrigado pela preferência!</div>
+                                <div>ZapFlow</div>
+                            </div>
+                            <div className="zf-cut">- - - - - - - - - - - -</div>
                         </div>
                     </div>
 

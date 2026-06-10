@@ -4,7 +4,7 @@ import React, { useRef, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Printer, X, ChevronLeft } from 'lucide-react';
 import { type MesaComDetalhes, type ComandaComPedidos } from '@/app/actions/tables';
-import { printThermal, getLarguraPadrao, setLarguraPadrao, type LarguraPapel } from '@/lib/thermal-print';
+import { printThermal, getReceiptCss, getLarguraPadrao, setLarguraPadrao, type LarguraPapel } from '@/lib/thermal-print';
 
 interface TablePrintModalProps {
   isOpen: boolean;
@@ -64,7 +64,7 @@ export default function TablePrintModal({ isOpen, onClose, mesa, comanda, tipo }
     if (!printContent) return;
     printThermal({
       title: tipo === 'mesa' ? `Mesa ${mesa.numero}` : `Comanda - ${comanda?.nome_cliente || comanda?.id}`,
-      bodyHtml: printContent.innerHTML,
+      bodyHtml: `<div class="zf-receipt">${printContent.innerHTML}</div>`,
       largura,
     });
   };
@@ -100,23 +100,30 @@ export default function TablePrintModal({ isOpen, onClose, mesa, comanda, tipo }
           </div>
 
           {/* Ticket Preview */}
-          <div className="p-4 overflow-y-auto flex-1">
-            <div 
+          <div className="p-4 overflow-y-auto flex-1 flex justify-center bg-slate-100 dark:bg-slate-900/50">
+            <div
               ref={printRef}
-              className="bg-white border-2 border-dashed border-slate-300 rounded-lg p-4 text-sm font-mono text-slate-900"
+              className="zf-receipt bg-white shadow-lg h-fit"
+              style={{ width: largura === '58mm' ? '240px' : '300px', padding: '10px 12px' }}
             >
-              {/* Cabeçalho */}
-              <div className="text-center mb-4">
-                <h1 className="text-lg font-bold text-slate-900">
-                  MESA {mesa.numero}
-                </h1>
-                {mesa.nome && (
-                  <p className="text-sm text-slate-600">{mesa.nome}</p>
-                )}
-                <p className="text-xs text-slate-600 mt-1">{new Date().toLocaleString('pt-BR')}</p>
+              <style dangerouslySetInnerHTML={{ __html: getReceiptCss(largura) }} />
+
+              {/* Cabeçalho invertido */}
+              <div className="zf-brand">
+                <div className="zf-name">{tipo === 'mesa' ? `MESA ${mesa.numero}` : 'COMANDA'}</div>
+                <div className="zf-sub">{new Date().toLocaleString('pt-BR')}</div>
               </div>
 
-              <div className="border-t border-dashed border-slate-300 my-2" />
+              {/* Badge de tipo */}
+              <div className="zf-badge-wrap">
+                <span className="zf-badge">{tipo === 'mesa' ? 'CONTA DA MESA' : 'CONTA INDIVIDUAL'}</span>
+              </div>
+
+              {mesa.nome && tipo === 'mesa' && (
+                <div className="zf-meta zf-center"><b>{mesa.nome}</b></div>
+              )}
+
+              <hr className="zf-dash" />
 
               {/* Itens por Comanda */}
               {comandasParaImprimir.map((cmd) => {
@@ -134,51 +141,47 @@ export default function TablePrintModal({ isOpen, onClose, mesa, comanda, tipo }
                 );
 
                 return (
-                  <div key={cmd.id} className="mb-4">
-                    <p className="font-bold text-slate-900 mb-2">
-                      {cmd.nome_cliente || `Comanda ${cmd.id}`}
-                    </p>
-                    
+                  <div key={cmd.id}>
+                    <div className="zf-section">{cmd.nome_cliente || `Comanda ${cmd.id}`}</div>
+
                     {itensComanda.length > 0 ? (
                       <>
                         {itensComanda.map((item: any, idx: number) => (
-                          <div key={idx} className="flex justify-between py-1 text-slate-800">
-                            <span className="flex-1">
-                              {item.quantidade}x {item.produto || item.nome}
-                            </span>
-                            <span>
-                              {formatPrice((Number(item.preco_unitario) || Number(item.preco) || 0) * (item.quantidade || 1))}
-                            </span>
+                          <div className="zf-li" key={idx}>
+                            <span className="zf-nm"><span className="zf-qbox">{item.quantidade}</span>{item.produto || item.nome}</span>
+                            <span className="zf-pr">{formatPrice((Number(item.preco_unitario) || Number(item.preco) || 0) * (item.quantidade || 1))}</span>
                           </div>
                         ))}
-                        <div className="flex justify-between font-bold mt-2 pt-2 border-t border-dashed border-slate-300 text-slate-900">
-                          <span>Subtotal:</span>
+                        <div className="zf-row zf-strong">
+                          <span>Subtotal</span>
                           <span>{formatPrice(totalComanda)}</span>
                         </div>
                       </>
                     ) : (
-                      <p className="text-slate-500 text-xs">Nenhum item</p>
+                      <div className="zf-meta">Nenhum item</div>
                     )}
 
                     {tipo === 'mesa' && comandasParaImprimir.length > 1 && (
-                      <div className="border-t border-dashed border-slate-300 my-3" />
+                      <hr className="zf-dash" />
                     )}
                   </div>
                 );
               })}
 
-              {/* Total Geral */}
+              {/* Total Geral em caixa invertida */}
               {(tipo === 'mesa' || comandasParaImprimir.length > 1) && (
-                <div className="total-line flex justify-between font-bold text-lg mt-4 pt-3 border-t-2 border-slate-900 text-slate-900">
-                  <span>TOTAL:</span>
+                <div className="zf-total">
+                  <span>TOTAL</span>
                   <span>{formatPrice(totalGeral)}</span>
                 </div>
               )}
 
               {/* Rodapé */}
-              <div className="text-center mt-6 text-xs text-slate-600">
-                <p>Obrigado pela preferência!</p>
+              <div className="zf-foot">
+                <div className="zf-thanks">Obrigado pela preferência!</div>
+                <div>ZapFlow</div>
               </div>
+              <div className="zf-cut">- - - - - - - - - - - -</div>
             </div>
           </div>
 
