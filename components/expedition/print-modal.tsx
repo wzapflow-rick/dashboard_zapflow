@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Printer, X, ChevronLeft } from 'lucide-react';
+import { printThermal, getLarguraPadrao, setLarguraPadrao, type LarguraPapel } from '@/lib/thermal-print';
 
 interface PrintModalProps {
     isOpen: boolean;
@@ -14,54 +15,27 @@ const formatPrice = (value: number) => `R$ ${Number(value || 0).toFixed(2).repla
 
 export default function PrintModal({ isOpen, onClose, order }: PrintModalProps) {
     const printRef = useRef<HTMLDivElement>(null);
+    const [largura, setLargura] = useState<LarguraPapel>('58mm');
+
+    React.useEffect(() => {
+        setLargura(getLarguraPadrao());
+    }, []);
 
     if (!isOpen) return null;
+
+    const handleLarguraChange = (l: LarguraPapel) => {
+        setLargura(l);
+        setLarguraPadrao(l);
+    };
 
     const handlePrint = () => {
         const printContent = printRef.current;
         if (!printContent) return;
-
-        const printWindow = window.open('', '_blank', 'width=400,height=600');
-        if (!printWindow) {
-            alert('Bloqueador de pop-ups impede a impressão. Permita pop-ups para este site.');
-            return;
-        }
-
-        printWindow.document.write(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Pedido #${order?.id}</title>
-                <style>
-                    * { margin: 0; padding: 0; box-sizing: border-box; }
-                    body { 
-                        font-family: 'Courier New', monospace; 
-                        padding: 10px;
-                        font-size: 12px;
-                        width: 58mm;
-                    }
-                    .header { text-align: center; margin-bottom: 10px; }
-                    .header h1 { font-size: 16px; font-weight: bold; }
-                    .divider { border-bottom: 1px dashed #000; margin: 8px 0; }
-                    .item { display: flex; justify-content: space-between; margin: 4px 0; }
-                    .item-name { flex: 1; }
-                    .item-qty { margin-right: 10px; }
-                    .total { font-weight: bold; font-size: 14px; margin-top: 10px; }
-                    .footer { text-align: center; margin-top: 15px; font-size: 10px; }
-                    @media print {
-                        body { width: 58mm !important; }
-                    }
-                </style>
-            </head>
-            <body>${printContent.innerHTML}</body>
-            </html>
-        `);
-        printWindow.document.close();
-        setTimeout(() => {
-            printWindow.focus();
-            printWindow.print();
-            printWindow.close();
-        }, 250);
+        printThermal({
+            title: `Pedido #${order?.id}`,
+            bodyHtml: printContent.innerHTML,
+            largura,
+        });
     };
 
     const formattedItems = useMemo(() => {
@@ -173,7 +147,7 @@ export default function PrintModal({ isOpen, onClose, order }: PrintModalProps) 
 	                                        <span>-{formatPrice(order.desconto)}</span>
 	                                    </div>
 	                                )}
-	                                <div className="flex justify-between font-bold text-lg mt-1 text-slate-900">
+	                                <div className="total-line flex justify-between font-bold text-lg mt-1 text-slate-900">
 	                                    <span>TOTAL:</span>
 	                                    <span>{formatPrice(order?.valor_total || order?.total || 0)}</span>
 	                                </div>
@@ -190,20 +164,38 @@ export default function PrintModal({ isOpen, onClose, order }: PrintModalProps) 
                     </div>
 
                     {/* Actions */}
-                    <div className="p-4 border-t border-slate-200 dark:border-slate-700 flex gap-3">
-                        <button
-                            onClick={onClose}
-                            className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            onClick={handlePrint}
-                            className="flex-1 px-4 py-2.5 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2"
-                        >
-                            <Printer className="size-4" />
-                            Imprimir
-                        </button>
+                    <div className="p-4 border-t border-slate-200 dark:border-slate-700 space-y-3">
+                        <div className="flex items-center justify-center gap-2">
+                            <span className="text-xs text-slate-500 dark:text-slate-400">Largura do papel:</span>
+                            {(['58mm', '80mm'] as const).map((l) => (
+                                <button
+                                    key={l}
+                                    onClick={() => handleLarguraChange(l)}
+                                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                                        largura === l
+                                            ? 'bg-primary text-white'
+                                            : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                                    }`}
+                                >
+                                    {l}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={onClose}
+                                className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handlePrint}
+                                className="flex-1 px-4 py-2.5 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2"
+                            >
+                                <Printer className="size-4" />
+                                Imprimir
+                            </button>
+                        </div>
                     </div>
                 </motion.div>
             </div>
