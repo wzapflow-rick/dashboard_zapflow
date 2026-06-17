@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout, { SidebarProvider } from '@/components/dashboard-layout';
 import { motion } from 'framer-motion';
 import {
     FlaskConical,
@@ -80,9 +79,7 @@ export default function TestPage() {
     };
 
     return (
-        <SidebarProvider>
-            <DashboardLayout>
-                <div className="p-4 sm:p-8 max-w-5xl mx-auto space-y-8">
+        <div className="p-4 sm:p-8 max-w-5xl mx-auto space-y-8">
                     {/* Header */}
                     <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
@@ -214,7 +211,5 @@ export default function TestPage() {
                         </div>
                     </div>
                 </div>
-            </DashboardLayout>
-        </SidebarProvider>
     );
 }

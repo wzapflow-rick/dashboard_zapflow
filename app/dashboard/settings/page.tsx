@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import DashboardLayout, { SidebarProvider } from '@/components/dashboard-layout';
 import {
   Settings as SettingsIcon,
   Store,
@@ -453,20 +452,15 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <SidebarProvider>
-        <DashboardLayout>
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        </DashboardLayout>
-      </SidebarProvider>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
     );
   }
 
   return (
-    <SidebarProvider>
-      <DashboardLayout>
-        <div className="space-y-8">
+    <>
+      <div className="space-y-8">
           <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Configurações</h1>
@@ -1531,7 +1525,6 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
-      </DashboardLayout>
-    </SidebarProvider>
+    </>
   );
 }

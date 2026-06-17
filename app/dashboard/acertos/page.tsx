@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import DashboardLayout, { SidebarProvider } from '@/components/dashboard-layout';
 import { Truck, DollarSign, Calendar, Check, X, Clock, Filter } from 'lucide-react';
 import { getMe } from '@/app/actions/auth';
 import { toast } from 'sonner';
@@ -103,20 +102,14 @@ export default function AcertosPage() {
 
     if (loading) {
         return (
-            <SidebarProvider>
-                <DashboardLayout>
-                    <div className="flex items-center justify-center h-64">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-500"></div>
-                    </div>
-                </DashboardLayout>
-            </SidebarProvider>
+            <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-500"></div>
+            </div>
         );
     }
 
     return (
-        <SidebarProvider>
-            <DashboardLayout>
-                <div className="space-y-6">
+        <div className="space-y-6">
                     <header>
                         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Controle de Entregadores</h1>
                         <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Acompanhe as entregas e calcule o que precisa pagar</p>
@@ -277,7 +270,5 @@ export default function AcertosPage() {
                         </div>
                     )}
                 </div>
-            </DashboardLayout>
-        </SidebarProvider>
     );
 }

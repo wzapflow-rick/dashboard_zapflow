@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Lightbulb, RefreshCw, Sparkles } from 'lucide-react';
-import DashboardLayout, { SidebarProvider } from '@/components/dashboard-layout';
 import { InsightsList } from '@/components/insights/insight-card';
 import { TipsCarousel } from '@/components/insights/tips-carousel';
 import { getInsights, type Insight } from '@/app/actions/insights';
@@ -105,11 +104,5 @@ function InsightsContent() {
 }
 
 export default function InsightsPage() {
-  return (
-    <SidebarProvider>
-      <DashboardLayout>
-        <InsightsContent />
-      </DashboardLayout>
-    </SidebarProvider>
-  );
+  return <InsightsContent />;
 }

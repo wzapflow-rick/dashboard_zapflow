@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import DashboardLayout, { SidebarProvider } from '@/components/dashboard-layout';
 import {
   Share2,
   QrCode,
@@ -116,9 +115,7 @@ export default function GrowthPage() {
   const displayUrl = menuUrl.replace(/^https?:\/\//, '');
 
   return (
-    <SidebarProvider>
-      <DashboardLayout>
-        <div className="space-y-8">
+    <div className="space-y-8">
           <header>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Divulgação & Cardápio Online</h1>
             <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Compartilhe seu cardápio digital e atraia mais clientes.</p>
@@ -223,7 +220,6 @@ export default function GrowthPage() {
             </div>
           </div>
         </div>
-      </DashboardLayout>
-    </SidebarProvider>
+    </div>
   );
 }
