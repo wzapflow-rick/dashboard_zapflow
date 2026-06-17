@@ -220,6 +220,5 @@ export default function GrowthPage() {
             </div>
           </div>
         </div>
-    </div>
   );
 }
