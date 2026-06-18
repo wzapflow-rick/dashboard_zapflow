@@ -103,3 +103,25 @@
   .dark .to-slate-800 { --tw-gradient-to: #0f1f35 !important; }
   .dark .to-slate-700 { --tw-gradient-to: #162438 !important; }
 }
+
+/*
+ * Modo de baixa potencia (ativado em maquinas fracas / prefers-reduced-motion).
+ * Remove os efeitos mais caros para o navegador, mantendo o layout intacto.
+ * A classe `.low-power` e aplicada no <html> pelo MotionProvider.
+ */
+.low-power [class*="backdrop-blur"] {
+  /* backdrop-filter (desfoque) e o efeito que mais trava GPUs/CPUs fracas. */
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+.low-power .animate-ping,
+.low-power .animate-pulse {
+  /* Animacoes infinitas decorativas rodam o tempo todo consumindo CPU. */
+  animation: none !important;
+}
+
+.low-power * {
+  /* Evita transicoes longas que acumulam trabalho de composicao. */
+  transition-duration: 0.01ms !important;
+}

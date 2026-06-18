@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { MotionConfig } from 'motion/react';
 import { useLowPowerMode } from '@/hooks/use-low-power-mode';
 
@@ -13,6 +13,17 @@ import { useLowPowerMode } from '@/hooks/use-low-power-mode';
  */
 export function MotionProvider({ children }: { children: React.ReactNode }) {
   const lowPower = useLowPowerMode();
+
+  // Em maquinas fracas, marca o documento com `.low-power` para que o CSS
+  // desative efeitos caros (backdrop-blur e animacoes infinitas).
+  useEffect(() => {
+    const root = document.documentElement;
+    if (lowPower) {
+      root.classList.add('low-power');
+    } else {
+      root.classList.remove('low-power');
+    }
+  }, [lowPower]);
 
   return (
     <MotionConfig reducedMotion={lowPower ? 'always' : 'user'}>
