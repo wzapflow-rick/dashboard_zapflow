@@ -293,25 +293,29 @@ export async function getMesasComDetalhes(): Promise<MesaComDetalhes[]> {
     const user = await getMe();
     if (!user?.empresaId) throw new Error('Não autorizado');
 
-    const mesasData = await pg.list('mesas', {
-      where: { store_id: user.empresaId },
-      sort: 'numero',
-      limit: 100,
-    });
+    // As 3 consultas dependem apenas do store_id (sao independentes entre si),
+    // entao rodamos em paralelo: 1 ida ao banco em vez de 3 em sequencia.
+    const [mesasData, comandasData, pedidosData] = await Promise.all([
+      pg.list('mesas', {
+        where: { store_id: user.empresaId },
+        sort: 'numero',
+        limit: 100,
+      }),
+      pg.query(
+        `SELECT * FROM comandas WHERE store_id = $1 AND status = $2 LIMIT 500`,
+        [user.empresaId, COMANDA_STATUS.ABERTA]
+      ),
+      pg.query(
+        `SELECT * FROM pedidos WHERE empresa_id = $1 AND tipo_entrega = 'mesa' AND status != 'cancelado' LIMIT 500`,
+        [user.empresaId]
+      ),
+    ]);
+
     const mesas = normalizeRecordList((mesasData.list || []) as any[]) as Mesa[];
 
     if (mesas.length === 0) return [];
 
-    const comandasData = await pg.query(
-      `SELECT * FROM comandas WHERE store_id = $1 AND status = $2 LIMIT 500`,
-      [user.empresaId, COMANDA_STATUS.ABERTA]
-    );
     const comandas = normalizeRecordList((comandasData.rows || []) as any[]) as Comanda[];
-
-    const pedidosData = await pg.query(
-      `SELECT * FROM pedidos WHERE empresa_id = $1 AND tipo_entrega = 'mesa' AND status != 'cancelado' LIMIT 500`,
-      [user.empresaId]
-    );
     const pedidos = normalizeRecordList((pedidosData.rows || []) as any[]);
 
     const mesasComDetalhes: MesaComDetalhes[] = mesas.map((mesa) => {

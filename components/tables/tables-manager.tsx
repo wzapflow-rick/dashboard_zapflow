@@ -18,7 +18,14 @@ export default function TablesManager() {
   const { data: mesas = [], mutate, isLoading } = useSWR(
     'mesas-com-detalhes',
     getMesasComDetalhes,
-    { refreshInterval: 10000 }
+    {
+      refreshInterval: 10000,
+      // Mantem os dados ja carregados na tela enquanto revalida (sem piscar o loading).
+      keepPreviousData: true,
+      // Em segundo plano (aba minimizada) nao revalida, economizando recursos em PCs fracos.
+      revalidateOnFocus: true,
+      revalidateIfStale: true,
+    }
   );
 
   const filteredMesas = mesas.filter((mesa) => {
