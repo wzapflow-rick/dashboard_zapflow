@@ -143,14 +143,26 @@ export default function ExpeditionMonitor() {
   useEffect(() => {
     loadOrders();
 
-    // Polling para novos pedidos a cada 10 segundos (apenas se online)
+    // Polling para novos pedidos a cada 10 segundos.
+    // Pausa quando a aba esta em segundo plano para economizar CPU/rede em maquinas fracas.
     const interval = setInterval(() => {
-      if (isOnline) {
+      if (isOnline && !document.hidden) {
         loadOrders();
       }
     }, 10000);
 
-    return () => clearInterval(interval);
+    // Ao voltar para a aba, atualiza imediatamente (sem esperar o proximo ciclo).
+    const handleVisibility = () => {
+      if (!document.hidden && isOnline) {
+        loadOrders();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [loadOrders, isOnline]);
 
   // Tenta sincronizar quando voltar online
