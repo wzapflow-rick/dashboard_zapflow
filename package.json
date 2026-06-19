@@ -17,6 +17,7 @@
     "security:scan": "npm audit --json | grep -E '(vulnerability|critical|high)' | head -20"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.69",
     "@google/genai": "^1.17.0",
     "@hookform/resolvers": "^5.2.1",
     "@mercadopago/sdk-js": "^0.0.3",
@@ -31,8 +32,6 @@
     "cloudinary": "^2.9.0",
     "clsx": "^2.1.1",
     "driver.js": "^1.4.0",
-    "firebase": "^12.10.0",
-    "framer-motion": "^12.38.0",
     "jose": "^6.2.1",
     "jspdf": "^4.2.1",
     "lucide-react": "^0.553.0",
@@ -64,7 +63,6 @@
     "@types/react-dom": "^19",
     "eslint": "9.39.1",
     "eslint-config-next": "16.0.8",
-    "firebase-tools": "^15.0.0",
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0",
     "tailwindcss": "4.1.11",

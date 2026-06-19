@@ -24,6 +24,11 @@ import {
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from 'motion/react';
 import Image from 'next/image';
+import Link from 'next/link';
+
+// Link do Next com animacoes do motion: navegacao client-side (sem recarregar a pagina inteira)
+// e prefetch automatico da proxima rota, mantendo as animacoes existentes.
+const MotionLink = motion.create(Link);
 
 const navItems = [
     { name: 'Visão Geral', href: '/dashboard', icon: LayoutDashboard, roles: ['admin'] },
@@ -80,7 +85,7 @@ function NavItem({
     index: number;
 }) {
     return (
-        <motion.a
+        <MotionLink
             href={item.href}
             onClick={onClick}
             initial={{ opacity: 0, x: -20 }}
@@ -139,7 +144,7 @@ function NavItem({
             {(isOpen || isMobileMenuOpen) && !isActive && (
                 <ChevronRight className="size-4 text-slate-500 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 ml-auto" />
             )}
-        </motion.a>
+        </MotionLink>
     );
 }
 
@@ -163,20 +168,16 @@ function MobileBottomNav({
                         ? false 
                         : pathname === item.href;
                     const isMenuButton = item.href === '#menu';
-                    
-                    return (
-                        <motion.a
-                            key={item.name}
-                            href={isMenuButton ? undefined : item.href}
-                            onClick={isMenuButton ? onMenuClick : undefined}
-                            whileTap={{ scale: 0.9 }}
-                            className={cn(
-                                "flex flex-col items-center justify-center py-2 px-3 rounded-xl transition-all duration-200 min-w-[60px]",
-                                isActive 
-                                    ? "text-primary" 
-                                    : "text-slate-500 active:text-slate-300"
-                            )}
-                        >
+
+                    const itemClassName = cn(
+                        "flex flex-col items-center justify-center py-2 px-3 rounded-xl transition-all duration-200 min-w-[60px]",
+                        isActive
+                            ? "text-primary"
+                            : "text-slate-500 active:text-slate-300"
+                    );
+
+                    const itemContent = (
+                        <>
                             <div className={cn(
                                 "relative flex items-center justify-center size-10 rounded-xl transition-all duration-200",
                                 isActive && "bg-primary/20"
@@ -198,7 +199,33 @@ function MobileBottomNav({
                             )}>
                                 {item.name}
                             </span>
-                        </motion.a>
+                        </>
+                    );
+
+                    // O botao "Mais" abre o menu (nao e navegacao); os demais usam Link client-side.
+                    if (isMenuButton) {
+                        return (
+                            <motion.button
+                                key={item.name}
+                                type="button"
+                                onClick={onMenuClick}
+                                whileTap={{ scale: 0.9 }}
+                                className={itemClassName}
+                            >
+                                {itemContent}
+                            </motion.button>
+                        );
+                    }
+
+                    return (
+                        <MotionLink
+                            key={item.name}
+                            href={item.href}
+                            whileTap={{ scale: 0.9 }}
+                            className={itemClassName}
+                        >
+                            {itemContent}
+                        </MotionLink>
                     );
                 })}
             </div>

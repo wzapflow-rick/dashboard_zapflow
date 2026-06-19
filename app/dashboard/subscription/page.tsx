@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import DashboardLayout, { SidebarProvider } from '@/components/dashboard-layout';
 import { 
   Check, 
   CreditCard, 
@@ -198,20 +197,15 @@ export default function SubscriptionPage() {
 
   if (isLoading) {
     return (
-      <SidebarProvider>
-        <DashboardLayout>
-          <div className="flex items-center justify-center min-h-[400px]">
-            <Loader2 className="size-8 animate-spin text-primary" />
-          </div>
-        </DashboardLayout>
-      </SidebarProvider>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="size-8 animate-spin text-primary" />
+      </div>
     );
   }
 
   return (
-    <SidebarProvider>
-      <DashboardLayout>
-        <div className="space-y-8">
+    <>
+      <div className="space-y-8">
           <header>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Assinatura e Cobrança</h1>
             <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Gerencie seu plano, métodos de pagamento e histórico de faturas.</p>
@@ -556,7 +550,6 @@ export default function SubscriptionPage() {
             </div>
           </div>
         )}
-      </DashboardLayout>
-    </SidebarProvider>
+    </>
   );
 }

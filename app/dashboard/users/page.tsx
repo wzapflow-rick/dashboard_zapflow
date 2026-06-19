@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import DashboardLayout, { SidebarProvider } from '@/components/dashboard-layout';
 import { Users, Plus, Trash2, Shield, UserCheck, Loader2, X, ChefHat, Edit } from 'lucide-react';
 import { getUsers, createUser, deleteUser, updateUser } from '@/app/actions/users';
 import { toast } from 'sonner';
@@ -106,9 +105,8 @@ export default function UsersPage() {
     };
 
     return (
-        <SidebarProvider>
-            <DashboardLayout>
-                <div className="space-y-8">
+        <>
+            <div className="space-y-8">
                     <header className="flex items-center justify-between">
                         <div>
                             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Equipe</h1>
@@ -282,7 +280,6 @@ export default function UsersPage() {
                         </div>
                     </div>
                 )}
-            </DashboardLayout>
-        </SidebarProvider>
+            </>
     );
 }

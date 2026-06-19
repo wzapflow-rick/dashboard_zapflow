@@ -12,6 +12,7 @@ import { getMe } from '@/app/actions/auth';
 import { getDashboardData } from '@/app/actions/dashboard';
 import { getOnboardingStatus, OnboardingStatus } from '@/app/actions/onboarding-status';
 import { SetupChecklist } from '@/components/onboarding/setup-checklist';
+import { useLowPowerMode } from '@/hooks/use-low-power-mode';
 
 const OrderDetailsModal = dynamic(() => import('@/components/modals/order-details-modal'), {
   ssr: false,
@@ -60,6 +61,7 @@ function DashboardSkeleton() {
 }
 
 export default function DashboardOverview() {
+  const lowPower = useLowPowerMode();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
@@ -79,15 +81,14 @@ export default function DashboardOverview() {
     }
     
     try {
-      const me = await getMe();
+      // Dispara as 3 chamadas em paralelo (sao independentes) para acelerar o carregamento.
+      const dashboardPromise = getDashboardData(selectedPeriod);
+      const [me, obStatus] = await Promise.all([getMe(), getOnboardingStatus()]);
       setUser(me);
-      
-      // Buscar status do onboarding
-      const obStatus = await getOnboardingStatus();
       setOnboardingStatus(obStatus);
 
       try {
-        const data = await getDashboardData(selectedPeriod);
+        const data = await dashboardPromise;
         setDashboardData(data);
         setError(null);
 
@@ -245,9 +246,9 @@ export default function DashboardOverview() {
                   return (
                     <div key={i} className="flex-1 flex flex-col items-center relative group h-full justify-end">
                       <motion.div
-                        initial={{ height: 0, opacity: 0 }}
+                        initial={lowPower ? false : { height: 0, opacity: 0 }}
                         animate={{ height: `${height}px`, opacity: 1 }}
-                        transition={{ delay: i * 0.03, type: 'spring', stiffness: 100 }}
+                        transition={lowPower ? { duration: 0 } : { delay: i * 0.03, type: 'spring', stiffness: 100 }}
                         className="w-full bg-gradient-to-t from-primary to-primary/70 rounded-t-md transition-all duration-300 group-hover:from-primary/90 group-hover:to-primary/60 shadow-lg shadow-primary/20 group-hover:shadow-primary/40"
                         title={`${val} pedidos`}
                       />

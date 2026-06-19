@@ -8,7 +8,6 @@ SETUP NECESSÁRIO:
 */
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import DashboardLayout, { SidebarProvider } from '@/components/dashboard-layout';
 import {
     Megaphone,
     Plus,
@@ -338,9 +337,8 @@ export default function CampanhasPage() {
     }
 
     return (
-        <SidebarProvider>
-            <DashboardLayout>
-                <div className="space-y-8">
+        <>
+        <div className="space-y-8">
                     <header className="flex items-center justify-between">
                         <div>
                             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Campanhas automaticas</h1>
@@ -967,8 +965,7 @@ export default function CampanhasPage() {
                         </motion.div>
                     )}
                 </AnimatePresence>
-            </DashboardLayout>
-        </SidebarProvider>
+        </>
     );
 }
 

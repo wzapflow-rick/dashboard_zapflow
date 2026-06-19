@@ -71,7 +71,7 @@ export default function CreateTableModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90]"
           />
 
           {/* Modal */}
@@ -79,7 +79,7 @@ export default function CreateTableModal({
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 z-[90] flex items-center justify-center p-4"
           >
             <div className="bg-slate-800 rounded-2xl w-full max-w-md shadow-xl border border-slate-700">
               {/* Header */}

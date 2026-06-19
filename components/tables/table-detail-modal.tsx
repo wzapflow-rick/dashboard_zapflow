@@ -176,7 +176,7 @@ export default function TableDetailModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90]"
           />
 
           {/* Modal */}
@@ -185,7 +185,7 @@ export default function TableDetailModal({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-lg bg-slate-800 shadow-xl overflow-hidden flex flex-col"
+            className="fixed right-0 top-0 bottom-0 z-[90] w-full max-w-lg bg-slate-800 shadow-xl overflow-hidden flex flex-col"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-slate-700">

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import DashboardLayout, { SidebarProvider } from '@/components/dashboard-layout';
 import { Star, TrendingUp, TrendingDown, ThumbsUp, ThumbsDown, MessageCircle, Calendar, Search, User } from 'lucide-react';
 import { getRatingsByEmpresa, getAverageRatings, getClientByPhone } from '@/app/actions/ratings';
 import { getMe } from '@/app/actions/auth';
@@ -89,20 +88,14 @@ export default function RatingsPage() {
 
     if (loading) {
         return (
-            <SidebarProvider>
-                <DashboardLayout>
-                    <div className="flex items-center justify-center h-64">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-500"></div>
-                    </div>
-                </DashboardLayout>
-            </SidebarProvider>
+            <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-500"></div>
+            </div>
         );
     }
 
     return (
-        <SidebarProvider>
-            <DashboardLayout>
-                <div className="space-y-6">
+        <div className="space-y-6">
                     <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
                             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Avaliações dos Clientes</h1>
@@ -229,7 +222,5 @@ export default function RatingsPage() {
                         </div>
                     )}
                 </div>
-            </DashboardLayout>
-        </SidebarProvider>
     );
 }

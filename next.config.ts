@@ -2,6 +2,10 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Tree-shake bibliotecas grandes (icones e animacao) para reduzir o JS enviado ao cliente.
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'motion', 'recharts', 'date-fns'],
+  },
   eslint: {
     ignoreDuringBuilds: true,
   },

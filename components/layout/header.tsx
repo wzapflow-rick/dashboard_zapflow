@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
+import { motion, AnimatePresence } from 'motion/react';
 import {
     LayoutDashboard,
     Bell,
@@ -372,9 +373,9 @@ export function Header({ isOpen, setIsOpen, setIsMobileMenuOpen }: HeaderProps) 
                                         
                                         {/* Footer */}
                                         <div className="p-3 text-center border-t border-slate-100/50 dark:border-white/5 bg-slate-50/50 dark:bg-white/5">
-                                            <a href="/dashboard/expedition" className="text-xs font-bold text-primary hover:text-primary/80 transition-colors">
+                                            <Link href="/dashboard/expedition" className="text-xs font-bold text-primary hover:text-primary/80 transition-colors">
                                                 Ver todos os pedidos
-                                            </a>
+                                            </Link>
                                         </div>
                                     </div>
                                 </motion.div>

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import DashboardLayout, { SidebarProvider } from '@/components/dashboard-layout';
 import {
     DollarSign,
     TrendingUp,
@@ -336,11 +335,5 @@ function ReportsContent() {
 }
 
 export default function ReportsPage() {
-    return (
-        <SidebarProvider>
-            <DashboardLayout>
-                <ReportsContent />
-            </DashboardLayout>
-        </SidebarProvider>
-    );
+    return <ReportsContent />;
 }

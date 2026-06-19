@@ -6,6 +6,7 @@ import { pg } from '@/lib/postgres';
 import {
   MESA_STATUS,
   COMANDA_STATUS,
+  ORDER_STATUS,
 } from '@/lib/constants';
 
 // ============================================================
@@ -293,25 +294,29 @@ export async function getMesasComDetalhes(): Promise<MesaComDetalhes[]> {
     const user = await getMe();
     if (!user?.empresaId) throw new Error('Não autorizado');
 
-    const mesasData = await pg.list('mesas', {
-      where: { store_id: user.empresaId },
-      sort: 'numero',
-      limit: 100,
-    });
+    // As 3 consultas dependem apenas do store_id (sao independentes entre si),
+    // entao rodamos em paralelo: 1 ida ao banco em vez de 3 em sequencia.
+    const [mesasData, comandasData, pedidosData] = await Promise.all([
+      pg.list('mesas', {
+        where: { store_id: user.empresaId },
+        sort: 'numero',
+        limit: 100,
+      }),
+      pg.query(
+        `SELECT * FROM comandas WHERE store_id = $1 AND status = $2 LIMIT 500`,
+        [user.empresaId, COMANDA_STATUS.ABERTA]
+      ),
+      pg.query(
+        `SELECT * FROM pedidos WHERE empresa_id = $1 AND tipo_entrega = 'mesa' AND status != 'cancelado' LIMIT 500`,
+        [user.empresaId]
+      ),
+    ]);
+
     const mesas = normalizeRecordList((mesasData.list || []) as any[]) as Mesa[];
 
     if (mesas.length === 0) return [];
 
-    const comandasData = await pg.query(
-      `SELECT * FROM comandas WHERE store_id = $1 AND status = $2 LIMIT 500`,
-      [user.empresaId, COMANDA_STATUS.ABERTA]
-    );
     const comandas = normalizeRecordList((comandasData.rows || []) as any[]) as Comanda[];
-
-    const pedidosData = await pg.query(
-      `SELECT * FROM pedidos WHERE empresa_id = $1 AND tipo_entrega = 'mesa' AND status != 'cancelado' LIMIT 500`,
-      [user.empresaId]
-    );
     const pedidos = normalizeRecordList((pedidosData.rows || []) as any[]);
 
     const mesasComDetalhes: MesaComDetalhes[] = mesas.map((mesa) => {
@@ -375,6 +380,16 @@ export async function createTableOrder(data: {
     throw new Error('Esta comanda já foi fechada');
   }
 
+  // Modo direto (opcional por loja): quando ativo, o pedido de mesa ja nasce como
+  // "pronto", pulando as etapas do Kanban (pendente -> preparando). Lojas que usam
+  // o fluxo completo mantem o status padrao "pendente".
+  const empresaConfig = await pg.query(
+    `SELECT mesa_pedido_direto FROM empresas WHERE id = $1 LIMIT 1`,
+    [user.empresaId]
+  );
+  const modoDireto = !!empresaConfig.rows?.[0]?.mesa_pedido_direto;
+  const statusNovoPedido = modoDireto ? ORDER_STATUS.PRONTO : ORDER_STATUS.PENDENTE;
+
   const pedidoExistenteData = await pg.query(
     `SELECT * FROM pedidos WHERE comanda_id = $1 AND status = 'pendente' AND empresa_id = $2 ORDER BY id DESC LIMIT 1`,
     [data.comanda_id, user.empresaId]
@@ -408,7 +423,7 @@ export async function createTableOrder(data: {
       telefone_cliente: '',
       itens: itensString,
       valor_total: data.valor_total,
-      status: 'pendente',
+      status: statusNovoPedido,
       canal: 'Mesa',
       tipo_entrega: 'mesa',
       mesa_id: data.mesa_id,

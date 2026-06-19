@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout, { SidebarProvider } from '@/components/dashboard-layout';
 import { 
   Link2, 
   Copy, 
@@ -120,9 +119,7 @@ export default function IntegracoesPage() {
   }
 
   return (
-    <SidebarProvider>
-      <DashboardLayout>
-        <div className="p-4 sm:p-6 max-w-6xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-6xl mx-auto">
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
@@ -465,7 +462,5 @@ export default function IntegracoesPage() {
             </div>
           )}
         </div>
-      </DashboardLayout>
-    </SidebarProvider>
   );
 }
