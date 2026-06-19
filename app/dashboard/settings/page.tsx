@@ -27,7 +27,8 @@ import {
   WifiOff,
   RefreshCw,
   CheckCircle2,
-  Smartphone
+  Smartphone,
+  Zap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -86,6 +87,8 @@ export default function SettingsPage() {
   const [notifyOrderWhatsappEnabled, setNotifyOrderWhatsappEnabled] = React.useState(false);
   const [savingOrderNotify, setSavingOrderNotify] = React.useState(false);
   const [savingPaymentIntegration, setSavingPaymentIntegration] = React.useState(false);
+  const [mesaPedidoDireto, setMesaPedidoDireto] = React.useState(false);
+  const [savingMesaDireto, setSavingMesaDireto] = React.useState(false);
   const [newPassword, setNewPassword] = React.useState('');
   const [confirmPassword, setConfirmPassword] = React.useState('');
   const [logoUrl, setLogoUrl] = React.useState<string | null>(null);
@@ -139,6 +142,7 @@ export default function SettingsPage() {
           setInventoryControlEnabled(!!compData.controle_estoque);
           setPaymentIntegrationEnabled(compData.pagamento_integrado !== false);
           setNotifyOrderWhatsappEnabled(!!compData.notificar_pedido_whatsapp);
+          setMesaPedidoDireto(!!compData.mesa_pedido_direto);
           setLogoUrl((compData.logo && typeof compData.logo === 'string') ? compData.logo : null);
           setBannerUrl((compData.banner && typeof compData.banner === 'string') ? compData.banner : null);
         }
@@ -436,6 +440,28 @@ export default function SettingsPage() {
       toast.error(err.message || 'Não foi possível atualizar a configuração.');
     } finally {
       setSavingOrderNotify(false);
+    }
+  };
+
+  // Salva o toggle de "modo direto" das mesas imediatamente ao alternar
+  const handleToggleMesaDireto = async (enabled: boolean) => {
+    const previous = mesaPedidoDireto;
+    setMesaPedidoDireto(enabled);
+    setSavingMesaDireto(true);
+    try {
+      await updateCompany({ mesa_pedido_direto: enabled });
+      setCompany((prev: any) => (prev ? { ...prev, mesa_pedido_direto: enabled } : prev));
+      toast.success(
+        enabled
+          ? 'Modo direto ativado. Os pedidos de mesa vão direto para "pronto", sem passar pelo preparo.'
+          : 'Modo direto desativado. Os pedidos de mesa voltam a passar pelo painel de preparo.'
+      );
+    } catch (err: any) {
+      console.error('Erro ao atualizar modo direto das mesas:', err);
+      setMesaPedidoDireto(previous);
+      toast.error(err.message || 'Não foi possível atualizar a configuração.');
+    } finally {
+      setSavingMesaDireto(false);
     }
   };
 
@@ -1027,6 +1053,34 @@ export default function SettingsPage() {
                           onChange={() => setInventoryControlEnabled(!inventoryControlEnabled)}
                         />
                         <div className="w-11 h-6 bg-slate-200 dark:bg-slate-500 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="p-6 bg-slate-50 dark:bg-slate-700 rounded-2xl border border-slate-100 dark:border-slate-600 space-y-6">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="size-10 bg-white dark:bg-slate-600 rounded-xl shadow-sm flex items-center justify-center text-slate-600 dark:text-slate-300">
+                          <Zap className="size-5" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-900 dark:text-white">Modo Direto nas Mesas?</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                            Ative para um fluxo mais rápido: ao lançar um pedido na mesa, ele já entra como
+                            &quot;pronto&quot;, sem passar pelas etapas de preparo do painel de Expedição. Ideal para
+                            quem lança e imprime direto.
+                          </p>
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={mesaPedidoDireto}
+                          disabled={savingMesaDireto}
+                          onChange={(e) => handleToggleMesaDireto(e.target.checked)}
+                        />
+                        <div className="w-11 h-6 bg-slate-200 dark:bg-slate-500 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary peer-disabled:opacity-50"></div>
                       </label>
                     </div>
                   </div>

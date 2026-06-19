@@ -6,6 +6,7 @@ import { pg } from '@/lib/postgres';
 import {
   MESA_STATUS,
   COMANDA_STATUS,
+  ORDER_STATUS,
 } from '@/lib/constants';
 
 // ============================================================
@@ -379,6 +380,16 @@ export async function createTableOrder(data: {
     throw new Error('Esta comanda já foi fechada');
   }
 
+  // Modo direto (opcional por loja): quando ativo, o pedido de mesa ja nasce como
+  // "pronto", pulando as etapas do Kanban (pendente -> preparando). Lojas que usam
+  // o fluxo completo mantem o status padrao "pendente".
+  const empresaConfig = await pg.query(
+    `SELECT mesa_pedido_direto FROM empresas WHERE id = $1 LIMIT 1`,
+    [user.empresaId]
+  );
+  const modoDireto = !!empresaConfig.rows?.[0]?.mesa_pedido_direto;
+  const statusNovoPedido = modoDireto ? ORDER_STATUS.PRONTO : ORDER_STATUS.PENDENTE;
+
   const pedidoExistenteData = await pg.query(
     `SELECT * FROM pedidos WHERE comanda_id = $1 AND status = 'pendente' AND empresa_id = $2 ORDER BY id DESC LIMIT 1`,
     [data.comanda_id, user.empresaId]
@@ -412,7 +423,7 @@ export async function createTableOrder(data: {
       telefone_cliente: '',
       itens: itensString,
       valor_total: data.valor_total,
-      status: 'pendente',
+      status: statusNovoPedido,
       canal: 'Mesa',
       tipo_entrega: 'mesa',
       mesa_id: data.mesa_id,
