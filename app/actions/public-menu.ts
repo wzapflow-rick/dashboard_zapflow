@@ -12,7 +12,7 @@ import {
 import { isPaidPlan } from '@/lib/constants';
 import { getAssinaturaByEmpresaId } from '@/lib/assinaturas';
 import { HORARIOS_TABLE } from '@/lib/tables';
-import { isAbertoAgora, getProximaAbertura, type Horario } from '@/lib/horarios';
+import { getStatusLoja, type Horario } from '@/lib/horarios';
 
 export async function getPublicMenu(slug: string) {
     console.log(`[MENU_DEBUG] Iniciando busca para slug: ${slug}`);
@@ -172,10 +172,14 @@ export async function getPublicMenu(slug: string) {
 
         const config = configData.list && configData.list.length > 0 ? configData.list[0] : null;
 
-        // Status de funcionamento (sempre respeita os horarios se houver algum configurado)
+        // Status de funcionamento: respeita os horarios E um eventual fechamento
+        // manual feito pelo lojista (botao "Fechar a Loja"), que expira sozinho
+        // na proxima abertura programada.
         const horarios = (horariosData || []) as Horario[];
-        const lojaAberta = isAbertoAgora(horarios);
-        const proximaAbertura = lojaAberta ? null : getProximaAbertura(horarios);
+        const { aberto: lojaAberta, proximaAbertura } = getStatusLoja(
+            horarios,
+            (config?.fechado_manual_ate as string | null | undefined) ?? null,
+        );
 
         if (config) {
             if (config.logo) empresa.logo = config.logo;

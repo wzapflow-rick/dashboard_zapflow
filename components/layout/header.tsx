@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
+import { LojaToggle } from '@/components/layout/loja-toggle';
 
 interface HeaderProps {
     isOpen: boolean;
@@ -215,6 +216,9 @@ export function Header({ isOpen, setIsOpen, setIsMobileMenuOpen }: HeaderProps) 
                 </div>
 
                 <div className="flex items-center gap-2 sm:gap-3">
+                    {/* Botao Fechar / Abrir a Loja (apenas lojista) */}
+                    {!isCozinheiro && <LojaToggle />}
+
                     {/* Pending orders badge */}
                     <AnimatePresence>
                         {pendingCount > 0 && (

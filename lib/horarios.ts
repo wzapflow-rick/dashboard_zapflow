@@ -92,6 +92,32 @@ export function isAbertoAgora(horarios: Horario[] | null | undefined, now?: Date
   return false;
 }
 
+/** Gera o ISO local de Brasilia "YYYY-MM-DDTHH:MM:00" para um dado momento. */
+export function nowBrasiliaIso(now?: Date): string {
+  const b = nowBrasilia(now);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${b.getFullYear()}-${pad(b.getMonth() + 1)}-${pad(b.getDate())}T${pad(b.getHours())}:${pad(
+    b.getMinutes(),
+  )}:00`;
+}
+
+/**
+ * Indica se a loja esta sob fechamento manual ativo.
+ *
+ * `fechadoManualAte` e um ISO local "YYYY-MM-DDTHH:MM:00" que representa o
+ * momento em que o fechamento manual deixa de valer (normalmente a proxima
+ * abertura programada). Enquanto agora < esse valor, a loja esta fechada
+ * manualmente. Como o formato e fixo e zero-padded, a comparacao de strings
+ * equivale a comparacao cronologica.
+ */
+export function isFechadoManualmente(
+  fechadoManualAte: string | null | undefined,
+  now?: Date,
+): boolean {
+  if (!fechadoManualAte) return false;
+  return nowBrasiliaIso(now) < fechadoManualAte;
+}
+
 export interface ProximaAbertura {
   /** Data/hora local no formato "YYYY-MM-DDTHH:MM:00" (compativel com o agendamento do carrinho). */
   iso: string;
@@ -143,4 +169,32 @@ export function getProximaAbertura(
   }
 
   return null;
+}
+
+export interface StatusLoja {
+  /** True se a loja esta efetivamente aberta (horario aberto E sem fechamento manual ativo). */
+  aberto: boolean;
+  /** True se ha um fechamento manual ativo no momento. */
+  fechadoManual: boolean;
+  /** Proxima abertura quando a loja esta fechada; null se aberta ou sem horarios. */
+  proximaAbertura: ProximaAbertura | null;
+}
+
+/**
+ * Status consolidado da loja, combinando os horarios configurados com um
+ * eventual fechamento manual (botao "Fechar a Loja").
+ *
+ * A loja so e considerada aberta quando o horario diz aberto E nao ha
+ * fechamento manual ativo. O fechamento manual expira sozinho ao chegar o
+ * valor de `fechadoManualAte` (a proxima abertura programada).
+ */
+export function getStatusLoja(
+  horarios: Horario[] | null | undefined,
+  fechadoManualAte?: string | null,
+  now?: Date,
+): StatusLoja {
+  const fechadoManual = isFechadoManualmente(fechadoManualAte, now);
+  const aberto = !fechadoManual && isAbertoAgora(horarios, now);
+  const proximaAbertura = aberto ? null : getProximaAbertura(horarios, now);
+  return { aberto, fechadoManual, proximaAbertura };
 }
