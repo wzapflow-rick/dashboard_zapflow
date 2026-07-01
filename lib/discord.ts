@@ -252,6 +252,50 @@ export async function notifyPayment(data: {
 }
 
 /**
+ * Notifica que um lembrete de cobranca/renovacao foi enviado no WhatsApp.
+ * Disparado pelo cron a cada lembrete, tanto para teste quanto para pagante.
+ */
+export async function notifyBillingReminder(data: {
+  empresaId: number | string;
+  nomeFantasia: string;
+  tipo: 'teste' | 'pagante';
+  plano: string;
+  valor: number;
+  diasRestantes: number;
+  telefone?: string;
+  enviado: boolean;
+}): Promise<boolean> {
+  const ehTeste = data.tipo === 'teste';
+  const emoji = ehTeste ? '⏳' : '💰';
+  const titulo = ehTeste ? 'Lembrete de Fim de Teste' : 'Lembrete de Renovacao';
+  const prazo = data.diasRestantes <= 0
+    ? 'Vence hoje'
+    : `Faltam ${data.diasRestantes} dia(s)`;
+
+  return sendToDiscord({
+    embeds: [{
+      title: `${emoji} ${titulo}`,
+      description: ehTeste
+        ? `Lembrete de fim de teste enviado para **${data.nomeFantasia}**.`
+        : `Lembrete de renovacao enviado para **${data.nomeFantasia}**.`,
+      color: ehTeste ? COLORS.info : COLORS.warning,
+      fields: [
+        { name: 'Empresa', value: data.nomeFantasia, inline: true },
+        { name: 'ID', value: String(data.empresaId), inline: true },
+        { name: 'Plano', value: data.plano, inline: true },
+        { name: 'Tipo', value: ehTeste ? 'Teste' : 'Pagante', inline: true },
+        { name: 'Prazo', value: prazo, inline: true },
+        ...(data.valor > 0 ? [{ name: 'Valor', value: `R$ ${data.valor.toFixed(2)}`, inline: true }] : []),
+        ...(data.telefone ? [{ name: 'WhatsApp', value: data.telefone, inline: true }] : []),
+        { name: 'Envio', value: data.enviado ? '✅ Enviado' : '❌ Falhou', inline: true },
+      ],
+      footer: { text: 'ZapFlow - Cobranca' },
+      timestamp: new Date().toISOString(),
+    }],
+  });
+}
+
+/**
  * Envia mensagem personalizada
  */
 export async function notifyCustom(

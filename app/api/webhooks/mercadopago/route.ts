@@ -280,9 +280,11 @@ async function handleSubscriptionPayment(paymentId: string) {
               plano = $1,
               mp_subscription_id = $2,
               data_proxima_cobranca = $3,
+              valor = COALESCE(NULLIF($5, 0), valor),
+              ultimo_aviso_renovacao = NULL,
               updated_at = NOW()
           WHERE empresa_id = $4
-        `, [plano, String(paymentData.id), proximaCobranca.toISOString(), empresaId]);
+        `, [plano, String(paymentData.id), proximaCobranca.toISOString(), empresaId, paymentData.transaction_amount || 0]);
         
         console.log(`[Webhook] Assinatura ATUALIZADA para empresa ${empresaId}`);
       } else {
@@ -500,9 +502,11 @@ export async function POST(req: NextRequest) {
                           plano = $1,
                           mp_subscription_id = $2,
                           data_proxima_cobranca = $3,
+                          valor = COALESCE(NULLIF($5, 0), valor),
+                          ultimo_aviso_renovacao = NULL,
                           updated_at = NOW()
                       WHERE empresa_id = $4
-                    `, [plano, String(paymentCheck.id), proximaCobranca.toISOString(), empresaId]);
+                    `, [plano, String(paymentCheck.id), proximaCobranca.toISOString(), empresaId, paymentCheck.transaction_amount || 0]);
                     
                     console.log('[v0] Assinatura atualizada para empresa:', empresaId);
                   } else {
@@ -530,7 +534,26 @@ export async function POST(req: NextRequest) {
                     
                     console.log('[v0] Nova assinatura criada para empresa:', empresaId);
                   }
-                  
+
+                  // Aviso de pagamento no Discord
+                  try {
+                    const empresaResult: any = await pg.query(
+                      'SELECT nome_fantasia, nome FROM empresas WHERE id = $1',
+                      [empresaId]
+                    );
+                    const empresa = empresaResult?.rows?.[0] || empresaResult?.[0];
+                    const nomeEmpresa = String(empresa?.nome_fantasia || empresa?.nome || `Empresa ${empresaId}`);
+                    await notifyPayment({
+                      empresaId,
+                      nomeFantasia: nomeEmpresa,
+                      plano,
+                      valor: paymentCheck.transaction_amount || 0,
+                      metodoPagamento: 'PIX',
+                    });
+                  } catch (discordError) {
+                    console.error('[v0] Erro ao notificar Discord (pix_mensal):', discordError);
+                  }
+
                   return NextResponse.json({ received: true, processed: 'pix_mensal' });
                 } catch (pixError) {
                   console.error('[v0] Erro ao processar PIX mensal:', pixError);
@@ -746,9 +769,11 @@ export async function POST(req: NextRequest) {
                             plano = $1,
                             mp_subscription_id = $2,
                             data_proxima_cobranca = $3,
+                            valor = COALESCE(NULLIF($5, 0), valor),
+                            ultimo_aviso_renovacao = NULL,
                             updated_at = NOW()
                         WHERE empresa_id = $4
-                      `, [plano, String(approvedPayment.id), proximaCobranca.toISOString(), empresaId]);
+                      `, [plano, String(approvedPayment.id), proximaCobranca.toISOString(), empresaId, approvedPayment.transaction_amount || 0]);
                       
                       console.log('[v0] Assinatura atualizada via merchant_order para empresa:', empresaId);
                     } else {
@@ -776,7 +801,26 @@ export async function POST(req: NextRequest) {
                       
                       console.log('[v0] Nova assinatura criada via merchant_order para empresa:', empresaId);
                     }
-                    
+
+                    // Aviso de pagamento no Discord
+                    try {
+                      const empresaResult: any = await pg.query(
+                        'SELECT nome_fantasia, nome FROM empresas WHERE id = $1',
+                        [empresaId]
+                      );
+                      const empresa = empresaResult?.rows?.[0] || empresaResult?.[0];
+                      const nomeEmpresa = String(empresa?.nome_fantasia || empresa?.nome || `Empresa ${empresaId}`);
+                      await notifyPayment({
+                        empresaId,
+                        nomeFantasia: nomeEmpresa,
+                        plano,
+                        valor: approvedPayment.transaction_amount || 0,
+                        metodoPagamento: 'PIX',
+                      });
+                    } catch (discordError) {
+                      console.error('[v0] Erro ao notificar Discord (merchant_order):', discordError);
+                    }
+
                     return NextResponse.json({ received: true, processed: 'pix_mensal_merchant_order' });
                   }
                   
