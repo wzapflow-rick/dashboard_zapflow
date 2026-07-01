@@ -346,10 +346,11 @@ export default function ProductFormModal({
                                     className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none"
                                 >
                                     <option value="">Nenhuma tag</option>
+                                    <option value="oferta">Oferta / Destaque (glow vermelho)</option>
                                     <option value="mais_pedido">Mais Pedido</option>
                                     <option value="recomendado">Recomendado</option>
                                 </select>
-                                <p className="text-[10px] text-slate-400 dark:text-slate-500">A tag aparecera abaixo do nome do produto no cardapio</p>
+                                <p className="text-[10px] text-slate-400 dark:text-slate-500">A tag aparecera abaixo do nome do produto no cardapio. "Oferta" destaca com borda vermelha e aparece na faixa de destaques no topo.</p>
                             </div>
                         </div>
 

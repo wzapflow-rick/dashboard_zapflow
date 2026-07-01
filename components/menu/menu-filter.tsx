@@ -18,7 +18,7 @@ interface Product {
     preco_original?: number;
     imagem?: string | null;
     disponivel?: boolean;
-    tag?: 'mais_pedido' | 'recomendado' | null;
+    tag?: 'oferta' | 'mais_pedido' | 'recomendado' | null;
     destaque?: boolean;
     complementGroups?: any[];
     saborGroups?: any[];
@@ -88,6 +88,7 @@ function ProductCard({ product, onClick }: { product: Product; onClick: () => vo
         (product.descricao?.includes('[[SIZES:'));
 
     const hasDiscount = product.preco_original && product.preco_original > product.preco;
+    const isOferta = product.tag === 'oferta';
     const imgSrc = getProductImage(product);
 
     return (
@@ -96,7 +97,9 @@ function ProductCard({ product, onClick }: { product: Product; onClick: () => vo
             role="button"
             tabIndex={0}
             onKeyDown={(e) => e.key === 'Enter' && onClick()}
-            className="bg-[#1a1a1a] rounded-2xl border border-[#2a2a2a] p-3 flex gap-4 hover:border-[#3a3a3a] transition-all cursor-pointer active:scale-[0.99] group"
+            className={`bg-[#1a1a1a] rounded-2xl border p-3 flex gap-4 transition-all cursor-pointer active:scale-[0.99] group ${
+                isOferta ? 'zf-oferta-glow' : 'border-[#2a2a2a] hover:border-[#3a3a3a]'
+            }`}
         >
             {/* Imagem Grande */}
             <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-xl overflow-hidden bg-[#2a2a2a] shrink-0">
@@ -120,6 +123,12 @@ function ProductCard({ product, onClick }: { product: Product; onClick: () => vo
                 {/* Tags do Produto */}
                 {(product.tag || product.destaque) && (
                     <div className="flex gap-1.5 mt-1.5">
+                        {isOferta && (
+                            <span className="inline-flex items-center gap-1 bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wide">
+                                <Flame className="size-3 fill-current" />
+                                Oferta
+                            </span>
+                        )}
                         {(product.tag === 'mais_pedido' || product.destaque) && (
                             <span className="inline-flex items-center gap-1 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded">
                                 <Flame className="size-3" />
@@ -345,6 +354,17 @@ export default function MenuFilter({
 
     const hasResults = totalResults > 0;
 
+    // ── Produtos em oferta/destaque (faixa no topo) ────────────────────────────
+    // Reúne todos os produtos marcados como "oferta" para exibir numa faixa de
+    // destaques no início do cardápio. Só aparece fora da busca e no "Todos".
+    const ofertas = useMemo(() => {
+        return grouped
+            .flatMap((g) => g.products)
+            .filter((p) => p.tag === 'oferta' && p.disponivel !== false);
+    }, [grouped]);
+
+    const showOfertas = ofertas.length > 0 && !search.trim() && selectedCategory === 'all';
+
     // ── Handlers ──────────────────────────────────────────────────────────────
     const handleProductClick = useCallback(
         (product: any) => {
@@ -472,6 +492,30 @@ export default function MenuFilter({
                         <>Nenhum resultado para <span className="font-semibold">"{search}"</span></>
                     )}
                 </p>
+            )}
+
+            {/* Faixa de Destaques / Ofertas no topo */}
+            {showOfertas && (
+                <section>
+                    <div className="flex items-center gap-2 mb-4">
+                        <span className="inline-flex items-center gap-1.5 bg-red-600 text-white text-xs font-black px-3 py-1.5 rounded-full uppercase tracking-wide">
+                            <Flame className="size-4 fill-current" />
+                            Ofertas do dia
+                        </span>
+                        <span className="text-xs text-gray-500 font-medium">
+                            {ofertas.length} {ofertas.length === 1 ? 'destaque' : 'destaques'}
+                        </span>
+                    </div>
+                    <div className="space-y-3">
+                        {ofertas.map((product) => (
+                            <ProductCard
+                                key={`oferta-${product.id}`}
+                                product={product}
+                                onClick={() => handleProductClick(product)}
+                            />
+                        ))}
+                    </div>
+                </section>
             )}
 
             {/* Categorias e seus produtos */}
