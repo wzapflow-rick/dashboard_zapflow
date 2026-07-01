@@ -190,9 +190,9 @@ export default function PrintModal({ isOpen, onClose, order }: PrintModalProps) 
                             {/* Rodapé */}
                             <div className="zf-foot">
                                 <div className="zf-thanks">Obrigado pela preferência!</div>
-                                <div>ZapFlow</div>
                             </div>
                             <div className="zf-cut">- - - - - - - - - - - -</div>
+                            <div className="zf-sign">powered by zapflow</div>
                         </div>
                     </div>
 

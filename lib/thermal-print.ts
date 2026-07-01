@@ -102,6 +102,8 @@ export function getReceiptCss(largura: LarguraPapel): string {
   .zf-foot { text-align:center; font-size:${base - 1}px; margin-top:10px; }
   .zf-foot .zf-thanks { font-size:${base + 2}px; font-weight:900; margin-bottom:3px; }
   .zf-cut { text-align:center; font-size:${base - 3}px; letter-spacing:4px; margin-top:8px; }
+  /* Assinatura discreta no finalzinho do ticket */
+  .zf-sign { text-align:center; font-size:${base - 4}px; font-weight:700; letter-spacing:1px; margin-top:6px; }
   .zf-center { text-align:center; }
   `;
 }
