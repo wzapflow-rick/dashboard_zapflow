@@ -449,29 +449,29 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
                 <div className="grid grid-cols-6 gap-2 pt-1">
                     <button
                         onClick={() => onOpenDetails?.(order)}
-                        className="col-span-1 h-9 flex items-center justify-center rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                        className="col-span-1 h-11 flex items-center justify-center rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
                         title="Ver Detalhes"
                     >
-                        <Eye className="size-4" />
+                        <Eye className="size-5" />
                     </button>
                     <button
                         onClick={() => onOpenPrintModal(order)}
-                        className="col-span-1 h-9 flex items-center justify-center rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                        className="col-span-1 h-11 flex items-center justify-center rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
                     >
-                        <Printer className="size-4" />
+                        <Printer className="size-5" />
                     </button>
                     {onCancelOrder && String(columnId) !== 'finalizado' && String(columnId) !== 'agendado' && String(columnId) !== 'cancelado' && String(columnId) !== 'pagamento_pendente' && (
                         <button
                             onClick={() => onCancelOrder(order.id)}
-                            className="col-span-1 h-9 flex items-center justify-center rounded bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+                            className="col-span-1 h-11 flex items-center justify-center rounded bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
                             title="Cancelar Pedido"
                         >
-                            <Ban className="size-4" />
+                            <Ban className="size-5" />
                         </button>
                     )}
                     <button
                         onClick={() => onMoveOrder(order.id, order.status)}
-                        className="col-span-3 h-9 bg-orange-500 text-white text-xs font-bold rounded uppercase tracking-wider hover:bg-orange-600 transition-all shadow-sm hover:shadow-orange-500/25 active:scale-95"
+                        className="col-span-3 h-11 bg-orange-500 text-white text-sm font-bold rounded uppercase tracking-wider hover:bg-orange-600 transition-all shadow-sm hover:shadow-orange-500/25 active:scale-95"
                     >
                         Confirmar Pagamento
                     </button>
@@ -482,20 +482,20 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
                 <div className="grid grid-cols-6 gap-2 pt-1">
                     <button
                         onClick={() => onOpenDetails?.(order)}
-                        className="col-span-1 h-9 flex items-center justify-center rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                        className="col-span-1 h-11 flex items-center justify-center rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
                         title="Ver Detalhes"
                     >
-                        <Eye className="size-4" />
+                        <Eye className="size-5" />
                     </button>
                     <button
                         onClick={() => onOpenPrintModal(order)}
-                        className="col-span-1 h-9 flex items-center justify-center rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                        className="col-span-1 h-11 flex items-center justify-center rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
                     >
-                        <Printer className="size-4" />
+                        <Printer className="size-5" />
                     </button>
                     <button
                         onClick={() => onMoveOrder(order.id, order.status)}
-                        className="col-span-4 h-9 bg-violet-500 text-white text-xs font-bold rounded uppercase tracking-wider hover:bg-violet-600 transition-all shadow-sm hover:shadow-violet-500/25 active:scale-95"
+                        className="col-span-4 h-11 bg-violet-500 text-white text-sm font-bold rounded uppercase tracking-wider hover:bg-violet-600 transition-all shadow-sm hover:shadow-violet-500/25 active:scale-95"
                     >
                         Liberar para Producao
                     </button>
@@ -514,38 +514,38 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
                 <div className="grid grid-cols-7 gap-2 pt-1">
                     <button
                         onClick={() => onOpenDetails?.(order)}
-                        className="col-span-1 h-9 flex items-center justify-center rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                        className="col-span-1 h-11 flex items-center justify-center rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
                         title="Ver Detalhes"
                     >
-                        <Eye className="size-4" />
+                        <Eye className="size-5" />
                     </button>
                     {onEditOrder && (columnId === 'pendente' || columnId === 'preparando') && (
                         <button
                             onClick={() => onEditOrder(order)}
-                            className="col-span-1 h-9 flex items-center justify-center rounded bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
+                            className="col-span-1 h-11 flex items-center justify-center rounded bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
                             title="Editar Pedido"
                         >
-                            <Pencil className="size-4" />
+                            <Pencil className="size-5" />
                         </button>
                     )}
                     <button
                         onClick={() => onOpenPrintModal(order)}
-                        className="col-span-1 h-9 flex items-center justify-center rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                        className="col-span-1 h-11 flex items-center justify-center rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
                     >
-                        <Printer className="size-4" />
+                        <Printer className="size-5" />
                     </button>
                     {onCancelOrder && columnId !== 'finalizado' && (
                         <button
                             onClick={() => onCancelOrder(order.id)}
-                            className="col-span-1 h-9 flex items-center justify-center rounded bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+                            className="col-span-1 h-11 flex items-center justify-center rounded bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
                             title="Cancelar Pedido"
                         >
-                            <Ban className="size-4" />
+                            <Ban className="size-5" />
                         </button>
                     )}
                     <button
                         onClick={() => onMoveOrder(order.id, order.status)}
-                        className={`${onCancelOrder && onEditOrder && (columnId === 'pendente' || columnId === 'preparando') ? 'col-span-3' : onCancelOrder || (onEditOrder && (columnId === 'pendente' || columnId === 'preparando')) ? 'col-span-4' : 'col-span-5'} h-9 bg-primary text-white text-xs font-bold rounded uppercase tracking-wider hover:opacity-90 transition-all shadow-sm hover:shadow-primary/25 active:scale-95`}
+                        className={`${onCancelOrder && onEditOrder && (columnId === 'pendente' || columnId === 'preparando') ? 'col-span-3' : onCancelOrder || (onEditOrder && (columnId === 'pendente' || columnId === 'preparando')) ? 'col-span-4' : 'col-span-5'} h-11 bg-primary text-white text-sm font-bold rounded uppercase tracking-wider hover:opacity-90 transition-all shadow-sm hover:shadow-primary/25 active:scale-95`}
                     >
                         {columnId === 'pendente' ? 'Mover para Preparando' :
                             columnId === 'preparando' ? 'Finalizar Preparo' :
