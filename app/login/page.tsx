@@ -276,19 +276,6 @@ export default function LoginPage() {
                         </button>
                     </form>
 
-                    <div className="mt-8 pt-8" style={{ borderTop: '1px solid rgba(124, 255, 107, 0.1)' }}>
-                        <p className="text-center text-sm" style={{ color: '#A1A7B3' }}>
-                            Nao tem uma conta?{' '}
-                            <Link 
-                                href="/" 
-                                className="font-bold hover:underline transition-colors"
-                                style={{ color: '#7CFF6B' }}
-                            >
-                                Criar Conta Gratis
-                            </Link>
-                        </p>
-                    </div>
-
                     {/* Indicators */}
                     <div className="mt-12 flex items-center justify-center gap-6">
                         <div className="flex items-center gap-2">
