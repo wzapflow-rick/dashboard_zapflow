@@ -125,3 +125,29 @@
   /* Evita transicoes longas que acumulam trabalho de composicao. */
   transition-duration: 0.01ms !important;
 }
+
+/*
+ * Destaque "OFERTA" no cardapio publico: borda vermelha com glow pulsante.
+ * Chama o olho do cliente para os combos/itens que a loja quer empurrar.
+ */
+@keyframes zf-oferta-glow {
+  0%, 100% {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.5), 0 0 12px 0 rgba(239, 68, 68, 0.35);
+  }
+  50% {
+    border-color: #f87171;
+    box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.9), 0 0 22px 4px rgba(239, 68, 68, 0.6);
+  }
+}
+
+.zf-oferta-glow {
+  border-color: #ef4444 !important;
+  animation: zf-oferta-glow 1.8s ease-in-out infinite;
+}
+
+/* Em maquinas fracas, mantem a borda vermelha mas sem a animacao pulsante. */
+.low-power .zf-oferta-glow {
+  animation: none !important;
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.6) !important;
+}
