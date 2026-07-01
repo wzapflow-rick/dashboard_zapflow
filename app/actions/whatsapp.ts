@@ -482,52 +482,76 @@ export async function sendPaymentReminder(
 // ============================================================
 
 /**
- * Enviar lembrete de renovacao da assinatura ANTES da cobranca.
- * Disparado pelo cron billing-reminder a 3 e 1 dia(s) do vencimento.
+ * Enviar lembrete de renovacao/fim de teste ANTES do vencimento.
+ * Disparado pelo cron billing-reminder:
+ *   - Cliente pagante: dos 7 dias ate o vencimento (1x/dia)
+ *   - Conta de teste:  dos 3 dias ate o fim do teste (1x/dia)
  *
  * @param phone Telefone da loja
  * @param nome Nome da loja/responsavel
- * @param diasRestantes Quantos dias faltam para a cobranca (3 ou 1)
- * @param valor Valor da assinatura (numero)
+ * @param diasRestantes Quantos dias faltam para o vencimento (>= 0)
+ * @param valor Valor da assinatura (numero); 0/null => conta de teste
  * @param finalCartao Ultimos 4 digitos do cartao (opcional)
+ * @param opts.tipo 'teste' | 'pagante' (padrao inferido pelo valor)
+ * @param opts.linkPagamento Link de pagamento real (Mercado Pago) para pagar em 1 toque
  */
 export async function sendRenewalReminder(
     phone: string,
     nome: string,
     diasRestantes: number,
     valor?: number | null,
-    finalCartao?: string | null
+    finalCartao?: string | null,
+    opts?: { tipo?: 'teste' | 'pagante'; linkPagamento?: string }
 ): Promise<{ success: boolean; status: number; error: string | null }> {
     const valorFmt = valor != null && valor > 0
         ? `R$ ${valor.toFixed(2).replace('.', ',')}`
         : null;
     const cartaoInfo = finalCartao ? ` no cartão final ${finalCartao}` : '';
-    const linkAssinatura = `${BASE_URL}/dashboard/subscription`;
+    const ehTeste = opts?.tipo ? opts.tipo === 'teste' : !(valor != null && valor > 0);
+    const linkPagamento = opts?.linkPagamento || `${BASE_URL}/dashboard/subscription`;
+
+    // Texto amigavel para o prazo (cobre "vence hoje").
+    const prazoTexto =
+        diasRestantes <= 0 ? 'hoje'
+        : diasRestantes === 1 ? 'amanhã'
+        : `em ${diasRestantes} dias`;
 
     let message: string;
 
-    if (diasRestantes <= 1) {
-        // Reforço: 1 dia antes
-        message = `Olá ${nome}! Passando para avisar: ${valorFmt ? `a renovação da sua assinatura ZapFlow (${valorFmt})` : 'a renovação da sua assinatura ZapFlow'} será cobrada amanhã${cartaoInfo}. ✅
+    if (ehTeste) {
+        // ----- CONTA DE TESTE (fim do periodo gratuito) -----
+        const encerra = diasRestantes <= 0
+            ? 'Seu período de teste do ZapFlow encerra hoje.'
+            : `Seu período de teste do ZapFlow encerra ${prazoTexto}.`;
 
-Para não perder o acesso ao seu sistema, garanta que o cartão tenha saldo disponível.
-
-Veja os detalhes da sua assinatura:
-${linkAssinatura}
-
-Equipe ZapFlow`;
-    } else {
-        // Aviso: 3 dias antes
         message = `Olá ${nome}! 👋
 
-${valorFmt ? `Faltam ${diasRestantes} dias para a renovação da sua assinatura ZapFlow (${valorFmt})` : `Faltam ${diasRestantes} dias para a renovação da sua assinatura ZapFlow`}${cartaoInfo}.
+${encerra}
 
-Não precisa fazer nada: a cobrança é automática. Só garanta que o cartão tenha saldo para manter seu sistema funcionando sem interrupções.
+Para não perder o acesso ao seu cardápio e aos pedidos, escolha um plano e continue vendendo sem interrupção:
+${linkPagamento}
 
-Detalhes da assinatura:
-${linkAssinatura}
+Leva menos de 2 minutos. Qualquer dúvida, é só chamar! 🚀
+Equipe ZapFlow`;
+    } else {
+        // ----- CLIENTE PAGANTE (renovacao) -----
+        if (diasRestantes <= 0) {
+            message = `Olá ${nome}! Passando para avisar: sua assinatura ZapFlow${valorFmt ? ` (${valorFmt})` : ''} vence hoje${cartaoInfo}.
+
+Para manter seu sistema funcionando sem interrupções, garanta o pagamento:
+${linkPagamento}
 
 Equipe ZapFlow`;
+        } else {
+            message = `Olá ${nome}! 👋
+
+Sua assinatura ZapFlow${valorFmt ? ` (${valorFmt})` : ''} renova ${prazoTexto}${cartaoInfo}.
+
+Para continuar sem interrupções, você pode pagar por aqui a qualquer momento:
+${linkPagamento}
+
+Equipe ZapFlow`;
+        }
     }
 
     return sendWhatsAppMessageDetailed(phone, message);
