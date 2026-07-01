@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
 import { toast } from 'sonner';
 import {
@@ -38,18 +39,31 @@ const fmtMoeda = (v: number) => `R$ ${(v ?? 0).toLocaleString('pt-BR', { minimum
 // "dark premium" independentemente do tema (system/light/dark) do usuario.
 const CANVAS = '-m-4 sm:-m-6 lg:-m-8 min-h-screen bg-[#0a1628] text-slate-100';
 
-const ACAO_INFO: Record<TipoAcao, { label: string; icon: typeof Megaphone; toastMsg: string }> = {
-  campanha: { label: 'Criar Campanha', icon: Megaphone, toastMsg: 'Campanha preparada! Em breve voce podera dispara-la.' },
-  cupom: { label: 'Criar Cupom', icon: Ticket, toastMsg: 'Cupom pronto para ser configurado.' },
-  whatsapp: { label: 'Enviar WhatsApp', icon: MessageCircle, toastMsg: 'Mensagem de WhatsApp preparada.' },
-  cardapio: { label: 'Ajustar Cardapio', icon: UtensilsCrossed, toastMsg: 'Vamos deixar seu cardapio afiado.' },
-  clientes: { label: 'Recuperar Clientes', icon: Users, toastMsg: 'Lista de clientes preparada para reativacao.' },
+const ACAO_INFO: Record<TipoAcao, { label: string; icon: typeof Megaphone; toastMsg: string; href?: string }> = {
+  campanha: { label: 'Criar Campanha', icon: Megaphone, toastMsg: 'Abrindo suas campanhas...', href: '/dashboard/campanhas' },
+  cupom: { label: 'Criar Cupom', icon: Ticket, toastMsg: 'Abrindo a gestao de cupons...', href: '/dashboard/settings?section=coupons' },
+  whatsapp: { label: 'Enviar WhatsApp', icon: MessageCircle, toastMsg: 'Abrindo campanhas de WhatsApp...', href: '/dashboard/campanhas' },
+  cardapio: { label: 'Ajustar Cardapio', icon: UtensilsCrossed, toastMsg: 'Abrindo seu cardapio...', href: '/dashboard/menu' },
+  clientes: { label: 'Recuperar Clientes', icon: Users, toastMsg: 'Abrindo sua base de clientes...', href: '/dashboard/customers' },
   geral: { label: 'Ver Detalhes', icon: ArrowRight, toastMsg: 'Acao registrada.' },
 };
 
-function simularAcao(tipo: TipoAcao, descricao: string) {
+// Executa a acao sugerida pela IA levando o lojista direto para a ferramenta
+// real correspondente (deep-link). Guarda a dica no sessionStorage para que a
+// tela de destino possa exibi-la como contexto, se quiser usar futuramente.
+function executarAcao(router: ReturnType<typeof useRouter>, tipo: TipoAcao, descricao: string) {
   const info = ACAO_INFO[tipo] ?? ACAO_INFO.geral;
-  toast.success(info.toastMsg, { description: descricao });
+  if (info.href) {
+    try {
+      sessionStorage.setItem('zapflow_insight_acao', JSON.stringify({ tipo, descricao, em: Date.now() }));
+    } catch {
+      /* sessionStorage pode falhar em modo privado; a navegacao continua normalmente */
+    }
+    toast.success(info.toastMsg, { description: descricao });
+    router.push(info.href);
+  } else {
+    toast.info(descricao || info.toastMsg);
+  }
 }
 
 function saudacaoHora(): string {
@@ -119,6 +133,7 @@ function Skeleton() {
 // Componente principal
 // ---------------------------------------------------------------------------
 export function ZapflowInsightsClient({ initialData }: { initialData?: ZapflowInsightsResult }) {
+  const router = useRouter();
   const [data, setData] = useState<ZapflowInsightsResult | null>(initialData ?? null);
   const [carregando, setCarregando] = useState(!initialData);
   const [atualizando, setAtualizando] = useState(false);
@@ -260,7 +275,7 @@ export function ZapflowInsightsClient({ initialData }: { initialData?: ZapflowIn
           <p className="font-semibold text-slate-100">{ai.sugestaoPrincipal.titulo}</p>
           <p className="mt-1 text-sm leading-relaxed text-slate-300">{ai.sugestaoPrincipal.descricao}</p>
           <button
-            onClick={() => simularAcao(ai.sugestaoPrincipal.tipoAcao, ai.sugestaoPrincipal.acaoSugerida)}
+            onClick={() => executarAcao(router, ai.sugestaoPrincipal.tipoAcao, ai.sugestaoPrincipal.acaoSugerida)}
             className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-slate-900 transition-transform hover:scale-[1.02]"
           >
             {(() => {
@@ -331,7 +346,7 @@ export function ZapflowInsightsClient({ initialData }: { initialData?: ZapflowIn
                   </div>
                   <p className="flex-1 text-sm leading-relaxed text-slate-300">{o.descricao}</p>
                   <button
-                    onClick={() => simularAcao(o.tipoAcao, o.acaoSugerida)}
+                    onClick={() => executarAcao(router, o.tipoAcao, o.acaoSugerida)}
                     className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/20"
                   >
                     <Icon className="size-4" />
