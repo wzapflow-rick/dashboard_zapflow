@@ -129,10 +129,16 @@ export default function PrintModal({ isOpen, onClose, order }: PrintModalProps) 
 
                             {/* Itens */}
                             <div className="zf-section">Itens</div>
+                            <div className="zf-ihead">
+                                <span className="zf-q">Qtd</span>
+                                <span className="zf-nm">Itens</span>
+                                <span className="zf-pr">Preço</span>
+                            </div>
                             {formattedItems.map((item: any, idx: number) => (
                                 <div key={idx}>
                                     <div className="zf-li">
-                                        <span className="zf-nm"><span className="zf-qbox">{item.qtd}</span>{item.nome}</span>
+                                        <span className="zf-q">{item.qtd}x</span>
+                                        <span className="zf-nm">{item.nome}</span>
                                         <span className="zf-pr">{formatPrice(item.preco * item.qtd)}</span>
                                     </div>
                                     {item.observacao && (
@@ -184,9 +190,9 @@ export default function PrintModal({ isOpen, onClose, order }: PrintModalProps) 
                             {/* Rodapé */}
                             <div className="zf-foot">
                                 <div className="zf-thanks">Obrigado pela preferência!</div>
-                                <div>ZapFlow</div>
                             </div>
                             <div className="zf-cut">- - - - - - - - - - - -</div>
+                            <div className="zf-sign">powered by zapflow</div>
                         </div>
                     </div>
 

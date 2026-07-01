@@ -146,9 +146,15 @@ export default function TablePrintModal({ isOpen, onClose, mesa, comanda, tipo }
 
                     {itensComanda.length > 0 ? (
                       <>
+                        <div className="zf-ihead">
+                          <span className="zf-q">Qtd</span>
+                          <span className="zf-nm">Itens</span>
+                          <span className="zf-pr">Preço</span>
+                        </div>
                         {itensComanda.map((item: any, idx: number) => (
                           <div className="zf-li" key={idx}>
-                            <span className="zf-nm"><span className="zf-qbox">{item.quantidade}</span>{item.produto || item.nome}</span>
+                            <span className="zf-q">{item.quantidade}x</span>
+                            <span className="zf-nm">{item.produto || item.nome}</span>
                             <span className="zf-pr">{formatPrice((Number(item.preco_unitario) || Number(item.preco) || 0) * (item.quantidade || 1))}</span>
                           </div>
                         ))}
@@ -179,9 +185,9 @@ export default function TablePrintModal({ isOpen, onClose, mesa, comanda, tipo }
               {/* Rodapé */}
               <div className="zf-foot">
                 <div className="zf-thanks">Obrigado pela preferência!</div>
-                <div>ZapFlow</div>
               </div>
               <div className="zf-cut">- - - - - - - - - - - -</div>
+              <div className="zf-sign">powered by zapflow</div>
             </div>
           </div>
 
