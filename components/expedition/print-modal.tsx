@@ -2,8 +2,9 @@
 
 import React, { useRef, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Printer, X, ChevronLeft } from 'lucide-react';
+import { Printer, X, ChevronLeft, Smartphone } from 'lucide-react';
 import { printThermal, getReceiptCss, getLarguraPadrao, setLarguraPadrao, type LarguraPapel } from '@/lib/thermal-print';
+import { printViaRawBT, isAndroid, type ReciboDados } from '@/lib/rawbt-print';
 
 interface PrintModalProps {
     isOpen: boolean;
@@ -36,6 +37,32 @@ export default function PrintModal({ isOpen, onClose, order }: PrintModalProps) 
             bodyHtml: `<div class="zf-receipt">${printContent.innerHTML}</div>`,
             largura,
         });
+    };
+
+    // Impressão pelo celular (Android) via app RawBT ligado à térmica por cabo/Bluetooth.
+    const handlePrintMobile = () => {
+        if (!isAndroid()) {
+            alert('A impressão pelo celular funciona no Android com o app RawBT instalado. No iPhone, use uma impressora Wi-Fi.');
+            return;
+        }
+        const dados: ReciboDados = {
+            empresaNome: order?.empresa_nome || order?.nome_empresa || 'PEDIDO',
+            pedidoId: order?.id,
+            isDelivery: !!isDelivery,
+            clienteNome: order?.nome_cliente || order?.cliente_nome || 'Cliente',
+            clienteTelefone: order?.telefone_cliente || '-',
+            endereco: order?.endereco_entrega,
+            bairro: order?.bairro_entrega,
+            itens: formattedItems,
+            observacoes: order?.observacoes,
+            subtotal: order?.valor_total || order?.total || 0,
+            taxaEntrega: order?.taxa_entrega || 0,
+            desconto: order?.desconto || 0,
+            total: order?.valor_total || order?.total || 0,
+            formaPagamento: order?.forma_pagamento,
+            troco: order?.troco,
+        };
+        printViaRawBT(dados, largura);
     };
 
     const formattedItems = useMemo(() => {
@@ -229,6 +256,16 @@ export default function PrintModal({ isOpen, onClose, order }: PrintModalProps) 
                                 Imprimir
                             </button>
                         </div>
+                        <button
+                            onClick={handlePrintMobile}
+                            className="w-full px-4 py-2.5 bg-slate-800 dark:bg-slate-700 text-white font-bold rounded-xl hover:bg-slate-900 dark:hover:bg-slate-600 transition-all flex items-center justify-center gap-2"
+                        >
+                            <Smartphone className="size-4" />
+                            Imprimir no celular (RawBT)
+                        </button>
+                        <p className="text-[11px] leading-relaxed text-slate-400 dark:text-slate-500 text-center">
+                            No celular Android, instale o app <b>RawBT</b> (grátis na Play Store) e conecte a impressora térmica por cabo ou Bluetooth.
+                        </p>
                     </div>
                 </motion.div>
             </div>
