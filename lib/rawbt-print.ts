@@ -216,8 +216,21 @@ export function printViaRawBT(
   return true;
 }
 
-// Detecta Android (onde o RawBT funciona). Em outros sistemas mostramos aviso.
+// Detecta Android (onde o RawBT funciona).
+// ATENCAO: nao usar isto para BLOQUEAR a impressao. Com o "Site para computador"
+// ligado no Chrome, o Android remove "Android" do userAgent e esta funcao passa
+// a retornar false mesmo em um aparelho Android. Use apenas como dica.
 export function isAndroid(): boolean {
   if (typeof navigator === 'undefined') return false;
   return /android/i.test(navigator.userAgent);
+}
+
+// Detecta iOS (iPhone/iPad), unico ambiente onde o RawBT realmente nao funciona.
+// Em iPadOS recente o userAgent parece Mac, entao tambem checamos touch + platform.
+export function isIOS(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent;
+  if (/iPad|iPhone|iPod/.test(ua)) return true;
+  // iPadOS 13+ se apresenta como "Macintosh" mas tem tela sensivel ao toque.
+  return /Macintosh/.test(ua) && typeof document !== 'undefined' && 'ontouchend' in document;
 }
