@@ -2,9 +2,10 @@
 
 import React, { useRef, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Printer, X, ChevronLeft } from 'lucide-react';
+import { Printer, X, ChevronLeft, Smartphone } from 'lucide-react';
 import { type MesaComDetalhes, type ComandaComPedidos } from '@/app/actions/tables';
 import { printThermal, getReceiptCss, getLarguraPadrao, setLarguraPadrao, type LarguraPapel } from '@/lib/thermal-print';
+import { printTableViaRawBT, isIOS, type ReciboMesa } from '@/lib/rawbt-print';
 
 interface TablePrintModalProps {
   isOpen: boolean;
@@ -67,6 +68,40 @@ export default function TablePrintModal({ isOpen, onClose, mesa, comanda, tipo }
       bodyHtml: `<div class="zf-receipt">${printContent.innerHTML}</div>`,
       largura,
     });
+  };
+
+  // Impressão pelo celular via app RawBT (Android). Só bloqueia no iOS.
+  const handlePrintMobile = () => {
+    if (isIOS()) {
+      alert('A impressão pelo celular usa o app RawBT, que só existe no Android. No iPhone/iPad, use uma impressora Wi-Fi.');
+      return;
+    }
+    const dados: ReciboMesa = {
+      tipo,
+      mesaNumero: mesa.numero,
+      mesaNome: mesa.nome || undefined,
+      total: totalGeral,
+      comandas: comandasParaImprimir.map((cmd) => {
+        const itens = cmd.pedidos.flatMap((pedido: any) => {
+          try {
+            const parsed = typeof pedido.itens === 'string' ? JSON.parse(pedido.itens) : pedido.itens;
+            return Array.isArray(parsed) ? parsed : [];
+          } catch {
+            return [];
+          }
+        });
+        return {
+          nome: cmd.nome_cliente || `Comanda ${cmd.id}`,
+          subtotal: cmd.pedidos.reduce((sum, p: any) => sum + (Number(p.valor_total) || 0), 0),
+          itens: itens.map((item: any) => ({
+            nome: item.produto || item.nome,
+            qtd: item.quantidade || 1,
+            preco: Number(item.preco_unitario) || Number(item.preco) || 0,
+          })),
+        };
+      }),
+    };
+    printTableViaRawBT(dados, largura);
   };
 
   return (
@@ -224,6 +259,16 @@ export default function TablePrintModal({ isOpen, onClose, mesa, comanda, tipo }
                 Imprimir
               </button>
             </div>
+            <button
+              onClick={handlePrintMobile}
+              className="w-full px-4 py-2.5 bg-slate-800 dark:bg-slate-700 text-white font-bold rounded-xl hover:bg-slate-900 dark:hover:bg-slate-600 transition-all flex items-center justify-center gap-2"
+            >
+              <Smartphone className="size-4" />
+              Imprimir no celular (RawBT)
+            </button>
+            <p className="text-[11px] leading-relaxed text-slate-400 dark:text-slate-500 text-center">
+              No celular Android, instale o app <b>RawBT</b> (grátis na Play Store) e conecte a impressora térmica por cabo, Bluetooth ou rede.
+            </p>
           </div>
         </motion.div>
       </div>
