@@ -186,6 +186,72 @@ export function buildReceiptText(dados: ReciboDados, largura: LarguraPapel): str
   return out.join('\n');
 }
 
+// ---- Conta de mesa / comanda ----
+
+export interface ReciboComanda {
+  nome: string;
+  itens: ReciboItem[];
+  subtotal: number;
+}
+
+export interface ReciboMesa {
+  tipo: 'mesa' | 'comanda';
+  mesaNumero?: string | number;
+  mesaNome?: string;
+  comandas: ReciboComanda[];
+  total: number;
+}
+
+// Monta a conta de mesa/comanda em texto puro (mesmo layout do preview).
+export function buildTableReceiptText(dados: ReciboMesa, largura: LarguraPapel): string {
+  const W = colunas(largura);
+  const out: string[] = [];
+
+  // Cabeçalho
+  const titulo = dados.tipo === 'mesa' ? `MESA ${dados.mesaNumero ?? ''}`.trim() : 'COMANDA';
+  out.push(centro(titulo, W));
+  out.push(centro(new Date().toLocaleString('pt-BR'), W));
+  out.push('');
+  out.push(centro(dados.tipo === 'mesa' ? '* CONTA DA MESA *' : '* CONTA INDIVIDUAL *', W));
+  if (dados.mesaNome && dados.tipo === 'mesa') {
+    out.push(centro(dados.mesaNome, W));
+  }
+  out.push(linha(W));
+
+  // Itens agrupados por comanda
+  const varias = dados.comandas.length > 1;
+  dados.comandas.forEach((cmd, idx) => {
+    out.push(normaliza(cmd.nome));
+    if (cmd.itens.length > 0) {
+      for (const item of cmd.itens) {
+        const preco = money(item.preco * item.qtd);
+        const nomeLargura = W - preco.length - 1;
+        const linhasNome = quebra(`${item.qtd}x ${item.nome}`, nomeLargura).split('\n');
+        linhasNome[0] = duasColunas(linhasNome[0], preco, W);
+        out.push(linhasNome.join('\n'));
+      }
+      out.push(duasColunas('Subtotal', money(cmd.subtotal), W));
+    } else {
+      out.push('Nenhum item');
+    }
+    if (varias && idx < dados.comandas.length - 1) out.push(linha(W));
+  });
+
+  // Total geral
+  out.push(linha(W, '='));
+  out.push(duasColunas('TOTAL', money(dados.total), W));
+  out.push(linha(W, '='));
+
+  // Rodapé
+  out.push('');
+  out.push(centro('Obrigado pela preferencia!', W));
+  out.push('');
+  out.push(centro('powered by zapflow', W));
+  out.push('\n\n\n');
+
+  return out.join('\n');
+}
+
 // Codifica uma string em base64 de forma segura para UTF-8.
 // (btoa sozinho quebra com caracteres fora do Latin1.)
 function toBase64Utf8(str: string): string {
@@ -202,27 +268,42 @@ function toBase64Utf8(str: string): string {
 // Impressoras sem guilhotina simplesmente ignoram o comando.
 const CORTE_ESCPOS = '\x1D\x56\x42\x00';
 
-// Dispara a impressão no app RawBT (Android).
-// O conteúdo vai em BASE64 no esquema `rawbt:data:text/plain;base64,...`.
-// - `cut` (padrão true): anexa o comando ESC/POS de corte ao final.
-// - `useIntent`: usa a variante por intent (redireciona à Play Store
-//   quando o app não está instalado).
-// Retorna false se claramente não for um ambiente compatível.
-export function printViaRawBT(
-  dados: ReciboDados,
-  largura: LarguraPapel,
-  opts?: { useIntent?: boolean; cut?: boolean }
-): boolean {
+interface RawBTOpts {
+  useIntent?: boolean; // variante por intent (redireciona à Play Store se ausente)
+  cut?: boolean; // anexa o comando ESC/POS de corte (padrão true)
+}
+
+// Envia um texto já montado ao RawBT (base64 + corte opcional).
+// Retorna false se não for um ambiente com window (ex.: SSR).
+function enviarTextoRawBT(texto: string, opts?: RawBTOpts): boolean {
   if (typeof window === 'undefined') return false;
   const cortar = opts?.cut !== false; // corte ligado por padrão
-  const texto = buildReceiptText(dados, largura) + (cortar ? CORTE_ESCPOS : '');
-  const b64 = toBase64Utf8(texto);
+  const conteudo = texto + (cortar ? CORTE_ESCPOS : '');
+  const b64 = toBase64Utf8(conteudo);
   const url = opts?.useIntent
     ? `intent:base64,${b64}#Intent;scheme=rawbt;package=${RAWBT_PACKAGE};end;`
     : `rawbt:data:text/plain;base64,${b64}`;
   // Navega para o esquema — o Android entrega o conteúdo ao RawBT.
   window.location.href = url;
   return true;
+}
+
+// Dispara a impressão de um PEDIDO no app RawBT (Android).
+export function printViaRawBT(
+  dados: ReciboDados,
+  largura: LarguraPapel,
+  opts?: RawBTOpts
+): boolean {
+  return enviarTextoRawBT(buildReceiptText(dados, largura), opts);
+}
+
+// Dispara a impressão de uma CONTA DE MESA/COMANDA no app RawBT (Android).
+export function printTableViaRawBT(
+  dados: ReciboMesa,
+  largura: LarguraPapel,
+  opts?: RawBTOpts
+): boolean {
+  return enviarTextoRawBT(buildTableReceiptText(dados, largura), opts);
 }
 
 // Detecta Android (onde o RawBT funciona).
