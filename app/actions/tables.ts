@@ -266,12 +266,29 @@ export async function updateComanda(
   const result = await pg.update('comandas', id, updatePayload);
 
   if (data.status === COMANDA_STATUS.PAGA) {
+    await finalizarPedidosDaComanda(id);
     await verificarELiberarMesa(comanda.mesa_id);
   }
 
   revalidatePath('/dashboard/mesas');
   revalidatePath('/dashboard/expedition');
+  revalidatePath('/dashboard');
+  revalidatePath('/dashboard/reports');
   return normalizeRecord(result as any) as Comanda;
+}
+
+// Marca todos os pedidos de uma comanda como "finalizado" quando ela e paga.
+// Sem isso, os pedidos de mesa nunca contam como faturamento nos relatorios/dashboard,
+// que consideram apenas pedidos com status "finalizado".
+async function finalizarPedidosDaComanda(comandaId: number): Promise<void> {
+  try {
+    await pg.query(
+      `UPDATE pedidos SET status = $1 WHERE comanda_id = $2 AND status NOT IN ('finalizado', 'cancelado')`,
+      [ORDER_STATUS.FINALIZADO, comandaId]
+    );
+  } catch (error) {
+    console.error('Erro ao finalizar pedidos da comanda:', error);
+  }
 }
 
 async function verificarELiberarMesa(mesaId: number): Promise<void> {
@@ -490,10 +507,15 @@ export async function fecharMesa(mesaId: number): Promise<{ total: number; coman
       status: COMANDA_STATUS.PAGA,
       closed_at: new Date().toISOString(),
     });
+    // Finaliza os pedidos da comanda para que entrem no faturamento (relatorios/dashboard).
+    await finalizarPedidosDaComanda(comanda.id);
   }
 
   await pg.update('mesas', mesaId, { status: MESA_STATUS.LIVRE });
 
   revalidatePath('/dashboard/mesas');
+  revalidatePath('/dashboard/expedition');
+  revalidatePath('/dashboard');
+  revalidatePath('/dashboard/reports');
   return { total: totalGeral, comandas: comandas.length };
 }

@@ -542,7 +542,9 @@ export async function updateOrderItems(
             throw new Error('Acesso negado: Pedido nao pertence a esta empresa');
         }
 
-        const statusEditaveis = ['pendente', 'preparando', 'aguardando_pagamento'];
+        // Pedidos de mesa podem ficar "pronto" (inclusive no modo direto) e ainda
+        // precisam ser editaveis enquanto a comanda estiver aberta.
+        const statusEditaveis = ['pendente', 'preparando', 'aguardando_pagamento', 'pronto'];
         if (!statusEditaveis.includes(orderData.status)) {
             throw new Error(`Pedido com status "${orderData.status}" nao pode ser editado`);
         }
@@ -562,6 +564,25 @@ export async function updateOrderItems(
         }
 
         const result = await pg.update(PEDIDOS_TABLE, updatePayload);
+
+        // Se for um pedido de mesa, recalcula o total da comanda para manter
+        // o total da mesa (e o valor cobrado no fechamento) sincronizado.
+        if (orderData.comanda_id) {
+            try {
+                const pedidosComanda = await pg.query(
+                    `SELECT valor_total FROM pedidos WHERE comanda_id = $1 AND status != 'cancelado'`,
+                    [orderData.comanda_id]
+                );
+                const totalComanda = (pedidosComanda.rows || []).reduce(
+                    (sum: number, p: any) => sum + Number(p.valor_total || 0),
+                    0
+                );
+                await pg.update('comandas', orderData.comanda_id, { total: totalComanda });
+            } catch (comandaErr) {
+                console.error('Erro ao recalcular total da comanda:', comandaErr);
+            }
+            revalidatePath('/dashboard/mesas');
+        }
 
         const valorAntigo = Number(orderData.valor_total || 0).toFixed(2);
         const valorNovo = novoTotal.toFixed(2);
