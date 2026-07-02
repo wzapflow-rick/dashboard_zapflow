@@ -4,7 +4,7 @@ import React, { useRef, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Printer, X, ChevronLeft, Smartphone } from 'lucide-react';
 import { printThermal, getReceiptCss, getLarguraPadrao, setLarguraPadrao, type LarguraPapel } from '@/lib/thermal-print';
-import { printViaRawBT, isAndroid, type ReciboDados } from '@/lib/rawbt-print';
+import { printViaRawBT, isIOS, type ReciboDados } from '@/lib/rawbt-print';
 
 interface PrintModalProps {
     isOpen: boolean;
@@ -39,10 +39,12 @@ export default function PrintModal({ isOpen, onClose, order }: PrintModalProps) 
         });
     };
 
-    // Impressão pelo celular (Android) via app RawBT ligado à térmica por cabo/Bluetooth.
+    // Impressão pelo celular via app RawBT (Android) ligado à térmica por rede/cabo/Bluetooth.
+    // NÃO bloqueamos por Android: com "Site para computador" ligado o Chrome esconde
+    // o "Android" do userAgent. Só bloqueamos no iPhone/iPad, onde o RawBT não existe.
     const handlePrintMobile = () => {
-        if (!isAndroid()) {
-            alert('A impressão pelo celular funciona no Android com o app RawBT instalado. No iPhone, use uma impressora Wi-Fi.');
+        if (isIOS()) {
+            alert('A impressão pelo celular usa o app RawBT, que só existe no Android. No iPhone/iPad, use uma impressora Wi-Fi.');
             return;
         }
         const dados: ReciboDados = {
