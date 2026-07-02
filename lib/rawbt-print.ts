@@ -5,11 +5,16 @@
 // no Brasil é o app RawBT (grátis na Play Store), que instala como driver de
 // impressão e conversa com a térmica pelo cabo/Bluetooth.
 //
-// Integração: o RawBT aceita receber conteúdo por um "intent URL". Enviamos o
-// cupom em TEXTO PURO (o formato mais confiável em térmica) e o RawBT imprime.
-// Se o app não estiver instalado, o próprio intent redireciona para a Play Store.
+// Integração: o RawBT recebe conteúdo por um "URL scheme". O conteúdo precisa
+// ir em BASE64 (não texto cru) — enviar texto puro url-encoded faz o app abrir
+// mas NÃO imprimir. Enviamos o cupom em TEXTO PURO codificado em base64 UTF-8:
 //
-//   intent:{TEXTO}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;
+//   rawbt:data:text/plain;base64,{BASE64}
+//
+// Como fallback, também há a variante por intent (melhor p/ redirecionar à
+// Play Store quando o app não está instalado):
+//
+//   intent:base64,{BASE64}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;
 //
 // Referência: documentação do esquema rawbt: (a402d / RawBT).
 
@@ -181,13 +186,32 @@ export function buildReceiptText(dados: ReciboDados, largura: LarguraPapel): str
   return out.join('\n');
 }
 
-// Dispara a impressão no app RawBT (Android) via intent URL.
+// Codifica uma string em base64 de forma segura para UTF-8.
+// (btoa sozinho quebra com caracteres fora do Latin1.)
+function toBase64Utf8(str: string): string {
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin);
+}
+
+// Dispara a impressão no app RawBT (Android).
+// O conteúdo vai em BASE64 no esquema `rawbt:data:text/plain;base64,...`.
+// Se `useIntent` for true, usa a variante por intent (redireciona à Play Store
+// quando o app não está instalado).
 // Retorna false se claramente não for um ambiente compatível.
-export function printViaRawBT(dados: ReciboDados, largura: LarguraPapel): boolean {
+export function printViaRawBT(
+  dados: ReciboDados,
+  largura: LarguraPapel,
+  opts?: { useIntent?: boolean }
+): boolean {
   if (typeof window === 'undefined') return false;
   const texto = buildReceiptText(dados, largura);
-  const url = `intent:${encodeURIComponent(texto)}#Intent;scheme=rawbt;package=${RAWBT_PACKAGE};end;`;
-  // Navega para o intent — o Android abre o RawBT (ou a Play Store, se ausente).
+  const b64 = toBase64Utf8(texto);
+  const url = opts?.useIntent
+    ? `intent:base64,${b64}#Intent;scheme=rawbt;package=${RAWBT_PACKAGE};end;`
+    : `rawbt:data:text/plain;base64,${b64}`;
+  // Navega para o esquema — o Android entrega o conteúdo ao RawBT.
   window.location.href = url;
   return true;
 }
