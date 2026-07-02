@@ -104,10 +104,10 @@ export default function PrintModal({ isOpen, onClose, order }: PrintModalProps) 
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-700"
+                    className="relative w-full max-w-md max-h-[90vh] flex flex-col bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-700"
                 >
                     {/* Header */}
-                    <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
+                    <div className="shrink-0 flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
                         <button
                             onClick={onClose}
                             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
@@ -119,7 +119,7 @@ export default function PrintModal({ isOpen, onClose, order }: PrintModalProps) 
                     </div>
 
                     {/* Ticket Preview */}
-                    <div className="p-4 flex justify-center bg-slate-100 dark:bg-slate-900/50">
+                    <div className="flex-1 min-h-0 overflow-y-auto p-4 flex justify-center bg-slate-100 dark:bg-slate-900/50">
                         <div
                             ref={printRef}
                             className="zf-receipt bg-white shadow-lg"
@@ -226,7 +226,7 @@ export default function PrintModal({ isOpen, onClose, order }: PrintModalProps) 
                     </div>
 
                     {/* Actions */}
-                    <div className="p-4 border-t border-slate-200 dark:border-slate-700 space-y-3">
+                    <div className="shrink-0 p-4 border-t border-slate-200 dark:border-slate-700 space-y-3">
                         <div className="flex items-center justify-center gap-2">
                             <span className="text-xs text-slate-500 dark:text-slate-400">Largura do papel:</span>
                             {(['58mm', '80mm'] as const).map((l) => (
