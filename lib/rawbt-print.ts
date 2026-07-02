@@ -195,18 +195,27 @@ function toBase64Utf8(str: string): string {
   return btoa(bin);
 }
 
+// Comando ESC/POS de corte de papel. RawBT interpreta os bytes de controle
+// embutidos no conteúdo. Todos os bytes são < 0x80, então o TextEncoder os
+// codifica como 1 byte cada (o RawBT recebe exatamente a sequência ESC/POS).
+//   GS V B n  (0x1D 0x56 0x42 n) => avança n pontos e faz corte total.
+// Impressoras sem guilhotina simplesmente ignoram o comando.
+const CORTE_ESCPOS = '\x1D\x56\x42\x00';
+
 // Dispara a impressão no app RawBT (Android).
 // O conteúdo vai em BASE64 no esquema `rawbt:data:text/plain;base64,...`.
-// Se `useIntent` for true, usa a variante por intent (redireciona à Play Store
-// quando o app não está instalado).
+// - `cut` (padrão true): anexa o comando ESC/POS de corte ao final.
+// - `useIntent`: usa a variante por intent (redireciona à Play Store
+//   quando o app não está instalado).
 // Retorna false se claramente não for um ambiente compatível.
 export function printViaRawBT(
   dados: ReciboDados,
   largura: LarguraPapel,
-  opts?: { useIntent?: boolean }
+  opts?: { useIntent?: boolean; cut?: boolean }
 ): boolean {
   if (typeof window === 'undefined') return false;
-  const texto = buildReceiptText(dados, largura);
+  const cortar = opts?.cut !== false; // corte ligado por padrão
+  const texto = buildReceiptText(dados, largura) + (cortar ? CORTE_ESCPOS : '');
   const b64 = toBase64Utf8(texto);
   const url = opts?.useIntent
     ? `intent:base64,${b64}#Intent;scheme=rawbt;package=${RAWBT_PACKAGE};end;`
