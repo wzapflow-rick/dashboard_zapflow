@@ -92,6 +92,15 @@ export default function EmpresasAdminPage() {
     setShowQrModal(true);
   };
 
+  // Slug efetivo do cardapio publico. Se a coluna slug estiver vazia, deriva do
+  // nome_fantasia igual ao resolvedor em getPublicMenu: LOWER(REPLACE(nome_fantasia,' ','-')).
+  // Assim o QR/link aponta para /menu/sabor-perfeito em vez de /menu/empresa-25.
+  const getMenuSlug = (empresa: Empresa): string => {
+    if (empresa.slug && empresa.slug.trim()) return empresa.slug.trim();
+    const base = empresa.nome_fantasia || empresa.nome || '';
+    return base.trim().toLowerCase().replace(/ /g, '-');
+  };
+
   const handleDelete = async () => {
     if (!selectedEmpresa) return;
     setDeleting(true);
@@ -301,7 +310,7 @@ export default function EmpresasAdminPage() {
                           <Trash2 className="size-4" />
                         </button>
                         <a
-                          href={`/menu/${empresa.slug}`}
+                          href={`/menu/${getMenuSlug(empresa)}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="p-2 hover:bg-[#1e3a5f] rounded-lg text-slate-400 hover:text-white transition-colors"
@@ -430,7 +439,7 @@ export default function EmpresasAdminPage() {
               <QrCodeGenerator
                 empresaId={selectedEmpresa.id}
                 empresaNome={selectedEmpresa.nome_fantasia || selectedEmpresa.nome}
-                slug={selectedEmpresa.slug}
+                slug={getMenuSlug(selectedEmpresa)}
               />
             </div>
           </div>
