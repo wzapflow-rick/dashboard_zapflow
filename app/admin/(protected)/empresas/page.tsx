@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import { getEmpresas, createEmpresa, updateEmpresa, concederTrialGratuito, deleteEmpresa } from '@/app/actions/admin';
 import { 
   Building2, Search, Plus, Edit2, Gift, ExternalLink, 
-  ChevronLeft, ChevronRight, X, Check, AlertCircle, Trash2
+  ChevronLeft, ChevronRight, X, Check, AlertCircle, Trash2, QrCode
 } from 'lucide-react';
+import QrCodeGenerator from '@/components/management/qr-code-generator';
 
 interface Empresa {
   id: number;
@@ -44,6 +45,7 @@ export default function EmpresasAdminPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showTrialModal, setShowTrialModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
   const [selectedEmpresa, setSelectedEmpresa] = useState<Empresa | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -83,6 +85,20 @@ export default function EmpresasAdminPage() {
   const openDeleteConfirm = (empresa: Empresa) => {
     setSelectedEmpresa(empresa);
     setShowDeleteConfirm(true);
+  };
+
+  const openQrModal = (empresa: Empresa) => {
+    setSelectedEmpresa(empresa);
+    setShowQrModal(true);
+  };
+
+  // Slug efetivo do cardapio publico. Se a coluna slug estiver vazia, deriva do
+  // nome_fantasia igual ao resolvedor em getPublicMenu: LOWER(REPLACE(nome_fantasia,' ','-')).
+  // Assim o QR/link aponta para /menu/sabor-perfeito em vez de /menu/empresa-25.
+  const getMenuSlug = (empresa: Empresa): string => {
+    if (empresa.slug && empresa.slug.trim()) return empresa.slug.trim();
+    const base = empresa.nome_fantasia || empresa.nome || '';
+    return base.trim().toLowerCase().replace(/ /g, '-');
   };
 
   const handleDelete = async () => {
@@ -195,6 +211,13 @@ export default function EmpresasAdminPage() {
                   <span className="text-sm">Trial</span>
                 </button>
                 <button
+                  onClick={() => openQrModal(empresa)}
+                  className="p-2 bg-violet-500/10 rounded-lg text-violet-400 hover:bg-violet-500/20 transition-colors"
+                  title="QR Code do Cardapio"
+                >
+                  <QrCode className="size-4" />
+                </button>
+                <button
                   onClick={() => openDeleteConfirm(empresa)}
                   className="p-2 bg-red-500/10 rounded-lg text-red-400 hover:bg-red-500/20 transition-colors"
                 >
@@ -273,6 +296,13 @@ export default function EmpresasAdminPage() {
                           <Gift className="size-4" />
                         </button>
                         <button
+                          onClick={() => openQrModal(empresa)}
+                          className="p-2 hover:bg-violet-500/10 rounded-lg text-slate-400 hover:text-violet-400 transition-colors"
+                          title="QR Code do Cardapio"
+                        >
+                          <QrCode className="size-4" />
+                        </button>
+                        <button
                           onClick={() => openDeleteConfirm(empresa)}
                           className="p-2 hover:bg-red-500/10 rounded-lg text-slate-400 hover:text-red-400 transition-colors"
                           title="Excluir Empresa"
@@ -280,7 +310,7 @@ export default function EmpresasAdminPage() {
                           <Trash2 className="size-4" />
                         </button>
                         <a
-                          href={`/menu/${empresa.slug}`}
+                          href={`/menu/${getMenuSlug(empresa)}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="p-2 hover:bg-[#1e3a5f] rounded-lg text-slate-400 hover:text-white transition-colors"
@@ -387,6 +417,33 @@ export default function EmpresasAdminPage() {
             loadEmpresas(pagination?.page || 1);
           }}
         />
+      )}
+
+      {/* Modal QR Code do Cardapio */}
+      {showQrModal && selectedEmpresa && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-[#1e3a5f]">
+              <h2 className="text-xl font-bold text-white">QR Code do Cardapio</h2>
+              <button
+                onClick={() => {
+                  setShowQrModal(false);
+                  setSelectedEmpresa(null);
+                }}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="size-6" />
+              </button>
+            </div>
+            <div className="p-6">
+              <QrCodeGenerator
+                empresaId={selectedEmpresa.id}
+                empresaNome={selectedEmpresa.nome_fantasia || selectedEmpresa.nome}
+                slug={getMenuSlug(selectedEmpresa)}
+              />
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Modal Confirmar Exclusao */}

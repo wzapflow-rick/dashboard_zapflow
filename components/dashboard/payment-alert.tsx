@@ -1,9 +1,10 @@
 'use client';
 
-import { AlertTriangle, XCircle, Clock, CreditCard } from 'lucide-react';
+import { AlertTriangle, XCircle, Clock, CreditCard, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { getBillingStatus, type BillingStatus } from '@/app/actions/billing';
+import { toast } from 'sonner';
+import { getBillingStatus, generateCheckoutLink, type BillingStatus } from '@/app/actions/billing';
 
 interface PaymentAlertProps {
   empresaId: number;
@@ -12,6 +13,7 @@ interface PaymentAlertProps {
 export function PaymentAlert({ empresaId }: PaymentAlertProps) {
   const [billing, setBilling] = useState<BillingStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const [paying, setPaying] = useState(false);
 
   useEffect(() => {
     async function fetchBilling() {
@@ -21,6 +23,23 @@ export function PaymentAlert({ empresaId }: PaymentAlertProps) {
     }
     fetchBilling();
   }, [empresaId]);
+
+  // Gera o checkout do Mercado Pago (PIX, cartao ou boleto) e redireciona.
+  async function handlePagarAgora() {
+    setPaying(true);
+    try {
+      const result = await generateCheckoutLink(empresaId);
+      if (result.success && result.initPoint) {
+        window.location.href = result.initPoint;
+      } else {
+        toast.error(result.error || 'Erro ao abrir o checkout de pagamento');
+        setPaying(false);
+      }
+    } catch {
+      toast.error('Erro ao abrir o checkout de pagamento');
+      setPaying(false);
+    }
+  }
 
   if (loading || !billing) return null;
 
@@ -41,8 +60,11 @@ export function PaymentAlert({ empresaId }: PaymentAlertProps) {
     // So mostra quando faltam 3 dias ou menos (e ainda nao venceu)
     if (diasParaRenovar < 0 || diasParaRenovar > 3) return null;
 
-    const valorFmt = billing.valor != null
-      ? `R$ ${billing.valor.toFixed(2).replace('.', ',')}`
+    // valor <= 0 significa trial/cortesia (sem cobranca definida): nao mostramos
+    // "R$ 0,00" e sim um convite para ativar a assinatura.
+    const temValor = billing.valor != null && billing.valor > 0;
+    const valorFmt = temValor
+      ? `R$ ${billing.valor!.toFixed(2).replace('.', ',')}`
       : null;
     const finalCartao = billing.cartao_ultimos_digitos
       ? ` no cartão final ${billing.cartao_ultimos_digitos}`
@@ -57,20 +79,39 @@ export function PaymentAlert({ empresaId }: PaymentAlertProps) {
 
     const renewMessage = valorFmt
       ? `Sua renovação de ${valorFmt}${finalCartao} será cobrada ${quando}. Garanta que o cartão tenha saldo para não perder o acesso.`
-      : `Sua assinatura será renovada ${quando}${finalCartao}. Garanta que o cartão tenha saldo para não perder o acesso.`;
+      : 'Ative sua assinatura para garantir o acesso ao sistema.';
 
     return (
       <div className="w-full px-4 py-3 bg-amber-500/10 border border-amber-500/30 rounded-lg mb-4">
-        <div className="flex items-center gap-3">
-          <Clock className="size-5 text-amber-400 shrink-0" />
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <Clock className="size-5 text-amber-400 shrink-0 hidden sm:block" />
           <p className="text-sm text-amber-400 flex-1">{renewMessage}</p>
-          <Link
-            href="/dashboard/subscription"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-amber-500 hover:bg-amber-600 text-black"
-          >
-            <CreditCard className="size-4" />
-            Ver assinatura
-          </Link>
+          <div className="flex items-center gap-2 shrink-0">
+            {temValor ? (
+              <button
+                onClick={handlePagarAgora}
+                disabled={paying}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-colors bg-amber-500 hover:bg-amber-600 text-black disabled:opacity-60"
+              >
+                {paying ? <Loader2 className="size-4 animate-spin" /> : <CreditCard className="size-4" />}
+                Pagar agora
+              </button>
+            ) : (
+              <Link
+                href="/dashboard/subscription"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-colors bg-amber-500 hover:bg-amber-600 text-black"
+              >
+                <CreditCard className="size-4" />
+                Ativar assinatura
+              </Link>
+            )}
+            <Link
+              href="/dashboard/subscription"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-amber-500/40 text-amber-400 hover:bg-amber-500/10"
+            >
+              Ver assinatura
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -140,17 +181,18 @@ export function PaymentAlert({ empresaId }: PaymentAlertProps) {
         <p className={`text-sm ${textColors[alertType]} flex-1`}>
           {message}
         </p>
-        <Link
-          href="/dashboard/subscription"
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+        <button
+          onClick={handlePagarAgora}
+          disabled={paying}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-colors disabled:opacity-60 ${
             alertType === 'blocked'
               ? 'bg-red-600 hover:bg-red-700 text-white'
               : 'bg-amber-500 hover:bg-amber-600 text-black'
           }`}
         >
-          <CreditCard className="size-4" />
+          {paying ? <Loader2 className="size-4 animate-spin" /> : <CreditCard className="size-4" />}
           Pagar agora
-        </Link>
+        </button>
       </div>
     </div>
   );
