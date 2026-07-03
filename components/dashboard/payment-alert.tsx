@@ -60,8 +60,11 @@ export function PaymentAlert({ empresaId }: PaymentAlertProps) {
     // So mostra quando faltam 3 dias ou menos (e ainda nao venceu)
     if (diasParaRenovar < 0 || diasParaRenovar > 3) return null;
 
-    const valorFmt = billing.valor != null
-      ? `R$ ${billing.valor.toFixed(2).replace('.', ',')}`
+    // valor <= 0 significa trial/cortesia (sem cobranca definida): nao mostramos
+    // "R$ 0,00" e sim um convite para ativar a assinatura.
+    const temValor = billing.valor != null && billing.valor > 0;
+    const valorFmt = temValor
+      ? `R$ ${billing.valor!.toFixed(2).replace('.', ',')}`
       : null;
     const finalCartao = billing.cartao_ultimos_digitos
       ? ` no cartão final ${billing.cartao_ultimos_digitos}`
@@ -76,7 +79,7 @@ export function PaymentAlert({ empresaId }: PaymentAlertProps) {
 
     const renewMessage = valorFmt
       ? `Sua renovação de ${valorFmt}${finalCartao} será cobrada ${quando}. Garanta que o cartão tenha saldo para não perder o acesso.`
-      : `Sua assinatura será renovada ${quando}${finalCartao}. Garanta que o cartão tenha saldo para não perder o acesso.`;
+      : 'Ative sua assinatura para garantir o acesso ao sistema.';
 
     return (
       <div className="w-full px-4 py-3 bg-amber-500/10 border border-amber-500/30 rounded-lg mb-4">
@@ -84,14 +87,24 @@ export function PaymentAlert({ empresaId }: PaymentAlertProps) {
           <Clock className="size-5 text-amber-400 shrink-0 hidden sm:block" />
           <p className="text-sm text-amber-400 flex-1">{renewMessage}</p>
           <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={handlePagarAgora}
-              disabled={paying}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-colors bg-amber-500 hover:bg-amber-600 text-black disabled:opacity-60"
-            >
-              {paying ? <Loader2 className="size-4 animate-spin" /> : <CreditCard className="size-4" />}
-              Pagar agora
-            </button>
+            {temValor ? (
+              <button
+                onClick={handlePagarAgora}
+                disabled={paying}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-colors bg-amber-500 hover:bg-amber-600 text-black disabled:opacity-60"
+              >
+                {paying ? <Loader2 className="size-4 animate-spin" /> : <CreditCard className="size-4" />}
+                Pagar agora
+              </button>
+            ) : (
+              <Link
+                href="/dashboard/subscription"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-colors bg-amber-500 hover:bg-amber-600 text-black"
+              >
+                <CreditCard className="size-4" />
+                Ativar assinatura
+              </Link>
+            )}
             <Link
               href="/dashboard/subscription"
               className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-amber-500/40 text-amber-400 hover:bg-amber-500/10"
