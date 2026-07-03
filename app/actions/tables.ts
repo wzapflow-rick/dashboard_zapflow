@@ -266,12 +266,40 @@ export async function updateComanda(
   const result = await pg.update('comandas', id, updatePayload);
 
   if (data.status === COMANDA_STATUS.PAGA) {
+    await finalizarPedidosDaComanda(id, user.empresaId);
     await verificarELiberarMesa(comanda.mesa_id);
   }
 
   revalidatePath('/dashboard/mesas');
   revalidatePath('/dashboard/expedition');
+  revalidatePath('/dashboard');
+  revalidatePath('/dashboard/reports');
   return normalizeRecord(result as any) as Comanda;
+}
+
+// Marca como "finalizado" todos os pedidos de mesa ainda ativos de uma comanda.
+// Necessario porque o faturamento do Dashboard e dos Relatorios so soma pedidos
+// com status 'finalizado'. Sem isso, pedidos de mesa (que nascem 'pendente'/'pronto')
+// nunca entram nas metricas, mesmo apos a comanda ser paga / a mesa ser fechada.
+async function finalizarPedidosDaComanda(comandaId: number, empresaId: string | number): Promise<void> {
+  try {
+    await pg.query(
+      `UPDATE pedidos
+         SET status = $1
+       WHERE comanda_id = $2
+         AND empresa_id = $3
+         AND status NOT IN ($4, $5)`,
+      [
+        ORDER_STATUS.FINALIZADO,
+        comandaId,
+        empresaId,
+        ORDER_STATUS.FINALIZADO,
+        ORDER_STATUS.CANCELADO,
+      ]
+    );
+  } catch (error) {
+    console.error('Erro ao finalizar pedidos da comanda:', error);
+  }
 }
 
 async function verificarELiberarMesa(mesaId: number): Promise<void> {
@@ -490,10 +518,14 @@ export async function fecharMesa(mesaId: number): Promise<{ total: number; coman
       status: COMANDA_STATUS.PAGA,
       closed_at: new Date().toISOString(),
     });
+    // Finaliza os pedidos da comanda para que entrem no faturamento (Dashboard/Relatorios)
+    await finalizarPedidosDaComanda(comanda.id, user.empresaId);
   }
 
   await pg.update('mesas', mesaId, { status: MESA_STATUS.LIVRE });
 
   revalidatePath('/dashboard/mesas');
+  revalidatePath('/dashboard');
+  revalidatePath('/dashboard/reports');
   return { total: totalGeral, comandas: comandas.length };
 }

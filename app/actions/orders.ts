@@ -542,7 +542,10 @@ export async function updateOrderItems(
             throw new Error('Acesso negado: Pedido nao pertence a esta empresa');
         }
 
-        const statusEditaveis = ['pendente', 'preparando', 'aguardando_pagamento'];
+        // 'pronto' incluido para permitir editar itens de pedidos de mesa: no modo
+        // "pedido direto" da mesa o pedido ja nasce como 'pronto', e a cozinha tambem
+        // marca como 'pronto' antes do pagamento — ainda assim precisa ser editavel.
+        const statusEditaveis = ['pendente', 'preparando', 'pronto', 'aguardando_pagamento'];
         if (!statusEditaveis.includes(orderData.status)) {
             throw new Error(`Pedido com status "${orderData.status}" nao pode ser editado`);
         }
