@@ -150,6 +150,96 @@ export async function generatePixPayment(empresaId: number, plano: SubscriptionP
 }
 
 /**
+ * Gera um checkout do Mercado Pago com TODOS os metodos de pagamento habilitados
+ * (PIX, cartao de credito/debito e boleto). Diferente de generatePixPayment, aqui
+ * nao excluimos nenhum tipo — o cliente escolhe como pagar na tela do Mercado Pago.
+ * Usado pelo botao "Pagar agora" do banner de cobranca.
+ */
+export async function generateCheckoutLink(empresaId: number) {
+  try {
+    const empresa = await pg.findById('empresas', empresaId) as any;
+    if (!empresa) {
+      return { success: false, error: 'Empresa nao encontrada' };
+    }
+
+    // Busca plano e valor da assinatura
+    const assinaturaResult = await pg.query(
+      'SELECT plano, valor FROM assinaturas WHERE empresa_id = $1 ORDER BY id DESC LIMIT 1',
+      [empresaId]
+    );
+    const assinatura = assinaturaResult?.rows?.[0] as any;
+
+    const planoId = (assinatura?.plano || empresa.planos || 'start') as SubscriptionPlanId;
+    const plan = SUBSCRIPTION_PLANS[String(planoId).toUpperCase() as keyof typeof SUBSCRIPTION_PLANS];
+
+    // Usa valor personalizado se existir e for maior que 0, senao usa preco do plano
+    const valorCobranca = assinatura?.valor && Number(assinatura.valor) > 0
+      ? Number(assinatura.valor)
+      : (plan?.price || 0);
+
+    if (!valorCobranca || valorCobranca <= 0) {
+      return { success: false, error: 'Valor da assinatura invalido' };
+    }
+
+    const preference = {
+      items: [
+        {
+          title: `ZapFlow - Plano ${plan?.name || planoId}`,
+          quantity: 1,
+          unit_price: valorCobranca,
+          currency_id: 'BRL',
+        },
+      ],
+      payer: {
+        email: empresa.email,
+        first_name: empresa.nome_admin || empresa.nome_fantasia,
+      },
+      // Sem excluded_payment_types: habilita PIX, cartao e boleto
+      external_reference: JSON.stringify({
+        empresaId,
+        plano: String(planoId).toLowerCase(),
+        tipo: 'checkout_mensal',
+        valorPersonalizado: valorCobranca,
+      }),
+      back_urls: {
+        success: `${BASE_URL}/dashboard?payment=success`,
+        failure: `${BASE_URL}/dashboard/subscription?payment=failure`,
+        pending: `${BASE_URL}/dashboard/subscription?payment=pending`,
+      },
+      auto_return: 'approved',
+      notification_url: `${BASE_URL}/api/webhooks/mercadopago`,
+    };
+
+    const response = await fetch('https://api.mercadopago.com/checkout/preferences', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${MP_ACCESS_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(preference),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('[Billing] Erro MP checkout:', errorData);
+      return { success: false, error: 'Erro ao gerar checkout' };
+    }
+
+    const data = await response.json();
+
+    return {
+      success: true,
+      initPoint: data.init_point as string,
+      preferenceId: data.id as string,
+      valor: valorCobranca,
+    };
+  } catch (error: any) {
+    console.error('[Billing] Erro ao gerar checkout:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
  * Atualiza status de pagamento de uma empresa
  */
 export async function updatePaymentStatus(
