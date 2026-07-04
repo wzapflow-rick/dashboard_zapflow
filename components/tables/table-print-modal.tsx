@@ -92,6 +92,8 @@ export default function TablePrintModal({ isOpen, onClose, mesa, comanda, tipo }
         });
         return {
           nome: cmd.nome_cliente || `Comanda ${cmd.id}`,
+          telefone: cmd.telefone_cliente || undefined,
+          endereco: cmd.endereco_entrega || undefined,
           subtotal: cmd.pedidos.reduce((sum, p: any) => sum + (Number(p.valor_total) || 0), 0),
           itens: itens.map((item: any) => ({
             nome: item.produto || item.nome,
@@ -179,6 +181,13 @@ export default function TablePrintModal({ isOpen, onClose, mesa, comanda, tipo }
                 return (
                   <div key={cmd.id}>
                     <div className="zf-section">{cmd.nome_cliente || `Comanda ${cmd.id}`}</div>
+
+                    {(cmd.telefone_cliente || cmd.endereco_entrega) && (
+                      <div className="zf-meta">
+                        {cmd.telefone_cliente && <div>Tel: {cmd.telefone_cliente}</div>}
+                        {cmd.endereco_entrega && <div>{'>'} ENTREGA: {cmd.endereco_entrega}</div>}
+                      </div>
+                    )}
 
                     {itensComanda.length > 0 ? (
                       <>

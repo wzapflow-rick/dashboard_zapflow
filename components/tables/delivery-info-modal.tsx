@@ -2,54 +2,71 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Bike, Loader2, AlertCircle } from 'lucide-react';
-import { transformarComandaEmDelivery } from '@/app/actions/tables';
+import { X, MapPin, Loader2, AlertCircle } from 'lucide-react';
+import { salvarDadosEntregaComanda } from '@/app/actions/tables';
 
-interface ConvertToDeliveryModalProps {
+interface DeliveryInfoModalProps {
   isOpen: boolean;
   onClose: () => void;
   comandaId: number;
   comandaNome: string;
+  initialNome?: string;
+  initialTelefone?: string;
+  initialEndereco?: string;
   onSuccess: () => void;
 }
 
-export default function ConvertToDeliveryModal({
+export default function DeliveryInfoModal({
   isOpen,
   onClose,
   comandaId,
   comandaNome,
+  initialNome,
+  initialTelefone,
+  initialEndereco,
   onSuccess,
-}: ConvertToDeliveryModalProps) {
-  const [endereco, setEndereco] = useState('');
-  const [bairro, setBairro] = useState('');
-  const [telefone, setTelefone] = useState('');
-  const [taxaEntrega, setTaxaEntrega] = useState('');
+}: DeliveryInfoModalProps) {
+  const [nomeCliente, setNomeCliente] = useState(initialNome || '');
+  const [telefone, setTelefone] = useState(initialTelefone || '');
+  const [endereco, setEndereco] = useState(initialEndereco || '');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
   if (!isOpen) return null;
 
   const handleSubmit = async () => {
-    if (!endereco.trim()) {
-      setError('Informe o endereço de entrega');
+    if (!endereco.trim() && !telefone.trim()) {
+      setError('Informe ao menos o telefone ou o endereço de entrega');
       return;
     }
     setIsLoading(true);
     setError('');
     try {
-      const taxa = taxaEntrega
-        ? Number(taxaEntrega.replace(',', '.'))
-        : 0;
-      await transformarComandaEmDelivery(comandaId, {
-        endereco: endereco.trim(),
-        bairro: bairro.trim() || undefined,
+      await salvarDadosEntregaComanda(comandaId, {
+        nomeCliente: nomeCliente.trim() || undefined,
         telefone: telefone.trim() || undefined,
-        taxaEntrega: Number.isFinite(taxa) ? taxa : 0,
+        endereco: endereco.trim() || undefined,
       });
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Erro ao transformar em delivery');
+      setError(err.message || 'Erro ao salvar dados de entrega');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLimpar = async () => {
+    setIsLoading(true);
+    setError('');
+    try {
+      await salvarDadosEntregaComanda(comandaId, {
+        nomeCliente: nomeCliente.trim() || undefined,
+      });
+      onSuccess();
+      onClose();
+    } catch (err: any) {
+      setError(err.message || 'Erro ao limpar dados de entrega');
     } finally {
       setIsLoading(false);
     }
@@ -74,10 +91,10 @@ export default function ConvertToDeliveryModal({
           <div className="flex items-center justify-between p-4 border-b border-slate-700">
             <div className="flex items-center gap-2">
               <div className="size-9 flex items-center justify-center rounded-lg bg-blue-500/15 text-blue-400">
-                <Bike className="size-5" />
+                <MapPin className="size-5" />
               </div>
               <div>
-                <h3 className="font-bold text-white leading-tight">Transformar em Delivery</h3>
+                <h3 className="font-bold text-white leading-tight">Dados de Entrega</h3>
                 <p className="text-xs text-slate-400">{comandaNome}</p>
               </div>
             </div>
@@ -98,51 +115,26 @@ export default function ConvertToDeliveryModal({
             )}
 
             <p className="text-xs text-slate-400 leading-relaxed">
-              Os pedidos ativos desta comanda vão para o painel de expedição como entrega,
-              a comanda é fechada e a mesa liberada. O pagamento acontece na entrega.
+              Os dados ficam salvos nesta comanda e são impressos junto com a conta.
+              A mesa continua normalmente — nada é enviado para a expedição.
             </p>
 
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">
-                Endereço de entrega *
+                Nome do cliente
               </label>
               <input
                 type="text"
-                value={endereco}
-                onChange={(e) => setEndereco(e.target.value)}
-                placeholder="Rua, número, complemento"
+                value={nomeCliente}
+                onChange={(e) => setNomeCliente(e.target.value)}
+                placeholder="Nome"
                 className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-primary"
-                autoFocus
               />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">Bairro</label>
-                <input
-                  type="text"
-                  value={bairro}
-                  onChange={(e) => setBairro(e.target.value)}
-                  placeholder="Bairro"
-                  className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-primary"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">Taxa (R$)</label>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={taxaEntrega}
-                  onChange={(e) => setTaxaEntrega(e.target.value)}
-                  placeholder="0,00"
-                  className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-primary"
-                />
-              </div>
             </div>
 
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">
-                Telefone do cliente
+                Telefone
               </label>
               <input
                 type="tel"
@@ -152,16 +144,32 @@ export default function ConvertToDeliveryModal({
                 className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-primary"
               />
             </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1">
+                Endereço de entrega
+              </label>
+              <textarea
+                value={endereco}
+                onChange={(e) => setEndereco(e.target.value)}
+                placeholder="Rua, número, bairro, complemento, referência"
+                rows={3}
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-primary resize-none"
+              />
+            </div>
           </div>
 
           <div className="flex gap-3 p-4 border-t border-slate-700">
-            <button
-              onClick={onClose}
-              disabled={isLoading}
-              className="flex-1 px-4 py-2.5 border border-slate-600 text-slate-300 font-semibold rounded-xl hover:bg-slate-700 disabled:opacity-50 transition-colors"
-            >
-              Cancelar
-            </button>
+            {(initialEndereco || initialTelefone) && (
+              <button
+                onClick={handleLimpar}
+                disabled={isLoading}
+                className="px-4 py-2.5 border border-slate-600 text-slate-300 font-semibold rounded-xl hover:bg-slate-700 disabled:opacity-50 transition-colors"
+                title="Remover dados de entrega desta comanda"
+              >
+                Limpar
+              </button>
+            )}
             <button
               onClick={handleSubmit}
               disabled={isLoading}
@@ -171,8 +179,8 @@ export default function ConvertToDeliveryModal({
                 <Loader2 className="size-4 animate-spin" />
               ) : (
                 <>
-                  <Bike className="size-4" />
-                  Enviar p/ Entrega
+                  <MapPin className="size-4" />
+                  Salvar
                 </>
               )}
             </button>

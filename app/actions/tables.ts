@@ -7,7 +7,6 @@ import {
   MESA_STATUS,
   COMANDA_STATUS,
   ORDER_STATUS,
-  DELIVERY_TYPE,
 } from '@/lib/constants';
 
 // ============================================================
@@ -46,6 +45,8 @@ export interface Comanda {
   mesa_id: number;
   store_id: string;
   nome_cliente?: string;
+  telefone_cliente?: string;
+  endereco_entrega?: string;
   status: 'aberta' | 'fechada' | 'paga';
   total?: number;
   created_at?: string;
@@ -247,7 +248,7 @@ export async function createComanda(data: {
 
 export async function updateComanda(
   id: number,
-  data: Partial<Pick<Comanda, 'nome_cliente' | 'status' | 'total'>>
+  data: Partial<Pick<Comanda, 'nome_cliente' | 'telefone_cliente' | 'endereco_entrega' | 'status' | 'total'>>
 ): Promise<Comanda> {
   const user = await requireRole(['admin', 'gerente', 'atendente']);
 
@@ -577,99 +578,29 @@ export async function cancelarPedidoDeMesa(pedidoId: number, motivo?: string): P
 }
 
 // ============================================================
-// TRANSFORMAR COMANDA EM DELIVERY
+// DADOS DE ENTREGA DA COMANDA
 // ============================================================
 
-// Cliente pediu na mesa e depois quer receber em casa: converte todos os pedidos
-// ativos da comanda em pedidos de delivery (define endereco/telefone, muda o
-// tipo_entrega para 'delivery'), fecha a comanda (SEM marcar como paga — o
-// pagamento acontece na entrega) e libera a mesa. Os pedidos deixam a visao de
-// mesas (que filtra tipo_entrega = 'mesa') e passam a aparecer no Kanban de
-// expedicao no fluxo de entrega, mantendo o status atual da cozinha.
-export async function transformarComandaEmDelivery(
+// Cliente pediu na mesa e depois decidiu que quer levar/receber: em vez de mover
+// o pedido para a expedicao, guardamos os dados de contato/entrega na propria
+// comanda (nome, telefone e endereco). Esses dados saem impressos junto com a
+// comanda e a mesa continua funcionando normalmente.
+export async function salvarDadosEntregaComanda(
   comandaId: number,
-  data: { endereco: string; bairro?: string; telefone?: string; taxaEntrega?: number }
-): Promise<{ pedidos: number }> {
+  data: { nomeCliente?: string; telefone?: string; endereco?: string }
+): Promise<void> {
   const user = await requireRole(['admin', 'gerente', 'atendente']);
-
-  if (!data.endereco?.trim()) {
-    throw new Error('Informe o endereço de entrega');
-  }
 
   const comanda = await pg.findById('comandas', comandaId) as any;
   if (!comanda || String(comanda.store_id) !== String(user.empresaId)) {
     throw new Error('Comanda não encontrada');
   }
 
-  const pedidosData = await pg.query(
-    `SELECT * FROM pedidos
-       WHERE comanda_id = $1 AND empresa_id = $2 AND status NOT IN ($3, $4)`,
-    [comandaId, user.empresaId, ORDER_STATUS.CANCELADO, ORDER_STATUS.FINALIZADO]
-  );
-  const pedidos = (pedidosData.rows || []) as any[];
-
-  if (pedidos.length === 0) {
-    throw new Error('Nenhum pedido ativo nesta comanda para transformar em delivery');
-  }
-
-  const taxa = Number(data.taxaEntrega) || 0;
-
-  // Colunas ativas do Kanban de expedicao: 'pendente', 'preparando', 'entrega'.
-  // Status de mesa como 'pronto' nao existem la, entao normalizamos para
-  // 'preparando' para o pedido nao sumir (nem da mesa nem da expedicao).
-  const COLUNAS_EXPEDICAO = ['pendente', 'preparando', 'entrega'];
-
-  for (let i = 0; i < pedidos.length; i++) {
-    const pedido = pedidos[i];
-    const updatePayload: any = {
-      id: pedido.id,
-      tipo_entrega: DELIVERY_TYPE.DELIVERY,
-      canal: 'Mesa → Delivery',
-      endereco_entrega: data.endereco.trim(),
-      bairro_entrega: data.bairro?.trim() || '',
-      status: COLUNAS_EXPEDICAO.includes(pedido.status)
-        ? pedido.status
-        : ORDER_STATUS.PREPARANDO,
-    };
-
-    if (data.telefone?.trim()) {
-      updatePayload.telefone_cliente = data.telefone.trim();
-    }
-
-    // A taxa de entrega entra como item extra apenas no primeiro pedido.
-    if (i === 0 && taxa > 0) {
-      let itens: any[] = [];
-      try {
-        itens = typeof pedido.itens === 'string' ? JSON.parse(pedido.itens) : (pedido.itens || []);
-      } catch {
-        itens = [];
-      }
-      itens.push({
-        id: `taxa_${Date.now()}`,
-        produto: 'Taxa de entrega',
-        nome: 'Taxa de entrega',
-        quantidade: 1,
-        preco_unitario: taxa,
-        subtotal: taxa,
-        isExtra: true,
-      });
-      updatePayload.itens = JSON.stringify(itens);
-      updatePayload.valor_total = (Number(pedido.valor_total) || 0) + taxa;
-    }
-
-    await pg.update('pedidos', updatePayload);
-  }
-
-  // Fecha a comanda sem marcar como paga (pagamento ocorre na entrega).
   await pg.update('comandas', comandaId, {
-    status: COMANDA_STATUS.FECHADA,
-    closed_at: new Date().toISOString(),
+    nome_cliente: data.nomeCliente?.trim() || comanda.nome_cliente || null,
+    telefone_cliente: data.telefone?.trim() || null,
+    endereco_entrega: data.endereco?.trim() || null,
   });
 
-  // Libera a mesa se nao houver mais comandas abertas.
-  await verificarELiberarMesa(comanda.mesa_id);
-
   revalidatePath('/dashboard/mesas');
-  revalidatePath('/dashboard/expedition');
-  return { pedidos: pedidos.length };
 }

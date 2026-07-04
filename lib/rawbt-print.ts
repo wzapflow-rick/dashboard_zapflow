@@ -190,6 +190,8 @@ export function buildReceiptText(dados: ReciboDados, largura: LarguraPapel): str
 
 export interface ReciboComanda {
   nome: string;
+  telefone?: string;
+  endereco?: string;
   itens: ReciboItem[];
   subtotal: number;
 }
@@ -222,6 +224,12 @@ export function buildTableReceiptText(dados: ReciboMesa, largura: LarguraPapel):
   const varias = dados.comandas.length > 1;
   dados.comandas.forEach((cmd, idx) => {
     out.push(normaliza(cmd.nome));
+    if (cmd.telefone) {
+      out.push(quebra(`Tel: ${cmd.telefone}`, W));
+    }
+    if (cmd.endereco) {
+      out.push(quebra(`> ENTREGA: ${cmd.endereco}`, W));
+    }
     if (cmd.itens.length > 0) {
       for (const item of cmd.itens) {
         const preco = money(item.preco * item.qtd);
