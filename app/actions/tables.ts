@@ -614,6 +614,11 @@ export async function transformarComandaEmDelivery(
 
   const taxa = Number(data.taxaEntrega) || 0;
 
+  // Colunas ativas do Kanban de expedicao: 'pendente', 'preparando', 'entrega'.
+  // Status de mesa como 'pronto' nao existem la, entao normalizamos para
+  // 'preparando' para o pedido nao sumir (nem da mesa nem da expedicao).
+  const COLUNAS_EXPEDICAO = ['pendente', 'preparando', 'entrega'];
+
   for (let i = 0; i < pedidos.length; i++) {
     const pedido = pedidos[i];
     const updatePayload: any = {
@@ -622,6 +627,9 @@ export async function transformarComandaEmDelivery(
       canal: 'Mesa → Delivery',
       endereco_entrega: data.endereco.trim(),
       bairro_entrega: data.bairro?.trim() || '',
+      status: COLUNAS_EXPEDICAO.includes(pedido.status)
+        ? pedido.status
+        : ORDER_STATUS.PREPARANDO,
     };
 
     if (data.telefone?.trim()) {
