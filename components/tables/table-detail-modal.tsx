@@ -18,7 +18,7 @@ import {
   PlusCircle,
   ExternalLink,
   Pencil,
-  Bike,
+  MapPin,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -35,7 +35,7 @@ import {
 } from '@/app/actions/tables';
 import TableOrderModal from './table-order-modal';
 import TablePrintModal from './table-print-modal';
-import ConvertToDeliveryModal from './convert-to-delivery-modal';
+import DeliveryInfoModal from './delivery-info-modal';
 import { AddExtraValueModal } from '@/components/expedition/add-extra-value-modal';
 import EditOrderModal from '@/components/expedition/edit-order-modal';
 
@@ -668,6 +668,21 @@ function ComandaCard({
         </div>
       </div>
 
+      {/* Dados de entrega da comanda */}
+      {(comanda.endereco_entrega || comanda.telefone_cliente) && (
+        <div className="mb-3 flex items-start gap-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 px-2.5 py-1.5">
+          <MapPin className="size-3.5 text-blue-400 shrink-0 mt-0.5" />
+          <div className="text-[11px] leading-snug text-blue-200 min-w-0">
+            {comanda.telefone_cliente && (
+              <div className="truncate">Tel: {comanda.telefone_cliente}</div>
+            )}
+            {comanda.endereco_entrega && (
+              <div className="text-blue-300/90">{comanda.endereco_entrega}</div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Itens da comanda (expandível) */}
       {todosItens.length > 0 && (
         <div className="mb-3">
@@ -798,18 +813,25 @@ function ComandaCard({
           <ShoppingBag className="size-3.5" />
           Novo Pedido
         </motion.button>
-        {comanda.pedidos.some((p: any) => p.status !== 'finalizado' && p.status !== 'cancelado') && (
-          <motion.button
-            onClick={() => setShowDeliveryModal(true)}
-            disabled={isLoading}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-500/10 text-blue-400 text-sm rounded-lg hover:bg-blue-500/20 disabled:opacity-50 transition-colors"
-            title="Transformar em delivery"
-          >
-            <Bike className="size-3.5" />
-          </motion.button>
-        )}
+        <motion.button
+          onClick={() => setShowDeliveryModal(true)}
+          disabled={isLoading}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className={cn(
+            'flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm rounded-lg disabled:opacity-50 transition-colors',
+            comanda.endereco_entrega || comanda.telefone_cliente
+              ? 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30'
+              : 'bg-blue-500/10 text-blue-400 hover:bg-blue-500/20'
+          )}
+          title={
+            comanda.endereco_entrega || comanda.telefone_cliente
+              ? 'Editar dados de entrega'
+              : 'Adicionar dados de entrega'
+          }
+        >
+          <MapPin className="size-3.5" />
+        </motion.button>
         <motion.button
           onClick={onPrint}
           disabled={isLoading}
@@ -845,12 +867,15 @@ function ComandaCard({
         />
       )}
 
-      {/* Modal para transformar comanda em delivery */}
-      <ConvertToDeliveryModal
+      {/* Modal de dados de entrega da comanda */}
+      <DeliveryInfoModal
         isOpen={showDeliveryModal}
         onClose={() => setShowDeliveryModal(false)}
         comandaId={comanda.id}
         comandaNome={`Mesa ${mesaNumero} - ${comanda.nome_cliente || 'Comanda'}`}
+        initialNome={comanda.nome_cliente}
+        initialTelefone={comanda.telefone_cliente}
+        initialEndereco={comanda.endereco_entrega}
         onSuccess={() => {
           onRefresh?.();
         }}
