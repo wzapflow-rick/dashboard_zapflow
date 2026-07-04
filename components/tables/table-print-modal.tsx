@@ -97,6 +97,7 @@ export default function TablePrintModal({ isOpen, onClose, mesa, comanda, tipo }
             nome: item.produto || item.nome,
             qtd: item.quantidade || 1,
             preco: Number(item.preco_unitario) || Number(item.preco) || 0,
+            observacao: item.observacao || undefined,
           })),
         };
       }),
@@ -187,11 +188,16 @@ export default function TablePrintModal({ isOpen, onClose, mesa, comanda, tipo }
                           <span className="zf-pr">Preço</span>
                         </div>
                         {itensComanda.map((item: any, idx: number) => (
-                          <div className="zf-li" key={idx}>
-                            <span className="zf-q">{item.quantidade}x</span>
-                            <span className="zf-nm">{item.produto || item.nome}</span>
-                            <span className="zf-pr">{formatPrice((Number(item.preco_unitario) || Number(item.preco) || 0) * (item.quantidade || 1))}</span>
-                          </div>
+                          <React.Fragment key={idx}>
+                            <div className="zf-li">
+                              <span className="zf-q">{item.quantidade}x</span>
+                              <span className="zf-nm">{item.produto || item.nome}</span>
+                              <span className="zf-pr">{formatPrice((Number(item.preco_unitario) || Number(item.preco) || 0) * (item.quantidade || 1))}</span>
+                            </div>
+                            {item.observacao && (
+                              <div className="zf-obs">&gt; {item.observacao}</div>
+                            )}
+                          </React.Fragment>
                         ))}
                         <div className="zf-row zf-strong">
                           <span>Subtotal</span>

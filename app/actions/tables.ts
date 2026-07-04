@@ -7,6 +7,7 @@ import {
   MESA_STATUS,
   COMANDA_STATUS,
   ORDER_STATUS,
+  DELIVERY_TYPE,
 } from '@/lib/constants';
 
 // ============================================================
@@ -528,4 +529,147 @@ export async function fecharMesa(mesaId: number): Promise<{ total: number; coman
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/reports');
   return { total: totalGeral, comandas: comandas.length };
+}
+
+// ============================================================
+// CANCELAR PEDIDO DE MESA
+// ============================================================
+
+// Marca UM pedido da comanda como cancelado (o cliente desistiu do pedido).
+// Diferente de "editar itens": o pedido inteiro sai da conta. O valor cancelado
+// e subtraido do total da comanda e o pedido some da mesa (a query de mesas ja
+// filtra status != 'cancelado') sem precisar fechar a mesa.
+export async function cancelarPedidoDeMesa(pedidoId: number, motivo?: string): Promise<void> {
+  const user = await requireRole(['admin', 'gerente', 'atendente']);
+
+  const pedido = await pg.findById('pedidos', pedidoId) as any;
+  if (!pedido || String(pedido.empresa_id) !== String(user.empresaId)) {
+    throw new Error('Pedido não encontrado');
+  }
+
+  if (pedido.status === ORDER_STATUS.CANCELADO) return;
+
+  const nowStr = new Date().toLocaleString('pt-BR');
+  const nota = motivo?.trim()
+    ? `❌ CANCELADO (${nowStr}): ${motivo.trim()}`
+    : `❌ CANCELADO (${nowStr})`;
+
+  await pg.update('pedidos', {
+    id: pedidoId,
+    status: ORDER_STATUS.CANCELADO,
+    observacoes: pedido.observacoes ? `${pedido.observacoes}\n${nota}` : nota,
+  });
+
+  // Ajusta o total da comanda subtraindo o valor do pedido cancelado.
+  if (pedido.comanda_id) {
+    const comanda = await pg.findById('comandas', pedido.comanda_id) as any;
+    if (comanda) {
+      const novoTotal = Math.max(
+        0,
+        (Number(comanda.total) || 0) - (Number(pedido.valor_total) || 0)
+      );
+      await pg.update('comandas', pedido.comanda_id, { total: novoTotal });
+    }
+  }
+
+  revalidatePath('/dashboard/mesas');
+  revalidatePath('/dashboard/expedition');
+}
+
+// ============================================================
+// TRANSFORMAR COMANDA EM DELIVERY
+// ============================================================
+
+// Cliente pediu na mesa e depois quer receber em casa: converte todos os pedidos
+// ativos da comanda em pedidos de delivery (define endereco/telefone, muda o
+// tipo_entrega para 'delivery'), fecha a comanda (SEM marcar como paga — o
+// pagamento acontece na entrega) e libera a mesa. Os pedidos deixam a visao de
+// mesas (que filtra tipo_entrega = 'mesa') e passam a aparecer no Kanban de
+// expedicao no fluxo de entrega, mantendo o status atual da cozinha.
+export async function transformarComandaEmDelivery(
+  comandaId: number,
+  data: { endereco: string; bairro?: string; telefone?: string; taxaEntrega?: number }
+): Promise<{ pedidos: number }> {
+  const user = await requireRole(['admin', 'gerente', 'atendente']);
+
+  if (!data.endereco?.trim()) {
+    throw new Error('Informe o endereço de entrega');
+  }
+
+  const comanda = await pg.findById('comandas', comandaId) as any;
+  if (!comanda || String(comanda.store_id) !== String(user.empresaId)) {
+    throw new Error('Comanda não encontrada');
+  }
+
+  const pedidosData = await pg.query(
+    `SELECT * FROM pedidos
+       WHERE comanda_id = $1 AND empresa_id = $2 AND status NOT IN ($3, $4)`,
+    [comandaId, user.empresaId, ORDER_STATUS.CANCELADO, ORDER_STATUS.FINALIZADO]
+  );
+  const pedidos = (pedidosData.rows || []) as any[];
+
+  if (pedidos.length === 0) {
+    throw new Error('Nenhum pedido ativo nesta comanda para transformar em delivery');
+  }
+
+  const taxa = Number(data.taxaEntrega) || 0;
+
+  // Colunas ativas do Kanban de expedicao: 'pendente', 'preparando', 'entrega'.
+  // Status de mesa como 'pronto' nao existem la, entao normalizamos para
+  // 'preparando' para o pedido nao sumir (nem da mesa nem da expedicao).
+  const COLUNAS_EXPEDICAO = ['pendente', 'preparando', 'entrega'];
+
+  for (let i = 0; i < pedidos.length; i++) {
+    const pedido = pedidos[i];
+    const updatePayload: any = {
+      id: pedido.id,
+      tipo_entrega: DELIVERY_TYPE.DELIVERY,
+      canal: 'Mesa → Delivery',
+      endereco_entrega: data.endereco.trim(),
+      bairro_entrega: data.bairro?.trim() || '',
+      status: COLUNAS_EXPEDICAO.includes(pedido.status)
+        ? pedido.status
+        : ORDER_STATUS.PREPARANDO,
+    };
+
+    if (data.telefone?.trim()) {
+      updatePayload.telefone_cliente = data.telefone.trim();
+    }
+
+    // A taxa de entrega entra como item extra apenas no primeiro pedido.
+    if (i === 0 && taxa > 0) {
+      let itens: any[] = [];
+      try {
+        itens = typeof pedido.itens === 'string' ? JSON.parse(pedido.itens) : (pedido.itens || []);
+      } catch {
+        itens = [];
+      }
+      itens.push({
+        id: `taxa_${Date.now()}`,
+        produto: 'Taxa de entrega',
+        nome: 'Taxa de entrega',
+        quantidade: 1,
+        preco_unitario: taxa,
+        subtotal: taxa,
+        isExtra: true,
+      });
+      updatePayload.itens = JSON.stringify(itens);
+      updatePayload.valor_total = (Number(pedido.valor_total) || 0) + taxa;
+    }
+
+    await pg.update('pedidos', updatePayload);
+  }
+
+  // Fecha a comanda sem marcar como paga (pagamento ocorre na entrega).
+  await pg.update('comandas', comandaId, {
+    status: COMANDA_STATUS.FECHADA,
+    closed_at: new Date().toISOString(),
+  });
+
+  // Libera a mesa se nao houver mais comandas abertas.
+  await verificarELiberarMesa(comanda.mesa_id);
+
+  revalidatePath('/dashboard/mesas');
+  revalidatePath('/dashboard/expedition');
+  return { pedidos: pedidos.length };
 }
