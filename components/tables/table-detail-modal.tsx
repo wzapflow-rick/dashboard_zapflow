@@ -18,6 +18,7 @@ import {
   PlusCircle,
   ExternalLink,
   Pencil,
+  Bike,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -30,9 +31,11 @@ import {
   updateComanda,
   fecharMesa,
   abrirMesa,
+  cancelarPedidoDeMesa,
 } from '@/app/actions/tables';
 import TableOrderModal from './table-order-modal';
 import TablePrintModal from './table-print-modal';
+import ConvertToDeliveryModal from './convert-to-delivery-modal';
 import { AddExtraValueModal } from '@/components/expedition/add-extra-value-modal';
 import EditOrderModal from '@/components/expedition/edit-order-modal';
 
@@ -590,7 +593,23 @@ function ComandaCard({
   const [showAddValueModal, setShowAddValueModal] = useState(false);
   const [showEditOrderModal, setShowEditOrderModal] = useState(false);
   const [selectedOrderToEdit, setSelectedOrderToEdit] = useState<any>(null);
-  
+  const [showDeliveryModal, setShowDeliveryModal] = useState(false);
+  const [cancelingId, setCancelingId] = useState<number | null>(null);
+
+  const handleCancelarPedido = async (pedidoId: number) => {
+    if (!window.confirm(`Cancelar o pedido #${pedidoId}? Ele sai da conta da mesa.`)) return;
+    const motivo = window.prompt('Motivo do cancelamento (opcional):') || undefined;
+    setCancelingId(pedidoId);
+    try {
+      await cancelarPedidoDeMesa(pedidoId, motivo);
+      onRefresh?.();
+    } catch (err: any) {
+      alert(err.message || 'Erro ao cancelar pedido');
+    } finally {
+      setCancelingId(null);
+    }
+  };
+
   // Pega o primeiro pedido ativo da comanda para adicionar valor
   const pedidoAtivo = comanda.pedidos.find(p => p.status !== 'finalizado' && p.status !== 'cancelado') || comanda.pedidos[0];
   
@@ -724,30 +743,46 @@ function ComandaCard({
       {/* Pedidos resumo */}
       {comanda.pedidos.length > 0 && !showItens && (
         <div className="mb-3 flex flex-wrap gap-1">
-          {comanda.pedidos.map((pedido: any) => (
-            <button
-              key={pedido.id}
-              onClick={() => {
-                if (pedido.status !== 'finalizado' && pedido.status !== 'cancelado') {
-                  setSelectedOrderToEdit(pedido);
-                  setShowEditOrderModal(true);
-                }
-              }}
-              className={cn(
-                'px-1.5 py-0.5 rounded text-[10px] font-medium flex items-center gap-1 transition-colors',
-                pedido.status === 'pendente' && 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30',
-                pedido.status === 'preparando' && 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30',
-                pedido.status === 'pronto' && 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30',
-                pedido.status === 'finalizado' && 'bg-slate-500/20 text-slate-400 cursor-default'
-              )}
-              title={pedido.status !== 'finalizado' && pedido.status !== 'cancelado' ? 'Clique para editar' : ''}
-            >
-              #{pedido.id} - {pedido.status}
-              {pedido.status !== 'finalizado' && pedido.status !== 'cancelado' && (
-                <Pencil className="size-2.5" />
-              )}
-            </button>
-          ))}
+          {comanda.pedidos.map((pedido: any) => {
+            const ativo = pedido.status !== 'finalizado' && pedido.status !== 'cancelado';
+            return (
+              <div key={pedido.id} className="flex items-center gap-0.5">
+                <button
+                  onClick={() => {
+                    if (ativo) {
+                      setSelectedOrderToEdit(pedido);
+                      setShowEditOrderModal(true);
+                    }
+                  }}
+                  className={cn(
+                    'px-1.5 py-0.5 rounded text-[10px] font-medium flex items-center gap-1 transition-colors',
+                    pedido.status === 'pendente' && 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30',
+                    pedido.status === 'preparando' && 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30',
+                    pedido.status === 'pronto' && 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30',
+                    pedido.status === 'finalizado' && 'bg-slate-500/20 text-slate-400 cursor-default'
+                  )}
+                  title={ativo ? 'Clique para editar' : ''}
+                >
+                  #{pedido.id} - {pedido.status}
+                  {ativo && <Pencil className="size-2.5" />}
+                </button>
+                {ativo && (
+                  <button
+                    onClick={() => handleCancelarPedido(pedido.id)}
+                    disabled={cancelingId === pedido.id}
+                    className="size-5 flex items-center justify-center rounded bg-red-500/15 text-red-400 hover:bg-red-500/30 disabled:opacity-50 transition-colors"
+                    title="Cancelar pedido"
+                  >
+                    {cancelingId === pedido.id ? (
+                      <Loader2 className="size-2.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="size-2.5" />
+                    )}
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -763,6 +798,18 @@ function ComandaCard({
           <ShoppingBag className="size-3.5" />
           Novo Pedido
         </motion.button>
+        {comanda.pedidos.some((p: any) => p.status !== 'finalizado' && p.status !== 'cancelado') && (
+          <motion.button
+            onClick={() => setShowDeliveryModal(true)}
+            disabled={isLoading}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-500/10 text-blue-400 text-sm rounded-lg hover:bg-blue-500/20 disabled:opacity-50 transition-colors"
+            title="Transformar em delivery"
+          >
+            <Bike className="size-3.5" />
+          </motion.button>
+        )}
         <motion.button
           onClick={onPrint}
           disabled={isLoading}
@@ -797,6 +844,17 @@ function ComandaCard({
           }}
         />
       )}
+
+      {/* Modal para transformar comanda em delivery */}
+      <ConvertToDeliveryModal
+        isOpen={showDeliveryModal}
+        onClose={() => setShowDeliveryModal(false)}
+        comandaId={comanda.id}
+        comandaNome={`Mesa ${mesaNumero} - ${comanda.nome_cliente || 'Comanda'}`}
+        onSuccess={() => {
+          onRefresh?.();
+        }}
+      />
 
       {/* Modal para editar pedido */}
       {selectedOrderToEdit && (

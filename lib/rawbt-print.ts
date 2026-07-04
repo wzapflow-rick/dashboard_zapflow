@@ -229,6 +229,9 @@ export function buildTableReceiptText(dados: ReciboMesa, largura: LarguraPapel):
         const linhasNome = quebra(`${item.qtd}x ${item.nome}`, nomeLargura).split('\n');
         linhasNome[0] = duasColunas(linhasNome[0], preco, W);
         out.push(linhasNome.join('\n'));
+        if (item.observacao) {
+          out.push(quebra(`  > ${item.observacao}`, W, '  '));
+        }
       }
       out.push(duasColunas('Subtotal', money(cmd.subtotal), W));
     } else {
