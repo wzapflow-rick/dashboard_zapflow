@@ -5,20 +5,36 @@ import { useEffect } from 'react';
 export function ServiceWorkerRegistration() {
   useEffect(() => {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      // Quando um novo Service Worker assume o controle, recarrega a pagina uma
+      // unica vez para garantir que o aparelho passe a rodar o codigo novo.
+      // Sem isto, celulares ficavam presos numa versao antiga (ex.: impressao
+      // sem nome/endereco do cliente) mesmo apos um novo deploy.
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
+      });
+
       // Registra o Service Worker
       navigator.serviceWorker
         .register('/sw.js')
         .then((registration) => {
           console.log('[PWA] Service Worker registrado:', registration.scope);
 
-          // Verifica atualizacoes periodicamente
+          // Procura atualizacoes imediatamente e a cada 60s (util em tablets/celulares
+          // que ficam com o app aberto o dia todo no balcao).
+          registration.update();
+          setInterval(() => registration.update(), 60 * 1000);
+
+          // Quando uma nova versao terminar de instalar, ativa na hora.
           registration.addEventListener('updatefound', () => {
             const newWorker = registration.installing;
             if (newWorker) {
               newWorker.addEventListener('statechange', () => {
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  // Nova versao disponivel
-                  console.log('[PWA] Nova versao disponivel');
+                  console.log('[PWA] Nova versao disponivel — ativando');
+                  newWorker.postMessage({ type: 'SKIP_WAITING' });
                 }
               });
             }
