@@ -32,6 +32,7 @@ import {
   fecharMesa,
   abrirMesa,
   cancelarPedidoDeMesa,
+  salvarTaxaEntregaMesa,
 } from '@/app/actions/tables';
 import TableOrderModal from './table-order-modal';
 import TablePrintModal from './table-print-modal';
@@ -63,6 +64,26 @@ export default function TableDetailModal({
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [printType, setPrintType] = useState<'mesa' | 'comanda'>('mesa');
   const [comandaToPrint, setComandaToPrint] = useState<ComandaComPedidos | null>(null);
+  // Taxa de entrega da mesa (campo editavel). Guardamos como texto para permitir
+  // digitar valores como "5,00" e so gravamos ao salvar.
+  const [taxaInput, setTaxaInput] = useState<string>(
+    mesa.taxa_entrega ? String(mesa.taxa_entrega).replace('.', ',') : ''
+  );
+  const [savingTaxa, setSavingTaxa] = useState(false);
+
+  const handleSalvarTaxa = async () => {
+    const valor = parseFloat(taxaInput.replace(',', '.')) || 0;
+    setSavingTaxa(true);
+    setError('');
+    try {
+      await salvarTaxaEntregaMesa(mesa.id, valor);
+      onUpdate();
+    } catch (err: any) {
+      setError(err.message || 'Erro ao salvar a taxa de entrega');
+    } finally {
+      setSavingTaxa(false);
+    }
+  };
 
   const handleAbrirMesa = async () => {
     setIsLoading(true);
@@ -368,7 +389,36 @@ export default function TableDetailModal({
               {/* Resumo */}
               {mesa.total_mesa > 0 && (
                 <div className="p-4 bg-primary/10 rounded-xl border border-primary/30">
-                  <div className="flex items-center justify-between mb-3">
+                  {/* Taxa de entrega da mesa */}
+                  <div className="mb-3">
+                    <label htmlFor="taxa-entrega" className="flex items-center gap-1.5 text-sm text-slate-300 mb-1.5">
+                      <MapPin className="size-3.5" />
+                      Taxa de entrega
+                    </label>
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">R$</span>
+                        <input
+                          id="taxa-entrega"
+                          type="text"
+                          inputMode="decimal"
+                          value={taxaInput}
+                          onChange={(e) => setTaxaInput(e.target.value.replace(/[^0-9.,]/g, ''))}
+                          placeholder="0,00"
+                          className="w-full pl-9 pr-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <button
+                        onClick={handleSalvarTaxa}
+                        disabled={savingTaxa}
+                        className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                      >
+                        {savingTaxa ? 'Salvando...' : 'Aplicar'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between mb-3 pt-3 border-t border-primary/20">
                     <span className="text-sm text-slate-300">Total da Mesa</span>
                     <span className="text-xl font-bold text-primary">
                       R$ {mesa.total_mesa.toFixed(2).replace('.', ',')}

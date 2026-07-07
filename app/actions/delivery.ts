@@ -344,6 +344,7 @@ export async function saveDeliveryRatesBatch(rates: any[]) {
         console.log(`[saveDeliveryRatesBatch] Empresa: ${user.empresaId}, Bairros: ${rates.length}`);
 
         const results = [];
+        const erros: string[] = [];
         for (const data of rates) {
             if (!data.bairro || data.bairro.trim() === '') continue;
 
@@ -372,14 +373,28 @@ export async function saveDeliveryRatesBatch(rates: any[]) {
                     results.push({ bairro: payload.bairro, saved: true, ...res });
                 }
             } catch (innerError: any) {
+                // Antes o erro era engolido e a funcao retornava sucesso mesmo sem salvar
+                // nada (o usuario via "salvo" mas ao voltar os bairros sumiam). Agora
+                // registramos o motivo para reportar ao usuario.
                 console.error('[saveDeliveryRatesBatch] Erro no item individual:', innerError.message);
+                erros.push(`${payload.bairro}: ${innerError.message}`);
             }
         }
 
+        // Se havia bairros para salvar mas NENHUM foi gravado, e um erro real.
+        if (results.length === 0 && rates.length > 0) {
+            throw new Error(
+                erros.length > 0
+                    ? `Não foi possível salvar os bairros. Detalhe: ${erros[0]}`
+                    : 'Nenhum bairro foi salvo.'
+            );
+        }
+
         revalidatePath('/dashboard/settings');
-        return { success: true, count: results.length };
+        return { success: true, count: results.length, erros };
     } catch (error: any) {
         console.error('API Error (saveDeliveryRatesBatch) FATAL:', error);
-        throw new Error('Erro crítico ao salvar taxas de entrega. Verifique os logs do servidor.');
+        // Propaga a mensagem real para o front, em vez de uma mensagem generica.
+        throw new Error(error?.message || 'Erro crítico ao salvar taxas de entrega.');
     }
 }

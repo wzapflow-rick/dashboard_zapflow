@@ -55,10 +55,15 @@ export default function TablePrintModal({ isOpen, onClose, mesa, comanda, tipo }
     });
   }, [comandasParaImprimir]);
 
-  // Calcular total
-  const totalGeral = comandasParaImprimir.reduce((acc, cmd) => {
+  // A taxa de entrega e da mesa inteira, entao so soma quando imprimimos a conta
+  // da mesa (nao numa comanda individual).
+  const taxaEntrega = tipo === 'mesa' ? Number(mesa.taxa_entrega) || 0 : 0;
+
+  // Calcular total (itens + taxa de entrega)
+  const totalItens = comandasParaImprimir.reduce((acc, cmd) => {
     return acc + cmd.pedidos.reduce((sum, p: any) => sum + (Number(p.valor_total) || 0), 0);
   }, 0);
+  const totalGeral = totalItens + taxaEntrega;
 
   const handlePrint = () => {
     const printContent = printRef.current;
@@ -80,6 +85,7 @@ export default function TablePrintModal({ isOpen, onClose, mesa, comanda, tipo }
       tipo,
       mesaNumero: mesa.numero,
       mesaNome: mesa.nome || undefined,
+      taxaEntrega: taxaEntrega || undefined,
       total: totalGeral,
       comandas: comandasParaImprimir.map((cmd) => {
         const itens = cmd.pedidos.flatMap((pedido: any) => {
@@ -224,8 +230,19 @@ export default function TablePrintModal({ isOpen, onClose, mesa, comanda, tipo }
                 );
               })}
 
+              {/* Taxa de entrega da mesa (quando houver) */}
+              {taxaEntrega > 0 && (
+                <>
+                  <hr className="zf-dash" />
+                  <div className="zf-row">
+                    <span>Taxa de entrega</span>
+                    <span>{formatPrice(taxaEntrega)}</span>
+                  </div>
+                </>
+              )}
+
               {/* Total Geral em caixa invertida */}
-              {(tipo === 'mesa' || comandasParaImprimir.length > 1) && (
+              {(tipo === 'mesa' || comandasParaImprimir.length > 1 || taxaEntrega > 0) && (
                 <div className="zf-total">
                   <span>TOTAL</span>
                   <span>{formatPrice(totalGeral)}</span>
