@@ -376,6 +376,18 @@ export default function SettingsPage() {
           lat_loja: deliveryData.lat_loja ? parseFloat(deliveryData.lat_loja as string) : undefined,
           lng_loja: deliveryData.lng_loja ? parseFloat(deliveryData.lng_loja as string) : undefined,
         });
+
+        // Recarrega os bairros direto do banco para sincronizar o estado:
+        // troca os ids "temp-" pelos ids reais e garante que a tela reflita
+        // exatamente o que foi persistido (evita salvar duplicado no proximo save).
+        const freshRates = await getDeliveryRates();
+        const normalizedRates = (freshRates || []).map((r: any) => ({
+          ...r,
+          bairro: String(r.bairro || ''),
+          valor_taxa: r.taxa ?? r.valor_taxa ?? 0,
+          tempo_estimado: String(r.tempo_estimado || ''),
+        }));
+        setNeighborhoods(normalizedRates);
       }
 
       if (activeSection === 'hours') {
