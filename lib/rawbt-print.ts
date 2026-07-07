@@ -204,26 +204,45 @@ export interface ReciboMesa {
   total: number;
 }
 
-// Monta a conta de mesa/comanda em texto puro (mesmo layout do preview).
+// Comandos ESC/POS suportados pelo RawBT. Servem para deixar o cupom do celular
+// mais parecido com o do PC (que imprime HTML): titulo grande centralizado,
+// cabecalhos em negrito e TOTAL destacado. Todos os bytes sao < 0x80, entao o
+// TextEncoder os envia como 1 byte cada (a impressora recebe a sequencia crua).
+// Impressoras que nao suportam algum comando simplesmente o ignoram.
+const ESC = {
+  init: '\x1B\x40', // ESC @  -> reinicializa (estado limpo)
+  left: '\x1B\x61\x00', // ESC a 0 -> alinha a esquerda
+  center: '\x1B\x61\x01', // ESC a 1 -> centraliza
+  boldOn: '\x1B\x45\x01', // ESC E 1 -> negrito on
+  boldOff: '\x1B\x45\x00', // ESC E 0 -> negrito off
+  normal: '\x1D\x21\x00', // GS ! 0  -> tamanho normal
+  dbl: '\x1D\x21\x11', // GS ! 0x11 -> largura + altura dobradas
+  tall: '\x1D\x21\x01', // GS ! 0x01 -> so altura dobrada (mantem alinhamento por colunas)
+};
+
+// Monta a conta de mesa/comanda em texto puro (mesmo layout do preview),
+// com realces ESC/POS para aproximar do cupom impresso pelo PC.
 export function buildTableReceiptText(dados: ReciboMesa, largura: LarguraPapel): string {
   const W = colunas(largura);
   const out: string[] = [];
 
-  // Cabeçalho
+  // Cabeçalho centralizado e destacado (aproxima do layout do PC).
   const titulo = dados.tipo === 'mesa' ? `MESA ${dados.mesaNumero ?? ''}`.trim() : 'COMANDA';
-  out.push(centro(titulo, W));
-  out.push(centro(new Date().toLocaleString('pt-BR'), W));
+  out.push(ESC.init + ESC.center + ESC.dbl + ESC.boldOn + normaliza(titulo) + ESC.normal + ESC.boldOff);
+  out.push(normaliza(new Date().toLocaleString('pt-BR')));
   out.push('');
-  out.push(centro(dados.tipo === 'mesa' ? '* CONTA DA MESA *' : '* CONTA INDIVIDUAL *', W));
+  const badge = dados.tipo === 'mesa' ? '* CONTA DA MESA *' : '* CONTA INDIVIDUAL *';
+  out.push(ESC.boldOn + normaliza(badge) + ESC.boldOff);
   if (dados.mesaNome && dados.tipo === 'mesa') {
-    out.push(centro(dados.mesaNome, W));
+    out.push(normaliza(dados.mesaNome));
   }
-  out.push(linha(W));
+  // Volta a alinhar a esquerda para a tabela de itens.
+  out.push(ESC.left + linha(W));
 
   // Itens agrupados por comanda
   const varias = dados.comandas.length > 1;
   dados.comandas.forEach((cmd, idx) => {
-    out.push(normaliza(cmd.nome));
+    out.push(ESC.boldOn + normaliza(cmd.nome) + ESC.boldOff);
     if (cmd.telefone) {
       out.push(quebra(`Tel: ${cmd.telefone}`, W));
     }
@@ -248,16 +267,16 @@ export function buildTableReceiptText(dados: ReciboMesa, largura: LarguraPapel):
     if (varias && idx < dados.comandas.length - 1) out.push(linha(W));
   });
 
-  // Total geral
+  // Total geral — destacado em negrito e altura dobrada.
   out.push(linha(W, '='));
-  out.push(duasColunas('TOTAL', money(dados.total), W));
+  out.push(ESC.boldOn + ESC.tall + duasColunas('TOTAL', money(dados.total), W) + ESC.normal + ESC.boldOff);
   out.push(linha(W, '='));
 
-  // Rodapé
+  // Rodapé centralizado.
   out.push('');
-  out.push(centro('Obrigado pela preferencia!', W));
+  out.push(ESC.center + normaliza('Obrigado pela preferencia!'));
   out.push('');
-  out.push(centro('powered by zapflow', W));
+  out.push(normaliza('powered by zapflow') + ESC.left);
   out.push('\n\n\n');
 
   return out.join('\n');

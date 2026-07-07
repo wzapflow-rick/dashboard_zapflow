@@ -1,8 +1,8 @@
 // ZapFlow Service Worker - Offline First Strategy
 // IMPORTANTE: sempre incremente a versao ao mudar o comportamento de cache/impressao.
 // Isso forca o SW a limpar caches antigos e os aparelhos a rodarem o codigo novo.
-const CACHE_NAME = 'zapflow-v3';
-const OFFLINE_CACHE = 'zapflow-offline-v3';
+const CACHE_NAME = 'zapflow-v4';
+const OFFLINE_CACHE = 'zapflow-offline-v4';
 
 // Recursos estaticos para cache inicial
 const STATIC_ASSETS = [
