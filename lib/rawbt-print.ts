@@ -201,6 +201,7 @@ export interface ReciboMesa {
   mesaNumero?: string | number;
   mesaNome?: string;
   comandas: ReciboComanda[];
+  taxaEntrega?: number;
   total: number;
 }
 
@@ -266,6 +267,12 @@ export function buildTableReceiptText(dados: ReciboMesa, largura: LarguraPapel):
     }
     if (varias && idx < dados.comandas.length - 1) out.push(linha(W));
   });
+
+  // Taxa de entrega (quando informada) aparece antes do total.
+  if (dados.taxaEntrega && dados.taxaEntrega > 0) {
+    out.push(linha(W));
+    out.push(duasColunas('Taxa de entrega', money(dados.taxaEntrega), W));
+  }
 
   // Total geral — destacado em negrito e altura dobrada.
   out.push(linha(W, '='));

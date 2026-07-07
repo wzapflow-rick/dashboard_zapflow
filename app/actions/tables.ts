@@ -36,6 +36,7 @@ export interface Mesa {
   capacidade?: number;
   status: 'livre' | 'ocupada' | 'reservada';
   qr_code?: string;
+  taxa_entrega?: number;
   created_at?: string;
   updated_at?: string;
 }
@@ -363,13 +364,16 @@ export async function getMesasComDetalhes(): Promise<MesaComDetalhes[]> {
         };
       });
 
-      const totalMesa = comandasComPedidos.reduce((acc, c) => {
+      const totalItens = comandasComPedidos.reduce((acc, c) => {
         const totalComanda = c.pedidos.reduce(
           (sum, p: any) => sum + (Number(p.valor_total) || 0),
           0
         );
         return acc + totalComanda;
       }, 0);
+
+      // A taxa de entrega da mesa (opcional) entra no total exibido/impresso.
+      const totalMesa = totalItens + (Number(mesa.taxa_entrega) || 0);
 
       return {
         ...mesa,
@@ -496,6 +500,26 @@ export async function abrirMesa(mesaId: number, nomeCliente?: string): Promise<C
   return comanda;
 }
 
+// Define/atualiza a taxa de entrega da mesa. Ela entra no total e sai na conta.
+// Passe 0 para remover a taxa.
+export async function salvarTaxaEntregaMesa(
+  mesaId: number,
+  taxa: number
+): Promise<{ ok: true }> {
+  const user = await requireRole(['admin', 'gerente', 'atendente']);
+
+  const mesa = await pg.findById('mesas', mesaId) as any;
+  if (!mesa || String(mesa.store_id) !== String(user.empresaId)) {
+    throw new Error('Mesa não encontrada');
+  }
+
+  const valor = Math.max(0, Number(taxa) || 0);
+  await pg.update('mesas', mesaId, { taxa_entrega: valor });
+
+  revalidatePath('/dashboard/mesas');
+  return { ok: true };
+}
+
 export async function fecharMesa(mesaId: number): Promise<{ total: number; comandas: number }> {
   const user = await requireRole(['admin', 'gerente', 'atendente']);
 
@@ -524,13 +548,17 @@ export async function fecharMesa(mesaId: number): Promise<{ total: number; coman
     await finalizarPedidosDaComanda(comanda.id, user.empresaId);
   }
 
-  await pg.update('mesas', mesaId, { status: MESA_STATUS.LIVRE });
+  // Inclui a taxa de entrega da mesa no total do fechamento e zera para o proximo uso.
+  const taxaMesa = Number(mesa.taxa_entrega) || 0;
+  totalGeral += taxaMesa;
 
+  await pg.update('mesas', mesaId, { status: MESA_STATUS.LIVRE, taxa_entrega: 0 });
+  
   revalidatePath('/dashboard/mesas');
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/reports');
   return { total: totalGeral, comandas: comandas.length };
-}
+  }
 
 // ============================================================
 // CANCELAR PEDIDO DE MESA
