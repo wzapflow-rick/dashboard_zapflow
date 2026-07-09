@@ -357,6 +357,9 @@ async function ensureTaxasEntregaSchema() {
     await pg.raw(`ALTER TABLE taxas_entrega ADD COLUMN IF NOT EXISTS bairro TEXT`);
     await pg.raw(`ALTER TABLE taxas_entrega ADD COLUMN IF NOT EXISTS taxa NUMERIC(10,2) DEFAULT 0`);
     await pg.raw(`ALTER TABLE taxas_entrega ADD COLUMN IF NOT EXISTS tempo_estimado TEXT`);
+    // A coluna tempo_estimado existia como INTEGER e quebrava ao salvar valores
+    // como "20m"/"30min". Converte para TEXT (no-op se ja for TEXT).
+    await pg.raw(`ALTER TABLE taxas_entrega ALTER COLUMN tempo_estimado TYPE TEXT USING tempo_estimado::text`);
 }
 
 export async function saveDeliveryRatesBatch(rates: any[]) {
