@@ -42,6 +42,7 @@ import EditOrderModal from '@/components/expedition/edit-order-modal';
 
 interface TableDetailModalProps {
   mesa: MesaComDetalhes;
+  bairros?: any[];
   isOpen: boolean;
   onClose: () => void;
   onUpdate: () => void;
@@ -49,6 +50,7 @@ interface TableDetailModalProps {
 
 export default function TableDetailModal({
   mesa,
+  bairros = [],
   isOpen,
   onClose,
   onUpdate,
@@ -69,7 +71,19 @@ export default function TableDetailModal({
   const [taxaInput, setTaxaInput] = useState<string>(
     mesa.taxa_entrega ? String(mesa.taxa_entrega).replace('.', ',') : ''
   );
+  const [selectedBairro, setSelectedBairro] = useState<string>('');
   const [savingTaxa, setSavingTaxa] = useState(false);
+
+  // Ao escolher um bairro, puxa automaticamente a taxa configurada em
+  // Configuracoes > Entrega e preenche o valor (que ainda pode ser ajustado).
+  const handleSelectBairro = (nomeBairro: string) => {
+    setSelectedBairro(nomeBairro);
+    const rate = bairros.find((b) => b.bairro === nomeBairro);
+    if (rate) {
+      const valor = Number(rate.taxa) || 0;
+      setTaxaInput(valor.toFixed(2).replace('.', ','));
+    }
+  };
 
   const handleSalvarTaxa = async () => {
     const valor = parseFloat(taxaInput.replace(',', '.')) || 0;
@@ -391,10 +405,28 @@ export default function TableDetailModal({
                 <div className="p-4 bg-primary/10 rounded-xl border border-primary/30">
                   {/* Taxa de entrega da mesa */}
                   <div className="mb-3">
-                    <label htmlFor="taxa-entrega" className="flex items-center gap-1.5 text-sm text-slate-300 mb-1.5">
+                    <label htmlFor="taxa-entrega-bairro" className="flex items-center gap-1.5 text-sm text-slate-300 mb-1.5">
                       <MapPin className="size-3.5" />
                       Taxa de entrega
                     </label>
+
+                    {/* Select de bairros configurados em Configuracoes > Entrega */}
+                    {bairros.length > 0 && (
+                      <select
+                        id="taxa-entrega-bairro"
+                        value={selectedBairro}
+                        onChange={(e) => handleSelectBairro(e.target.value)}
+                        className="w-full mb-2 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-primary"
+                      >
+                        <option value="">Selecione o bairro...</option>
+                        {bairros.map((b) => (
+                          <option key={b.id} value={b.bairro}>
+                            {b.bairro} — R$ {(Number(b.taxa) || 0).toFixed(2).replace('.', ',')}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+
                     <div className="flex gap-2">
                       <div className="relative flex-1">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">R$</span>
@@ -416,6 +448,11 @@ export default function TableDetailModal({
                         {savingTaxa ? 'Salvando...' : 'Aplicar'}
                       </button>
                     </div>
+                    {bairros.length === 0 && (
+                      <p className="mt-1.5 text-xs text-slate-500">
+                        Configure os bairros e valores em Configurações → Entrega para selecioná-los aqui.
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex items-center justify-between mb-3 pt-3 border-t border-primary/20">
