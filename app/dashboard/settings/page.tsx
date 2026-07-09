@@ -50,7 +50,7 @@ import DeliveryHistory from '@/components/delivery/delivery-history';
 import MercadoPagoConnection from '@/components/management/mercadopago-connection';
 import { CreditCard as PaymentIcon } from 'lucide-react';
 import { getBotConfig, saveBotConfig, getCardapioLink, BotConfig } from '@/app/actions/bot';
-import { createEvolutionInstance, getEvolutionQRCode, getInstanceStatus } from '@/app/actions/evolution';
+import { createEvolutionInstance, getEvolutionQRCode, getInstanceStatus, configureInstanceWebhook } from '@/app/actions/evolution';
 
 const sections = [
   { id: 'general', name: 'Geral', icon: Store },
@@ -207,6 +207,27 @@ export default function SettingsPage() {
         return;
       }
       
+      // 1.1. Configurar o webhook da instancia (MESSAGES_UPSERT/CONNECTION_UPDATE).
+      // Sem isso, a Evolution nao chama nosso endpoint quando o cliente manda
+      // mensagem, e o bot de saudacao nunca dispara — mesmo com o WhatsApp
+      // conectado. Antes so o fluxo de signup configurava o webhook; ao conectar
+      // pelo painel, ficava faltando. Nao bloqueia o QR se falhar.
+      const webhookResult = await configureInstanceWebhook(instName);
+      if (webhookResult.error) {
+        console.error('[v0] Falha ao configurar webhook da instancia:', webhookResult.error);
+      }
+      
+      // Persiste a instancia no banco (mesmo se ja estiver conectada), para que o
+      // webhook consiga mapear a empresa pelo match exato de instancia_evolution.
+      if (!company.instancia_evolution) {
+        try {
+          await updateCompany({ instancia_evolution: instName });
+          setCompany((prev: any) => ({ ...prev, instancia_evolution: instName }));
+        } catch (e) {
+          console.error('[v0] Falha ao salvar instancia_evolution:', e);
+        }
+      }
+      
       // 2. Buscar QR Code
       const qrResult = await getEvolutionQRCode(instName);
       
@@ -220,12 +241,6 @@ export default function SettingsPage() {
       if (qrResult.qrcode) {
         setQrCode(qrResult.qrcode);
         toast.success('QR Code gerado! Escaneie com seu WhatsApp.');
-        
-        // Atualizar instancia_evolution na empresa se ainda nao estiver salvo
-        if (!company.instancia_evolution) {
-          await updateCompany({ instancia_evolution: instName });
-          setCompany((prev: any) => ({ ...prev, instancia_evolution: instName }));
-        }
       } else {
         // Se nao retornou QR, pode ser que ja esteja conectado
         const statusCheck = await getInstanceStatus(instName);
