@@ -49,7 +49,9 @@ export async function GET(request: NextRequest) {
                 client_secret: process.env.MP_CLIENT_SECRET || '',
                 grant_type: 'authorization_code',
                 code: code,
-                redirect_uri: `${new URL(request.url).origin}/api/auth/mercadopago/callback`,
+                // Precisa ser IDENTICO ao redirect_uri usado na URL de autorizacao
+                // (getMPAuthorizationUrl), senao o Mercado Pago recusa a troca do token.
+                redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL || 'https://cardapio.wzapflow.com.br'}/api/auth/mercadopago/callback`,
             }),
         });
 
