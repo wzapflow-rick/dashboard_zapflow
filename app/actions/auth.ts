@@ -69,7 +69,7 @@ export async function login(data: any) {
                 expires,
                 httpOnly: true,
                 secure: isProduction,
-                sameSite: 'strict',
+                sameSite: 'lax',
                 path: '/',
             });
             await clearLoginRateLimits(email.toLowerCase(), clientIp);
@@ -109,7 +109,7 @@ export async function login(data: any) {
                 expires,
                 httpOnly: true,
                 secure: isProduction,
-                sameSite: 'strict',
+                sameSite: 'lax',
                 path: '/',
             });
             await clearLoginRateLimits(email.toLowerCase(), clientIp);
@@ -173,7 +173,7 @@ export async function register(formData: FormData) {
         expires,
         httpOnly: true,
         secure: isProduction,
-        sameSite: 'strict',
+        sameSite: 'lax',
         path: '/',
     });
 
@@ -216,7 +216,7 @@ export async function updateOnboarding(onboardingData: any) {
         expires,
         httpOnly: true,
         secure: isProduction,
-        sameSite: 'strict',
+        sameSite: 'lax',
         path: '/',
     });
 
