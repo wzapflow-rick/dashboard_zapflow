@@ -102,10 +102,14 @@ export default function CouponsManagement() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     try {
-      await upsertCoupon({
+      const res = await upsertCoupon({
         ...formData,
         id: editingCoupon?.id,
       });
+      if (res && res.success === false) {
+        toast.error(res.error || 'Erro ao salvar cupom');
+        return;
+      }
       toast.success(editingCoupon ? 'Cupom atualizado!' : 'Cupom criado!');
       closeModal();
       loadData();

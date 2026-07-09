@@ -61,6 +61,19 @@ export async function upsertCoupon(couponData: any) {
             empresa_id: user.empresaId,
         };
 
+        // Datas vazias ('') quebram colunas DATE no Postgres
+        // (invalid input syntax for type date: ""). Converte para null.
+        if (!payload.data_inicio || String(payload.data_inicio).trim() === '') {
+            payload.data_inicio = null;
+        }
+        if (!payload.data_fim || String(payload.data_fim).trim() === '') {
+            payload.data_fim = null;
+        }
+        // limite_uso vazio/indefinido tambem vira null (coluna INTEGER).
+        if (payload.limite_uso === undefined || payload.limite_uso === '' || payload.limite_uso === null) {
+            payload.limite_uso = null;
+        }
+
         let result;
         if (couponData.id || existingCoupon?.id) {
             const id = couponData.id || existingCoupon.id;
@@ -76,7 +89,9 @@ export async function upsertCoupon(couponData: any) {
         return { success: true, data: result };
     } catch (error: any) {
         console.error('upsertCoupon error:', error);
-        throw new Error(error.message || 'Erro ao salvar cupom');
+        // Retorna o erro (em vez de lancar) para a mensagem real chegar a UI,
+        // ja que em producao o Next.js oculta erros lancados em server actions.
+        return { success: false, error: error.message || 'Erro ao salvar cupom' };
     }
 }
 
