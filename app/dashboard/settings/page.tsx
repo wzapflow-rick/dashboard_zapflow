@@ -363,7 +363,9 @@ export default function SettingsPage() {
         
         const res = await saveDeliveryRatesBatch(bairrosValidos);
         if (!res || !res.success) {
-           throw new Error('Falha ao salvar os bairros. Verifique se os dados estão corretos.');
+           // Mostra o motivo real vindo do servidor (ex.: erro de coluna no banco),
+           // em vez de uma mensagem generica.
+           throw new Error(res?.error || 'Falha ao salvar os bairros. Verifique se os dados estão corretos.');
         }
 
         const form = document.getElementById('delivery-form') as HTMLFormElement;

@@ -336,12 +336,52 @@ export async function geocodeAddress(endereco: string, cidade?: string, estado?:
     }
 }
 
+// Garante que a tabela de taxas por bairro exista com as colunas esperadas.
+// O banco fica na VPS do cliente e as migracoes eram manuais; se a tabela (ou
+// alguma coluna) nao existisse, o INSERT falhava silenciosamente e os bairros
+// "sumiam". Este passo e idempotente: CREATE/ALTER IF NOT EXISTS nao altera nada
+// quando ja esta tudo certo.
+async function ensureTaxasEntregaSchema() {
+    await pg.raw(`
+        CREATE TABLE IF NOT EXISTS taxas_entrega (
+            id SERIAL PRIMARY KEY,
+            empresa_id INTEGER NOT NULL,
+            bairro TEXT NOT NULL,
+            taxa NUMERIC(10,2) NOT NULL DEFAULT 0,
+            tempo_estimado TEXT,
+            created_at TIMESTAMPTZ DEFAULT NOW()
+        )
+    `);
+    // Garante colunas em bancos onde a tabela ja existia com estrutura antiga.
+    await pg.raw(`ALTER TABLE taxas_entrega ADD COLUMN IF NOT EXISTS empresa_id INTEGER`);
+    await pg.raw(`ALTER TABLE taxas_entrega ADD COLUMN IF NOT EXISTS bairro TEXT`);
+    await pg.raw(`ALTER TABLE taxas_entrega ADD COLUMN IF NOT EXISTS taxa NUMERIC(10,2) DEFAULT 0`);
+    await pg.raw(`ALTER TABLE taxas_entrega ADD COLUMN IF NOT EXISTS tempo_estimado TEXT`);
+    // A coluna tempo_estimado existia como INTEGER e quebrava ao salvar valores
+    // como "20m"/"30min". Converte para TEXT (no-op se ja for TEXT).
+    await pg.raw(`ALTER TABLE taxas_entrega ALTER COLUMN tempo_estimado TYPE TEXT USING tempo_estimado::text`);
+}
+
 export async function saveDeliveryRatesBatch(rates: any[]) {
     try {
         const user = await getMe();
-        if (!user?.empresaId) throw new Error('Não autorizado');
+        if (!user?.empresaId) {
+            return { success: false, count: 0, error: 'Não autorizado. Faça login novamente.' };
+        }
 
         console.log(`[saveDeliveryRatesBatch] Empresa: ${user.empresaId}, Bairros: ${rates.length}`);
+
+        // Garante o schema antes de gravar (auto-cura quando a tabela/coluna falta).
+        try {
+            await ensureTaxasEntregaSchema();
+        } catch (schemaError: any) {
+            console.error('[saveDeliveryRatesBatch] Erro ao garantir schema:', schemaError.message);
+            return {
+                success: false,
+                count: 0,
+                error: `Erro no banco de dados ao preparar a tabela de taxas: ${schemaError.message}`,
+            };
+        }
 
         const results = [];
         const erros: string[] = [];
@@ -373,28 +413,32 @@ export async function saveDeliveryRatesBatch(rates: any[]) {
                     results.push({ bairro: payload.bairro, saved: true, ...res });
                 }
             } catch (innerError: any) {
-                // Antes o erro era engolido e a funcao retornava sucesso mesmo sem salvar
-                // nada (o usuario via "salvo" mas ao voltar os bairros sumiam). Agora
-                // registramos o motivo para reportar ao usuario.
+                // Registramos o motivo real (ex.: "column ... does not exist") para
+                // reportar ao usuario, em vez de engolir o erro e fingir sucesso.
                 console.error('[saveDeliveryRatesBatch] Erro no item individual:', innerError.message);
                 erros.push(`${payload.bairro}: ${innerError.message}`);
             }
         }
 
         // Se havia bairros para salvar mas NENHUM foi gravado, e um erro real.
+        // Retornamos (nao lancamos) para a mensagem chegar a UI mesmo em producao,
+        // onde o Next.js oculta mensagens de erro de Server Actions lancadas.
         if (results.length === 0 && rates.length > 0) {
-            throw new Error(
-                erros.length > 0
-                    ? `Não foi possível salvar os bairros. Detalhe: ${erros[0]}`
-                    : 'Nenhum bairro foi salvo.'
-            );
+            return {
+                success: false,
+                count: 0,
+                error: erros[0] || 'Nenhum bairro foi salvo.',
+            };
         }
 
         revalidatePath('/dashboard/settings');
         return { success: true, count: results.length, erros };
     } catch (error: any) {
         console.error('API Error (saveDeliveryRatesBatch) FATAL:', error);
-        // Propaga a mensagem real para o front, em vez de uma mensagem generica.
-        throw new Error(error?.message || 'Erro crítico ao salvar taxas de entrega.');
+        return {
+            success: false,
+            count: 0,
+            error: error?.message || 'Erro crítico ao salvar taxas de entrega.',
+        };
     }
 }
