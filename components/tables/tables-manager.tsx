@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import useSWR from 'swr';
 import { getMesasComDetalhes, type MesaComDetalhes } from '@/app/actions/tables';
+import { getDeliveryRates } from '@/app/actions/delivery';
 import TableCard from './table-card';
 import CreateTableModal from './create-table-modal';
 import TableDetailModal from './table-detail-modal';
@@ -27,6 +28,11 @@ export default function TablesManager() {
       revalidateIfStale: true,
     }
   );
+
+  // Bairros configurados em Configuracoes > Entrega, para o select de taxa na mesa.
+  const { data: bairros = [] } = useSWR('delivery-rates', getDeliveryRates, {
+    revalidateOnFocus: false,
+  });
 
   const filteredMesas = mesas.filter((mesa) => {
     if (filterStatus === 'all') return true;
@@ -184,6 +190,7 @@ export default function TablesManager() {
       {selectedMesa && (
         <TableDetailModal
           mesa={mesas.find(m => m.id === selectedMesa.id) || selectedMesa}
+          bairros={bairros}
           isOpen={!!selectedMesa}
           onClose={() => setSelectedMesa(null)}
           onUpdate={async () => {
