@@ -123,7 +123,8 @@ export default function SettingsPage() {
         const normalizedRates = (rates || []).map((r: any) => ({
           ...r,
           bairro: String(r.bairro || ''),
-          valor_taxa: r.taxa ?? r.valor_taxa ?? 0,
+          // Number() garante valor numerico limpo (a coluna NUMERIC vem como string "5.00")
+          valor_taxa: Number(r.taxa ?? r.valor_taxa ?? 0) || 0,
           tempo_estimado: String(r.tempo_estimado || '')
         }));
         setNeighborhoods(normalizedRates);
@@ -401,7 +402,7 @@ export default function SettingsPage() {
         const normalizedRates = (freshRates || []).map((r: any) => ({
           ...r,
           bairro: String(r.bairro || ''),
-          valor_taxa: r.taxa ?? r.valor_taxa ?? 0,
+          valor_taxa: Number(r.taxa ?? r.valor_taxa ?? 0) || 0,
           tempo_estimado: String(r.tempo_estimado || ''),
         }));
         setNeighborhoods(normalizedRates);

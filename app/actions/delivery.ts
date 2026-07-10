@@ -7,6 +7,37 @@ import { TAXAS_ENTREGA_TABLE, EMPRESAS_TABLE } from '@/lib/tables';
 
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || '';
 
+/**
+ * Converte o valor da taxa para numero de forma robusta.
+ *
+ * BUG que isto corrige: a coluna NUMERIC do Postgres retorna o valor como string
+ * com PONTO decimal (ex.: "5.00"). O parsing antigo removia TODOS os pontos
+ * (assumindo ponto = separador de milhar do formato BR), entao "5.00" virava
+ * "500" = 500. A cada save o valor era multiplicado por ~100 (5 -> 500 -> 50000
+ * -> 5.000.000), causando os valores absurdos vistos na tela.
+ *
+ * Regra correta:
+ * - number: usa direto.
+ * - string COM virgula: formato BR ("1.234,56") -> ponto e milhar, virgula e decimal.
+ * - string SEM virgula: numero simples com ponto decimal ("5.00") -> mantem o ponto.
+ */
+function parseValorTaxa(input: any): number {
+    if (typeof input === 'number') return isNaN(input) ? 0 : input;
+    if (input === null || input === undefined) return 0;
+
+    let s = String(input).replace(/R\$/gi, '').replace(/\s/g, '').trim();
+    if (s === '') return 0;
+
+    if (s.includes(',')) {
+        // Formato brasileiro: remove separador de milhar (.) e troca virgula por ponto.
+        s = s.replace(/\./g, '').replace(',', '.');
+    }
+    // Sem virgula: ja esta com ponto decimal (ou e inteiro) -> nao mexe nos pontos.
+
+    const n = parseFloat(s);
+    return isNaN(n) ? 0 : n;
+}
+
 export async function getDeliveryRates() {
     try {
         const user = await getMe();
@@ -30,9 +61,7 @@ export async function upsertDeliveryRate(data: any) {
 
         const sanitizedData = {
             ...data,
-            taxa: typeof data.valor_taxa === 'string' 
-                ? (parseFloat(data.valor_taxa.replace(/R\$\s?/g, '').replace(/\./g, '').replace(',', '.').trim()) || 0)
-                : Number(data.valor_taxa || 0),
+            taxa: parseValorTaxa(data.valor_taxa),
             empresa_id: Number(user.empresaId)
         };
         
@@ -388,9 +417,7 @@ export async function saveDeliveryRatesBatch(rates: any[]) {
         for (const data of rates) {
             if (!data.bairro || data.bairro.trim() === '') continue;
 
-            let valorStr = String(data.valor_taxa || '0');
-            valorStr = valorStr.replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.');
-            const valorTaxa = parseFloat(valorStr) || 0;
+            const valorTaxa = parseValorTaxa(data.valor_taxa);
 
             const payload = {
                 bairro: data.bairro.trim(),
