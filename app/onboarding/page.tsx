@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { updateOnboarding } from '@/app/actions/auth';
 import { saveHorariosFuncionamento } from '@/app/actions/horarios';
 import { getCompanyDetails } from '@/app/actions/company';
-import { createEvolutionInstance, getEvolutionQRCode, getInstanceStatus } from '@/app/actions/evolution';
+import { createEvolutionInstance, getEvolutionQRCode, getInstanceStatus, configureInstanceWebhook } from '@/app/actions/evolution';
 import { toast } from 'sonner';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { TimeInput } from '@/components/ui/time-input';
@@ -138,6 +138,16 @@ function OnboardingContent() {
       }
       const name = (createRes as any).instanceName;
       setInstanceName(name);
+
+      // 1.1. Configura o webhook (MESSAGES_UPSERT/CONNECTION_UPDATE) para que a
+      // Evolution chame nosso endpoint quando o cliente mandar mensagem — sem
+      // isso o bot de saudacao nunca dispara, mesmo com o WhatsApp conectado.
+      try {
+        const webhookRes = await configureInstanceWebhook(name);
+        if (webhookRes.error) console.error('Erro ao configurar webhook:', webhookRes.error);
+      } catch (e) {
+        console.error('Erro ao configurar webhook:', e);
+      }
 
       // 2. Atualiza o campo instancia_evolution no banco
       try {
