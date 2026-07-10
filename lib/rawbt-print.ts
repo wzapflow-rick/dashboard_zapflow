@@ -251,6 +251,8 @@ export function buildTableReceiptText(dados: ReciboMesa, largura: LarguraPapel):
       out.push(quebra(`> ENTREGA: ${cmd.endereco}`, W));
     }
     if (cmd.itens.length > 0) {
+      // Cabecalho de colunas (mesmo do preview/notebook: Qtd | Itens | Preco).
+      out.push(duasColunas('Qtd Itens', 'Preco', W));
       for (const item of cmd.itens) {
         const preco = money(item.preco * item.qtd);
         const nomeLargura = W - preco.length - 1;
@@ -261,7 +263,7 @@ export function buildTableReceiptText(dados: ReciboMesa, largura: LarguraPapel):
           out.push(quebra(`  > ${item.observacao}`, W, '  '));
         }
       }
-      out.push(duasColunas('Subtotal', money(cmd.subtotal), W));
+      out.push(ESC.boldOn + duasColunas('Subtotal', money(cmd.subtotal), W) + ESC.boldOff);
     } else {
       out.push('Nenhum item');
     }
@@ -275,9 +277,17 @@ export function buildTableReceiptText(dados: ReciboMesa, largura: LarguraPapel):
   }
 
   // Total geral — destacado em negrito e altura dobrada.
-  out.push(linha(W, '='));
-  out.push(ESC.boldOn + ESC.tall + duasColunas('TOTAL', money(dados.total), W) + ESC.normal + ESC.boldOff);
-  out.push(linha(W, '='));
+  // Mostra nas MESMAS condicoes do preview/notebook: mesa, varias comandas ou
+  // com taxa de entrega. Numa comanda individual simples, so o Subtotal aparece.
+  const mostrarTotal =
+    dados.tipo === 'mesa' ||
+    dados.comandas.length > 1 ||
+    (dados.taxaEntrega ? dados.taxaEntrega > 0 : false);
+  if (mostrarTotal) {
+    out.push(linha(W, '='));
+    out.push(ESC.boldOn + ESC.tall + duasColunas('TOTAL', money(dados.total), W) + ESC.normal + ESC.boldOff);
+    out.push(linha(W, '='));
+  }
 
   // Rodapé centralizado.
   out.push('');
