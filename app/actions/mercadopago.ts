@@ -351,6 +351,7 @@ export async function getPaymentStatus(paymentId: number): Promise<{
  */
 export async function getMPAuthorizationUrl() {
     const { getMe } = await import('./auth');
+    const { cookies } = await import('next/headers');
     const me = await getMe();
     
     if (!me || !me.empresaId) {
@@ -368,6 +369,21 @@ export async function getMPAuthorizationUrl() {
     
     // O 'state' pode ser usado para passar o empresaId e validar no retorno
     const state = me.empresaId;
+
+    // Cookie dedicado ao fluxo OAuth: guarda o empresaId de forma INDEPENDENTE do
+    // cookie de sessao principal. Motivo: no retorno do Mercado Pago (site externo),
+    // o cookie de sessao pode nao ser enviado (cookies antigos ficaram SameSite=Strict),
+    // deixando o callback sem saber a empresa e jogando o lojista para o /login.
+    // Este cookie e SameSite=Lax (enviado no retorno via GET de nivel superior) e
+    // de curta duracao (10 min), usado so para concluir a conexao.
+    const isProduction = process.env.NODE_ENV === 'production';
+    (await cookies()).set('mp_oauth_empresa', String(me.empresaId), {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 600,
+    });
 
     return `https://auth.mercadopago.com/authorization?client_id=${clientId}&response_type=code&platform_id=mp&state=${state}&redirect_uri=${redirectUri}`;
 }

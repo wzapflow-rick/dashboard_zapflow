@@ -16,26 +16,43 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        // 1. Tentar obter empresaId da sessão ou do 'state' do Mercado Pago
+        // 1. Identificar a empresa SEM depender do cookie de sessao principal.
+        //    Ordem: (a) 'state' devolvido pelo Mercado Pago; (b) cookie dedicado
+        //    'mp_oauth_empresa' (SameSite=Lax, gravado antes de ir ao MP); (c) sessao.
+        //    O cookie de sessao pode nao ser enviado no retorno de um site externo
+        //    (cookies antigos ficaram SameSite=Strict), por isso ele e o ultimo recurso.
+        const cookieStore = await cookies();
         let empresaId: string | number | null = null;
-        
-        const sessionValue = (await cookies()).get('session')?.value;
-        if (sessionValue) {
-            const payload = await decrypt(sessionValue);
-            if (payload && payload.empresaId) {
-                empresaId = payload.empresaId;
-            }
-        }
 
-        // Se a sessão expirou durante o redirecionamento, usamos o 'state' que enviamos na ida
-        if (!empresaId && state) {
+        if (state) {
             empresaId = state;
-            console.log(`[MercadoPago] Sessão não encontrada, usando empresaId do state: ${empresaId}`);
+            console.log(`[v0] [MP callback] empresaId via state: ${empresaId}`);
         }
 
         if (!empresaId) {
-            console.error('Mercado Pago OAuth: Empresa não identificada (sessão expirada e sem state)');
-            return NextResponse.redirect(new URL('/login?callbackUrl=/dashboard/settings?section=payments', request.url));
+            const oauthCookie = cookieStore.get('mp_oauth_empresa')?.value;
+            if (oauthCookie) {
+                empresaId = oauthCookie;
+                console.log(`[v0] [MP callback] empresaId via cookie dedicado: ${empresaId}`);
+            }
+        }
+
+        if (!empresaId) {
+            const sessionValue = cookieStore.get('session')?.value;
+            if (sessionValue) {
+                const payload = await decrypt(sessionValue);
+                if (payload && payload.empresaId) {
+                    empresaId = payload.empresaId;
+                    console.log(`[v0] [MP callback] empresaId via sessao: ${empresaId}`);
+                }
+            }
+        }
+
+        if (!empresaId) {
+            // Nunca manda para /login (confunde o lojista e perde o fluxo).
+            // Volta para a aba de pagamentos com um erro claro.
+            console.error('[v0] [MP callback] Empresa nao identificada (sem state, cookie ou sessao)');
+            return NextResponse.redirect(new URL('/dashboard/settings?section=payments&error=mp_no_empresa', request.url));
         }
 
         // 2. Trocar o código pelo Access Token
@@ -58,7 +75,7 @@ export async function GET(request: NextRequest) {
         const data = await response.json();
 
         if (!response.ok) {
-            console.error('Mercado Pago Token Exchange Error:', data);
+            console.error('[v0] [MP callback] Falha na troca de token:', JSON.stringify(data));
             return NextResponse.redirect(new URL('/dashboard/settings?section=payments&error=mp_token_failed', request.url));
         }
 
@@ -85,10 +102,13 @@ export async function GET(request: NextRequest) {
             await pg.create('pagamentos_config', configData);
         }
 
-        console.log(`[MercadoPago] Conta conectada com sucesso para empresa #${empresaId}`);
+        console.log(`[v0] [MP callback] Conta conectada com sucesso para empresa #${empresaId}`);
 
-        // 4. Redireciona de volta para a aba de pagamentos com sucesso
-        return NextResponse.redirect(new URL('/dashboard/settings?section=payments&success=mp_connected', request.url));
+        // 4. Redireciona de volta para a aba de pagamentos com sucesso e limpa o
+        //    cookie dedicado do fluxo OAuth (ja cumpriu seu papel).
+        const successResponse = NextResponse.redirect(new URL('/dashboard/settings?section=payments&success=mp_connected', request.url));
+        successResponse.cookies.delete('mp_oauth_empresa');
+        return successResponse;
 
     } catch (err) {
         console.error('Mercado Pago Callback Internal Error:', err);

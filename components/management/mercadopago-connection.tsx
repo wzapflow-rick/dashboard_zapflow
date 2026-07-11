@@ -51,7 +51,11 @@ export default function MercadoPagoConnection() {
         } else if (error === 'mp_auth_failed') {
             toast.error('Falha na autorização com Mercado Pago.');
         } else if (error === 'mp_token_failed') {
-            toast.error('Erro ao obter acesso do Mercado Pago.');
+            toast.error('Erro ao obter acesso do Mercado Pago. Tente conectar novamente.');
+        } else if (error === 'mp_no_empresa') {
+            toast.error('Não foi possível identificar sua conta ao voltar do Mercado Pago. Tente novamente sem fechar a aba.');
+        } else if (error === 'internal_error') {
+            toast.error('Erro ao concluir a conexão com o Mercado Pago. Tente novamente.');
         }
     }, [searchParams]);
 
