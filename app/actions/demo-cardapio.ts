@@ -48,6 +48,15 @@ export async function estruturarCardapio(input: {
     imagemBase64?: string; // data URL: "data:image/png;base64,...."
 }): Promise<{ success: boolean; cardapio?: CardapioEstruturado; error?: string }> {
     try {
+        if (!process.env.OPENAI_API_KEY) {
+            return {
+                success: false,
+                error:
+                    'A integracao de IA nao esta configurada: falta a variavel de ambiente OPENAI_API_KEY. ' +
+                    'Adicione a chave da OpenAI nas configuracoes do projeto (Vars) e tente novamente.',
+            };
+        }
+
         if (!input.texto?.trim() && !input.imagemBase64) {
             return { success: false, error: 'Cole o texto do cardapio ou envie um print.' };
         }
