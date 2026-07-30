@@ -25,8 +25,10 @@ CREATE TABLE campanhas_config (
 
 -- tipo: 'reengajamento' | 'cupom' | 'pos_pedido' | 'horario' | 'data_especial' | 'produto_destaque'
 -- dias_semana: JSON array, ex: '["seg","ter","qua","qui","sex"]'
--- Trigger para atualizar atualizado_em automaticamente
-CREATE OR REPLACE FUNCTION update_updated_at_column()
+-- Trigger para atualizar atualizado_em automaticamente.
+-- Usa uma função DEDICADA (não a global update_updated_at_column, que
+-- seta NEW.updated_at) porque esta tabela usa a coluna "atualizado_em".
+CREATE OR REPLACE FUNCTION update_campanhas_atualizado_em()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.atualizado_em = NOW();
@@ -34,10 +36,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trg_campanhas_config_updated_at
+CREATE TRIGGER trg_campanhas_config_atualizado_em
     BEFORE UPDATE ON campanhas_config
     FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+    EXECUTE FUNCTION update_campanhas_atualizado_em();
 
 -- Tabela 2: campanhas_disparos
 CREATE TABLE campanhas_disparos (

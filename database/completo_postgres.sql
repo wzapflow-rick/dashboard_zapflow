@@ -657,8 +657,20 @@ CREATE TRIGGER set_itens_base_updated_at BEFORE UPDATE ON itens_base FOR EACH RO
 DROP TRIGGER IF EXISTS set_horarios_updated_at ON horarios;
 CREATE TRIGGER set_horarios_updated_at BEFORE UPDATE ON horarios FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+-- campanhas_config usa a coluna "atualizado_em" (não "updated_at"),
+-- por isso usa uma função dedicada em vez da global update_updated_at_column().
 DROP TRIGGER IF EXISTS set_campanhas_config_updated_at ON campanhas_config;
-CREATE TRIGGER set_campanhas_config_updated_at BEFORE UPDATE ON campanhas_config FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS trg_campanhas_config_updated_at ON campanhas_config;
+
+CREATE OR REPLACE FUNCTION update_campanhas_atualizado_em()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.atualizado_em = NOW();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER trg_campanhas_config_atualizado_em BEFORE UPDATE ON campanhas_config FOR EACH ROW EXECUTE FUNCTION update_campanhas_atualizado_em();
 
 -- =====================================================
 -- FIM DO SCRIPT
