@@ -327,12 +327,13 @@ export async function getMesasComDetalhes(): Promise<MesaComDetalhes[]> {
 
     // As 3 consultas dependem apenas do store_id (sao independentes entre si),
     // entao rodamos em paralelo: 1 ida ao banco em vez de 3 em sequencia.
+    // Usamos pg.query direto (em vez de pg.list) para evitar a query COUNT(*)
+    // adicional que o list dispara internamente.
     const [mesasData, comandasData, pedidosData] = await Promise.all([
-      pg.list('mesas', {
-        where: { store_id: user.empresaId },
-        sort: 'numero',
-        limit: 100,
-      }),
+      pg.query(
+        `SELECT * FROM mesas WHERE store_id = $1 ORDER BY numero ASC LIMIT 100`,
+        [user.empresaId]
+      ),
       pg.query(
         `SELECT * FROM comandas WHERE store_id = $1 AND status = $2 LIMIT 500`,
         [user.empresaId, COMANDA_STATUS.ABERTA]
@@ -343,26 +344,39 @@ export async function getMesasComDetalhes(): Promise<MesaComDetalhes[]> {
       ),
     ]);
 
-    const mesas = normalizeRecordList((mesasData.list || []) as any[]) as Mesa[];
+    const mesas = normalizeRecordList((mesasData.rows || []) as any[]) as Mesa[];
 
     if (mesas.length === 0) return [];
 
     const comandas = normalizeRecordList((comandasData.rows || []) as any[]) as Comanda[];
     const pedidos = normalizeRecordList((pedidosData.rows || []) as any[]);
 
+    // Agrupa pedidos por comanda_id em um unico passo (O(n)) em vez de filtrar
+    // a lista inteira de pedidos para cada comanda (O(comandas x pedidos)).
+    const pedidosPorComanda = new Map<string, any[]>();
+    for (const pedido of pedidos as any[]) {
+      const key = String(pedido.comanda_id);
+      const arr = pedidosPorComanda.get(key);
+      if (arr) arr.push(pedido);
+      else pedidosPorComanda.set(key, [pedido]);
+    }
+
+    // Agrupa comandas por mesa_id da mesma forma (O(n)).
+    const comandasPorMesa = new Map<string, ComandaComPedidos[]>();
+    for (const comanda of comandas) {
+      const pedidosDaComanda = pedidosPorComanda.get(String(comanda.id)) || [];
+      const comandaComPedidos: ComandaComPedidos = {
+        ...comanda,
+        pedidos: pedidosDaComanda,
+      };
+      const key = String(comanda.mesa_id);
+      const arr = comandasPorMesa.get(key);
+      if (arr) arr.push(comandaComPedidos);
+      else comandasPorMesa.set(key, [comandaComPedidos]);
+    }
+
     const mesasComDetalhes: MesaComDetalhes[] = mesas.map((mesa) => {
-      const comandasDaMesa = comandas.filter((c) => String(c.mesa_id) === String(mesa.id));
-
-      const comandasComPedidos: ComandaComPedidos[] = comandasDaMesa.map((comanda) => {
-        const pedidosDaComanda = pedidos.filter(
-          (p: any) => String(p.comanda_id) === String(comanda.id)
-        );
-
-        return {
-          ...comanda,
-          pedidos: pedidosDaComanda,
-        };
-      });
+      const comandasComPedidos = comandasPorMesa.get(String(mesa.id)) || [];
 
       const totalItens = comandasComPedidos.reduce((acc, c) => {
         const totalComanda = c.pedidos.reduce(

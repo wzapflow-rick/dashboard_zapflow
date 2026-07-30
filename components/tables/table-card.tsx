@@ -1,96 +1,82 @@
 'use client';
 
 import React from 'react';
-import { Users, Receipt, Clock, AlertCircle } from 'lucide-react';
-import { motion } from 'motion/react';
+import { Users, Receipt, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { type MesaComDetalhes } from '@/app/actions/tables';
 
 interface TableCardProps {
   mesa: MesaComDetalhes;
-  onClick: () => void;
+  onSelect: (mesa: MesaComDetalhes) => void;
 }
 
-export default function TableCard({ mesa, onClick }: TableCardProps) {
-  const statusConfig = {
-    livre: {
-      bg: 'bg-emerald-500/10 hover:bg-emerald-500/20',
-      border: 'border-emerald-500/30',
-      badge: 'bg-emerald-500',
-      text: 'text-emerald-400',
-      label: 'Livre',
-      glow: 'hover:shadow-emerald-500/20',
-      animate: false,
-    },
-    ocupada: {
-      bg: 'bg-amber-500/10 hover:bg-amber-500/15',
-      border: 'border-amber-500/30',
-      badge: 'bg-amber-500',
-      text: 'text-amber-400',
-      label: 'Ocupada',
-      glow: 'shadow-amber-500/15 hover:shadow-amber-500/25',
-      animate: true,
-    },
-    reservada: {
-      bg: 'bg-blue-500/10 hover:bg-blue-500/20',
-      border: 'border-blue-500/30',
-      badge: 'bg-blue-500',
-      text: 'text-blue-400',
-      label: 'Reservada',
-      glow: 'shadow-blue-500/15 hover:shadow-blue-500/25',
-      animate: false,
-    },
-  };
+// Config estatica movida para fora do componente: evita recriar o objeto
+// a cada render de cada card.
+const STATUS_CONFIG = {
+  livre: {
+    bg: 'bg-emerald-500/10 hover:bg-emerald-500/20',
+    border: 'border-emerald-500/30',
+    badge: 'bg-emerald-500',
+    text: 'text-emerald-400',
+    label: 'Livre',
+    glow: 'hover:shadow-emerald-500/20',
+    glowAnim: false,
+  },
+  ocupada: {
+    bg: 'bg-amber-500/10 hover:bg-amber-500/15',
+    border: 'border-amber-500/30',
+    badge: 'bg-amber-500',
+    text: 'text-amber-400',
+    label: 'Ocupada',
+    glow: 'shadow-amber-500/15 hover:shadow-amber-500/25',
+    glowAnim: true,
+  },
+  reservada: {
+    bg: 'bg-blue-500/10 hover:bg-blue-500/20',
+    border: 'border-blue-500/30',
+    badge: 'bg-blue-500',
+    text: 'text-blue-400',
+    label: 'Reservada',
+    glow: 'shadow-blue-500/15 hover:shadow-blue-500/25',
+    glowAnim: false,
+  },
+} as const;
 
-  const config = statusConfig[mesa.status] || statusConfig.livre;
+function TableCard({ mesa, onSelect }: TableCardProps) {
+  const config = STATUS_CONFIG[mesa.status] || STATUS_CONFIG.livre;
 
   const totalComandas = mesa.comandas.length;
   const totalPedidos = mesa.comandas.reduce((acc, c) => acc + c.pedidos.length, 0);
-  
+
   // Contar pedidos pendentes ou preparando (aguardando no kanban)
   const pedidosPendentes = mesa.comandas.reduce((acc, c) => {
-    return acc + c.pedidos.filter((p: any) => 
+    return acc + c.pedidos.filter((p: any) =>
       p.status === 'pendente' || p.status === 'preparando'
     ).length;
   }, 0);
 
   return (
-    <motion.button
-      onClick={onClick}
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ 
-        opacity: 1, 
-        scale: 1,
-        boxShadow: config.animate 
-          ? ['0 4px 15px rgba(0,0,0,0.1)', '0 4px 25px rgba(245,158,11,0.15)', '0 4px 15px rgba(0,0,0,0.1)']
-          : '0 4px 15px rgba(0,0,0,0.1)'
-      }}
-      transition={{ 
-        duration: 0.3,
-        boxShadow: config.animate ? { duration: 3, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.2 }
-      }}
-      whileHover={{ scale: 1.03, y: -4 }}
-      whileTap={{ scale: 0.97 }}
+    <button
+      type="button"
+      onClick={() => onSelect(mesa)}
       className={cn(
-        'relative w-full p-4 rounded-xl border text-left shadow-lg',
+        'animate-table-in relative w-full p-4 rounded-xl border text-left shadow-lg',
         'focus:outline-none focus:ring-2 focus:ring-primary/50',
-        'transition-colors duration-300',
+        // Transicoes e transforms feitos em CSS (GPU): baratos em telas fracas.
+        'transition-transform transition-colors duration-200 will-change-transform',
+        'hover:-translate-y-1 hover:scale-[1.02] active:scale-[0.98]',
         config.bg,
         config.border,
         config.glow,
+        config.glowAnim && 'animate-table-glow',
         pedidosPendentes > 0 && 'ring-2 ring-red-500/50'
       )}
     >
-      {/* Badge de pedidos pendentes */}
+      {/* Badge de pedidos pendentes (pulse via CSS) */}
       {pedidosPendentes > 0 && (
-        <motion.div 
-          initial={{ scale: 0 }}
-          animate={{ scale: [1, 1.1, 1] }}
-          transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -top-2 -right-2 flex items-center justify-center size-6 bg-red-500 text-white text-xs font-bold rounded-full shadow-lg shadow-red-500/30"
-        >
+        <div className="absolute -top-2 -right-2 flex items-center justify-center size-6 bg-red-500 text-white text-xs font-bold rounded-full shadow-lg shadow-red-500/30 animate-pulse">
           {pedidosPendentes}
-        </motion.div>
+        </div>
       )}
 
       {/* Status Badge */}
@@ -156,6 +142,10 @@ export default function TableCard({ mesa, onClick }: TableCardProps) {
           </span>
         </div>
       )}
-    </motion.button>
+    </button>
   );
 }
+
+// React.memo evita re-render de cards cujos dados nao mudaram entre
+// atualizacoes da lista (o pai revalida via SWR a cada 10s).
+export default React.memo(TableCard);

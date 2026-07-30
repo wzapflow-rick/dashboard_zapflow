@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Users, RefreshCw, Settings2, QrCode } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import React, { useState, useCallback, useMemo } from 'react';
+import { Plus, Users, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useSWR from 'swr';
 import { getMesasComDetalhes, type MesaComDetalhes } from '@/app/actions/tables';
@@ -34,21 +33,33 @@ export default function TablesManager() {
     revalidateOnFocus: false,
   });
 
-  const filteredMesas = mesas.filter((mesa) => {
-    if (filterStatus === 'all') return true;
-    return mesa.status === filterStatus;
-  });
+  // Deriva stats em uma unica passada pela lista (evita 3 .filter separados)
+  // e memoiza para nao recalcular a cada render.
+  const stats = useMemo(() => {
+    let livres = 0;
+    let ocupadas = 0;
+    let reservadas = 0;
+    for (const m of mesas) {
+      if (m.status === 'livre') livres++;
+      else if (m.status === 'ocupada') ocupadas++;
+      else if (m.status === 'reservada') reservadas++;
+    }
+    return { total: mesas.length, livres, ocupadas, reservadas };
+  }, [mesas]);
 
-  const stats = {
-    total: mesas.length,
-    livres: mesas.filter((m) => m.status === 'livre').length,
-    ocupadas: mesas.filter((m) => m.status === 'ocupada').length,
-    reservadas: mesas.filter((m) => m.status === 'reservada').length,
-  };
+  const filteredMesas = useMemo(() => {
+    if (filterStatus === 'all') return mesas;
+    return mesas.filter((mesa) => mesa.status === filterStatus);
+  }, [mesas, filterStatus]);
 
   const handleRefresh = useCallback(() => {
     mutate();
   }, [mutate]);
+
+  // Callback estavel: permite que TableCard (memoizado) nao re-renderize a toa.
+  const handleSelectMesa = useCallback((mesa: MesaComDetalhes) => {
+    setSelectedMesa(mesa);
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-900 text-white p-6">
@@ -157,23 +168,13 @@ export default function TablesManager() {
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
-          <AnimatePresence mode="popLayout">
-            {filteredMesas.map((mesa) => (
-              <motion.div
-                key={mesa.id}
-                layout
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.2 }}
-              >
-                <TableCard
-                  mesa={mesa}
-                  onClick={() => setSelectedMesa(mesa)}
-                />
-              </motion.div>
-            ))}
-          </AnimatePresence>
+          {filteredMesas.map((mesa) => (
+            <TableCard
+              key={mesa.id}
+              mesa={mesa}
+              onSelect={handleSelectMesa}
+            />
+          ))}
         </div>
       )}
 
