@@ -105,12 +105,28 @@ function getPool(): Pool {
       ssl: false,
       max: 10,
       min: 0,
-      idleTimeoutMillis: 30000,
+      // Descarta conexões ociosas rapidamente (5s), antes que o servidor
+      // as encerre com "idle-session timeout" (57P05).
+      idleTimeoutMillis: 5000,
       connectionTimeoutMillis: 10000,
+      // Mantém a conexão TCP viva para evitar quedas silenciosas.
+      keepAlive: true,
       allowExitOnIdle: true,
     });
 
-    pool.on('error', (err) => {
+    pool.on('error', (err: Error & { code?: string }) => {
+      // 57P05 (idle-session timeout), 57P01 (admin shutdown) e
+      // "Connection terminated" são encerramentos esperados de conexões
+      // ociosas pelo servidor. O pool remove o cliente automaticamente,
+      // então apenas registramos como aviso, sem tratar como falha.
+      if (
+        err.code === '57P05' ||
+        err.code === '57P01' ||
+        err.message?.includes('Connection terminated')
+      ) {
+        console.warn('[PostgreSQL Pool] Conexão ociosa encerrada pelo servidor (esperado):', err.code ?? err.message);
+        return;
+      }
       console.error('[PostgreSQL Pool] Erro inesperado no cliente:', err);
     });
 
