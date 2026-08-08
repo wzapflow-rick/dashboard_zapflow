@@ -1,5 +1,5 @@
 import { pg } from '@/lib/postgres';
-import { resolverJidWhatsApp, avaliarRespostaEvolution } from '@/lib/whatsapp-jid';
+import { resolverJidWhatsApp, avaliarRespostaEvolution, verificarConexaoInstancia } from '@/lib/whatsapp-jid';
 
 const EVO_API_URL = process.env.EVOLUTION_API_URL || 'https://evo.wzapflow.com.br';
 const EVO_API_KEY = process.env.EVOLUTION_API_KEY || '';
@@ -325,6 +325,22 @@ async function processarCampanha(campanha: Campanha): Promise<{ enviados: number
     }
     
     console.log(`[CAMPANHAS] Instancia Evolution: ${empresa.instancia_evolution}`);
+
+    // Guard: so dispara se a instancia estiver REALMENTE conectada ao WhatsApp.
+    // Sem isso, a Evolution aceita os envios (201/PENDING) mas nada e entregue.
+    const { conectado, state } = await verificarConexaoInstancia(
+        empresa.instancia_evolution!,
+        { baseUrl: EVO_API_URL, apiKey: EVO_API_KEY }
+    );
+    if (!conectado) {
+        console.error(`[CAMPANHAS] Instancia ${empresa.instancia_evolution} nao esta conectada (state: ${state}). Abortando campanha.`);
+        return {
+            enviados: 0,
+            erros: 0,
+            detalhes: `Instancia do WhatsApp desconectada (state: ${state}). Reconecte o WhatsApp no painel da Evolution e tente novamente.`,
+        };
+    }
+    console.log(`[CAMPANHAS] Instancia conectada (state: ${state})`);
     
     let clientes: Cliente[] = [];
     const diasGatilho = campanha.gatilho_dias || 7;
@@ -458,7 +474,7 @@ export async function executarDisparoCampanhas(ignorarHorario: boolean = true): 
                 continue;
             }
             
-            const { enviados, erros } = await processarCampanha(campanha);
+            const { enviados, erros, detalhes } = await processarCampanha(campanha);
             totalEnviados += enviados;
             totalErros += erros;
             
@@ -466,7 +482,8 @@ export async function executarDisparoCampanhas(ignorarHorario: boolean = true): 
                 campanha: campanha.nome,
                 empresa_id: campanha.empresa_id,
                 enviados,
-                erros
+                erros,
+                ...(detalhes ? { detalhes } : {}),
             });
         }
         
