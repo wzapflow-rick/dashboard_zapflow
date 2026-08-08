@@ -58,11 +58,11 @@ export async function middleware(req: NextRequest) {
     }
 
     // 4. Bloqueio por inadimplencia
-    // Se empresa esta bloqueada, redireciona para pagina de assinatura
-    // Exceto onboarding (usuarios novos que ainda nao configuraram)
-    if (session && session.bloqueado && !path.startsWith('/dashboard/subscription') && !path.startsWith('/api') && !path.startsWith('/onboarding')) {
-        return NextResponse.redirect(new URL('/dashboard/subscription?blocked=true', req.nextUrl))
-    }
+    // A tela de bloqueio e renderizada pelo layout do dashboard (app/dashboard/layout.tsx),
+    // que faz uma checagem FRESCA no banco a cada requisicao. Isso garante que o bloqueio
+    // valha imediatamente, inclusive para usuarios que ja estavam logados quando o cron
+    // marcou a empresa (o JWT da sessao pode estar desatualizado). Por isso nao fazemos
+    // mais o redirect aqui — a fonte unica de verdade e o layout.
 
     // 5. Controle de permissões por Role
     if (session && session.role !== 'admin') {

@@ -7,6 +7,7 @@ import {
   updateAssinaturaByMpSubscriptionId,
 } from '@/lib/assinaturas';
 import { notifyPayment } from '@/lib/discord';
+import { unblockCompany } from '@/app/actions/billing';
 
 const MP_ACCESS_TOKEN_FALLBACK = process.env.MP_ACCESS_TOKEN || '';
 const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET || '';
@@ -312,6 +313,15 @@ async function handleSubscriptionPayment(paymentId: string) {
         
         console.log(`[Webhook] Nova assinatura CRIADA para empresa ${empresaId}`);
       }
+
+      // Pagamento aprovado: liberar acesso (desbloqueia se estava bloqueada por
+      // inadimplencia e alinha data_vencimento/plano na tabela empresas).
+      try {
+        await unblockCompany(empresaId, plano);
+        console.log(`[Webhook] Empresa ${empresaId} desbloqueada apos pagamento aprovado`);
+      } catch (unblockError) {
+        console.error('[Webhook] Erro ao desbloquear empresa apos pagamento:', unblockError);
+      }
       
       // Notificar pagamento no Discord
       try {
@@ -477,9 +487,13 @@ export async function POST(req: NextRequest) {
                 return NextResponse.json({ received: true, processed: 'pix_signup' });
               }
               
-              // PIX MENSAL de empresa existente
-              if (signupData.empresaId && signupData.plano && signupData.tipo === 'pix_mensal') {
-                console.log('[v0] Detectado pagamento PIX mensal para empresa:', signupData.empresaId);
+              // PIX MENSAL ou CHECKOUT (botao "Pagar agora") de empresa existente
+              if (
+                signupData.empresaId &&
+                signupData.plano &&
+                (signupData.tipo === 'pix_mensal' || signupData.tipo === 'checkout_mensal')
+              ) {
+                console.log(`[v0] Detectado pagamento mensal (${signupData.tipo}) para empresa:`, signupData.empresaId);
                 
                 try {
                   const empresaId = signupData.empresaId;
@@ -535,6 +549,15 @@ export async function POST(req: NextRequest) {
                     console.log('[v0] Nova assinatura criada para empresa:', empresaId);
                   }
 
+                  // Pagamento aprovado: liberar acesso (desbloqueia se estava
+                  // bloqueada por inadimplencia e alinha plano/vencimento).
+                  try {
+                    await unblockCompany(empresaId, plano);
+                    console.log('[v0] Empresa desbloqueada apos pagamento mensal:', empresaId);
+                  } catch (unblockError) {
+                    console.error('[v0] Erro ao desbloquear empresa (mensal):', unblockError);
+                  }
+
                   // Aviso de pagamento no Discord
                   try {
                     const empresaResult: any = await pg.query(
@@ -548,13 +571,13 @@ export async function POST(req: NextRequest) {
                       nomeFantasia: nomeEmpresa,
                       plano,
                       valor: paymentCheck.transaction_amount || 0,
-                      metodoPagamento: 'PIX',
+                      metodoPagamento: paymentCheck.payment_type_id || 'PIX',
                     });
                   } catch (discordError) {
-                    console.error('[v0] Erro ao notificar Discord (pix_mensal):', discordError);
+                    console.error('[v0] Erro ao notificar Discord (mensal):', discordError);
                   }
 
-                  return NextResponse.json({ received: true, processed: 'pix_mensal' });
+                  return NextResponse.json({ received: true, processed: signupData.tipo });
                 } catch (pixError) {
                   console.error('[v0] Erro ao processar PIX mensal:', pixError);
                 }

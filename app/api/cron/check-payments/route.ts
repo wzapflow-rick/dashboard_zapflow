@@ -35,13 +35,31 @@ async function handleCheckPayments(request: NextRequest) {
   try {
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
-    
-    // Buscar empresas com pagamento PIX que tem vencimento
+
+    // Numero de dias de tolerancia apos o vencimento antes de bloquear o acesso.
+    const DIAS_PARA_BLOQUEIO = 2;
+
+    // Buscar empresas com pagamento PIX ou cartao que ja passaram do vencimento.
+    // A data de referencia e a `data_proxima_cobranca` da assinatura mais recente
+    // (que o webhook do Mercado Pago mantem ao aprovar pagamentos, tanto PIX quanto
+    // cartao). Se nao houver assinatura, cai no `data_vencimento` da empresa.
+    // Assim NUNCA bloqueamos quem esta em dia.
     const result = await pg.query(`
-      SELECT * FROM empresas 
-      WHERE tipo_pagamento = 'pix' 
-        AND data_vencimento <= $1 
-        AND planos != 'iniciante'
+      SELECT
+        e.*,
+        COALESCE(a.data_proxima_cobranca::date, e.data_vencimento::date) AS vencimento_efetivo
+      FROM empresas e
+      LEFT JOIN LATERAL (
+        SELECT data_proxima_cobranca
+        FROM assinaturas
+        WHERE empresa_id = e.id
+        ORDER BY id DESC
+        LIMIT 1
+      ) a ON true
+      WHERE e.tipo_pagamento IN ('pix', 'cartao')
+        AND e.planos != 'iniciante'
+        AND e.bloqueado = false
+        AND COALESCE(a.data_proxima_cobranca::date, e.data_vencimento::date) <= $1
       LIMIT 500
     `, [todayStr]);
     
@@ -54,10 +72,19 @@ async function handleCheckPayments(request: NextRequest) {
     
     for (const empresa of empresas) {
       const empresaId = empresa.id as number;
-      const dataVencimento = new Date(empresa.data_vencimento as string);
-      const diasAtraso = Math.floor((today.getTime() - dataVencimento.getTime()) / (1000 * 60 * 60 * 24));
+      const vencimentoEfetivo = empresa.vencimento_efetivo
+        ? new Date(empresa.vencimento_efetivo as string)
+        : null;
+
+      // Sem data de vencimento confiavel: pular por seguranca (nao bloquear)
+      if (!vencimentoEfetivo || isNaN(vencimentoEfetivo.getTime())) {
+        console.log(`[Cron] Empresa ${empresaId} sem data de vencimento valida — pulando`);
+        continue;
+      }
+
+      const diasAtraso = Math.floor((today.getTime() - vencimentoEfetivo.getTime()) / (1000 * 60 * 60 * 24));
       
-      // Ja esta bloqueada, pular
+      // Ja esta bloqueada, pular (redundante com o WHERE, mas defensivo)
       if (empresa.bloqueado) {
         continue;
       }
@@ -66,18 +93,18 @@ async function handleCheckPayments(request: NextRequest) {
       const diasInadimplente = Math.max(0, diasAtraso);
       const ultimoAviso = (empresa.ultimo_aviso_enviado as number) || 0;
       
-      console.log(`[Cron] Empresa ${empresaId}: ${diasInadimplente} dias inadimplente, ultimo aviso: ${ultimoAviso}`);
+      console.log(`[Cron] Empresa ${empresaId}: ${diasInadimplente} dias inadimplente (venc: ${empresa.vencimento_efetivo}), ultimo aviso: ${ultimoAviso}`);
       
-      // Se passou de 5 dias, bloquear
-      if (diasInadimplente >= 5 && !empresa.bloqueado) {
-        console.log(`[Cron] Bloqueando empresa ${empresaId}`);
+      // Se passou de DIAS_PARA_BLOQUEIO, bloquear acesso total
+      if (diasInadimplente >= DIAS_PARA_BLOQUEIO && !empresa.bloqueado) {
+        console.log(`[Cron] Bloqueando empresa ${empresaId} (${diasInadimplente} dias de atraso)`);
         await blockCompany(empresaId);
         
         // Enviar aviso de bloqueio
         if (empresa.telefone_admin || empresa.telefone) {
           const telefone = (empresa.telefone_admin || empresa.telefone) as string;
           const nome = (empresa.nome_fantasia || empresa.nome_admin || 'Cliente') as string;
-          await sendPaymentReminder(telefone, nome, 5, empresaId);
+          await sendPaymentReminder(telefone, nome, diasInadimplente, empresaId);
         }
         
         blocked++;
@@ -85,7 +112,7 @@ async function handleCheckPayments(request: NextRequest) {
       }
       
       // Enviar aviso se ainda nao foi enviado para este dia
-      if (diasInadimplente > 0 && diasInadimplente <= 5 && ultimoAviso < diasInadimplente) {
+      if (diasInadimplente > 0 && diasInadimplente < DIAS_PARA_BLOQUEIO && ultimoAviso < diasInadimplente) {
         console.log(`[Cron] Enviando aviso ${diasInadimplente} para empresa ${empresaId}`);
         
         // Atualizar dias de inadimplencia e ultimo aviso
