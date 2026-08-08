@@ -49,24 +49,6 @@ export async function verificarConexaoInstancia(
 }
 
 /**
- * Detecta se um JID retornado pela Evolution perdeu o 9o digito de um celular
- * brasileiro. Ex.: enviamos 5579998841252 (13 digitos, com 9) e o JID voltou
- * como 557998841252 (12 digitos, sem 9). Nesse caso o envio deve usar o numero
- * COM o 9, pois o JID legado costuma resultar em mensagem PENDING nao entregue.
- */
-function foiRemovidoNonoDigito(numeroComNove: string, jidNumero: string): boolean {
-    const a = String(numeroComNove).replace(/\D/g, '');
-    const b = String(jidNumero).replace(/\D/g, '');
-    // Celular BR completo: 55 + DDD(2) + 9 + 8 digitos = 13; legado = 12
-    if (!a.startsWith('55') || a.length !== 13 || b.length !== 12) return false;
-    const ddd = a.slice(2, 4);
-    const resto = a.slice(4); // deve ser 9 + 8 digitos
-    if (!resto.startsWith('9')) return false;
-    const semNove = '55' + ddd + resto.slice(1);
-    return semNove === b;
-}
-
-/**
  * Verifica se um numero realmente tem conta no WhatsApp e retorna o JID
  * correto (resolve o problema do 9o digito no Brasil).
  *
@@ -106,15 +88,10 @@ export async function resolverJidWhatsApp(
         console.log(`[WhatsApp] whatsappNumbers ${numeroBase} ->`, JSON.stringify(item ?? data).substring(0, 200));
 
         if (item && item.exists === true && item.jid) {
-            // Guard contra o problema do 9o digito no Brasil: o endpoint as vezes
-            // devolve o JID legado SEM o 9o digito, e enviar para ele resulta em
-            // PENDING que nunca entrega. Se detectarmos que o 9o digito foi
-            // removido de um celular BR, preferimos o numero COM o 9.
-            const jidNumero = String(item.jid).split('@')[0];
-            if (foiRemovidoNonoDigito(numeroBase, jidNumero)) {
-                console.warn(`[WhatsApp] JID retornado (${jidNumero}) perdeu o 9o digito; usando ${numeroBase} com o 9`);
-                return { jid: `${numeroBase}@s.whatsapp.net` };
-            }
+            // O JID retornado pelo whatsappNumbers e a fonte da verdade: ele ja
+            // reflete a conta real no WhatsApp (com ou sem o 9o digito). Confiamos
+            // nele diretamente, pois foi confirmado que muitas contas BR existem
+            // apenas no formato legado (sem o 9o digito).
             return { jid: item.jid };
         }
         if (item && item.exists === false) {
