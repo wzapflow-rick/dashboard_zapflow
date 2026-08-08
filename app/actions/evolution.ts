@@ -3,7 +3,12 @@
 const EVO_URL = process.env.EVOLUTION_URL || 'https://evo.wzapflow.com.br';
 const EVO_KEY = process.env.EVOLUTION_API_KEY || '';
 
-async function evoFetch(path: string, method: string = 'GET', body?: any) {
+async function evoFetch(path: string, method: string = 'GET', body?: any, timeoutMs: number = 25000) {
+    // Timeout explicito: sem isso, uma instancia travada no servidor Evolution
+    // deixa a server action pendurada por ~60s ate o gateway derrubar.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
     try {
         const res = await fetch(`${EVO_URL}${path}`, {
             method,
@@ -13,26 +18,62 @@ async function evoFetch(path: string, method: string = 'GET', body?: any) {
             },
             body: body ? JSON.stringify(body) : undefined,
             cache: 'no-store',
+            signal: controller.signal,
         });
-        const data = await res.json();
+
+        // Le como texto primeiro: a Evolution/nginx pode devolver HTML (502/504)
+        // em vez de JSON, e um res.json() cego quebraria com "Unexpected token '<'".
+        const rawText = await res.text();
+        const contentType = res.headers.get('content-type') || '';
+        const looksLikeHtml = rawText.trimStart().startsWith('<');
+
+        let data: any = null;
+        if (!looksLikeHtml && (contentType.includes('json') || rawText.trim().startsWith('{') || rawText.trim().startsWith('['))) {
+            try {
+                data = JSON.parse(rawText);
+            } catch {
+                data = null;
+            }
+        }
+
+        // Resposta HTML = gateway error (nginx 502/504): o servidor Evolution
+        // esta fora do ar ou sobrecarregado. Mensagem clara em vez do crash.
+        if (looksLikeHtml || (data === null && rawText.length > 0)) {
+            console.error(`Evolution API HTML/nao-JSON [${method} ${path}] status ${res.status}:`, rawText.slice(0, 200));
+            return {
+                error: `Servidor WhatsApp indisponível (erro ${res.status || 'gateway'}). O servidor da Evolution está fora do ar ou sobrecarregado — reinicie o container da Evolution e tente novamente.`,
+                data: null,
+            };
+        }
+
         if (!res.ok) {
             console.error(`Evolution API Error [${method} ${path}]:`, data);
-            
+
             // Detecta erros específicos do Prisma/banco de dados
-            const errorMsg = JSON.stringify(data);
+            const errorMsg = JSON.stringify(data ?? {});
             if (errorMsg.includes('PrismaClient') || errorMsg.includes('database') || res.status === 500) {
-                return { 
-                    error: 'Servidor WhatsApp temporariamente indisponível. Tente novamente em alguns minutos.', 
-                    data: null 
+                return {
+                    error: 'Servidor WhatsApp temporariamente indisponível. Tente novamente em alguns minutos.',
+                    data: null,
                 };
             }
-            
-            return { error: data.message || 'Erro na Evolution API', data: null };
+
+            return { error: data?.message || `Erro na Evolution API (HTTP ${res.status})`, data: null };
         }
+
         return { error: null, data };
-    } catch (err) {
+    } catch (err: any) {
+        if (err?.name === 'AbortError') {
+            console.error(`Evolution Fetch Timeout [${method} ${path}] apos ${timeoutMs}ms`);
+            return {
+                error: 'O servidor WhatsApp não respondeu a tempo. Provavelmente há uma instância travada no servidor Evolution — reinicie o serviço e tente novamente.',
+                data: null,
+            };
+        }
         console.error('Evolution Fetch Exception:', err);
         return { error: 'Falha de conexão com a Evolution API', data: null };
+    } finally {
+        clearTimeout(timer);
     }
 }
 
@@ -63,17 +104,23 @@ export async function createEvolutionInstance(empresaId: string | number) {
         return { error: existing.error };
     }
 
-    // Cria a instância
+    // Cria a instância (timeout maior: o create do Baileys costuma demorar)
     console.log('[v0] Creating new instance:', instanceName);
     const result = await evoFetch('/instance/create', 'POST', {
         instanceName,
         qrcode: true,
         integration: 'WHATSAPP-BAILEYS',
-    });
+    }, 40000);
     console.log('[v0] Create instance response:', JSON.stringify(result).slice(0, 500));
 
     if (result.error) return { error: result.error };
-    return { instanceName, data: result.data };
+
+    // Com qrcode: true, a Evolution ja devolve o QR na resposta do create.
+    // Extraimos aqui para exibir imediatamente, sem depender de um 2o request.
+    const qrcode = result.data?.qrcode?.base64 || result.data?.base64 || null;
+    const pairingCode = result.data?.qrcode?.pairingCode || result.data?.qrcode?.code || null;
+
+    return { instanceName, data: result.data, qrcode, pairingCode };
 }
 
 /**
