@@ -15,7 +15,66 @@ function formatPhoneForEvolution(phone: string): string {
 }
 
 /**
- * Enviar mensagem via Evolution API usando instancia especifica
+ * Verifica se um numero realmente tem conta no WhatsApp e retorna o JID
+ * correto (resolve o problema do 9o digito no Brasil: um numero pode estar
+ * cadastrado no WhatsApp com ou sem o 9, e enviar para o JID errado faz a
+ * mensagem sumir silenciosamente).
+ *
+ * Retorna:
+ *  - { jid } quando o numero existe (jid = numero correto @s.whatsapp.net)
+ *  - { jid: null, exists: false } quando o numero NAO tem WhatsApp
+ *  - { jid: null } quando nao foi possivel verificar (erro/endpoint) -> segue com o numero original
+ */
+async function resolverJidWhatsApp(
+    phone: string,
+    instanceName: string
+): Promise<{ jid: string | null; exists?: boolean }> {
+    try {
+        const cleaned = phone.replace(/\D/g, '');
+        const numeroBase = cleaned.length === 11 ? '55' + cleaned : cleaned;
+
+        const url = `${EVO_API_URL}/chat/whatsappNumbers/${instanceName}`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'apikey': EVO_API_KEY,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ numbers: [numeroBase] }),
+        });
+
+        if (!response.ok) {
+            // Endpoint indisponivel/instancia offline: nao bloqueia o envio.
+            return { jid: null };
+        }
+
+        const data = await response.json();
+        const item = Array.isArray(data) ? data[0] : data?.[0] || data?.response?.[0];
+
+        if (item && item.exists === true && item.jid) {
+            // Usa o JID que o WhatsApp realmente reconhece (com ou sem 9o digito)
+            return { jid: item.jid };
+        }
+
+        if (item && item.exists === false) {
+            return { jid: null, exists: false };
+        }
+
+        return { jid: null };
+    } catch (error: any) {
+        console.warn('[CAMPANHAS] Nao foi possivel validar numero no WhatsApp:', error?.message);
+        return { jid: null };
+    }
+}
+
+/**
+ * Enviar mensagem via Evolution API usando instancia especifica.
+ *
+ * Validacao robusta (igual ao caminho comprovado em app/actions/whatsapp.ts):
+ *  - resolve o JID correto no WhatsApp antes de enviar (9o digito);
+ *  - detecta numero sem WhatsApp (exists: false), mesmo com HTTP 200;
+ *  - exige que a resposta contenha a chave da mensagem (key.id) para
+ *    considerar "enviado" de verdade, evitando falsos positivos.
  */
 async function enviarMensagemEvolution(
     phone: string, 
@@ -27,11 +86,20 @@ async function enviarMensagemEvolution(
             console.error('[CAMPANHAS] EVOLUTION_API_KEY nao configurada!');
             return { success: false, error: 'EVOLUTION_API_KEY nao configurada' };
         }
-        
-        const formattedPhone = formatPhoneForEvolution(phone);
+
+        // 1) Resolve o JID correto (corrige o problema do 9o digito no Brasil)
+        const { jid, exists } = await resolverJidWhatsApp(phone, instanceName);
+
+        if (exists === false) {
+            console.warn(`[CAMPANHAS] Numero ${phone} nao possui WhatsApp - pulando`);
+            return { success: false, error: 'numero nao tem WhatsApp (verifique o telefone cadastrado)' };
+        }
+
+        // Se conseguiu resolver, usa o JID validado; senao, cai no formato padrao.
+        const destino = jid || formatPhoneForEvolution(phone);
         const url = `${EVO_API_URL}/message/sendText/${instanceName}`;
 
-        console.log(`[CAMPANHAS] Enviando para ${formattedPhone} via instancia ${instanceName}`);
+        console.log(`[CAMPANHAS] Enviando para ${destino} via instancia ${instanceName}`);
 
         const response = await fetch(url, {
             method: 'POST',
@@ -40,17 +108,42 @@ async function enviarMensagemEvolution(
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                number: formattedPhone,
+                number: destino,
                 text: message
             })
         });
 
-        const result = await response.json();
+        // Le como texto e tenta parsear (a resposta nem sempre e JSON valido)
+        const rawText = await response.text();
+        let result: any = rawText;
+        try {
+            result = JSON.parse(rawText);
+        } catch {
+            // mantem texto cru
+        }
+
+        console.log(`[CAMPANHAS] Resposta Evolution (${response.status}):`, JSON.stringify(result).substring(0, 250));
 
         if (!response.ok) {
-            return { 
-                success: false, 
-                error: result.message || result.error || `HTTP ${response.status}` 
+            // Evolution informando que o numero nao tem WhatsApp
+            const existsCheck = result?.response?.message;
+            if (Array.isArray(existsCheck) && existsCheck.some((m: any) => m?.exists === false)) {
+                return { success: false, error: 'numero nao tem WhatsApp (verifique o telefone cadastrado)' };
+            }
+            const errMsg = result?.message || result?.error || result?.response?.message || `HTTP ${response.status}`;
+            return {
+                success: false,
+                error: (typeof errMsg === 'string' ? errMsg : JSON.stringify(errMsg)).substring(0, 300),
+            };
+        }
+
+        // HTTP 200: confirma que a mensagem foi realmente aceita/enfileirada.
+        // Uma resposta valida contem a chave da mensagem (key.id).
+        const messageKeyId = result?.key?.id;
+        if (!messageKeyId) {
+            return {
+                success: false,
+                error: 'Evolution nao confirmou o envio (sem key.id na resposta)',
             };
         }
 
