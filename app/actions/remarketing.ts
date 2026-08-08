@@ -1,6 +1,7 @@
 'use server';
 
 import { pg } from '@/lib/postgres';
+import { resolverJidWhatsApp, avaliarRespostaEvolution } from '@/lib/whatsapp-jid';
 import {
   REMARKETING_CONFIG_TABLE,
   REMARKETING_CATEGORIAS_TABLE,
@@ -848,9 +849,25 @@ export async function processarFilaItem(id: number): Promise<{ success: boolean;
       tentativas: (item.tentativas || 0) + 1,
     });
     
-    // Enviar mensagem via Evolution API
-    const remoteJid = item.contato_remote_jid || `${item.contato_telefone}@s.whatsapp.net`;
-    
+    // Enviar mensagem via Evolution API.
+    // Se ja temos um remote_jid vindo da Evolution, ele ja e valido; caso
+    // contrario (fallback pelo telefone) resolvemos o JID correto para evitar
+    // o problema do 9o digito no Brasil.
+    const creds = { baseUrl: EVO_URL, apiKey: EVO_KEY };
+    let remoteJid = item.contato_remote_jid || '';
+
+    if (!remoteJid && item.contato_telefone) {
+      const { jid, exists } = await resolverJidWhatsApp(item.contato_telefone, config.instance_name, creds);
+      if (exists === false) {
+        await pg.update(REMARKETING_FILA_TABLE, id, {
+          status: 'erro',
+          erro: 'numero nao tem WhatsApp (verifique o telefone cadastrado)',
+        });
+        return { success: false, error: 'numero nao tem WhatsApp' };
+      }
+      remoteJid = jid || `${String(item.contato_telefone).replace(/\D/g, '')}@s.whatsapp.net`;
+    }
+
     try {
       const response = await fetch(`${EVO_URL}/message/sendText/${config.instance_name}`, {
         method: 'POST',
@@ -863,12 +880,17 @@ export async function processarFilaItem(id: number): Promise<{ success: boolean;
           text: item.conteudo_final,
         }),
       });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Evolution API error: ${response.status} - ${errorText}`);
+
+      // Le e parseia a resposta para validar de verdade (nao so response.ok)
+      const rawText = await response.text();
+      let result: any = rawText;
+      try { result = JSON.parse(rawText); } catch { /* mantem texto cru */ }
+
+      const avaliacao = avaliarRespostaEvolution(response.ok, response.status, result);
+      if (!avaliacao.success) {
+        throw new Error(avaliacao.error || `Evolution API error: ${response.status}`);
       }
-      
+
       // Sucesso - atualizar item
       await pg.update(REMARKETING_FILA_TABLE, id, { 
         status: 'enviado',

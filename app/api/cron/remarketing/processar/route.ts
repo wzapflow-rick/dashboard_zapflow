@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { pg } from '@/lib/postgres';
+import { avaliarRespostaEvolution } from '@/lib/whatsapp-jid';
 import {
   REMARKETING_CONFIG_TABLE,
   REMARKETING_CONTATOS_TABLE,
@@ -265,8 +266,15 @@ async function handleRequest(cronKey: string | null) {
       }
       
       const responseData = await response.json();
-      
-      if (response.ok) {
+
+      // Valida de verdade: para texto exige key.id; para midia, HTTP ok basta
+      // (os endpoints de midia nem sempre retornam key.id na mesma estrutura).
+      const isTexto = item.tipo_midia === 'texto' || !item.midia_url;
+      const avaliacao = isTexto
+        ? avaliarRespostaEvolution(response.ok, response.status, responseData)
+        : { success: response.ok, error: responseData?.message };
+
+      if (avaliacao.success) {
         // Sucesso
         await pg.update(REMARKETING_FILA_TABLE, item.id, {
           status: 'enviado',
@@ -297,9 +305,10 @@ async function handleRequest(cronKey: string | null) {
         const novasTentativas = item.tentativas + 1;
         const novoStatus = novasTentativas >= item.max_tentativas ? 'erro' : 'pendente';
         
+        const erroMsg = avaliacao.error || responseData?.message || 'Erro no envio';
         await pg.update(REMARKETING_FILA_TABLE, item.id, {
           status: novoStatus,
-          erro: responseData.message || 'Erro no envio',
+          erro: erroMsg,
           tentativas: novasTentativas,
         });
         
@@ -307,7 +316,7 @@ async function handleRequest(cronKey: string | null) {
           await pg.create(REMARKETING_HISTORICO_TABLE, {
             contato_id: item.contato_id,
             tipo: 'msg_erro',
-            descricao: `Erro ao enviar: ${responseData.message || 'Erro desconhecido'}`,
+            descricao: `Erro ao enviar: ${erroMsg}`,
             dados: JSON.stringify({ fila_id: item.id, erro: responseData }),
             created_at: new Date().toISOString(),
           });
