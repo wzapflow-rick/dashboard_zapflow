@@ -47,17 +47,22 @@ async function handleCheckPayments(request: NextRequest) {
     const result = await pg.query(`
       SELECT
         e.*,
+        a.plano AS assinatura_plano,
+        a.valor AS assinatura_valor,
         COALESCE(a.data_proxima_cobranca::date, e.data_vencimento::date) AS vencimento_efetivo
       FROM empresas e
       LEFT JOIN LATERAL (
-        SELECT data_proxima_cobranca
+        SELECT data_proxima_cobranca, plano, valor
         FROM assinaturas
         WHERE empresa_id = e.id
         ORDER BY id DESC
         LIMIT 1
       ) a ON true
       WHERE e.tipo_pagamento IN ('pix', 'cartao')
-        AND e.planos != 'iniciante'
+        -- Plano efetivo: prioriza o da assinatura (fonte da verdade) e cai no
+        -- da empresa. IS DISTINCT FROM trata NULL corretamente (NULL entra),
+        -- evitando excluir silenciosamente quem tem plano nao preenchido.
+        AND COALESCE(a.plano, e.planos) IS DISTINCT FROM 'iniciante'
         AND e.bloqueado = false
         AND COALESCE(a.data_proxima_cobranca::date, e.data_vencimento::date) <= $1
       LIMIT 500
