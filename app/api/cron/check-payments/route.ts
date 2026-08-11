@@ -112,7 +112,11 @@ async function handleCheckPayments(request: NextRequest) {
         const telefoneBloqueio = (empresa.telefone_loja || empresa.telefone) as string | undefined;
         if (telefoneBloqueio) {
           const nome = (empresa.nome_fantasia || empresa.nome_admin || 'Cliente') as string;
-          await sendPaymentReminder(telefoneBloqueio, nome, diasInadimplente, empresaId);
+          const enviado = await sendPaymentReminder(telefoneBloqueio, nome, diasInadimplente, empresaId, { blocked: true });
+          if (enviado) notified++;
+          else console.warn(`[Cron] Falha ao enviar cobranca de bloqueio para empresa ${empresaId} (tel: ${telefoneBloqueio})`);
+        } else {
+          console.warn(`[Cron] Empresa ${empresaId} sem telefone para cobranca de bloqueio`);
         }
         
         blocked++;
@@ -133,8 +137,9 @@ async function handleCheckPayments(request: NextRequest) {
         const telefoneAviso = (empresa.telefone_loja || empresa.telefone) as string | undefined;
         if (telefoneAviso) {
           const nome = (empresa.nome_fantasia || empresa.nome_admin || 'Cliente') as string;
-          await sendPaymentReminder(telefoneAviso, nome, diasInadimplente, empresaId);
-          notified++;
+          const enviado = await sendPaymentReminder(telefoneAviso, nome, diasInadimplente, empresaId);
+          if (enviado) notified++;
+          else console.warn(`[Cron] Falha ao enviar aviso para empresa ${empresaId} (tel: ${telefoneAviso})`);
         }
       } else if (diasInadimplente > 0) {
         // Apenas atualizar contador
