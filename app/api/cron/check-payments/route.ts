@@ -37,7 +37,9 @@ async function handleCheckPayments(request: NextRequest) {
     const todayStr = today.toISOString().split('T')[0];
 
     // Numero de dias de tolerancia apos o vencimento antes de bloquear o acesso.
-    const DIAS_PARA_BLOQUEIO = 2;
+    // Alinhado com o texto do painel e a sequencia de avisos (dias 1-4 avisam,
+    // dia 5 bloqueia).
+    const DIAS_PARA_BLOQUEIO = 5;
 
     // Buscar empresas com pagamento PIX ou cartao que ja passaram do vencimento.
     // A data de referencia e a `data_proxima_cobranca` da assinatura mais recente
