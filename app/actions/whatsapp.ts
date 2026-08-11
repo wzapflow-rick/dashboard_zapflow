@@ -15,15 +15,48 @@ function checkApiKey() {
 }
 
 /**
+ * Normaliza um telefone brasileiro para o formato E.164 sem o "+", exigido
+ * pela Evolution API (ex.: 5511999999999).
+ *
+ * Cobre os formatos que aparecem em telefone_loja e evita o HTTP 400 da
+ * Evolution causado por numeros mal formatados:
+ *   - "(11) 99999-9999"        -> 5511999999999  (celular 11 digitos + DDI)
+ *   - "11 3333-4444"           -> 551133334444   (fixo 10 digitos + DDI)
+ *   - "5511999999999"          -> 5511999999999  (ja com DDI, mantem)
+ *   - "011999999999"           -> 5511999999999  (zero de operadora removido)
+ * Retorna null quando nao ha digitos suficientes para um numero valido.
+ */
+function normalizeBrazilPhone(phone: string): string | null {
+    let cleaned = (phone || '').replace(/\D/g, '');
+    if (!cleaned) return null;
+
+    // Remove zero de operadora/DDD (ex.: "011..." -> "11...").
+    cleaned = cleaned.replace(/^0+/, '');
+
+    // Se ja veio com o DDI do Brasil (55) e tamanho compativel, mantem.
+    if (cleaned.startsWith('55') && (cleaned.length === 12 || cleaned.length === 13)) {
+        return cleaned;
+    }
+
+    // Numero local (DDD + numero): 10 digitos (fixo) ou 11 (celular) -> adiciona DDI.
+    if (cleaned.length === 10 || cleaned.length === 11) {
+        return '55' + cleaned;
+    }
+
+    // Formato desconhecido/insuficiente.
+    if (cleaned.length < 10) return null;
+
+    // Fallback: assume que ja possui DDI.
+    return cleaned;
+}
+
+/**
  * Formatar número de telefone para Evolution API
  * Formato: 5511999999999@s.whatsapp.net
  */
 function formatPhoneForEvolution(phone: string): string {
-    let cleaned = phone.replace(/\D/g, '');
-    if (cleaned.length === 11) {
-        cleaned = '55' + cleaned;
-    }
-    return `${cleaned}@s.whatsapp.net`;
+    const normalized = normalizeBrazilPhone(phone) ?? phone.replace(/\D/g, '');
+    return `${normalized}@s.whatsapp.net`;
 }
 
 /**
@@ -41,7 +74,13 @@ export async function sendWhatsAppMessageDetailed(
     }
 
     try {
-        const formattedPhone = formatPhoneForEvolution(phone);
+        const normalized = normalizeBrazilPhone(phone);
+        if (!normalized) {
+            const error = `telefone invalido: "${phone}"`;
+            console.error(`[WhatsApp] ${error}`);
+            return { success: false, status: 0, error };
+        }
+        const formattedPhone = `${normalized}@s.whatsapp.net`;
 
         console.log(`[WhatsApp] Enviando para: ${formattedPhone}`);
         console.log(`[WhatsApp] Mensagem: ${message.substring(0, 50)}...`);
