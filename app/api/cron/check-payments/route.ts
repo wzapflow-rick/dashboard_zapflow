@@ -47,17 +47,22 @@ async function handleCheckPayments(request: NextRequest) {
     const result = await pg.query(`
       SELECT
         e.*,
+        a.plano AS assinatura_plano,
+        a.valor AS assinatura_valor,
         COALESCE(a.data_proxima_cobranca::date, e.data_vencimento::date) AS vencimento_efetivo
       FROM empresas e
       LEFT JOIN LATERAL (
-        SELECT data_proxima_cobranca
+        SELECT data_proxima_cobranca, plano, valor
         FROM assinaturas
         WHERE empresa_id = e.id
         ORDER BY id DESC
         LIMIT 1
       ) a ON true
       WHERE e.tipo_pagamento IN ('pix', 'cartao')
-        AND e.planos != 'iniciante'
+        -- Plano efetivo: prioriza o da assinatura (fonte da verdade) e cai no
+        -- da empresa. IS DISTINCT FROM trata NULL corretamente (NULL entra),
+        -- evitando excluir silenciosamente quem tem plano nao preenchido.
+        AND COALESCE(a.plano, e.planos) IS DISTINCT FROM 'iniciante'
         AND e.bloqueado = false
         AND COALESCE(a.data_proxima_cobranca::date, e.data_vencimento::date) <= $1
       LIMIT 500
@@ -100,11 +105,14 @@ async function handleCheckPayments(request: NextRequest) {
         console.log(`[Cron] Bloqueando empresa ${empresaId} (${diasInadimplente} dias de atraso)`);
         await blockCompany(empresaId);
         
-        // Enviar aviso de bloqueio
-        if (empresa.telefone_admin || empresa.telefone) {
-          const telefone = (empresa.telefone_admin || empresa.telefone) as string;
+        // Enviar aviso de bloqueio.
+        // O telefone principal fica em `telefone_loja` (mesma coluna usada pelo
+        // cron de lembrete e exibida no painel). `telefone_admin` NAO existe na
+        // tabela e `telefone` e apenas fallback legado.
+        const telefoneBloqueio = (empresa.telefone_loja || empresa.telefone) as string | undefined;
+        if (telefoneBloqueio) {
           const nome = (empresa.nome_fantasia || empresa.nome_admin || 'Cliente') as string;
-          await sendPaymentReminder(telefone, nome, diasInadimplente, empresaId);
+          await sendPaymentReminder(telefoneBloqueio, nome, diasInadimplente, empresaId);
         }
         
         blocked++;
@@ -121,11 +129,11 @@ async function handleCheckPayments(request: NextRequest) {
           ultimo_aviso_enviado: diasInadimplente,
         });
         
-        // Enviar WhatsApp
-        if (empresa.telefone_admin || empresa.telefone) {
-          const telefone = (empresa.telefone_admin || empresa.telefone) as string;
+        // Enviar WhatsApp (telefone principal em `telefone_loja`).
+        const telefoneAviso = (empresa.telefone_loja || empresa.telefone) as string | undefined;
+        if (telefoneAviso) {
           const nome = (empresa.nome_fantasia || empresa.nome_admin || 'Cliente') as string;
-          await sendPaymentReminder(telefone, nome, diasInadimplente, empresaId);
+          await sendPaymentReminder(telefoneAviso, nome, diasInadimplente, empresaId);
           notified++;
         }
       } else if (diasInadimplente > 0) {
