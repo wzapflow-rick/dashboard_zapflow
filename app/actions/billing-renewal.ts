@@ -1,7 +1,7 @@
 'use server';
 
 import { pg } from '@/lib/postgres';
-import { SUBSCRIPTION_PLANS } from '@/lib/constants';
+import { SUBSCRIPTION_PLANS, normalizePlanName } from '@/lib/constants';
 
 const MP_ACCESS_TOKEN = process.env.MERCADOPAGO_ACCESS_TOKEN || '';
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://cardapio.wzapflow.com.br';
@@ -33,24 +33,39 @@ function resolvePlano(plano: string | null): { id: string; name: string; price: 
 export async function criarLinkPagamentoRenovacao(
   empresaId: number,
   plano: string | null,
+  valorCustomizado?: number | null,
 ): Promise<{ url: string; isCheckout: boolean }> {
   const fallbackUrl = `${BASE_URL}/dashboard/subscription`;
   const planData = resolvePlano(plano);
 
-  // Sem token do MP, plano invalido ou plano gratuito -> manda para a pagina.
-  if (!MP_ACCESS_TOKEN || !planData || planData.price <= 0) {
+  // Valor cobrado na renovacao: PRIORIZA o valor definido no painel admin
+  // (a.valor da assinatura da empresa). So cai para o preco tabelado do plano
+  // quando nao ha valor customizado. Assim o link cobra exatamente o que foi
+  // combinado com cada cliente, e nao o preco padrao da tabela.
+  const precoEfetivo =
+    valorCustomizado != null && valorCustomizado > 0
+      ? valorCustomizado
+      : planData?.price ?? 0;
+
+  // Identificadores para o external_reference/titulo (o webhook usa empresaId e
+  // plano para renovar). Mantem o id do plano quando conhecido.
+  const planIdRef = planData?.id ?? normalizePlanName(plano);
+  const planNameRef = planData?.name ?? (plano || 'ZapFlow');
+
+  // Sem token do MP ou valor invalido/gratuito -> manda para a pagina.
+  if (!MP_ACCESS_TOKEN || precoEfetivo <= 0) {
     return { url: fallbackUrl, isCheckout: false };
   }
 
   try {
-    const externalReference = `sub_${empresaId}_${planData.id}_${Date.now()}`;
+    const externalReference = `sub_${empresaId}_${planIdRef}_${Date.now()}`;
 
     const preference = {
       items: [
         {
-          title: `ZapFlow - Renovacao Plano ${planData.name}`,
+          title: `ZapFlow - Renovacao Plano ${planNameRef}`,
           quantity: 1,
-          unit_price: planData.price,
+          unit_price: precoEfetivo,
           currency_id: 'BRL',
         },
       ],

@@ -110,7 +110,7 @@ async function handleBillingReminder(request: NextRequest) {
             // teste/plano gratuito, retorna a pagina de assinatura como fallback.
             let linkPagamento: string | undefined;
             try {
-                const link = await criarLinkPagamentoRenovacao(a.empresa_id, a.plano);
+                const link = await criarLinkPagamentoRenovacao(a.empresa_id, a.plano, valor);
                 linkPagamento = link.url;
             } catch (linkErr) {
                 console.error(`[CRON billing-reminder] Falha ao gerar link para empresa ${a.empresa_id}:`, linkErr);
