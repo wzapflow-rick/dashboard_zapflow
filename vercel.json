@@ -1,1 +1,12 @@
-{}
+{
+  "crons": [
+    {
+      "path": "/api/cron/check-payments",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/billing-reminder",
+      "schedule": "10 12 * * *"
+    }
+  ]
+}
