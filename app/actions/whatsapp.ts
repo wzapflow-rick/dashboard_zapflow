@@ -496,23 +496,48 @@ Equipe ZapFlow`,
 };
 
 /**
- * Enviar lembrete de pagamento (cobranca)
+ * Mensagem para conta JA BLOQUEADA por inadimplencia. Usa o numero real de
+ * dias em atraso (nao um valor fixo), servindo para qualquer atraso (2, 7, 110...).
+ */
+const PAYMENT_BLOCKED_MESSAGE = (nome: string, link: string, dias: number) =>
+    `${nome}, seu sistema ZapFlow foi BLOQUEADO.
+
+Sua assinatura esta ${dias} ${dias === 1 ? 'dia' : 'dias'} em atraso e seu cardapio foi desativado.
+
+Para reativar imediatamente, pague aqui:
+${link}
+
+Equipe ZapFlow`;
+
+/**
+ * Enviar lembrete de pagamento (cobranca).
+ *
+ * IMPORTANTE: `dia` e o numero de dias em atraso e pode ser QUALQUER valor
+ * positivo (ex.: 7, 110). Antes o codigo indexava PAYMENT_MESSAGES[dia]
+ * diretamente e, para atrasos > 5, caia em `undefined` e NAO enviava nada —
+ * por isso clientes bem atrasados nunca recebiam a cobranca. Agora a selecao
+ * e robusta:
+ *   - opts.blocked = true  -> mensagem de "BLOQUEADO" (com o total de dias)
+ *   - caso contrario        -> aviso pre-bloqueio, com o estagio limitado a 1..4
  */
 export async function sendPaymentReminder(
     phone: string,
     nome: string,
     dia: number,
-    empresaId: number
+    empresaId: number,
+    opts?: { blocked?: boolean }
 ): Promise<boolean> {
     const paymentLink = `${BASE_URL}/dashboard/subscription?pay=true&empresa=${empresaId}`;
-    
-    const getMessage = PAYMENT_MESSAGES[dia];
-    if (!getMessage) {
-        console.error('[WhatsApp] Dia de cobranca invalido:', dia);
-        return false;
+
+    let message: string;
+    if (opts?.blocked) {
+        message = PAYMENT_BLOCKED_MESSAGE(nome, paymentLink, Math.max(1, dia));
+    } else {
+        // Limita ao intervalo de avisos pre-bloqueio (1..4) para nunca cair em undefined.
+        const estagio = Math.min(4, Math.max(1, dia));
+        message = PAYMENT_MESSAGES[estagio](nome, paymentLink);
     }
-    
-    const message = getMessage(nome, paymentLink);
+
     return sendWhatsAppMessage(phone, message);
 }
 

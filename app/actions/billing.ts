@@ -12,6 +12,12 @@ export interface BillingStatus {
   dias_inadimplente: number;
   bloqueado: boolean;
   plano: string | null;
+  /**
+   * Plano real da assinatura (tabela `assinaturas`). Diferente de `plano`, este
+   * campo NAO e sobrescrito quando a empresa e bloqueada (o bloqueio grava
+   * `empresas.planos = 'iniciante'`). Use este para exibir o plano contratado.
+   */
+  plano_assinatura: string | null;
   /** Data da proxima cobranca (renovacao automatica no cartao), vinda da tabela assinaturas */
   data_proxima_cobranca: string | null;
   /** Valor da assinatura */
@@ -44,6 +50,7 @@ export async function getBillingStatus(empresaId: number): Promise<BillingStatus
       dias_inadimplente: empresa.dias_inadimplente || 0,
       bloqueado: empresa.bloqueado || false,
       plano: empresa.planos || assinatura?.plano || null,
+      plano_assinatura: assinatura?.plano || null,
       data_proxima_cobranca: assinatura?.data_proxima_cobranca || null,
       valor: assinatura?.valor != null ? Number(assinatura.valor) : null,
       cartao_ultimos_digitos: assinatura?.cartao_ultimos_digitos || null,

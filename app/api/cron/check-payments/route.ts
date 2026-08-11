@@ -37,7 +37,9 @@ async function handleCheckPayments(request: NextRequest) {
     const todayStr = today.toISOString().split('T')[0];
 
     // Numero de dias de tolerancia apos o vencimento antes de bloquear o acesso.
-    const DIAS_PARA_BLOQUEIO = 2;
+    // Alinhado com o texto do painel e a sequencia de avisos (dias 1-4 avisam,
+    // dia 5 bloqueia).
+    const DIAS_PARA_BLOQUEIO = 5;
 
     // Buscar empresas com pagamento PIX ou cartao que ja passaram do vencimento.
     // A data de referencia e a `data_proxima_cobranca` da assinatura mais recente
@@ -112,7 +114,11 @@ async function handleCheckPayments(request: NextRequest) {
         const telefoneBloqueio = (empresa.telefone_loja || empresa.telefone) as string | undefined;
         if (telefoneBloqueio) {
           const nome = (empresa.nome_fantasia || empresa.nome_admin || 'Cliente') as string;
-          await sendPaymentReminder(telefoneBloqueio, nome, diasInadimplente, empresaId);
+          const enviado = await sendPaymentReminder(telefoneBloqueio, nome, diasInadimplente, empresaId, { blocked: true });
+          if (enviado) notified++;
+          else console.warn(`[Cron] Falha ao enviar cobranca de bloqueio para empresa ${empresaId} (tel: ${telefoneBloqueio})`);
+        } else {
+          console.warn(`[Cron] Empresa ${empresaId} sem telefone para cobranca de bloqueio`);
         }
         
         blocked++;
@@ -133,8 +139,9 @@ async function handleCheckPayments(request: NextRequest) {
         const telefoneAviso = (empresa.telefone_loja || empresa.telefone) as string | undefined;
         if (telefoneAviso) {
           const nome = (empresa.nome_fantasia || empresa.nome_admin || 'Cliente') as string;
-          await sendPaymentReminder(telefoneAviso, nome, diasInadimplente, empresaId);
-          notified++;
+          const enviado = await sendPaymentReminder(telefoneAviso, nome, diasInadimplente, empresaId);
+          if (enviado) notified++;
+          else console.warn(`[Cron] Falha ao enviar aviso para empresa ${empresaId} (tel: ${telefoneAviso})`);
         }
       } else if (diasInadimplente > 0) {
         // Apenas atualizar contador
