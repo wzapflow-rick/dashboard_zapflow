@@ -769,8 +769,12 @@ export async function POST(req: NextRequest) {
                 try {
                   const signupData = JSON.parse(externalRef);
                   
-                  if (signupData.empresaId && signupData.plano && signupData.tipo === 'pix_mensal') {
-                    console.log('[v0] Processando PIX mensal via merchant_order para empresa:', signupData.empresaId);
+                  if (
+                    signupData.empresaId &&
+                    signupData.plano &&
+                    (signupData.tipo === 'pix_mensal' || signupData.tipo === 'checkout_mensal')
+                  ) {
+                    console.log(`[v0] Processando pagamento mensal (${signupData.tipo}) via merchant_order para empresa:`, signupData.empresaId);
                     
                     const empresaId = signupData.empresaId;
                     const plano = signupData.plano;
@@ -825,6 +829,17 @@ export async function POST(req: NextRequest) {
                       console.log('[v0] Nova assinatura criada via merchant_order para empresa:', empresaId);
                     }
 
+                    // Pagamento aprovado: liberar acesso (desbloqueia se estava
+                    // bloqueada por inadimplencia e alinha plano/vencimento).
+                    // Mesma logica do handler de 'payment', para o caso de o
+                    // Mercado Pago entregar apenas a notificacao de merchant_order.
+                    try {
+                      await unblockCompany(empresaId, plano);
+                      console.log('[v0] Empresa desbloqueada apos pagamento mensal (merchant_order):', empresaId);
+                    } catch (unblockError) {
+                      console.error('[v0] Erro ao desbloquear empresa (merchant_order):', unblockError);
+                    }
+
                     // Aviso de pagamento no Discord
                     try {
                       const empresaResult: any = await pg.query(
@@ -838,13 +853,13 @@ export async function POST(req: NextRequest) {
                         nomeFantasia: nomeEmpresa,
                         plano,
                         valor: approvedPayment.transaction_amount || 0,
-                        metodoPagamento: 'PIX',
+                        metodoPagamento: signupData.tipo === 'pix_mensal' ? 'PIX' : 'Checkout',
                       });
                     } catch (discordError) {
                       console.error('[v0] Erro ao notificar Discord (merchant_order):', discordError);
                     }
 
-                    return NextResponse.json({ received: true, processed: 'pix_mensal_merchant_order' });
+                    return NextResponse.json({ received: true, processed: `${signupData.tipo}_merchant_order` });
                   }
                   
                   // PIX de signup
