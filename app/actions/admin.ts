@@ -471,6 +471,41 @@ export async function updateAssinatura(empresaId: number, data: {
       }
     }
 
+    // Renovar/estender a assinatura pelo admin tambem deve liberar o bloqueio
+    // do dashboard (campo `empresas.bloqueado`), senao o cliente continua preso
+    // na tela de cobranca mesmo com a data de cobranca atualizada.
+    // So liberamos quando NAO estamos cancelando/pausando a assinatura.
+    if (data.status !== 'cancelled' && data.status !== 'paused') {
+      try {
+        const empresaUpdates: string[] = [
+          'bloqueado = false',
+          'dias_inadimplente = 0',
+          'ultimo_aviso_enviado = 0',
+        ];
+        const empresaParams: any[] = [];
+        let idx = 1;
+
+        if (data.data_proxima_cobranca !== undefined) {
+          empresaUpdates.push(`data_vencimento = $${idx++}`);
+          empresaParams.push(data.data_proxima_cobranca);
+        }
+        if (data.plano !== undefined) {
+          empresaUpdates.push(`planos = $${idx++}`);
+          empresaParams.push(data.plano);
+        }
+
+        empresaUpdates.push('updated_at = NOW()');
+        empresaParams.push(empresaId);
+
+        await db.query(
+          `UPDATE empresas SET ${empresaUpdates.join(', ')} WHERE id = $${idx}`,
+          empresaParams
+        );
+      } catch (unblockError) {
+        console.error('[Admin] Erro ao liberar bloqueio ao atualizar assinatura:', unblockError);
+      }
+    }
+
     revalidatePath('/admin/assinaturas');
     revalidatePath('/admin/empresas');
     return { success: true };
@@ -510,6 +545,26 @@ export async function concederTrialGratuito(empresaId: number, dias: number, pla
             updated_at = NOW()
         WHERE empresa_id = $3
       `, [plano, dataProxima.toISOString(), empresaId]);
+    }
+
+    // IMPORTANTE: liberar o bloqueio na tabela `empresas`. A tela de cobranca
+    // do dashboard depende exclusivamente de `empresas.bloqueado`; sem zerar
+    // esse campo (e a inadimplencia) o cliente continua vendo a tela mesmo
+    // apos o admin conceder acesso.
+    try {
+      await db.query(
+        `UPDATE empresas
+         SET bloqueado = false,
+             dias_inadimplente = 0,
+             ultimo_aviso_enviado = 0,
+             data_vencimento = $1,
+             planos = $2,
+             updated_at = NOW()
+         WHERE id = $3`,
+        [dataProxima.toISOString(), plano, empresaId]
+      );
+    } catch (unblockError) {
+      console.error('[Admin] Erro ao liberar bloqueio da empresa:', unblockError);
     }
 
     revalidatePath('/admin/assinaturas');

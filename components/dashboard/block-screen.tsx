@@ -52,13 +52,38 @@ export function BlockScreen({ empresaId, nome, initialStatus = null }: BlockScre
   useEffect(() => {
     if (initialStatus) return; // preview/estado ja fornecido
     let ativo = true;
-    getBillingStatus(empresaId)
-      .then((s) => {
-        if (ativo && s) setStatus(s);
-      })
-      .catch(() => {});
+
+    // Reconsulta o status de cobranca. Se a empresa NAO estiver mais bloqueada
+    // (pagamento aprovado no webhook ou liberacao pelo admin), recarrega a
+    // pagina para que o dashboard volte a renderizar automaticamente — sem
+    // depender de o cliente atualizar a pagina manualmente.
+    const verificar = async () => {
+      try {
+        const s = await getBillingStatus(empresaId);
+        if (!ativo || !s) return;
+        if (s.bloqueado === false) {
+          window.location.reload();
+          return;
+        }
+        setStatus(s);
+      } catch {
+        /* silencioso: tenta de novo no proximo ciclo */
+      }
+    };
+
+    // Checa imediatamente, depois a cada 15s, e tambem quando a aba volta ao foco
+    // (ex.: cliente volta do checkout do Mercado Pago).
+    verificar();
+    const intervalo = setInterval(verificar, 15000);
+    const aoFocar = () => {
+      if (document.visibilityState === 'visible') verificar();
+    };
+    document.addEventListener('visibilitychange', aoFocar);
+
     return () => {
       ativo = false;
+      clearInterval(intervalo);
+      document.removeEventListener('visibilitychange', aoFocar);
     };
   }, [empresaId, initialStatus]);
 
