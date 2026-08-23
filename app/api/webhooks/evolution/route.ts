@@ -6,6 +6,31 @@ import { getStatusLoja, type Horario } from '@/lib/horarios';
 const EVO_API_URL = process.env.EVOLUTION_API_URL || 'https://evo.wzapflow.com.br';
 const EVO_API_KEY = process.env.EVOLUTION_API_KEY || '';
 
+// Numero(s) central(is) da ZapFlow que enviam notificacoes internas (ex.: resumo
+// de novos pedidos) para o WhatsApp do dono da loja. Mensagens vindas destes
+// numeros NUNCA devem disparar o bot de saudacao, senao toda notificacao de
+// pedido acaba ativando a mensagem automatica de boas-vindas.
+// Pode ser sobrescrito/estendido via env ZAPFLOW_CENTRAL_PHONES (separado por virgula).
+const ZAPFLOW_CENTRAL_PHONES = [
+  '551152050272',
+  ...(process.env.ZAPFLOW_CENTRAL_PHONES || '')
+    .split(',')
+    .map((p) => p.replace(/\D/g, ''))
+    .filter(Boolean),
+];
+
+/**
+ * Verifica se o telefone e um numero central da ZapFlow (origem de notificacoes
+ * internas). Compara apenas digitos e tolera pequenas variacoes de DDI/formatacao.
+ */
+function isZapflowCentralPhone(phone: string): boolean {
+  const digits = (phone || '').replace(/\D/g, '');
+  if (!digits) return false;
+  return ZAPFLOW_CENTRAL_PHONES.some(
+    (central) => digits === central || digits.endsWith(central) || central.endsWith(digits),
+  );
+}
+
 // Cache em memoria para evitar flood (chave: empresaId_phone, valor: timestamp)
 // Isso previne multiplas mensagens mesmo antes de salvar no banco
 const recentContactsCache = new Map<string, number>();
@@ -552,6 +577,14 @@ export async function POST(req: NextRequest) {
     
     console.log(`[BOT] Mensagem de ${phone}: "${messageText.substring(0, 50)}..."`);
     console.log(`[BOT] Instancia: ${instanceName}`);
+    
+    // Ignora mensagens vindas do numero central da ZapFlow (notificacoes internas,
+    // como o resumo de novos pedidos enviado ao dono). Sem isso, cada notificacao
+    // de pedido dispararia indevidamente o bot de saudacao.
+    if (isZapflowCentralPhone(phone)) {
+      console.log(`[BOT] Mensagem do numero central da ZapFlow (${phone}) — ignorando para nao disparar saudacao`);
+      return NextResponse.json({ received: true, ignored: 'zapflow_central' });
+    }
     
     // Buscar empresa pela instancia
     const empresa = await getEmpresaByInstance(instanceName);
