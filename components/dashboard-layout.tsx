@@ -90,39 +90,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [loadingTimeout, setLoadingTimeout] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-    
-    // Timeout de 15 segundos - se demorar mais, mostra opcao de recarregar
-    timeoutId = setTimeout(() => {
-      if (isLoading) {
-        setLoadingTimeout(true);
-        console.error('[v0] Dashboard timeout - loading took more than 15s');
-      }
-    }, 15000);
-
+    // getMe() só descriptografa o cookie de sessão (não toca no banco), então é
+    // rápido. A antiga trava de 15s corria contra as chamadas concorrentes do
+    // dashboard e disparava a tela de "Recarregar Página" à toa quando o pool
+    // estava saturado — removida.
     import('@/app/actions/auth').then(({ getMe }) => {
       getMe().then((userData) => {
         setUser(userData);
         setIsLoading(false);
-        clearTimeout(timeoutId);
       }).catch((err) => {
         console.error('[v0] Error loading user:', err);
         setError('Erro ao carregar dados do usuario');
         setIsLoading(false);
-        clearTimeout(timeoutId);
       });
     }).catch((err) => {
       console.error('[v0] Error importing auth:', err);
       setError('Erro ao carregar modulo de autenticacao');
       setIsLoading(false);
-      clearTimeout(timeoutId);
     });
-
-    return () => clearTimeout(timeoutId);
   }, []);
 
   const isCozinheiro = user?.role === 'cozinheiro';
@@ -145,30 +133,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           >
             <RefreshCw className="size-5" />
             Tentar Novamente
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Se demorou muito, mostra opcao de recarregar
-  if (loadingTimeout && isLoading) {
-    return (
-      <div className="flex min-h-screen bg-background-light dark:bg-[#0a1628] items-center justify-center p-4">
-        <div className="text-center max-w-md">
-          <div className="size-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
-            Carregando...
-          </h2>
-          <p className="text-slate-600 dark:text-slate-400 mb-6">
-            Isso esta demorando mais do que o esperado. Pode ser um problema de conexao.
-          </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center gap-2 mx-auto"
-          >
-            <RefreshCw className="size-5" />
-            Recarregar Pagina
           </button>
         </div>
       </div>

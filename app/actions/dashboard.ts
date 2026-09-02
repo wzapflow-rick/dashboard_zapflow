@@ -2,6 +2,7 @@
 
 import { getMe } from '@/lib/session-server';
 import { pg } from '@/lib/postgres';
+import { getOnboardingStatus, type OnboardingStatus } from './onboarding-status';
 
 // Helper para timeout em queries
 async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
@@ -41,23 +42,22 @@ export async function getDashboardData(period: string = 'Hoje') {
 
         console.log(`[Dashboard] Period: ${period}, EmpresaId: ${user.empresaId}`);
 
-        // Limitar a 200 pedidos para evitar timeout em contas com muitos pedidos
-        const ordersData = await withTimeout(
-            pg.list('pedidos', {
-                where: { empresa_id: user.empresaId },
-                sort: '-id',
-                limit: 200,
-            }),
+        // Busca direta (pg.raw) com o filtro de data já no SQL: pega os 200
+        // pedidos mais recentes DENTRO do período. Antes usávamos pg.list, que
+        // fazia um COUNT(*) extra (round-trip desperdiçado) e trazia 200 linhas
+        // sem filtro de data para depois filtrar em memória.
+        const orders = await withTimeout(
+            pg.raw<any>(
+                `SELECT * FROM "pedidos"
+                 WHERE empresa_id = $1 AND criado_em >= $2
+                 ORDER BY id DESC
+                 LIMIT 200`,
+                [user.empresaId, startDate.toISOString()]
+            ),
             10000,
             'listar pedidos'
         );
-        console.log(`[Dashboard] Pedidos carregados em ${Date.now() - startTime}ms`);
-        
-        const allOrders = ordersData.list || [];
-        console.log(`[Dashboard] Total de pedidos encontrados: ${allOrders.length}`);
-
-        // Filtrar por data em memória
-        const orders = allOrders.filter((o: any) => o.criado_em && new Date(o.criado_em) >= startDate);
+        console.log(`[Dashboard] Pedidos carregados em ${Date.now() - startTime}ms (total: ${orders.length})`);
 
         // 1. Calcular faturamento e contagem (Excluindo cancelados)
         const validOrders = orders.filter((o: any) => o.status !== 'cancelado');
@@ -106,15 +106,14 @@ export async function getDashboardData(period: string = 'Hoje') {
         // Buscar imagens reais dos produtos para o Top 5 (com timeout)
         let realProducts: any[] = [];
         try {
-            const productsData = await withTimeout(
-                pg.list('produtos', {
-                    where: { empresa_id: user.empresaId },
-                    limit: 50,
-                }),
+            realProducts = await withTimeout(
+                pg.raw<any>(
+                    `SELECT * FROM "produtos" WHERE empresa_id = $1 LIMIT 50`,
+                    [user.empresaId]
+                ),
                 5000,
                 'listar produtos'
             );
-            realProducts = productsData.list || [];
             console.log(`[Dashboard] Produtos carregados em ${Date.now() - startTime}ms`);
         } catch (prodErr) {
             console.warn(`[Dashboard] Falha ao carregar produtos: ${prodErr}`);
@@ -165,4 +164,26 @@ export async function getDashboardData(period: string = 'Hoje') {
         console.error(`[Dashboard] ERRO apos ${Date.now() - startTime}ms:`, error.message);
         throw error;
     }
+}
+
+export interface DashboardBundle {
+    user: Awaited<ReturnType<typeof getMe>>;
+    dashboard: Awaited<ReturnType<typeof getDashboardData>>;
+    onboarding: OnboardingStatus | null;
+}
+
+/**
+ * Endpoint agregado do dashboard: reúne usuário, métricas e status de
+ * onboarding numa ÚNICA chamada de server action. Antes o componente disparava
+ * 3 server actions separadas (getMe + getDashboardData + getOnboardingStatus),
+ * cada uma um POST próprio. As duas consultas pesadas rodam em paralelo.
+ */
+export async function getDashboardBundle(period: string = 'Hoje'): Promise<DashboardBundle> {
+    const [user, dashboard, onboarding] = await Promise.all([
+        getMe(),
+        getDashboardData(period),
+        getOnboardingStatus(),
+    ]);
+
+    return { user, dashboard, onboarding };
 }

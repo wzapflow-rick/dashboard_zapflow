@@ -33,27 +33,44 @@ export interface BillingStatus {
  */
 export async function getBillingStatus(empresaId: number): Promise<BillingStatus | null> {
   try {
-    const empresa = await pg.findById('empresas', empresaId) as any;
-    
-    if (!empresa) return null;
-
-    // Dados da assinatura (renovacao no cartao)
-    const assinaturaResult = await pg.query(
-      'SELECT plano, valor, data_proxima_cobranca, cartao_ultimos_digitos FROM assinaturas WHERE empresa_id = $1 ORDER BY id DESC LIMIT 1',
+    // Uma única query com LEFT JOIN LATERAL pega os dados da empresa + a
+    // assinatura mais recente de uma vez (antes eram 2 round-trips).
+    const rows = await pg.raw<any>(
+      `SELECT e.tipo_pagamento,
+              e.data_vencimento,
+              e.dias_inadimplente,
+              e.bloqueado,
+              e.planos,
+              a.plano                 AS assinatura_plano,
+              a.valor                 AS assinatura_valor,
+              a.data_proxima_cobranca AS assinatura_data_proxima_cobranca,
+              a.cartao_ultimos_digitos AS assinatura_cartao_ultimos_digitos
+       FROM empresas e
+       LEFT JOIN LATERAL (
+         SELECT plano, valor, data_proxima_cobranca, cartao_ultimos_digitos
+         FROM assinaturas
+         WHERE empresa_id = e.id
+         ORDER BY id DESC
+         LIMIT 1
+       ) a ON true
+       WHERE e.id = $1
+       LIMIT 1`,
       [empresaId]
     );
-    const assinatura = assinaturaResult?.rows?.[0] as any;
-    
+
+    const row = rows[0];
+    if (!row) return null;
+
     return {
-      tipo_pagamento: empresa.tipo_pagamento || null,
-      data_vencimento: empresa.data_vencimento || null,
-      dias_inadimplente: empresa.dias_inadimplente || 0,
-      bloqueado: empresa.bloqueado || false,
-      plano: empresa.planos || assinatura?.plano || null,
-      plano_assinatura: assinatura?.plano || null,
-      data_proxima_cobranca: assinatura?.data_proxima_cobranca || null,
-      valor: assinatura?.valor != null ? Number(assinatura.valor) : null,
-      cartao_ultimos_digitos: assinatura?.cartao_ultimos_digitos || null,
+      tipo_pagamento: row.tipo_pagamento || null,
+      data_vencimento: row.data_vencimento || null,
+      dias_inadimplente: row.dias_inadimplente || 0,
+      bloqueado: row.bloqueado || false,
+      plano: row.planos || row.assinatura_plano || null,
+      plano_assinatura: row.assinatura_plano || null,
+      data_proxima_cobranca: row.assinatura_data_proxima_cobranca || null,
+      valor: row.assinatura_valor != null ? Number(row.assinatura_valor) : null,
+      cartao_ultimos_digitos: row.assinatura_cartao_ultimos_digitos || null,
     };
   } catch (error) {
     console.error('[Billing] Erro ao buscar status:', error);

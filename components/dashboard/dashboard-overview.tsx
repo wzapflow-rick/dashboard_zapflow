@@ -8,9 +8,8 @@ import { StatCard } from './stat-card';
 import { TopProductsList } from './top-products';
 import { RecentOrdersTable } from './recent-orders-table';
 import { cn } from '@/lib/utils';
-import { getMe } from '@/app/actions/auth';
-import { getDashboardData } from '@/app/actions/dashboard';
-import { getOnboardingStatus, OnboardingStatus } from '@/app/actions/onboarding-status';
+import { getDashboardBundle } from '@/app/actions/dashboard';
+import { type OnboardingStatus } from '@/app/actions/onboarding-status';
 import { SetupChecklist } from '@/components/onboarding/setup-checklist';
 import { useLowPowerMode } from '@/hooks/use-low-power-mode';
 
@@ -81,36 +80,32 @@ export default function DashboardOverview() {
     }
     
     try {
-      // Dispara as 3 chamadas em paralelo (sao independentes) para acelerar o carregamento.
-      const dashboardPromise = getDashboardData(selectedPeriod);
-      const [me, obStatus] = await Promise.all([getMe(), getOnboardingStatus()]);
-      setUser(me);
-      setOnboardingStatus(obStatus);
+      // Uma única chamada agregada (getMe + dados + onboarding) em vez de 3
+      // server actions separadas. As consultas pesadas rodam em paralelo no servidor.
+      const bundle = await getDashboardBundle(selectedPeriod);
+      setUser(bundle.user);
+      setOnboardingStatus(bundle.onboarding);
 
-      try {
-        const data = await dashboardPromise;
-        setDashboardData(data);
-        setError(null);
+      const data = bundle.dashboard;
+      setDashboardData(data);
+      setError(null);
 
-        if (data.rawOrders) {
-          const formattedOrders = data.rawOrders.map((o: any) => ({
-            id: `#${o.id}`,
-            customer: o.cliente_nome || o.nome_cliente || 'Cliente',
-            phone: o.telefone_cliente || '',
-            time: o.criado_em ? new Date(o.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '...',
-            value: `R$ ${Number(o.valor_total || 0).toFixed(2).replace('.', ',')}`,
-            status: o.status === 'pendente' ? 'Pendente' : o.status === 'preparando' ? 'Preparando' : o.status === 'cancelado' ? 'Cancelado' : 'Finalizado',
-            statusColor: o.status === 'pendente' ? 'amber' : o.status === 'preparando' ? 'blue' : o.status === 'cancelado' ? 'red' : 'emerald',
-            raw: o
-          }));
-          setOrders(formattedOrders);
-        }
-      } catch (dashError: any) {
-        console.error('Erro ao carregar dados da dashboard:', dashError);
-        setError(dashError.message || 'Erro ao carregar dados');
+      if (data.rawOrders) {
+        const formattedOrders = data.rawOrders.map((o: any) => ({
+          id: `#${o.id}`,
+          customer: o.cliente_nome || o.nome_cliente || 'Cliente',
+          phone: o.telefone_cliente || '',
+          time: o.criado_em ? new Date(o.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '...',
+          value: `R$ ${Number(o.valor_total || 0).toFixed(2).replace('.', ',')}`,
+          status: o.status === 'pendente' ? 'Pendente' : o.status === 'preparando' ? 'Preparando' : o.status === 'cancelado' ? 'Cancelado' : 'Finalizado',
+          statusColor: o.status === 'pendente' ? 'amber' : o.status === 'preparando' ? 'blue' : o.status === 'cancelado' ? 'red' : 'emerald',
+          raw: o
+        }));
+        setOrders(formattedOrders);
       }
-    } catch (err) {
-      console.error('Erro critico no dashboard:', err);
+    } catch (err: any) {
+      console.error('Erro ao carregar dados da dashboard:', err);
+      setError(err?.message || 'Erro ao carregar dados');
     } finally {
       setLoading(false);
       setIsRefreshing(false);

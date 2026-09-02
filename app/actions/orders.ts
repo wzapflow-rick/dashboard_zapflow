@@ -31,6 +31,32 @@ interface NecessidadeInsumo {
 // Rate limiting para atualização de status
 const orderUpdateAttempts = new Map<string, { count: number; lastAttempt: number }>();
 
+/**
+ * Retorna apenas os IDs dos pedidos pendentes da empresa. Query única e enxuta,
+ * usada pelo polling do header (a cada 15s) para contar pendentes e detectar
+ * novos pedidos. Antes o header chamava getOrders(), que trazia até 3 tabelas
+ * inteiras (pedidos + clientes + entregadores, até 1000 linhas cada) só para
+ * depois filtrar os pendentes em memória.
+ */
+export async function getPendingOrderIds(): Promise<number[]> {
+    try {
+        const user = await getMe();
+        if (!user?.empresaId) return [];
+
+        const rows = await pg.raw<{ id: number }>(
+            `SELECT id FROM "${PEDIDOS_TABLE}"
+             WHERE empresa_id = $1 AND status = 'pendente'
+             ORDER BY id DESC`,
+            [user.empresaId]
+        );
+
+        return rows.map((r) => Number(r.id));
+    } catch (error) {
+        console.error('[Orders] Erro ao buscar pedidos pendentes:', error);
+        return [];
+    }
+}
+
 export async function getOrders() {
     try {
         const user = await getMe();
