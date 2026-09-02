@@ -76,6 +76,8 @@ export default function SettingsPage() {
   const [autoRadius, setAutoRadius] = React.useState(false);
   const [valorPorKm, setValorPorKm] = React.useState<number>(0);
   const [taxaEntregaFixa, setTaxaEntregaFixa] = React.useState<number>(0);
+  const [deliveryEnabled, setDeliveryEnabled] = React.useState(true);
+  const [savingDeliveryEnabled, setSavingDeliveryEnabled] = React.useState(false);
   const [packagingFeeEnabled, setPackagingFeeEnabled] = React.useState(false);
   const [neighborhoods, setNeighborhoods] = React.useState<any[]>([]);
   const [horarios, setHorarios] = React.useState<HorarioItem[]>([]);
@@ -140,6 +142,7 @@ export default function SettingsPage() {
           setAutoRadius(!!compData.raio_entrega_automatico);
           setValorPorKm(Number(compData.valor_por_km || 0));
           setTaxaEntregaFixa(Number(compData.taxa_entrega_fixa || 0));
+          setDeliveryEnabled(compData.aceita_delivery !== false);
           setInventoryControlEnabled(!!compData.controle_estoque);
           setPaymentIntegrationEnabled(compData.pagamento_integrado !== false);
           setNotifyOrderWhatsappEnabled(!!compData.notificar_pedido_whatsapp);
@@ -426,6 +429,28 @@ export default function SettingsPage() {
     } catch (err: any) {
       console.error('Erro ao salvar:', err);
       toast.error(err.message || 'Ocorreu um erro ao salvar.');
+    }
+  };
+
+  const handleToggleDelivery = async (enabled: boolean) => {
+    const previous = deliveryEnabled;
+    setDeliveryEnabled(enabled);
+    setSavingDeliveryEnabled(true);
+
+    try {
+      await updateCompany({ aceita_delivery: enabled });
+      setCompany((prev: any) => (prev ? { ...prev, aceita_delivery: enabled } : prev));
+      toast.success(
+        enabled
+          ? 'Delivery ativado no cardápio digital.'
+          : 'Delivery desativado. O cardápio permitirá somente retirada.'
+      );
+    } catch (err: any) {
+      console.error('Erro ao atualizar disponibilidade do Delivery:', err);
+      setDeliveryEnabled(previous);
+      toast.error(err.message || 'Não foi possível atualizar a configuração de Delivery.');
+    } finally {
+      setSavingDeliveryEnabled(false);
     }
   };
 
@@ -793,6 +818,38 @@ export default function SettingsPage() {
 
               {activeSection === 'delivery' && (
                 <div className="space-y-8">
+                  <div className="p-6 bg-slate-50 dark:bg-slate-700 rounded-2xl border border-slate-100 dark:border-slate-600 space-y-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="size-10 bg-white dark:bg-slate-600 rounded-xl shadow-sm flex items-center justify-center text-slate-600 dark:text-slate-300">
+                          <Truck className="size-5" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-900 dark:text-white">Aceitar pedidos por Delivery</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            Desative para que o cardápio digital ofereça somente retirada.
+                          </p>
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={deliveryEnabled}
+                          disabled={savingDeliveryEnabled}
+                          onChange={(event) => handleToggleDelivery(event.target.checked)}
+                        />
+                        <div className="w-11 h-6 bg-slate-200 dark:bg-slate-500 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary peer-disabled:opacity-50" />
+                      </label>
+                    </div>
+
+                    {!deliveryEnabled && (
+                      <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 text-sm text-amber-800 dark:text-amber-300">
+                        O Delivery está <strong>desativado</strong>. Seus clientes verão somente a opção de retirada no cardápio. As taxas e os bairros abaixo permanecem salvos para uma futura reativação.
+                      </div>
+                    )}
+                  </div>
+
                   <div className="p-6 bg-slate-50 dark:bg-slate-700 rounded-2xl border border-slate-100 dark:border-slate-600 space-y-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">

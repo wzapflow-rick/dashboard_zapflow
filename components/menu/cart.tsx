@@ -49,6 +49,7 @@ interface CartProps {
   clienteTelefone?: string;
   upsellProducts?: UpsellProduct[];
   pagamentoIntegrado?: boolean;
+  aceitaDelivery?: boolean;
   lojaAberta?: boolean;
   proximaAberturaIso?: string | null;
   proximaAberturaLabel?: string | null;
@@ -75,7 +76,7 @@ const formatPhone = (value: string) => {
   return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
 };
 
-export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCidade, empresaEstado, clienteTelefone, upsellProducts = [], pagamentoIntegrado = true, lojaAberta = true, proximaAberturaIso = null, proximaAberturaLabel = null }: CartProps) {
+export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCidade, empresaEstado, clienteTelefone, upsellProducts = [], pagamentoIntegrado = true, aceitaDelivery = true, lojaAberta = true, proximaAberturaIso = null, proximaAberturaLabel = null }: CartProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState<CheckoutStep>('cart');
   const [cupomInput, setCupomInput] = useState('');
@@ -95,7 +96,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
   });
 
   // Delivery/Pickup
-  const [isDelivery, setIsDelivery] = useState(true);
+  const [isDelivery, setIsDelivery] = useState(aceitaDelivery);
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [deliveryCoords, setDeliveryCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [deliveryLoading, setDeliveryLoading] = useState(false);
@@ -163,16 +164,20 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
     ? Math.floor(descontoPontos / loyaltyConfig.desconto_valor) * loyaltyConfig.pontos_para_desconto
     : 0;
 
-  const totalFinal = Math.max(0, subtotal - desconto - descontoPontos + deliveryFee);
+  const effectiveDeliveryFee = aceitaDelivery && isDelivery ? deliveryFee : 0;
+  const totalFinal = Math.max(0, subtotal - desconto - descontoPontos + effectiveDeliveryFee);
 
   // Fetch configs
   useEffect(() => {
-    if (empresaId) {
+    if (!empresaId) return;
+
+    getLoyaltyConfig(empresaId).then(setLoyaltyConfig);
+
+    if (aceitaDelivery) {
       getDeliveryConfig(empresaId).then(setDeliveryConfig);
-      getLoyaltyConfig(empresaId).then(setLoyaltyConfig);
       getAvailableBairros(empresaId).then(setAvailableBairros);
     }
-  }, [empresaId]);
+  }, [empresaId, aceitaDelivery]);
 
   const fetchClientPoints = async (phone: string) => {
     const cleanPhone = phone.replace(/\D/g, '');
@@ -379,10 +384,10 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
         empresaId,
         clienteTelefone: customerData.telefone.replace(/\D/g, ''),
         clienteNome: customerData.nome || 'Cliente Cardápio',
-        clienteEndereco: customerData.endereco,
-        clienteBairro: customerData.bairro,
-        tipoEntrega: isDelivery ? 'delivery' : 'retirada',
-        taxaEntrega: deliveryFee,
+        clienteEndereco: aceitaDelivery && isDelivery ? customerData.endereco : '',
+        clienteBairro: aceitaDelivery && isDelivery ? customerData.bairro : '',
+        tipoEntrega: aceitaDelivery && isDelivery ? 'delivery' : 'retirada',
+        taxaEntrega: aceitaDelivery && isDelivery ? deliveryFee : 0,
         itens: items.map(item => ({
           id: item.productId,
           nome: item.nome,
@@ -597,10 +602,10 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
                               <span className="font-bold">-{formatPrice(desconto)}</span>
                             </div>
                           )}
-                          {deliveryFee > 0 && isDelivery && (
+                          {effectiveDeliveryFee > 0 && (
                             <div className="flex justify-between text-sm">
                               <span className="text-gray-500">Entrega</span>
-                              <span className="font-bold text-white">{formatPrice(deliveryFee)}</span>
+                              <span className="font-bold text-white">{formatPrice(effectiveDeliveryFee)}</span>
                             </div>
                           )}
                           <div className="pt-2.5 border-t border-[#2a2a2a] flex justify-between items-center">
@@ -617,26 +622,32 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
                   <div className="space-y-4">
                     <div className="bg-[#22c55e]/10 p-3.5 rounded-xl border border-[#22c55e]/20">
                       <p className="text-[10px] font-bold text-[#22c55e] uppercase mb-0.5">Passo 2 de 3</p>
-                      <p className="text-sm font-black text-white">Onde vamos entregar?</p>
+                      <p className="text-sm font-black text-white">
+                        {aceitaDelivery ? 'Como você quer receber?' : 'Retirada no estabelecimento'}
+                      </p>
                     </div>
 
                     <div className="space-y-3">
-                      <div className="grid grid-cols-2 gap-2">
-                        <button 
-                          onClick={() => setIsDelivery(true)}
-                          className={cn("p-3.5 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5", isDelivery ? "border-[#22c55e] bg-[#22c55e]/10" : "border-[#2a2a2a] bg-[#1a1a1a]")}
-                        >
-                          <span className="text-xl">🛵</span>
-                          <span className="text-xs font-bold text-white">Delivery</span>
-                        </button>
-                        <button 
-                          onClick={() => { setIsDelivery(false); setDeliveryFee(0); }}
-                          className={cn("p-3.5 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5", !isDelivery ? "border-[#22c55e] bg-[#22c55e]/10" : "border-[#2a2a2a] bg-[#1a1a1a]")}
-                        >
-                          <span className="text-xl">🏪</span>
-                          <span className="text-xs font-bold text-white">Retirada</span>
-                        </button>
-                      </div>
+                      {aceitaDelivery && (
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setIsDelivery(true)}
+                            className={cn("p-3.5 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5", isDelivery ? "border-[#22c55e] bg-[#22c55e]/10" : "border-[#2a2a2a] bg-[#1a1a1a]")}
+                          >
+                            <MapPin className="size-5 text-[#22c55e]" />
+                            <span className="text-xs font-bold text-white">Delivery</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setIsDelivery(false); setDeliveryFee(0); }}
+                            className={cn("p-3.5 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5", !isDelivery ? "border-[#22c55e] bg-[#22c55e]/10" : "border-[#2a2a2a] bg-[#1a1a1a]")}
+                          >
+                            <ShoppingCart className="size-5 text-[#22c55e]" />
+                            <span className="text-xs font-bold text-white">Retirada</span>
+                          </button>
+                        </div>
+                      )}
 
                       <div className="space-y-2.5">
                         <input

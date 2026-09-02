@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS empresas (
     estado VARCHAR(2),
     instancia_evolution VARCHAR(255),
     nincho VARCHAR(100),
+    aceita_delivery BOOLEAN NOT NULL DEFAULT TRUE,
     raio_entrega_automatico BOOLEAN DEFAULT FALSE,
     valor_por_km NUMERIC(10,2) DEFAULT 0,
     taxa_entrega_fixa NUMERIC(10,2) DEFAULT 0,

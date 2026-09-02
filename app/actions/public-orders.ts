@@ -124,15 +124,46 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
             throw new Error('Dados incompletos para criar pedido');
         }
 
+        const empresa = await pg.findById('empresas', data.empresaId) as any;
+        if (!empresa) {
+            throw new Error('Empresa não encontrada');
+        }
+
+        const tipoEntregaEfetivo: 'delivery' | 'retirada' =
+            data.tipoEntrega === 'delivery' && empresa.aceita_delivery !== false
+                ? 'delivery'
+                : 'retirada';
+        const taxaEntregaEfetiva = tipoEntregaEfetivo === 'delivery'
+            ? Math.max(0, Number(data.taxaEntrega) || 0)
+            : 0;
+        const clienteEnderecoEfetivo = tipoEntregaEfetivo === 'delivery'
+            ? data.clienteEndereco
+            : undefined;
+        const clienteBairroEfetivo = tipoEntregaEfetivo === 'delivery'
+            ? data.clienteBairro
+            : undefined;
+        const totalEfetivo = Math.max(
+            0,
+            Number(data.subtotal) - Number(data.desconto || 0) + taxaEntregaEfetiva
+        );
+        const dadosEfetivos: CreatePublicOrderData = {
+            ...data,
+            tipoEntrega: tipoEntregaEfetivo,
+            taxaEntrega: taxaEntregaEfetiva,
+            clienteEndereco: clienteEnderecoEfetivo,
+            clienteBairro: clienteBairroEfetivo,
+            total: totalEfetivo,
+        };
+
         await ensureCliente(
-            data.empresaId,
-            data.clienteTelefone,
-            data.clienteNome,
-            data.clienteEndereco,
-            data.clienteBairro
+            dadosEfetivos.empresaId,
+            dadosEfetivos.clienteTelefone,
+            dadosEfetivos.clienteNome,
+            dadosEfetivos.clienteEndereco,
+            dadosEfetivos.clienteBairro
         );
 
-        const itensFormatados = data.itens.map((item: any) => {
+        const itensFormatados = dadosEfetivos.itens.map((item: any) => {
             let produtoNome = item.nome || 'Produto';
             const tamanho = item.tamanho || '';
 
@@ -159,49 +190,49 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
             };
         });
 
-        const enderecoCompleto = data.tipoEntrega === 'retirada'
+        const enderecoCompleto = dadosEfetivos.tipoEntrega === 'retirada'
             ? 'Retirada no balcão'
-            : [data.clienteEndereco, data.clienteBairro].filter(Boolean).join(', ') || '';
+            : [dadosEfetivos.clienteEndereco, dadosEfetivos.clienteBairro].filter(Boolean).join(', ') || '';
 
         const orderPayload: any = {
-            empresa_id: data.empresaId,
-            telefone_cliente: data.clienteTelefone,
-            cliente_nome: data.clienteNome,
-            tipo_entrega: data.tipoEntrega,
-            taxa_entrega: data.taxaEntrega || 0,
+            empresa_id: dadosEfetivos.empresaId,
+            telefone_cliente: dadosEfetivos.clienteTelefone,
+            cliente_nome: dadosEfetivos.clienteNome,
+            tipo_entrega: dadosEfetivos.tipoEntrega,
+            taxa_entrega: dadosEfetivos.taxaEntrega || 0,
             itens: JSON.stringify(itensFormatados),
-            subtotal: data.subtotal,
-            desconto: data.desconto || 0,
-            valor_total: data.total,
-            cupom_codigo: data.cupomCodigo || '',
-            pontos_ganhos: data.pontosGanhos || 0,
-            forma_pagamento: data.formaPagamento,
-            tipo_pagamento: data.formaPagamento,
-            troco_necessario: data.troco || 0,
+            subtotal: dadosEfetivos.subtotal,
+            desconto: dadosEfetivos.desconto || 0,
+            valor_total: dadosEfetivos.total,
+            cupom_codigo: dadosEfetivos.cupomCodigo || '',
+            pontos_ganhos: dadosEfetivos.pontosGanhos || 0,
+            forma_pagamento: dadosEfetivos.formaPagamento,
+            tipo_pagamento: dadosEfetivos.formaPagamento,
+            troco_necessario: dadosEfetivos.troco || 0,
             // Quando o pagamento integrado esta DESATIVADO, a loja recebe o pagamento por fora,
             // entao o pedido vai direto para o painel (Kanban) como 'pendente', sem etapa de cobranca online.
             // Quando ATIVADO, mantem o comportamento anterior: dinheiro vai direto, demais aguardam pagamento.
-            status: data.dataAgendamento
+            status: dadosEfetivos.dataAgendamento
                 ? 'agendado'
-                : (data.pagamentoIntegrado === false || data.formaPagamento === 'dinheiro'
+                : (dadosEfetivos.pagamentoIntegrado === false || dadosEfetivos.formaPagamento === 'dinheiro'
                     ? 'pendente'
                     : 'pagamento_pendente'),
             origem: 'cardapio_publico',
             criado_em: new Date().toISOString(),
             endereco_entrega: enderecoCompleto,
-            bairro_entrega: data.tipoEntrega === 'retirada' ? '' : (data.clienteBairro || ''),
+            bairro_entrega: dadosEfetivos.tipoEntrega === 'retirada' ? '' : (dadosEfetivos.clienteBairro || ''),
         };
 
-        if (data.dataAgendamento) {
-            orderPayload.data_agendamento = data.dataAgendamento;
-            orderPayload.observacoes = data.observacoes
-                ? `${data.observacoes}\n📅 Agendado para: ${new Date(data.dataAgendamento).toLocaleString('pt-BR')}`
-                : `📅 Agendado para: ${new Date(data.dataAgendamento).toLocaleString('pt-BR')}`;
+        if (dadosEfetivos.dataAgendamento) {
+            orderPayload.data_agendamento = dadosEfetivos.dataAgendamento;
+            orderPayload.observacoes = dadosEfetivos.observacoes
+                ? `${dadosEfetivos.observacoes}\n📅 Agendado para: ${new Date(dadosEfetivos.dataAgendamento).toLocaleString('pt-BR')}`
+                : `📅 Agendado para: ${new Date(dadosEfetivos.dataAgendamento).toLocaleString('pt-BR')}`;
         }
 
-        if (data.tipoEntrega === 'delivery' && enderecoCompleto && enderecoCompleto !== 'Retirada no balcão') {
-            orderPayload.observacoes = data.observacoes
-                ? `${data.observacoes}\n📍 Endereço: ${enderecoCompleto}`
+        if (dadosEfetivos.tipoEntrega === 'delivery' && enderecoCompleto && enderecoCompleto !== 'Retirada no balcão') {
+            orderPayload.observacoes = dadosEfetivos.observacoes
+                ? `${dadosEfetivos.observacoes}\n📍 Endereço: ${enderecoCompleto}`
                 : `📍 Endereço: ${enderecoCompleto}`;
         }
 
@@ -227,12 +258,12 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
             ).catch(err => console.error('Erro ao deduzir pontos:', err));
         }
 
-        sendOrderCreatedMessage(data.clienteTelefone, order.id, data.total, data.dataAgendamento, itensFormatados, data.empresaId)
+        sendOrderCreatedMessage(dadosEfetivos.clienteTelefone, order.id, dadosEfetivos.total, dadosEfetivos.dataAgendamento, itensFormatados, dadosEfetivos.empresaId)
             .catch(err => console.error('Erro ao enviar mensagem WhatsApp:', err));
 
         // Avisar o DONO da loja sobre o novo pedido (opt-in), pelo numero central da ZapFlow.
         // Best-effort: nunca bloqueia ou derruba a criacao do pedido.
-        notifyOwnerNewOrder(data, order.id, itensFormatados, enderecoCompleto)
+        notifyOwnerNewOrder(dadosEfetivos, order.id, itensFormatados, enderecoCompleto)
             .catch(err => console.error('Erro ao notificar dono sobre novo pedido:', err));
 
         revalidatePath('/dashboard/expedition');

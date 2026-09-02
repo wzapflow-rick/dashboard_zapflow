@@ -135,6 +135,7 @@ export default async function PublicMenuPage({
     const empresaCidade = typeof empresa.cidade === 'string' ? empresa.cidade : null;
     const empresaEstado = typeof empresa.estado === 'string' ? empresa.estado : null;
     const pagamentoIntegrado = empresa.pagamento_integrado !== false;
+    const aceitaDelivery = empresa.aceita_delivery !== false;
     
     let empresaId: number | undefined = undefined;
     if (typeof empresa.id === 'number') empresaId = empresa.id;
@@ -183,6 +184,7 @@ export default async function PublicMenuPage({
             pontosPorReal={pontosPorReal}
             upsellProducts={safeUpsell}
             pagamentoIntegrado={pagamentoIntegrado}
+            aceitaDelivery={aceitaDelivery}
             lojaAberta={lojaAberta}
             proximaAberturaIso={proximaAbertura?.iso ?? null}
             proximaAberturaLabel={proximaAbertura?.label ?? null}
