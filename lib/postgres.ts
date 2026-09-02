@@ -80,62 +80,80 @@ export class PostgresError extends Error {
 // CONFIGURAÇÃO DO POOL
 // ============================================================
 
-let pool: Pool | null = null;
+// Guardamos o pool em `globalThis` para garantir um ÚNICO pool por processo.
+// Sem isso, o hot-reload do dev e os múltiplos boundaries de módulo (este
+// arquivo + lib/db.ts) podiam instanciar vários pools concorrentes, cada um
+// abrindo/fechando conexões contra o banco em IP público — a causa do
+// "[PostgreSQL Pool] Nova conexão estabelecida" repetido a cada request.
+const globalForPg = globalThis as unknown as { __zapflowPgPool?: Pool };
 
-function getPool(): Pool {
-  if (!pool) {
-    const connectionString = process.env.DATABASE_URL;
-    
-    if (!connectionString) {
-      console.error('[PostgreSQL] DATABASE_URL não está configurado!');
-      throw new PostgresError(
-        'DATABASE_URL não está configurado nas variáveis de ambiente.'
-      );
-    }
+function createPool(): Pool {
+  const connectionString = process.env.DATABASE_URL;
 
-    // Log sanitizado da conexão (sem senha)
-    const sanitizedUrl = connectionString.replace(/:([^@]+)@/, ':****@');
-    console.log('[PostgreSQL] Inicializando pool com:', sanitizedUrl);
-
-    // SSL desabilitado - PostgreSQL self-hosted sem SSL
-    // Para habilitar SSL, configure o PostgreSQL com certificados e mude para:
-    // ssl: { rejectUnauthorized: false }
-    pool = new Pool({
-      connectionString,
-      ssl: false,
-      max: 10,
-      min: 0,
-      // Descarta conexões ociosas rapidamente (5s), antes que o servidor
-      // as encerre com "idle-session timeout" (57P05).
-      idleTimeoutMillis: 5000,
-      connectionTimeoutMillis: 10000,
-      // Mantém a conexão TCP viva para evitar quedas silenciosas.
-      keepAlive: true,
-      allowExitOnIdle: true,
-    });
-
-    pool.on('error', (err: Error & { code?: string }) => {
-      // 57P05 (idle-session timeout), 57P01 (admin shutdown) e
-      // "Connection terminated" são encerramentos esperados de conexões
-      // ociosas pelo servidor. O pool remove o cliente automaticamente,
-      // então apenas registramos como aviso, sem tratar como falha.
-      if (
-        err.code === '57P05' ||
-        err.code === '57P01' ||
-        err.message?.includes('Connection terminated')
-      ) {
-        console.warn('[PostgreSQL Pool] Conexão ociosa encerrada pelo servidor (esperado):', err.code ?? err.message);
-        return;
-      }
-      console.error('[PostgreSQL Pool] Erro inesperado no cliente:', err);
-    });
-
-    pool.on('connect', () => {
-      console.log('[PostgreSQL Pool] Nova conexão estabelecida');
-    });
+  if (!connectionString) {
+    console.error('[PostgreSQL] DATABASE_URL não está configurado!');
+    throw new PostgresError(
+      'DATABASE_URL não está configurado nas variáveis de ambiente.'
+    );
   }
 
-  return pool;
+  // Log sanitizado da conexão (sem senha)
+  const sanitizedUrl = connectionString.replace(/:([^@]+)@/, ':****@');
+  console.log('[PostgreSQL] Inicializando pool (singleton) com:', sanitizedUrl);
+
+  // SSL desabilitado - PostgreSQL self-hosted sem SSL
+  // Para habilitar SSL, configure o PostgreSQL com certificados e mude para:
+  // ssl: { rejectUnauthorized: false }
+  const newPool = new Pool({
+    connectionString,
+    ssl: false,
+    max: 10,
+    min: 0,
+    // Mantém a conexão ociosa por 30s. Antes eram 5s, o que fazia praticamente
+    // toda requisição reabrir uma conexão nova (custa caro contra IP público).
+    // O dashboard carrega em rajadas e faz polling a cada 15s, então 30s
+    // mantém a conexão viva e reaproveitada entre as chamadas.
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
+    // Mantém a conexão TCP viva para evitar quedas silenciosas.
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10000,
+    // NÃO deixamos o pool esvaziar sozinho; queremos reaproveitar conexões.
+    allowExitOnIdle: false,
+  });
+
+  newPool.on('error', (err: Error & { code?: string }) => {
+    // 57P05 (idle-session timeout), 57P01 (admin shutdown) e
+    // "Connection terminated" são encerramentos esperados de conexões
+    // ociosas pelo servidor. O pool remove o cliente automaticamente,
+    // então apenas registramos como aviso, sem tratar como falha.
+    if (
+      err.code === '57P05' ||
+      err.code === '57P01' ||
+      err.message?.includes('Connection terminated')
+    ) {
+      console.warn('[PostgreSQL Pool] Conexão ociosa encerrada pelo servidor (esperado):', err.code ?? err.message);
+      return;
+    }
+    console.error('[PostgreSQL Pool] Erro inesperado no cliente:', err);
+  });
+
+  newPool.on('connect', () => {
+    console.log('[PostgreSQL Pool] Nova conexão estabelecida');
+  });
+
+  return newPool;
+}
+
+/**
+ * Retorna o pool singleton do PostgreSQL, compartilhado por todo o processo
+ * (inclusive por lib/db.ts). Cria sob demanda na primeira chamada.
+ */
+export function getPool(): Pool {
+  if (!globalForPg.__zapflowPgPool) {
+    globalForPg.__zapflowPgPool = createPool();
+  }
+  return globalForPg.__zapflowPgPool;
 }
 
 // ============================================================

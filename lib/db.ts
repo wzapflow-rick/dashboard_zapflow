@@ -1,20 +1,9 @@
-import { Pool } from 'pg';
+import { getPool } from '@/lib/postgres';
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: false, // PostgreSQL self-hosted sem SSL
-  // Configuracoes para evitar problemas de conexao em serverless
-  max: 10, // Maximo de conexoes no pool
-  min: 0,  // Minimo de conexoes
-  idleTimeoutMillis: 30000, // Fecha conexoes inativas apos 30s
-  connectionTimeoutMillis: 10000, // Timeout de conexao de 10s
-  allowExitOnIdle: true, // Permite fechar em ambiente serverless
-});
-
-// Tratamento de erro do pool
-pool.on('error', (err) => {
-  console.error('[DB Pool] Erro inesperado no cliente:', err);
-});
+// Reaproveita o MESMO pool singleton de lib/postgres.ts. Antes este arquivo
+// criava um segundo Pool independente, dobrando as conexões abertas contra o
+// banco. Agora ambos compartilham uma única instância por processo.
+const pool = getPool();
 
 // Funcao helper para queries com retry
 export async function query(text: string, params?: any[], retries = 2): Promise<any> {

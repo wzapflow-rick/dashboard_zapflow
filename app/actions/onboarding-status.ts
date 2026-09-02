@@ -47,19 +47,21 @@ export async function getOnboardingStatus(): Promise<OnboardingStatus | null> {
       empresa.telefone_loja
     );
 
-    // Verificar se tem produtos cadastrados
-    const produtosResult: any = await pg.query(
-      'SELECT COUNT(*) as count FROM produtos WHERE empresa_id = $1 AND disponivel = true',
-      [empresaId]
-    );
+    // Produtos e config de pagamento são independentes: rodam em paralelo.
+    const [produtosResult, mpResult] = await Promise.all([
+      pg.query(
+        'SELECT COUNT(*) as count FROM produtos WHERE empresa_id = $1 AND disponivel = true',
+        [empresaId]
+      ) as Promise<any>,
+      pg.query(
+        'SELECT mp_access_token FROM pagamentos_config WHERE empresa_id = $1',
+        [empresaId]
+      ) as Promise<any>,
+    ]);
+
     const produtosCount = parseInt(produtosResult?.rows?.[0]?.count || produtosResult?.[0]?.count || '0');
     const hasProducts = produtosCount > 0;
 
-    // Verificar Mercado Pago conectado
-    const mpResult: any = await pg.query(
-      'SELECT mp_access_token FROM pagamentos_config WHERE empresa_id = $1',
-      [empresaId]
-    );
     const mpConfig = mpResult?.rows?.[0] || mpResult?.[0];
     // Se o pagamento integrado estiver desativado, a etapa do Mercado Pago e
     // considerada concluida automaticamente (a loja nao recebe pagamentos online).
@@ -75,15 +77,21 @@ export async function getOnboardingStatus(): Promise<OnboardingStatus | null> {
       try {
         const EVO_API_URL = process.env.EVOLUTION_API_URL || 'https://evo.wzapflow.com.br';
         const EVO_API_KEY = process.env.EVOLUTION_API_KEY || '';
-        
+
+        // Timeout de 3s: sem isso, uma Evolution API lenta/fora do ar travava
+        // todo o carregamento do dashboard (esta chamada faz parte do bundle).
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+
         const statusResponse = await fetch(
           `${EVO_API_URL}/instance/connectionState/${empresa.instancia_evolution}`,
           {
             headers: {
               'apikey': EVO_API_KEY,
             },
+            signal: controller.signal,
           }
-        );
+        ).finally(() => clearTimeout(timeoutId));
         
         if (statusResponse.ok) {
           const statusData = await statusResponse.json();
