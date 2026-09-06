@@ -339,8 +339,16 @@ export async function getMesasComDetalhes(): Promise<MesaComDetalhes[]> {
         [user.empresaId, COMANDA_STATUS.ABERTA]
       ),
       pg.query(
-        `SELECT * FROM pedidos WHERE empresa_id = $1 AND tipo_entrega = 'mesa' AND status != 'cancelado' LIMIT 500`,
-        [user.empresaId]
+        `SELECT p.*
+           FROM pedidos p
+           INNER JOIN comandas c
+             ON c.id = p.comanda_id
+            AND c.store_id = $1
+            AND c.status = $2
+          WHERE p.empresa_id = $1
+            AND p.tipo_entrega = 'mesa'
+            AND p.status != 'cancelado'`,
+        [user.empresaId, COMANDA_STATUS.ABERTA]
       ),
     ]);
 
