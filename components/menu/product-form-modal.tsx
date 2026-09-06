@@ -350,7 +350,7 @@ export default function ProductFormModal({
                                     <option value="mais_pedido">Mais Pedido</option>
                                     <option value="recomendado">Recomendado</option>
                                 </select>
-                                <p className="text-[10px] text-slate-400 dark:text-slate-500">A tag aparecera abaixo do nome do produto no cardapio. "Oferta" destaca com borda vermelha e aparece na faixa de destaques no topo.</p>
+                                <p className="text-[10px] text-slate-400 dark:text-slate-500">A tag aparecera abaixo do nome do produto no cardapio. &quot;Oferta&quot; destaca com borda vermelha e aparece na faixa de destaques no topo.</p>
                             </div>
                         </div>
 

@@ -160,7 +160,7 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved, availab
                                             }}
                                             className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700 appearance-none"
                                         >
-                                            <option value="">Nenhuma (Ficará em "Monte seu Pedido")</option>
+                                            <option value="">Nenhuma (Ficará em &quot;Monte seu Pedido&quot;)</option>
                                             {categories.map(cat => (
                                                 <option key={String(cat.id)} value={String(cat.id)}>{cat.nome}</option>
                                             ))}

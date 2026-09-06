@@ -203,7 +203,7 @@ export default function RatingsPage() {
 
                                             {rating.comentario && (
                                                 <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-3 mt-2">
-                                                    <p className="text-sm text-slate-700 dark:text-slate-300">"{rating.comentario}"</p>
+                                                    <p className="text-sm text-slate-700 dark:text-slate-300">&quot;{rating.comentario}&quot;</p>
                                                 </div>
                                             )}
                                         </div>

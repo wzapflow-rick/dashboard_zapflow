@@ -22,6 +22,9 @@ const IS_PRODUCTION = process.env.NODE_ENV === 'production' && !process.env.NEXT
 
 export default function TestPage() {
     const router = useRouter();
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [isSettingUp, setIsSettingUp] = useState(false);
+    const [generatedCount, setGeneratedCount] = useState(0);
 
     useEffect(() => {
         if (IS_PRODUCTION) {
@@ -34,10 +37,6 @@ export default function TestPage() {
     if (IS_PRODUCTION) {
         return null;
     }
-    const [isGenerating, setIsGenerating] = useState(false);
-    const [isSettingUp, setIsSettingUp] = useState(false);
-    const [generatedCount, setGeneratedCount] = useState(0);
-
     const handleSetup = async () => {
         try {
             setIsSettingUp(true);
@@ -123,7 +122,7 @@ export default function TestPage() {
                                 </div>
                                 <h3 className="text-lg font-black text-slate-900">Gerar Pedido Único</h3>
                                 <p className="text-sm text-slate-500 leading-relaxed">
-                                    Cria um novo cliente aleatório e um pedido com 1 a 3 itens do seu cardápio com status "Novo".
+                                    Cria um novo cliente aleatório e um pedido com 1 a 3 itens do seu cardápio com status &quot;Novo&quot;.
                                 </p>
                             </div>
                             <button
@@ -179,7 +178,7 @@ export default function TestPage() {
                                     </div>
                                     <h3 className="text-lg font-black text-slate-900">Gerar Setup Completo (Pizzaria)</h3>
                                     <p className="text-sm text-slate-500 leading-relaxed max-w-xl">
-                                        Cria automaticamente categorias, 3 insumos (Mussarela, Molho, Calabresa), e um produto "Pizza de Calabresa" com ficha técnica vinculada. Ideal para novos testes do zero.
+                                        Cria automaticamente categorias, 3 insumos (Mussarela, Molho, Calabresa), e um produto &quot;Pizza de Calabresa&quot; com ficha técnica vinculada. Ideal para novos testes do zero.
                                     </p>
                                 </div>
                                 <button

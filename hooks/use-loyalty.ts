@@ -59,7 +59,7 @@ export function useLoyalty() {
         return { desconto: 0, pontosUsados: 0 };
       }
 
-      const maxDescontoPorPontos = useMemoCalcMaxDesconto(pontosDisponiveis, loyaltyConfig);
+      const maxDescontoPorPontos = calculateMaxDiscount(pontosDisponiveis, loyaltyConfig);
       const descontoPontos = Math.min(maxDescontoPorPontos, subtotal - descontoAtual);
       const pontosASeremUsados = Math.floor(descontoPontos / loyaltyConfig.desconto_valor) * loyaltyConfig.pontos_para_desconto;
 
@@ -95,7 +95,7 @@ export function useLoyalty() {
   };
 }
 
-function useMemoCalcMaxDesconto(pontos: number, config: LoyaltyConfig): number {
+function calculateMaxDiscount(pontos: number, config: LoyaltyConfig): number {
   if (pontos < config.pontos_para_desconto) return 0;
   const blocosCompletos = Math.floor(pontos / config.pontos_para_desconto);
   return blocosCompletos * config.desconto_valor;

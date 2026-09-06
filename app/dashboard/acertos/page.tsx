@@ -263,7 +263,7 @@ export default function AcertosPage() {
                                         💡 Como funciona
                                     </p>
                                     <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                                        O sistema busca automaticamente os pedidos finalizados do período selecionado e calcula o valor a pagar para cada entregador baseado no número de entregas × valor por entrega. Clique em "Pagar" para marcar como pago.
+                                        O sistema busca automaticamente os pedidos finalizados do período selecionado e calcula o valor a pagar para cada entregador baseado no número de entregas × valor por entrega. Clique em &quot;Pagar&quot; para marcar como pago.
                                     </p>
                                 </div>
                             </div>

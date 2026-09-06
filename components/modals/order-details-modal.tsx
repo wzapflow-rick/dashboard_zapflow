@@ -138,7 +138,7 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
               {order.observacoes && (
                 <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 dark:bg-amber-900/20 dark:border-amber-800">
                   <p className="text-[10px] font-bold text-amber-500 uppercase mb-1">Nota do Pedido</p>
-                  <p className="text-xs text-amber-700 font-medium leading-relaxed italic dark:text-amber-400">"{order.observacoes}"</p>
+                  <p className="text-xs text-amber-700 font-medium leading-relaxed italic dark:text-amber-400">&quot;{order.observacoes}&quot;</p>
                 </div>
               )}
             </div>

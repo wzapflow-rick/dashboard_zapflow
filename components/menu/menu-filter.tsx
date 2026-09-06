@@ -365,7 +365,7 @@ export default function MenuFilter({
 
     const showOfertas = ofertas.length > 0 && !search.trim() && selectedCategory === 'all';
 
-    // ── Handlers ──────────────────────────────────────────────────────────────
+    // ── Handlers ────────────────────────────────────────��─────────────────────
     const handleProductClick = useCallback(
         (product: any) => {
             const hasSaborGroups = product.saborGroups && product.saborGroups.length > 0;
@@ -486,10 +486,10 @@ export default function MenuFilter({
                         <>
                             <span className="font-semibold text-white">{totalResults}</span>{' '}
                             {totalResults === 1 ? 'resultado' : 'resultados'} para{' '}
-                            <span className="font-semibold text-[#22c55e]">"{search}"</span>
+                            <span className="font-semibold text-[#22c55e]">&quot;{search}&quot;</span>
                         </>
                     ) : (
-                        <>Nenhum resultado para <span className="font-semibold">"{search}"</span></>
+                        <>Nenhum resultado para <span className="font-semibold">&quot;{search}&quot;</span></>
                     )}
                 </p>
             )}

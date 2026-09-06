@@ -19,13 +19,7 @@ const formatPrice = (value: number) => `R$ ${Number(value || 0).toFixed(2).repla
 
 export default function TablePrintModal({ isOpen, onClose, mesa, comanda, tipo }: TablePrintModalProps) {
   const printRef = useRef<HTMLDivElement>(null);
-  const [largura, setLargura] = useState<LarguraPapel>('58mm');
-
-  React.useEffect(() => {
-    setLargura(getLarguraPadrao());
-  }, []);
-
-  if (!isOpen) return null;
+  const [largura, setLargura] = useState<LarguraPapel>(() => getLarguraPadrao());
 
   const handleLarguraChange = (l: LarguraPapel) => {
     setLargura(l);
@@ -64,6 +58,8 @@ export default function TablePrintModal({ isOpen, onClose, mesa, comanda, tipo }
     return acc + cmd.pedidos.reduce((sum, p: any) => sum + (Number(p.valor_total) || 0), 0);
   }, 0);
   const totalGeral = totalItens + taxaEntrega;
+
+  if (!isOpen) return null;
 
   const handlePrint = () => {
     const printContent = printRef.current;

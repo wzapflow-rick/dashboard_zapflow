@@ -16,13 +16,7 @@ const formatPrice = (value: number) => `R$ ${Number(value || 0).toFixed(2).repla
 
 export default function PrintModal({ isOpen, onClose, order }: PrintModalProps) {
     const printRef = useRef<HTMLDivElement>(null);
-    const [largura, setLargura] = useState<LarguraPapel>('58mm');
-
-    React.useEffect(() => {
-        setLargura(getLarguraPadrao());
-    }, []);
-
-    if (!isOpen) return null;
+    const [largura, setLargura] = useState<LarguraPapel>(() => getLarguraPadrao());
 
     const handleLarguraChange = (l: LarguraPapel) => {
         setLargura(l);
@@ -38,6 +32,29 @@ export default function PrintModal({ isOpen, onClose, order }: PrintModalProps) 
             largura,
         });
     };
+
+    const formattedItems = useMemo(() => {
+        let rawItens = order?.itens;
+        if (typeof rawItens === 'string') {
+            try {
+                rawItens = JSON.parse(rawItens);
+            } catch (e) {
+                console.error('Erro ao processar itens do pedido:', e);
+                rawItens = [];
+            }
+        }
+
+        return Array.isArray(rawItens)
+            ? rawItens.map((item: any) => ({
+                nome: item.produto || item.nome || 'Item',
+                qtd: item.quantidade || 1,
+                preco: item.preco || 0,
+                observacao: item.observacao || ''
+            }))
+            : [];
+    }, [order?.itens]);
+
+    const isDelivery = order?.tipo_entrega !== 'retirada' && order?.endereco_entrega;
 
     // Impressão pelo celular via app RawBT (Android) ligado à térmica por rede/cabo/Bluetooth.
     // NÃO bloqueamos por Android: com "Site para computador" ligado o Chrome esconde
@@ -67,28 +84,7 @@ export default function PrintModal({ isOpen, onClose, order }: PrintModalProps) 
         printViaRawBT(dados, largura);
     };
 
-    const formattedItems = useMemo(() => {
-        let rawItens = order?.itens;
-        if (typeof rawItens === 'string') {
-            try {
-                rawItens = JSON.parse(rawItens);
-            } catch (e) {
-                console.error('Erro ao processar itens do pedido:', e);
-                rawItens = [];
-            }
-        }
-        
-        return Array.isArray(rawItens)
-            ? rawItens.map((item: any) => ({
-                nome: item.produto || item.nome || 'Item',
-                qtd: item.quantidade || 1,
-                preco: item.preco || 0,
-                observacao: item.observacao || ''
-            }))
-            : [];
-    }, [order?.itens]);
-
-    const isDelivery = order?.tipo_entrega !== 'retirada' && order?.endereco_entrega;
+    if (!isOpen) return null;
 
     return (
         <AnimatePresence>

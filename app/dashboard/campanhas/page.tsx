@@ -419,7 +419,7 @@ export default function CampanhasPage() {
                             <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-12 text-center">
                                 <Megaphone className="size-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
                                 <p className="text-slate-500 dark:text-slate-400">Nenhuma campanha configurada ainda.</p>
-                                <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">Clique em "Nova campanha" para começar.</p>
+                                <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">Clique em &quot;Nova campanha&quot; para começar.</p>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

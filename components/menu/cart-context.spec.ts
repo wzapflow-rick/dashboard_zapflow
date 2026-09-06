@@ -21,10 +21,11 @@ describe('Cart Calculations', () => {
 
   it('should apply fixed coupon discount', () => {
     const subtotal = 100;
-    const cupom = { id: 1, codigo: 'PROMO20', desconto: 20, tipo: 'valor_fixo' as const };
-    const discount = cupom.tipo === 'percentual' 
-      ? subtotal * (cupom.desconto / 100) 
-      : cupom.desconto;
+    const calculateDiscount = (coupon: { desconto: number; tipo: 'percentual' | 'valor_fixo' }) =>
+      coupon.tipo === 'percentual'
+        ? subtotal * (coupon.desconto / 100)
+        : coupon.desconto;
+    const discount = calculateDiscount({ desconto: 20, tipo: 'valor_fixo' });
     expect(discount).toBe(20);
   });
 
