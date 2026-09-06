@@ -325,86 +325,82 @@ export async function getMesasComDetalhes(): Promise<MesaComDetalhes[]> {
     const user = await getMe();
     if (!user?.empresaId) throw new Error('Não autorizado');
 
-    // As 3 consultas dependem apenas do store_id (sao independentes entre si),
-    // entao rodamos em paralelo: 1 ida ao banco em vez de 3 em sequencia.
-    // Usamos pg.query direto (em vez de pg.list) para evitar a query COUNT(*)
-    // adicional que o list dispara internamente.
-    const [mesasData, comandasData, pedidosData] = await Promise.all([
-      pg.query(
-        `SELECT * FROM mesas WHERE store_id = $1 ORDER BY numero ASC LIMIT 100`,
-        [user.empresaId]
-      ),
-      pg.query(
-        `SELECT * FROM comandas WHERE store_id = $1 AND status = $2 LIMIT 500`,
-        [user.empresaId, COMANDA_STATUS.ABERTA]
-      ),
-      pg.query(
-        `SELECT p.*
-           FROM pedidos p
-           INNER JOIN comandas c
-             ON c.id = p.comanda_id
-            AND c.store_id = $1
-            AND c.status = $2
-          WHERE p.empresa_id = $1
-            AND p.tipo_entrega = 'mesa'
-            AND p.status != 'cancelado'`,
-        [user.empresaId, COMANDA_STATUS.ABERTA]
-      ),
-    ]);
-
+    const mesasData = await pg.query(
+      `SELECT * FROM mesas WHERE store_id = $1 ORDER BY numero ASC LIMIT 100`,
+      [user.empresaId]
+    );
     const mesas = normalizeRecordList((mesasData.rows || []) as any[]) as Mesa[];
 
     if (mesas.length === 0) return [];
 
-    const comandas = normalizeRecordList((comandasData.rows || []) as any[]) as Comanda[];
-    const pedidos = normalizeRecordList((pedidosData.rows || []) as any[]);
+    try {
+      const [comandasData, pedidosData] = await Promise.all([
+        pg.query(
+          `SELECT * FROM comandas WHERE store_id = $1 AND status = $2 LIMIT 500`,
+          [user.empresaId, COMANDA_STATUS.ABERTA]
+        ),
+        pg.query(
+          `SELECT p.*
+             FROM pedidos p
+             INNER JOIN comandas c
+               ON c.id::text = p.comanda_id::text
+              AND c.store_id = $1
+              AND c.status = $2
+            WHERE p.empresa_id = $1
+              AND p.tipo_entrega = 'mesa'
+              AND p.status != 'cancelado'`,
+          [user.empresaId, COMANDA_STATUS.ABERTA]
+        ),
+      ]);
 
-    // Agrupa pedidos por comanda_id em um unico passo (O(n)) em vez de filtrar
-    // a lista inteira de pedidos para cada comanda (O(comandas x pedidos)).
-    const pedidosPorComanda = new Map<string, any[]>();
-    for (const pedido of pedidos as any[]) {
-      const key = String(pedido.comanda_id);
-      const arr = pedidosPorComanda.get(key);
-      if (arr) arr.push(pedido);
-      else pedidosPorComanda.set(key, [pedido]);
-    }
+      const comandas = normalizeRecordList((comandasData.rows || []) as any[]) as Comanda[];
+      const pedidos = normalizeRecordList((pedidosData.rows || []) as any[]);
 
-    // Agrupa comandas por mesa_id da mesma forma (O(n)).
-    const comandasPorMesa = new Map<string, ComandaComPedidos[]>();
-    for (const comanda of comandas) {
-      const pedidosDaComanda = pedidosPorComanda.get(String(comanda.id)) || [];
-      const comandaComPedidos: ComandaComPedidos = {
-        ...comanda,
-        pedidos: pedidosDaComanda,
-      };
-      const key = String(comanda.mesa_id);
-      const arr = comandasPorMesa.get(key);
-      if (arr) arr.push(comandaComPedidos);
-      else comandasPorMesa.set(key, [comandaComPedidos]);
-    }
+      const pedidosPorComanda = new Map<string, any[]>();
+      for (const pedido of pedidos as any[]) {
+        const key = String(pedido.comanda_id);
+        const arr = pedidosPorComanda.get(key);
+        if (arr) arr.push(pedido);
+        else pedidosPorComanda.set(key, [pedido]);
+      }
 
-    const mesasComDetalhes: MesaComDetalhes[] = mesas.map((mesa) => {
-      const comandasComPedidos = comandasPorMesa.get(String(mesa.id)) || [];
+      const comandasPorMesa = new Map<string, ComandaComPedidos[]>();
+      for (const comanda of comandas) {
+        const pedidosDaComanda = pedidosPorComanda.get(String(comanda.id)) || [];
+        const comandaComPedidos: ComandaComPedidos = {
+          ...comanda,
+          pedidos: pedidosDaComanda,
+        };
+        const key = String(comanda.mesa_id);
+        const arr = comandasPorMesa.get(key);
+        if (arr) arr.push(comandaComPedidos);
+        else comandasPorMesa.set(key, [comandaComPedidos]);
+      }
 
-      const totalItens = comandasComPedidos.reduce((acc, c) => {
-        const totalComanda = c.pedidos.reduce(
-          (sum, p: any) => sum + (Number(p.valor_total) || 0),
-          0
-        );
-        return acc + totalComanda;
-      }, 0);
+      return mesas.map((mesa) => {
+        const comandasComPedidos = comandasPorMesa.get(String(mesa.id)) || [];
+        const totalItens = comandasComPedidos.reduce((acc, comanda) => {
+          const totalComanda = comanda.pedidos.reduce(
+            (sum, pedido: any) => sum + (Number(pedido.valor_total) || 0),
+            0
+          );
+          return acc + totalComanda;
+        }, 0);
 
-      // A taxa de entrega da mesa (opcional) entra no total exibido/impresso.
-      const totalMesa = totalItens + (Number(mesa.taxa_entrega) || 0);
-
-      return {
+        return {
+          ...mesa,
+          comandas: comandasComPedidos,
+          total_mesa: totalItens + (Number(mesa.taxa_entrega) || 0),
+        };
+      });
+    } catch (error) {
+      console.error('Erro ao buscar detalhes das mesas:', error);
+      return mesas.map((mesa) => ({
         ...mesa,
-        comandas: comandasComPedidos,
-        total_mesa: totalMesa,
-      };
-    });
-
-    return mesasComDetalhes;
+        comandas: [],
+        total_mesa: Number(mesa.taxa_entrega) || 0,
+      }));
+    }
   } catch (error) {
     console.error('Erro ao buscar mesas com detalhes:', error);
     return [];
