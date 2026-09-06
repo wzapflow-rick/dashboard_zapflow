@@ -31,15 +31,6 @@ export default function TrackOrderPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (orderId) {
-      fetchOrder();
-      // Atualizar a cada 30 segundos
-      const interval = setInterval(fetchOrder, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [orderId]);
-
   const fetchOrder = async () => {
     try {
       const res = await fetch(`/api/track/${orderId}`);
@@ -53,6 +44,14 @@ export default function TrackOrderPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (orderId) {
+      queueMicrotask(() => fetchOrder());
+      const interval = setInterval(fetchOrder, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [orderId]);
 
   const getCurrentStepIndex = () => {
     if (!order) return -1;

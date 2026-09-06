@@ -99,7 +99,7 @@ function OnboardingContent() {
 
   useEffect(() => {
     const nomeParam = searchParams.get('nome');
-    if (nomeParam) setCompanyName(nomeParam);
+    if (nomeParam) queueMicrotask(() => setCompanyName(nomeParam));
   }, [searchParams]);
 
   // Poll connection status when on step 2

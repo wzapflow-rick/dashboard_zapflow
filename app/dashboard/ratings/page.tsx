@@ -31,15 +31,6 @@ export default function RatingsPage() {
     const [empresaId, setEmpresaId] = useState<number | null>(null);
     const [clienteNomes, setClienteNomes] = useState<Record<string, string>>({});
 
-    useEffect(() => {
-        getMe().then((user) => {
-            if (user?.empresaId) {
-                setEmpresaId(user.empresaId);
-                loadRatings(user.empresaId);
-            }
-        });
-    }, []);
-
     const loadRatings = async (empId: number) => {
         try {
             const [ratingsData, avgData] = await Promise.all([
@@ -66,6 +57,15 @@ export default function RatingsPage() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        getMe().then((user) => {
+            if (user?.empresaId) {
+                setEmpresaId(user.empresaId);
+                loadRatings(user.empresaId);
+            }
+        });
+    }, []);
 
     const filteredRatings = ratings.filter(r => 
         r.comentario?.toLowerCase().includes(filter.toLowerCase()) ||

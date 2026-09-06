@@ -26,15 +26,6 @@ export default function AcertosPage() {
     const [periodo, setPeriodo] = useState('hoje');
     const [empresaId, setEmpresaId] = useState<number | null>(null);
 
-    useEffect(() => {
-        getMe().then((user) => {
-            if (user?.empresaId) {
-                setEmpresaId(user.empresaId);
-                loadData(user.empresaId);
-            }
-        });
-    }, []);
-
     const loadData = async (empId: number) => {
         setLoading(true);
         try {
@@ -53,6 +44,15 @@ export default function AcertosPage() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        getMe().then((user) => {
+            if (user?.empresaId) {
+                setEmpresaId(user.empresaId);
+                loadData(user.empresaId);
+            }
+        });
+    }, []);
 
     const handlePeriodoChange = (novoPeriodo: string) => {
         setPeriodo(novoPeriodo);

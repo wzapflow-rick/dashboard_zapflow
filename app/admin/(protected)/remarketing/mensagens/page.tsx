@@ -94,10 +94,6 @@ export default function MensagensPage() {
     mensagem_id: null as number | null,
   });
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
   const loadData = async () => {
     setLoading(true);
     const [msgRes, tiposRes, catRes, combRes] = await Promise.all([
@@ -114,6 +110,10 @@ export default function MensagensPage() {
     
     setLoading(false);
   };
+
+  useEffect(() => {
+    queueMicrotask(() => loadData());
+  }, []);
 
   // === MENSAGENS ===
   const openCreateMensagem = () => {

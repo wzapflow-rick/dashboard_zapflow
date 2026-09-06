@@ -17,10 +17,6 @@ export default function InsumosManagement() {
     const [isRestockModalOpen, setIsRestockModalOpen] = useState(false);
     const [restockingInsumo, setRestockingInsumo] = useState<Insumo | null>(null);
 
-    useEffect(() => {
-        fetchInsumos();
-    }, []);
-
     const fetchInsumos = async () => {
         try {
             const data = await getInsumos();
@@ -31,6 +27,10 @@ export default function InsumosManagement() {
             setIsLoading(false);
         }
     };
+
+    useEffect(() => {
+        queueMicrotask(() => fetchInsumos());
+    }, []);
 
     const handleEdit = (insumo: Insumo) => {
         setEditingInsumo(insumo);

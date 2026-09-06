@@ -65,23 +65,6 @@ export function BibliotecaItemModal({ isOpen, editingItem, onClose, onSaved, con
     const precoSugerido = useCurrencyInput(editingItem?.preco_sugerido);
     const precoCusto = useCurrencyInput(editingItem?.preco_custo);
 
-    React.useEffect(() => {
-        setNome(editingItem?.nome || '');
-        // setDescricao(editingItem?.descricao || '');
-        precoSugerido.reset(editingItem?.preco_sugerido);
-        precoCusto.reset(editingItem?.preco_custo);
-        // Carregar insumos quando abrir o modal APENAS se controle de estoque estiver habilitado
-        if (isOpen && usaInsumos) {
-            fetchInsumos();
-            if (editingItem?.id) {
-                fetchReceita(editingItem.id);
-            } else {
-                setReceita([]);
-            }
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [editingItem, isOpen]);
-
     const fetchInsumos = async () => {
         setLoadingInsumos(true);
         try {
@@ -105,6 +88,23 @@ export function BibliotecaItemModal({ isOpen, editingItem, onClose, onSaved, con
             toast.error('Erro ao carregar receita do sabor');
         }
     };
+
+    React.useEffect(() => {
+        queueMicrotask(() => {
+            setNome(editingItem?.nome || '');
+            precoSugerido.reset(editingItem?.preco_sugerido);
+            precoCusto.reset(editingItem?.preco_custo);
+            if (isOpen && usaInsumos) {
+                fetchInsumos();
+                if (editingItem?.id) {
+                    fetchReceita(editingItem.id);
+                } else {
+                    setReceita([]);
+                }
+            }
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [editingItem, isOpen]);
 
     const adicionarInsumo = (insumoId: number) => {
         if (!insumoId) return;

@@ -54,10 +54,6 @@ export default function ConfigPage() {
     ativo: true,
   });
 
-  useEffect(() => {
-    loadConfig();
-  }, []);
-
   async function loadConfig() {
     setLoading(true);
     const result = await getConfig();
@@ -77,6 +73,10 @@ export default function ConfigPage() {
     }
     setLoading(false);
   }
+
+  useEffect(() => {
+    queueMicrotask(loadConfig);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

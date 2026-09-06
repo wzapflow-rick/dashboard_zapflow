@@ -61,13 +61,6 @@ export default function TableOrderModal({
   // Estado para alternar visualizacao do carrinho no mobile
   const [showCartMobile, setShowCartMobile] = useState(false);
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchProducts();
-      setShowCartMobile(false);
-    }
-  }, [isOpen]);
-
   const fetchProducts = async () => {
     try {
       const [productsData, categoriesData, compositeData] = await Promise.all([
@@ -84,6 +77,15 @@ export default function TableOrderModal({
       setIsLoadingProducts(false);
     }
   };
+
+  useEffect(() => {
+    if (isOpen) {
+      queueMicrotask(() => {
+        fetchProducts();
+        setShowCartMobile(false);
+      });
+    }
+  }, [isOpen]);
 
   // Abre modal de observacao antes de adicionar ao carrinho
   const handleProductClick = (product: Product) => {

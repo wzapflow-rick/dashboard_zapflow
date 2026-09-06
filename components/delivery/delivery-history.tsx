@@ -43,14 +43,6 @@ export default function DeliveryHistory() {
   const [selectedDriver, setSelectedDriver] = useState<number | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'week' | 'month' | 'all'>('today');
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  useEffect(() => {
-    filterDeliveries();
-  }, [deliveries, searchTerm, selectedDriver, selectedPeriod]);
-
   const loadData = async () => {
     try {
       const [driversData, deliveriesData] = await Promise.all([
@@ -101,6 +93,14 @@ export default function DeliveryHistory() {
 
     setFilteredDeliveries(filtered);
   };
+
+  useEffect(() => {
+    queueMicrotask(() => loadData());
+  }, []);
+
+  useEffect(() => {
+    queueMicrotask(() => filterDeliveries());
+  }, [deliveries, searchTerm, selectedDriver, selectedPeriod]);
 
   const formatPrice = (price: number) => `R$ ${Number(price || 0).toFixed(2).replace('.', ',')}`;
 

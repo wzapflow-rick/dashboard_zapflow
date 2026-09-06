@@ -47,10 +47,6 @@ export default function DriverDashboard() {
   const [updating, setUpdating] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    checkSession();
-  }, []);
-
   const checkSession = async () => {
     try {
       const session = await getDriverSession();
@@ -75,6 +71,10 @@ export default function DriverDashboard() {
       console.error('Erro ao carregar pedidos:', error);
     }
   };
+
+  useEffect(() => {
+    queueMicrotask(() => checkSession());
+  }, []);
 
   const handleRefresh = async () => {
     if (!driver?.driverId) return;

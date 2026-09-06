@@ -57,13 +57,6 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
     const lastCheckedPhoneRef = useRef<string>('');
     const hasOpenedRegisterModalRef = useRef<boolean>(false);
 
-    useEffect(() => {
-        if (isOpen) {
-            fetchProducts();
-            fetchUser();
-        }
-    }, [isOpen]);
-
     const fetchUser = async () => {
         try {
             const user = await getMe();
@@ -91,6 +84,15 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
             setIsLoadingProducts(false);
         }
     };
+
+    useEffect(() => {
+        if (isOpen) {
+            queueMicrotask(() => {
+                fetchProducts();
+                fetchUser();
+            });
+        }
+    }, [isOpen]);
 
     const checkCustomerExists = useCallback(async (telefone: string) => {
         const cleanPhone = telefone.replace(/\D/g, '');

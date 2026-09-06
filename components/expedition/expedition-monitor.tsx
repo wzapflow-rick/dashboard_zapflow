@@ -220,105 +220,6 @@ export default function ExpeditionMonitor() {
     });
   }, [orders, searchQuery]);
 
-  // Atalhos de teclado para navegacao no kanban
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignorar se estiver digitando em input ou textarea
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        return;
-      }
-
-      // Ignorar se algum modal estiver aberto
-      if (isPrintModalOpen || isRegisterModalOpen || isStockModalOpen || isOrderCreatorOpen || isDetailsOpen || isCancelModalOpen || isEditModalOpen) {
-        return;
-      }
-
-      // Pedidos ativos (exceto finalizados e cancelados) ordenados por coluna e posicao
-      const activeOrders = filteredOrders.filter(o => 
-        o.status !== 'finalizado' && o.status !== 'cancelado'
-      );
-
-      if (activeOrders.length === 0) return;
-
-      const currentIndex = selectedOrderId 
-        ? activeOrders.findIndex(o => o.id === selectedOrderId)
-        : -1;
-
-      switch (e.key) {
-        case 'ArrowDown':
-        case 'j': // Vim-style
-          e.preventDefault();
-          if (currentIndex === -1) {
-            setSelectedOrderId(activeOrders[0]?.id || null);
-          } else if (currentIndex < activeOrders.length - 1) {
-            setSelectedOrderId(activeOrders[currentIndex + 1].id);
-          }
-          break;
-
-        case 'ArrowUp':
-        case 'k': // Vim-style
-          e.preventDefault();
-          if (currentIndex === -1) {
-            setSelectedOrderId(activeOrders[activeOrders.length - 1]?.id || null);
-          } else if (currentIndex > 0) {
-            setSelectedOrderId(activeOrders[currentIndex - 1].id);
-          }
-          break;
-
-        case 'Enter':
-          e.preventDefault();
-          if (selectedOrderId) {
-            const selectedOrder = activeOrders.find(o => o.id === selectedOrderId);
-            if (selectedOrder) {
-              handleMoveOrder(selectedOrder.id, selectedOrder.status);
-            }
-          }
-          break;
-
-        case 'Escape':
-          e.preventDefault();
-          setSelectedOrderId(null);
-          break;
-
-        case 'p':
-        case 'P':
-          e.preventDefault();
-          if (selectedOrderId) {
-            const selectedOrder = orders.find(o => o.id === selectedOrderId);
-            if (selectedOrder) {
-              openPrintModal(selectedOrder);
-            }
-          }
-          break;
-
-        case 'e':
-        case 'E':
-          e.preventDefault();
-          if (selectedOrderId) {
-            const selectedOrder = orders.find(o => o.id === selectedOrderId);
-            if (selectedOrder && (selectedOrder.status === 'pendente' || selectedOrder.status === 'preparando')) {
-              openEditModal(selectedOrder);
-            }
-          }
-          break;
-
-        case 'd':
-        case 'D':
-          e.preventDefault();
-          if (selectedOrderId) {
-            const selectedOrder = orders.find(o => o.id === selectedOrderId);
-            if (selectedOrder) {
-              openDetailsModal(selectedOrder);
-            }
-          }
-          break;
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [filteredOrders, selectedOrderId, isPrintModalOpen, isRegisterModalOpen, isStockModalOpen, isOrderCreatorOpen, isDetailsOpen, isCancelModalOpen, isEditModalOpen]);
-
   // Auto-scroll para o card selecionado quando navegar com teclado
   useEffect(() => {
     if (selectedOrderId) {
@@ -447,6 +348,49 @@ export default function ExpeditionMonitor() {
     setIsPrintModalOpen(false);
     setSelectedOrderForPrint(null);
   };
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+      if (isPrintModalOpen || isRegisterModalOpen || isStockModalOpen || isOrderCreatorOpen || isDetailsOpen || isCancelModalOpen || isEditModalOpen) return;
+
+      const activeOrders = filteredOrders.filter(order => order.status !== 'finalizado' && order.status !== 'cancelado');
+      if (activeOrders.length === 0) return;
+      const currentIndex = selectedOrderId ? activeOrders.findIndex(order => order.id === selectedOrderId) : -1;
+
+      if (event.key === 'ArrowDown' || event.key === 'j') {
+        event.preventDefault();
+        const nextIndex = currentIndex === -1 ? 0 : Math.min(currentIndex + 1, activeOrders.length - 1);
+        setSelectedOrderId(activeOrders[nextIndex]?.id || null);
+      } else if (event.key === 'ArrowUp' || event.key === 'k') {
+        event.preventDefault();
+        const nextIndex = currentIndex === -1 ? activeOrders.length - 1 : Math.max(currentIndex - 1, 0);
+        setSelectedOrderId(activeOrders[nextIndex]?.id || null);
+      } else if (event.key === 'Escape') {
+        event.preventDefault();
+        setSelectedOrderId(null);
+      } else if (event.key === 'Enter' && selectedOrderId) {
+        event.preventDefault();
+        const order = activeOrders.find(item => item.id === selectedOrderId);
+        if (order) handleMoveOrder(order.id, order.status);
+      } else if ((event.key === 'p' || event.key === 'P') && selectedOrderId) {
+        event.preventDefault();
+        const order = orders.find(item => item.id === selectedOrderId);
+        if (order) openPrintModal(order);
+      } else if ((event.key === 'e' || event.key === 'E') && selectedOrderId) {
+        event.preventDefault();
+        const order = orders.find(item => item.id === selectedOrderId);
+        if (order && (order.status === 'pendente' || order.status === 'preparando')) openEditModal(order);
+      } else if ((event.key === 'd' || event.key === 'D') && selectedOrderId) {
+        event.preventDefault();
+        const order = orders.find(item => item.id === selectedOrderId);
+        if (order) openDetailsModal(order);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [filteredOrders, orders, selectedOrderId, isPrintModalOpen, isRegisterModalOpen, isStockModalOpen, isOrderCreatorOpen, isDetailsOpen, isCancelModalOpen, isEditModalOpen]);
 
   return (
     <>

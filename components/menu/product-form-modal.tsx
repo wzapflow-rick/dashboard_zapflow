@@ -65,6 +65,7 @@ export default function ProductFormModal({
         toast.dismiss();
 
         // Se nao existem categorias, automaticamente mostrar campo para criar nova
+        queueMicrotask(() => {
         setIsCreatingCategory(categories.length === 0);
         setIsSubmitting(false);
         setImagePreview(editingProduct?.imagem || null);
@@ -129,6 +130,7 @@ export default function ProductFormModal({
         } else {
             setSelectedRecommendations([]);
         }
+        });
 
         return () => {
             toast.dismiss();

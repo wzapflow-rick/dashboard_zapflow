@@ -79,11 +79,11 @@ export function ContextualBanner({
       const dismissedTime = parseInt(dismissedAt);
       const hoursElapsed = (Date.now() - dismissedTime) / (1000 * 60 * 60);
       if (hoursElapsed < dismissDuration) {
-        setIsDismissed(true);
+        queueMicrotask(() => setIsDismissed(true));
         return;
       }
     }
-    setIsDismissed(false);
+    queueMicrotask(() => setIsDismissed(false));
   }, [storageKey, dismissDuration]);
 
   const handleDismiss = () => {

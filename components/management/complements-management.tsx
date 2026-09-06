@@ -64,10 +64,6 @@ export default function ComplementsManagement() {
     const [importFator, setImportFator] = useState<number>(1);
     const [activeCatTab, setActiveCatTab] = useState<number | null>(null);
 
-    useEffect(() => {
-        fetchData();
-    }, []);
-
     const fetchData = async () => {
         try {
             setLoading(true);
@@ -87,6 +83,10 @@ export default function ComplementsManagement() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        queueMicrotask(() => fetchData());
+    }, []);
 
     const carregarItens = async (grupoId: number) => {
         try {

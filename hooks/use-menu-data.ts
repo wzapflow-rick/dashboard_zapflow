@@ -47,7 +47,7 @@ export function useMenuData() {
     import('@/app/actions/auth').then(({ getMe }) => {
       getMe().then(setUser);
     });
-    fetchData();
+    queueMicrotask(() => fetchData());
   }, [fetchData]);
 
   const toggleDisponibilidade = async (produtoId: number | string, statusAtual: boolean) => {

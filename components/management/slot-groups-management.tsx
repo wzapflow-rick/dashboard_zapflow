@@ -47,11 +47,6 @@ export default function SlotGroupsManagement() {
     const [isBibModalOpen, setIsBibModalOpen] = useState(false);
     const [editingItemBase, setEditingItemBase] = useState<Partial<ItemBase> | null>(null);
 
-    useEffect(() => {
-        fetchGrupos();
-        fetchBiblioteca();
-    }, []);
-
     // Driver.js tour for grupos e opcionais
     useEffect(() => {
         const tourSteps = activeTab === 'grupos' ? [
@@ -196,7 +191,14 @@ export default function SlotGroupsManagement() {
         }
     };
 
-    // --- Handlers Grupos ---
+    useEffect(() => {
+    queueMicrotask(() => {
+      fetchGrupos();
+      fetchBiblioteca();
+    });
+  }, []);
+
+  // --- Handlers Grupos ---
     const handleNewGrupo = () => {
         setEditingGrupo(null);
         setIsGrupoModalOpen(true);

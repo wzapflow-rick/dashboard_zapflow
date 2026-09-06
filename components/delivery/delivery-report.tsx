@@ -29,10 +29,6 @@ export default function DeliveryReport() {
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState<'today' | 'week' | 'month'>('today');
 
-  useEffect(() => {
-    loadData();
-  }, [dateRange]);
-
   const loadData = async () => {
     try {
       const driversData = await getDrivers();
@@ -55,6 +51,10 @@ export default function DeliveryReport() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    queueMicrotask(() => loadData());
+  }, [dateRange]);
 
   const formatPrice = (price: number) => `R$ ${price.toFixed(2).replace('.', ',')}`;
 

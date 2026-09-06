@@ -44,6 +44,15 @@ export function useOffline(): UseOfflineReturn {
   const [pendingCount, setPendingCount] = useState(0);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
 
+  const updatePendingCount = useCallback(async () => {
+    try {
+      const count = await getSyncQueueCount();
+      setPendingCount(count);
+    } catch (error) {
+      console.error('[useOffline] Erro ao contar pendentes:', error);
+    }
+  }, []);
+
   // Inicializa sync manager e listeners
   useEffect(() => {
     // Verifica se IndexedDB esta disponivel
@@ -52,8 +61,10 @@ export function useOffline(): UseOfflineReturn {
       return;
     }
 
-    setIsOfflineReady(true);
-    setIsOnline(getOnlineStatus());
+    queueMicrotask(() => {
+      setIsOfflineReady(true);
+      setIsOnline(getOnlineStatus());
+    });
 
     // Inicializa sync manager
     const cleanup = initSyncManager();
@@ -70,7 +81,7 @@ export function useOffline(): UseOfflineReturn {
     });
 
     // Atualiza contagem inicial
-    updatePendingCount();
+    queueMicrotask(() => updatePendingCount());
 
     // Listener para mensagens do Service Worker
     const handleSWMessage = (event: MessageEvent) => {
@@ -95,16 +106,6 @@ export function useOffline(): UseOfflineReturn {
         navigator.serviceWorker.removeEventListener('message', handleSWMessage);
       }
     };
-  }, []);
-
-  // Atualiza contagem de items pendentes
-  const updatePendingCount = useCallback(async () => {
-    try {
-      const count = await getSyncQueueCount();
-      setPendingCount(count);
-    } catch (error) {
-      console.error('[useOffline] Erro ao contar pendentes:', error);
-    }
   }, []);
 
   // Atualiza status de pedido (funciona offline)
@@ -171,7 +172,7 @@ export function useOnlineStatus(): boolean {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    setIsOnline(navigator.onLine);
+    queueMicrotask(() => setIsOnline(navigator.onLine));
 
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);

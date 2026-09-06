@@ -25,7 +25,7 @@ export function MobileDrawer({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    queueMicrotask(() => setMounted(true));
     
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);

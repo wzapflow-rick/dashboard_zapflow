@@ -25,10 +25,6 @@ export function GrupoSlotItens({ grupo, onClose }: GrupoSlotItensProps) {
     const [busca, setBusca] = useState('');
     const [actionMap, setActionMap] = useState<Record<number, boolean>>({});
 
-    useEffect(() => {
-        load();
-    }, [grupo.id]);
-
     const load = async () => {
         setLoading(true);
         try {

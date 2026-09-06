@@ -154,7 +154,7 @@ export function ZapflowInsightsClient({ initialData }: { initialData?: ZapflowIn
   };
 
   useEffect(() => {
-    if (!initialData) carregar();
+    if (!initialData) queueMicrotask(() => carregar());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

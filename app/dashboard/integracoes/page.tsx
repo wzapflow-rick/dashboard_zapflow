@@ -81,10 +81,6 @@ export default function IntegracoesPage() {
   const [showToken, setShowToken] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
 
-  useEffect(() => {
-    loadStatus();
-  }, []);
-
   async function loadStatus() {
     setLoading(true);
     try {
@@ -95,6 +91,10 @@ export default function IntegracoesPage() {
     }
     setLoading(false);
   }
+
+  useEffect(() => {
+    queueMicrotask(loadStatus);
+  }, []);
 
   async function handleRegenerateToken() {
     if (!confirm('Tem certeza? Isso invalidara o token atual e todas as integracoes precisarao ser atualizadas.')) {

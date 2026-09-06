@@ -42,11 +42,6 @@ function ReportsContent() {
         end: new Date().toISOString().split('T')[0]
     });
 
-    useEffect(() => {
-        loadReport();
-        loadMonthly();
-    }, [dateRange]);
-
     const loadReport = async () => {
         setLoading(true);
         try {
@@ -67,6 +62,13 @@ function ReportsContent() {
             console.error('Erro ao carregar comparação mensal:', err);
         }
     };
+
+    useEffect(() => {
+        queueMicrotask(() => {
+            loadReport();
+            loadMonthly();
+        });
+    }, [dateRange]);
 
     const quickRanges = [
         { label: 'Hoje', days: 0 },

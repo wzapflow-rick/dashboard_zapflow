@@ -36,10 +36,6 @@ export default function DriversManagement() {
     comissao_por_entrega: 0,
   });
 
-  useEffect(() => {
-    loadDrivers();
-  }, []);
-
   const loadDrivers = async () => {
     try {
       const data = await getDrivers();
@@ -50,6 +46,10 @@ export default function DriversManagement() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    queueMicrotask(() => loadDrivers());
+  }, []);
 
   const openModal = (driver?: Driver) => {
     if (driver) {

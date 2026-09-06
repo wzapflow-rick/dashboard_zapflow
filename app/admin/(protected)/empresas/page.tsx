@@ -820,6 +820,7 @@ function TrialModal({ empresa, onClose, onSuccess }: { empresa: Empresa; onClose
   const [loading, setLoading] = useState(false);
   const [dias, setDias] = useState(30);
   const [plano, setPlano] = useState(empresa.assinatura_plano || empresa.plano || 'start');
+  const [baseDate] = useState(() => new Date());
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -877,7 +878,7 @@ function TrialModal({ empresa, onClose, onSuccess }: { empresa: Empresa; onClose
               min="1"
             />
             <p className="text-xs text-slate-500 mt-1">
-              Vencimento: {new Date(Date.now() + dias * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR')}
+              Vencimento: {new Date(baseDate.getTime() + dias * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR')}
             </p>
           </div>
 
