@@ -339,14 +339,19 @@ export async function getMesasComDetalhes(): Promise<MesaComDetalhes[]> {
           `SELECT * FROM comandas WHERE store_id = $1 AND status = $2 LIMIT 500`,
           [user.empresaId, COMANDA_STATUS.ABERTA]
         ),
+        // IMPORTANTE: `$1` é comparado com store_id (TEXT) e empresa_id (INTEGER).
+        // O Postgres infere UM único tipo para cada placeholder no Parse, então
+        // sem os casts abaixo ele fixa `$1` como TEXT (pelo store_id) e o
+        // `empresa_id = $1` vira `integer = text` -> erro 42883. Casamos as duas
+        // colunas para ::text para que `$1` seja sempre texto e a comparação feche.
         pg.query(
           `SELECT p.*
              FROM pedidos p
              INNER JOIN comandas c
                ON c.id::text = p.comanda_id::text
-              AND c.store_id = $1
+              AND c.store_id::text = $1
               AND c.status = $2
-            WHERE p.empresa_id = $1
+            WHERE p.empresa_id::text = $1
               AND p.tipo_entrega = 'mesa'
               AND p.status != 'cancelado'`,
           [user.empresaId, COMANDA_STATUS.ABERTA]

@@ -76,7 +76,13 @@ describe('getMesasComDetalhes', () => {
     expect(pedidosCall).toBeDefined();
     expect(pedidosCall[0]).toContain('INNER JOIN comandas c');
     expect(pedidosCall[0]).toContain('c.id::text = p.comanda_id::text');
-    expect(pedidosCall[0]).toContain('c.store_id = $1');
+    // O mesmo `$1` compara store_id (TEXT) e empresa_id (INTEGER); ambos precisam
+    // do cast ::text para o Postgres não fixar `$1` como TEXT e quebrar o
+    // `empresa_id = $1` com "operator does not exist: integer = text" (42883).
+    expect(pedidosCall[0]).toContain('c.store_id::text = $1');
+    expect(pedidosCall[0]).toContain('p.empresa_id::text = $1');
+    expect(pedidosCall[0]).not.toMatch(/c\.store_id = \$1/);
+    expect(pedidosCall[0]).not.toMatch(/p\.empresa_id = \$1/);
     expect(pedidosCall[0]).toContain('c.status = $2');
     expect(pedidosCall[0]).not.toMatch(/LIMIT\s+500/i);
     expect(pedidosCall[1]).toEqual(['empresa-1', 'aberta']);
