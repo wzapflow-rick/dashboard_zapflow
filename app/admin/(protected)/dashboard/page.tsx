@@ -17,17 +17,17 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadStats();
-  }, []);
-
-  const loadStats = async () => {
+  async function loadStats() {
     const result = await getAdminStats();
     if (result.success && result.stats) {
       setStats(result.stats);
     }
     setLoading(false);
-  };
+  }
+
+  useEffect(() => {
+    queueMicrotask(loadStats);
+  }, []);
 
   if (loading) {
     return (

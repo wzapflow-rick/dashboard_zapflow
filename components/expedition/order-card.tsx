@@ -80,7 +80,7 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
     // Carregar entregadores quando for delivery
     useEffect(() => {
         if (isDelivery) {
-            loadDrivers();
+            queueMicrotask(loadDrivers);
         }
     }, [isDelivery, order.id]);
 

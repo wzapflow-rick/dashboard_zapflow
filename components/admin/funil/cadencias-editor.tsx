@@ -64,7 +64,7 @@ export function CadenciasEditor() {
   };
 
   useEffect(() => {
-    load();
+    queueMicrotask(load);
   }, []);
 
   const salvar = async (cad: Cadencia) => {

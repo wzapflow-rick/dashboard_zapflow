@@ -49,6 +49,7 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved, availab
 
     // Sync form when editingGrupo changes
     React.useEffect(() => {
+        queueMicrotask(() => {
         setNome(editingGrupo?.nome || '');
         setDescricao(editingGrupo?.descricao || '');
         setTipo(editingGrupo?.tipo || 'fracionado');
@@ -63,6 +64,7 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved, availab
         // Garantir que categoria_id seja tratado como string ou number para o select
         const catId = editingGrupo?.categoria_id;
         setCategoriaId(catId ? String(catId) : null);
+        });
     }, [editingGrupo]);
 
     // Quando qtdSlots mudar, ajusta max_slots para não ultrapassar

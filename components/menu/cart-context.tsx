@@ -64,7 +64,8 @@ export function CartProvider({ children, pontosPorReal = 1, empresaId }: { child
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
-    try {
+    queueMicrotask(() => {
+      try {
       const savedItems = localStorage.getItem(`${CART_STORAGE_KEY}_${empresaId}`);
       const savedCupom = localStorage.getItem(`${CUPOM_STORAGE_KEY}_${empresaId}`);
       
@@ -85,7 +86,8 @@ export function CartProvider({ children, pontosPorReal = 1, empresaId }: { child
       console.error('Erro ao carregar carrinho:', e);
     }
     
-    setIsLoaded(true);
+      setIsLoaded(true);
+    });
   }, [empresaId]);
 
   // Save cart to localStorage when items change

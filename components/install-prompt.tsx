@@ -35,8 +35,10 @@ export function InstallPrompt() {
     // Detecta iOS (Safari nao dispara beforeinstallprompt)
     const ua = window.navigator.userAgent.toLowerCase();
     if (/iphone|ipad|ipod/.test(ua)) {
-      setIsIOS(true);
-      setShowBanner(true);
+      queueMicrotask(() => {
+        setIsIOS(true);
+        setShowBanner(true);
+      });
       return;
     }
 

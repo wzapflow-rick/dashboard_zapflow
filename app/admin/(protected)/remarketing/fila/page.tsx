@@ -50,11 +50,7 @@ export default function FilaPage() {
     });
   };
 
-  useEffect(() => {
-    loadFila(1);
-  }, [statusFilter]);
-
-  const loadFila = async (page: number) => {
+  async function loadFila(page: number) {
     setLoading(true);
     const result = await getFila(page, 50, statusFilter || undefined);
     if (result.success) {
@@ -62,7 +58,11 @@ export default function FilaPage() {
       setPagination(result.pagination || { page: 1, limit: 50, total: 0, totalPages: 0 });
     }
     setLoading(false);
-  };
+  }
+
+  useEffect(() => {
+    queueMicrotask(() => loadFila(1));
+  }, [statusFilter]);
 
   const handleCancelar = async (item: RemarketingFilaItem) => {
     if (!confirm('Cancelar este disparo?')) return;

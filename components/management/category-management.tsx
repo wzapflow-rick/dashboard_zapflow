@@ -27,7 +27,7 @@ export default function CategoryManagement() {
     };
 
     useEffect(() => {
-        fetchData();
+        queueMicrotask(fetchData);
     }, []);
 
     const handleDelete = async (id: number) => {

@@ -80,8 +80,10 @@ export default function EditOrderModal({ isOpen, onClose, order, onSuccess }: Ed
         };
       });
       
-      setItems(normalized);
-      setObservacao('');
+      queueMicrotask(() => {
+        setItems(normalized);
+        setObservacao('');
+      });
     }
   }, [isOpen, order]);
 

@@ -50,7 +50,7 @@ export default function CompositeProductCard({ product, whatsappNumber, empresaN
     // Open modal when product is selected from the filter
     useEffect(() => {
         if (onClose) {
-            setIsOpen(true);
+            queueMicrotask(() => setIsOpen(true));
         }
     }, [onClose]);
 

@@ -11,6 +11,34 @@ interface RatingPageProps {
     }>;
 }
 
+interface StarRatingProps {
+    nota: number;
+    setNota: (nota: number) => void;
+    label: string;
+    emoji: string;
+}
+
+function StarRating({ nota, setNota, label, emoji }: StarRatingProps) {
+    return (
+        <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+                <span className="text-2xl">{emoji}</span>
+                <h3 className="font-bold text-slate-900">{label}</h3>
+            </div>
+            <div className="flex justify-center gap-2">
+                {[1, 2, 3, 4, 5].map((n) => (
+                    <button key={n} onClick={() => setNota(n)} className="p-2 hover:scale-110 transition-transform">
+                        <Star className={`size-10 ${n <= nota ? 'text-amber-400 fill-amber-400' : 'text-slate-300'}`} />
+                    </button>
+                ))}
+            </div>
+            <p className="text-center text-sm text-slate-500 mt-2">
+                {nota === 0 ? 'Toque para avaliar' : nota === 1 ? 'Ruim' : nota === 2 ? 'Regular' : nota === 3 ? 'Bom' : nota === 4 ? 'Ótimo' : 'Excelente!'}
+            </p>
+        </div>
+    );
+}
+
 export default function RatingPage({ params }: RatingPageProps) {
     const [resolvedParams, setResolvedParams] = useState<{empresaId: number; pedidoId: number; phone?: string} | null>(null);
     const [empresaNome, setEmpresaNome] = useState('');
@@ -104,33 +132,6 @@ export default function RatingPage({ params }: RatingPageProps) {
             </div>
         );
     }
-
-    const StarRating = ({ nota, setNota, label, emoji }: { nota: number; setNota: (n: number) => void; label: string; emoji: string }) => (
-        <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-                <span className="text-2xl">{emoji}</span>
-                <h3 className="font-bold text-slate-900">{label}</h3>
-            </div>
-            <div className="flex justify-center gap-2">
-                {[1, 2, 3, 4, 5].map((n) => (
-                    <button
-                        key={n}
-                        onClick={() => setNota(n)}
-                        className="p-2 hover:scale-110 transition-transform"
-                    >
-                        <Star className={`size-10 ${n <= nota ? 'text-amber-400 fill-amber-400' : 'text-slate-300'}`} />
-                    </button>
-                ))}
-            </div>
-            <p className="text-center text-sm text-slate-500 mt-2">
-                {nota === 0 ? 'Toque para avaliar' : 
-                 nota === 1 ? 'Ruim' : 
-                 nota === 2 ? 'Regular' : 
-                 nota === 3 ? 'Bom' : 
-                 nota === 4 ? 'Ótimo' : 'Excelente!'}
-            </p>
-        </div>
-    );
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-violet-50 to-purple-100 p-4">

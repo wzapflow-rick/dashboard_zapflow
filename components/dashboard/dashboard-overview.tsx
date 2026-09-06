@@ -113,7 +113,7 @@ export default function DashboardOverview() {
   };
 
   useEffect(() => {
-    loadData();
+    queueMicrotask(loadData);
   }, [selectedPeriod]);
 
   const handleOpenModal = (order: any) => {

@@ -89,7 +89,7 @@ export default function CategoryModal({
   // Ordenar categorias quando o modal abre ou categorias mudam
   useEffect(() => {
     const sorted = [...categories].sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
-    setOrderedCategories(sorted);
+    queueMicrotask(() => setOrderedCategories(sorted));
   }, [categories]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {

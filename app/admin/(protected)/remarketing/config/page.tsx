@@ -58,7 +58,7 @@ export default function ConfigPage() {
     loadConfig();
   }, []);
 
-  const loadConfig = async () => {
+  async function loadConfig() {
     setLoading(true);
     const result = await getConfig();
     if (result.success && result.config) {
@@ -76,7 +76,7 @@ export default function ConfigPage() {
       });
     }
     setLoading(false);
-  };
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

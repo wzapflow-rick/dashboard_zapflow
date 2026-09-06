@@ -23,14 +23,14 @@ export function SetupChecklist({ initialStatus }: SetupChecklistProps) {
     // Verificar se ja foi completado permanentemente
     const completed = localStorage.getItem(COMPLETED_KEY);
     if (completed === 'true') {
-      setIsHidden(true);
+      queueMicrotask(() => setIsHidden(true));
       return;
     }
 
     // Verificar se esta minimizado
     const minimized = localStorage.getItem(STORAGE_KEY);
     if (minimized === 'true') {
-      setIsMinimized(true);
+      queueMicrotask(() => setIsMinimized(true));
     }
   }, []);
 

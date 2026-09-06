@@ -283,7 +283,7 @@ export default function CampanhasPage() {
     
     // Reset pagina quando filtros mudam
     useEffect(() => {
-        setDisparoPage(1);
+        queueMicrotask(() => setDisparoPage(1));
     }, [filtroStatus, filtroCampanha, filtroBusca]);
 
     const taxaErro = stats.total_enviados + stats.total_erros > 0

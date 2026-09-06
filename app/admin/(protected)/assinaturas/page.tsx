@@ -42,11 +42,7 @@ export default function AssinaturasAdminPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedAssinatura, setSelectedAssinatura] = useState<Assinatura | null>(null);
 
-  useEffect(() => {
-    loadAssinaturas(1);
-  }, []);
-
-  const loadAssinaturas = async (page: number, searchTerm = search) => {
+  async function loadAssinaturas(page: number, searchTerm = search) {
     setLoading(true);
     const result = await getAssinaturas(page, 20, searchTerm);
     if (result.success) {
@@ -54,7 +50,11 @@ export default function AssinaturasAdminPage() {
       setPagination(result.pagination || null);
     }
     setLoading(false);
-  };
+  }
+
+  useEffect(() => {
+    queueMicrotask(() => loadAssinaturas(1));
+  }, []);
 
   const handleSearch = (value: string) => {
     setSearch(value);

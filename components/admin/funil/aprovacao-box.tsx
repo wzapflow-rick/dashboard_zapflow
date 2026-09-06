@@ -40,7 +40,7 @@ export function AprovacaoBox() {
   };
 
   useEffect(() => {
-    load();
+    queueMicrotask(load);
   }, []);
 
   const aprovar = async (item: FilaAprovacaoItem) => {

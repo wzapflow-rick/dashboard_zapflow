@@ -267,7 +267,7 @@ export default function SettingsPage() {
   // Verificar conexao quando company carregar
   React.useEffect(() => {
     if (company?.id) {
-      checkWhatsAppConnection();
+      queueMicrotask(checkWhatsAppConnection);
     }
   }, [company?.id, checkWhatsAppConnection]);
 

@@ -73,9 +73,11 @@ export function Header({ isOpen, setIsOpen, setIsMobileMenuOpen }: HeaderProps) 
     const [isProfileOpen, setIsProfileOpen] = React.useState(false);
 
     React.useEffect(() => {
-        setMounted(true);
-        const saved = localStorage.getItem('lastSeenOrderId');
-        if (saved) setLastSeenId(parseInt(saved, 10));
+        queueMicrotask(() => {
+            setMounted(true);
+            const saved = localStorage.getItem('lastSeenOrderId');
+            if (saved) setLastSeenId(parseInt(saved, 10));
+        });
     }, []);
 
     React.useEffect(() => {

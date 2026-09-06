@@ -197,7 +197,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
 
   useEffect(() => {
     if (customerData.telefone && step === 'customer' && phoneChecked) {
-      fetchClientPoints(customerData.telefone);
+      queueMicrotask(() => fetchClientPoints(customerData.telefone));
     }
   }, [customerData.telefone, step, phoneChecked]);
 

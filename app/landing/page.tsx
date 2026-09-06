@@ -43,7 +43,7 @@ function MeltingText({ children, className = '' }: { children: string; className
             initial={{ scaleY: 0, y: -10 }}
             animate={{ 
               scaleY: [0, 1.2, 0.8, 1],
-              y: [-10, 5, 3, 4 + Math.random() * 4]
+              y: [-10, 5, 3, 4 + (i % 3) * 1.5]
             }}
             transition={{ 
               delay: 0.5 + i * 0.1,
@@ -61,11 +61,11 @@ function MeltingText({ children, className = '' }: { children: string; className
 function CheeseParticles({ isActive }: { isActive: boolean }) {
   const particles = [...Array(20)].map((_, i) => ({
     id: i,
-    x: Math.random() * 200 - 100,
-    y: Math.random() * -150 - 50,
-    rotation: Math.random() * 360,
-    scale: 0.5 + Math.random() * 0.5,
-    delay: Math.random() * 0.2,
+    x: ((i * 47) % 200) - 100,
+    y: -50 - ((i * 73) % 150),
+    rotation: (i * 137) % 360,
+    scale: 0.5 + ((i * 29) % 50) / 100,
+    delay: ((i * 11) % 20) / 100,
   }));
 
   return (

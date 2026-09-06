@@ -72,7 +72,7 @@ export function FunilBoard() {
   };
 
   useEffect(() => {
-    load();
+    queueMicrotask(load);
   }, []);
 
   const totalContatos = useMemo(() => {

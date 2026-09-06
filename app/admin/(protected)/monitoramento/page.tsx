@@ -268,7 +268,7 @@ export default function MonitoramentoPage() {
     };
 
     useEffect(() => {
-        load();
+        queueMicrotask(load);
     }, []);
 
     return (

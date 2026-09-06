@@ -17,8 +17,10 @@ export function OfflineIndicator({ className }: OfflineIndicatorProps) {
   // Mostra o banner quando ficar offline
   useEffect(() => {
     if (!isOnline) {
-      setDismissed(false);
-      setShowBanner(true);
+      queueMicrotask(() => {
+        setDismissed(false);
+        setShowBanner(true);
+      });
     } else {
       // Esconde apos 3 segundos quando voltar online
       const timer = setTimeout(() => {

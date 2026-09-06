@@ -48,18 +48,18 @@ export default function EtiquetasPage() {
     });
   };
 
-  useEffect(() => {
-    loadEtiquetas();
-  }, []);
-
-  const loadEtiquetas = async () => {
+  async function loadEtiquetas() {
     setLoading(true);
     const result = await getEtiquetas();
     if (result.success) {
       setEtiquetas(result.etiquetas || []);
     }
     setLoading(false);
-  };
+  }
+
+  useEffect(() => {
+    queueMicrotask(loadEtiquetas);
+  }, []);
 
   const openCreateModal = () => {
     setEditingEtiqueta(null);

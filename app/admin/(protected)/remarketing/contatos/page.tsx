@@ -115,7 +115,7 @@ export default function ContatosPage() {
   };
 
   useEffect(() => {
-    loadData();
+    queueMicrotask(loadData);
   }, []);
 
   // Filter evolution contacts when search or filter changes
@@ -137,7 +137,7 @@ export default function ContatosPage() {
       filtered = filtered.filter(c => !c.nome || c.nome.trim() === '');
     }
     
-    setFilteredEvolutionContacts(filtered);
+    queueMicrotask(() => setFilteredEvolutionContacts(filtered));
   }, [evolutionContacts, importSearch, importFilter]);
 
   const loadContatos = async (page: number, searchTerm = search) => {

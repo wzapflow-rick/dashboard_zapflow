@@ -49,11 +49,7 @@ export default function EmpresasAdminPage() {
   const [selectedEmpresa, setSelectedEmpresa] = useState<Empresa | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    loadEmpresas(1);
-  }, []);
-
-  const loadEmpresas = async (page: number, searchTerm = search) => {
+  async function loadEmpresas(page: number, searchTerm = search) {
     setLoading(true);
     const result = await getEmpresas(page, 20, searchTerm);
     if (result.success) {
@@ -61,7 +57,11 @@ export default function EmpresasAdminPage() {
       setPagination(result.pagination || null);
     }
     setLoading(false);
-  };
+  }
+
+  useEffect(() => {
+    queueMicrotask(() => loadEmpresas(1));
+  }, []);
 
   const handleSearch = (value: string) => {
     setSearch(value);

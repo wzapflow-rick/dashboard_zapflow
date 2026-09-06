@@ -21,12 +21,14 @@ export default function InsumoFormModal({ isOpen, onClose, editingInsumo, onSubm
     const [embalagemQuantidade, setEmbalagemQuantidade] = useState<number>(1);
 
     useEffect(() => {
-        setIsSubmitting(false);
-        if (editingInsumo) {
-            setSelectedUnit(editingInsumo.unidade_medida || 'UN');
-            setEmbalagemPreco(0);
-            setEmbalagemQuantidade(1);
-        }
+        queueMicrotask(() => {
+            setIsSubmitting(false);
+            if (editingInsumo) {
+                setSelectedUnit(editingInsumo.unidade_medida || 'UN');
+                setEmbalagemPreco(0);
+                setEmbalagemQuantidade(1);
+            }
+        });
     }, [isOpen, editingInsumo]);
 
     const UNIDADES: Record<string, string> = {

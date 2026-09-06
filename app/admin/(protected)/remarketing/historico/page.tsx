@@ -37,11 +37,7 @@ export default function HistoricoPage() {
   const [loading, setLoading] = useState(true);
   const [tipoFilter, setTipoFilter] = useState<string>('');
 
-  useEffect(() => {
-    loadHistorico(1);
-  }, []);
-
-  const loadHistorico = async (page: number) => {
+  async function loadHistorico(page: number) {
     setLoading(true);
     const result = await getHistorico(page, 50);
     if (result.success) {
@@ -49,7 +45,11 @@ export default function HistoricoPage() {
       setPagination(result.pagination || { page: 1, limit: 50, total: 0, totalPages: 0 });
     }
     setLoading(false);
-  };
+  }
+
+  useEffect(() => {
+    queueMicrotask(() => loadHistorico(1));
+  }, []);
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleString('pt-BR', {

@@ -193,8 +193,7 @@ export default function OnboardingTutorial() {
     // Verificar se o usuário já viu o tutorial
     const seen = localStorage.getItem('zapflow_onboarding_seen');
     if (!seen) {
-      setHasSeenTutorial(false);
-      // Esperar um pouco antes de mostrar
+      queueMicrotask(() => setHasSeenTutorial(false));
       setTimeout(() => setShow(true), 1500);
     }
   }, []);

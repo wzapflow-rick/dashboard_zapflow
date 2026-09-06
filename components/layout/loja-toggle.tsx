@@ -31,7 +31,7 @@ export function LojaToggle() {
   }, []);
 
   React.useEffect(() => {
-    carregar();
+    queueMicrotask(carregar);
     const interval = setInterval(carregar, 60000);
     return () => clearInterval(interval);
   }, [carregar]);

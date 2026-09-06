@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { motion } from 'motion/react';
 import { ArrowUpRight, Zap, Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -19,12 +19,6 @@ interface StatCardProps {
 
 // Animated counter for financial values
 function AnimatedValue({ value }: { value: string }) {
-    const [displayValue, setDisplayValue] = useState(value);
-    
-    useEffect(() => {
-        setDisplayValue(value);
-    }, [value]);
-    
     return (
         <motion.span
             key={value}
@@ -32,7 +26,7 @@ function AnimatedValue({ value }: { value: string }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         >
-            {displayValue}
+            {value}
         </motion.span>
     );
 }

@@ -21,7 +21,7 @@ export default function QrCodeGenerator({ empresaId, empresaNome, slug }: QrCode
     useEffect(() => {
         const baseUrl = window.location.origin;
         const url = slug ? `${baseUrl}/menu/${slug}` : `${baseUrl}/menu/empresa-${empresaId}`;
-        setMenuUrl(url);
+        queueMicrotask(() => setMenuUrl(url));
         
         if (canvasRef.current) {
             QRCodeLib.toCanvas(canvasRef.current, url, {

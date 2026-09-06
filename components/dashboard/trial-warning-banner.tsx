@@ -19,24 +19,24 @@ export function TrialWarningBanner({ plano, dataInicio: dataInicioProp, empresaI
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setMounted(true);
-    // Verificar se ja foi dispensado hoje
-    const dismissedDate = localStorage.getItem(`trial_warning_dismissed_${empresaId}`);
-    if (dismissedDate === new Date().toDateString()) {
-      setDismissed(true);
-    }
-    
-    // Buscar data_inicio da assinatura se nao foi passada
-    if (!dataInicioProp && isTrialPlan(plano)) {
-      getSubscription().then(sub => {
-        if (sub?.data_inicio) {
-          setDataInicio(sub.data_inicio);
-        }
+    queueMicrotask(() => {
+      setMounted(true);
+      const dismissedDate = localStorage.getItem(`trial_warning_dismissed_${empresaId}`);
+      if (dismissedDate === new Date().toDateString()) {
+        setDismissed(true);
+      }
+
+      if (!dataInicioProp && isTrialPlan(plano)) {
+        getSubscription().then(sub => {
+          if (sub?.data_inicio) {
+            setDataInicio(sub.data_inicio);
+          }
+          setLoading(false);
+        }).catch(() => setLoading(false));
+      } else {
         setLoading(false);
-      }).catch(() => setLoading(false));
-    } else {
-      setLoading(false);
-    }
+      }
+    });
   }, [empresaId, dataInicioProp, plano]);
 
   if (!mounted || loading) return null;

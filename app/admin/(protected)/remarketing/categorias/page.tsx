@@ -63,18 +63,18 @@ export default function CategoriasPage() {
     });
   };
 
-  useEffect(() => {
-    loadCategorias();
-  }, []);
-
-  const loadCategorias = async () => {
+  async function loadCategorias() {
     setLoading(true);
     const result = await getCategorias();
     if (result.success) {
       setCategorias(result.categorias || []);
     }
     setLoading(false);
-  };
+  }
+
+  useEffect(() => {
+    queueMicrotask(loadCategorias);
+  }, []);
 
   const openCreateModal = () => {
     setEditingCategoria(null);

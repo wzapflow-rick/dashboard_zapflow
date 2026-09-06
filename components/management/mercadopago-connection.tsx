@@ -40,7 +40,7 @@ export default function MercadoPagoConnection() {
     };
 
     useEffect(() => {
-        loadStatus();
+        queueMicrotask(loadStatus);
 
         // Verificar se há mensagens de sucesso/erro na URL
         const success = searchParams.get('success');

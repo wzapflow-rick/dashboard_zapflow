@@ -117,10 +117,12 @@ export default function MenuProductSelectionModal({
 
     // Ajustar o step inicial após a montagem do componente para evitar erros de hidratação
     useEffect(() => {
-        if (hasSizes) setStep('size');
-        else if (hasFlavors) setStep('flavors');
-        else if (hasAdditions) setStep('additions');
-        else setStep('observation');
+        queueMicrotask(() => {
+            if (hasSizes) setStep('size');
+            else if (hasFlavors) setStep('flavors');
+            else if (hasAdditions) setStep('additions');
+            else setStep('observation');
+        });
     }, [hasSizes, hasFlavors, hasAdditions]);
 
     const recommendedProductIds = useMemo<number[]>(() => {

@@ -141,7 +141,7 @@ export default function ExpeditionMonitor() {
   };
 
   useEffect(() => {
-    loadOrders();
+    queueMicrotask(loadOrders);
 
     // Polling para novos pedidos a cada 10 segundos.
     // Pausa quando a aba esta em segundo plano para economizar CPU/rede em maquinas fracas.
