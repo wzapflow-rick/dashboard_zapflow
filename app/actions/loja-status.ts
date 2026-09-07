@@ -38,7 +38,25 @@ interface ConfigLoja {
   aberto_manual_ate?: string | null;
 }
 
+/**
+ * Garante que as colunas de override manual existam em `configuracoes_loja`.
+ *
+ * O banco roda numa VPS do cliente com migracoes manuais; se a coluna nao
+ * existir, o UPDATE de abertura/fechamento falharia. `ADD COLUMN IF NOT EXISTS`
+ * e idempotente e barato, entao pode rodar a cada acesso sem risco (no-op quando
+ * as colunas ja existem). Isso dispensa qualquer alteracao manual no banco.
+ */
+async function ensureLojaStatusSchema() {
+  try {
+    await pg.raw(`ALTER TABLE ${CONFIGURACOES_LOJA_TABLE} ADD COLUMN IF NOT EXISTS fechado_manual_ate TEXT`);
+    await pg.raw(`ALTER TABLE ${CONFIGURACOES_LOJA_TABLE} ADD COLUMN IF NOT EXISTS aberto_manual_ate TEXT`);
+  } catch (error) {
+    console.error('[LOJA_STATUS] Erro ao garantir schema de override manual:', error);
+  }
+}
+
 async function getContexto(empresaId: number) {
+  await ensureLojaStatusSchema();
   const [config, horariosData] = await Promise.all([
     pg.findOne<ConfigLoja>(CONFIGURACOES_LOJA_TABLE, { where: { empresa_id: empresaId } }),
     pg.listAll<Horario>(HORARIOS_TABLE, { where: { empresa_id: empresaId } }),
