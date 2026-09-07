@@ -432,23 +432,28 @@ async function isEmpresaAberta(empresaId: number): Promise<boolean> {
       where: { empresa_id: empresaId }
     });
     
-    // Busca o fechamento manual (botao "Fechar a Loja") da configuracao da loja.
-    const config = await pg.findOne<{ fechado_manual_ate?: string | null }>(
+    // Busca os overrides manuais (botoes "Fechar/Abrir a Loja") da config da loja.
+    const config = await pg.findOne<{ fechado_manual_ate?: string | null; aberto_manual_ate?: string | null }>(
       'configuracoes_loja',
       { where: { empresa_id: empresaId } },
     ).catch(() => null);
 
-    if ((!horarios.list || horarios.list.length === 0) && !config?.fechado_manual_ate) {
-      // Se nao tem horarios configurados nem fechamento manual, considera aberto
+    if (
+      (!horarios.list || horarios.list.length === 0) &&
+      !config?.fechado_manual_ate &&
+      !config?.aberto_manual_ate
+    ) {
+      // Se nao tem horarios configurados nem override manual, considera aberto
       console.log(`[BOT] Empresa ${empresaId} sem horarios configurados, considerando aberto`);
       return true;
     }
 
     // Usa o helper compartilhado (mesma logica do cardapio), que trata janelas
-    // que cruzam a meia-noite (ex.: 17:00 -> 00:00) e o fechamento manual.
+    // que cruzam a meia-noite (ex.: 17:00 -> 00:00) e os overrides manuais.
     const { aberto } = getStatusLoja(
       horarios.list as unknown as Horario[],
       config?.fechado_manual_ate,
+      config?.aberto_manual_ate,
     );
     console.log(`[BOT] Empresa ${empresaId} aberta=${aberto}`);
     return aberto;

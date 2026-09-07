@@ -118,6 +118,32 @@ export function isFechadoManualmente(
   return nowBrasiliaIso(now) < fechadoManualAte;
 }
 
+/**
+ * ISO local de Brasilia do INICIO do proximo dia ("amanha 00:00").
+ * Usado como validade padrao da abertura manual: forca a loja aberta ate o
+ * fim do dia de hoje (feriado sem horario configurado, evento pontual, etc.).
+ */
+export function fimDoDiaBrasiliaIso(now?: Date): string {
+  const b = nowBrasilia(now);
+  b.setDate(b.getDate() + 1);
+  b.setHours(0, 0, 0, 0);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${b.getFullYear()}-${pad(b.getMonth() + 1)}-${pad(b.getDate())}T00:00:00`;
+}
+
+/**
+ * Indica se ha uma ABERTURA manual ativa (botao "Abrir a Loja" acionado fora do
+ * horario). Espelha `isFechadoManualmente`: enquanto agora < `abertoManualAte`,
+ * a loja esta forcada aberta mesmo que o horario diga o contrario.
+ */
+export function isAbertoManualmente(
+  abertoManualAte: string | null | undefined,
+  now?: Date,
+): boolean {
+  if (!abertoManualAte) return false;
+  return nowBrasiliaIso(now) < abertoManualAte;
+}
+
 export interface ProximaAbertura {
   /** Data/hora local no formato "YYYY-MM-DDTHH:MM:00" (compativel com o agendamento do carrinho). */
   iso: string;
@@ -172,29 +198,42 @@ export function getProximaAbertura(
 }
 
 export interface StatusLoja {
-  /** True se a loja esta efetivamente aberta (horario aberto E sem fechamento manual ativo). */
+  /** True se a loja esta efetivamente aberta. */
   aberto: boolean;
   /** True se ha um fechamento manual ativo no momento. */
   fechadoManual: boolean;
+  /** True se ha uma abertura manual ativa (loja forcada aberta fora do horario). */
+  abertoManual: boolean;
   /** Proxima abertura quando a loja esta fechada; null se aberta ou sem horarios. */
   proximaAbertura: ProximaAbertura | null;
 }
 
 /**
- * Status consolidado da loja, combinando os horarios configurados com um
- * eventual fechamento manual (botao "Fechar a Loja").
+ * Status consolidado da loja, combinando os horarios configurados com dois
+ * overrides manuais mutuamente exclusivos:
+ *  - Fechamento manual ("Fechar a Loja"): forca FECHADO dentro do horario.
+ *  - Abertura manual ("Abrir a Loja"): forca ABERTO fora do horario (feriado,
+ *    evento pontual). Expira sozinha ao fim do dia (ver `fimDoDiaBrasiliaIso`).
  *
- * A loja so e considerada aberta quando o horario diz aberto E nao ha
- * fechamento manual ativo. O fechamento manual expira sozinho ao chegar o
- * valor de `fechadoManualAte` (a proxima abertura programada).
+ * Precedencia: o fechamento manual sempre vence (estado seguro = fechado).
+ * Na ausencia dele, a abertura manual abre a loja; sem nenhum override,
+ * vale exclusivamente o horario configurado.
  */
 export function getStatusLoja(
   horarios: Horario[] | null | undefined,
   fechadoManualAte?: string | null,
+  abertoManualAte?: string | null,
   now?: Date,
 ): StatusLoja {
   const fechadoManual = isFechadoManualmente(fechadoManualAte, now);
-  const aberto = !fechadoManual && isAbertoAgora(horarios, now);
+  const abertoManual = !fechadoManual && isAbertoManualmente(abertoManualAte, now);
+
+  const aberto = fechadoManual
+    ? false
+    : abertoManual
+      ? true
+      : isAbertoAgora(horarios, now);
+
   const proximaAbertura = aberto ? null : getProximaAbertura(horarios, now);
-  return { aberto, fechadoManual, proximaAbertura };
+  return { aberto, fechadoManual, abertoManual, proximaAbertura };
 }

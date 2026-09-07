@@ -172,13 +172,15 @@ export async function getPublicMenu(slug: string) {
 
         const config = configData.list && configData.list.length > 0 ? configData.list[0] : null;
 
-        // Status de funcionamento: respeita os horarios E um eventual fechamento
-        // manual feito pelo lojista (botao "Fechar a Loja"), que expira sozinho
-        // na proxima abertura programada.
+        // Status de funcionamento: respeita os horarios E os overrides manuais do
+        // lojista - fechamento manual ("Fechar a Loja", expira na proxima abertura)
+        // e abertura manual ("Abrir a Loja", forca aberto fora do horario ate o fim
+        // do dia, ex.: feriado).
         const horarios = (horariosData || []) as Horario[];
         const { aberto: lojaAberta, proximaAbertura } = getStatusLoja(
             horarios,
             (config?.fechado_manual_ate as string | null | undefined) ?? null,
+            (config?.aberto_manual_ate as string | null | undefined) ?? null,
         );
 
         if (config) {

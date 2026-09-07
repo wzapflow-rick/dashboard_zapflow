@@ -8,13 +8,15 @@ import { cn } from '@/lib/utils';
 interface Status {
   aberto: boolean;
   fechadoManual: boolean;
+  abertoManual: boolean;
   proximaAbertura: { label: string } | null;
 }
 
 export function LojaToggle() {
   const [status, setStatus] = React.useState<Status | null>(null);
   const [loading, setLoading] = React.useState(false);
-  const [confirmOpen, setConfirmOpen] = React.useState(false);
+  // 'fechar' = confirmar fechamento; 'abrir' = confirmar abertura; null = fechado.
+  const [confirmMode, setConfirmMode] = React.useState<'fechar' | 'abrir' | null>(null);
 
   const carregar = React.useCallback(async () => {
     try {
@@ -24,6 +26,7 @@ export function LojaToggle() {
         setStatus({
           aberto: res.aberto,
           fechadoManual: res.fechadoManual,
+          abertoManual: res.abertoManual,
           proximaAbertura: res.proximaAbertura,
         });
       }
@@ -45,13 +48,14 @@ export function LojaToggle() {
         setStatus({
           aberto: res.aberto,
           fechadoManual: res.fechadoManual,
+          abertoManual: res.abertoManual,
           proximaAbertura: res.proximaAbertura,
         });
       }
     } catch (_) {
     } finally {
       setLoading(false);
-      setConfirmOpen(false);
+      setConfirmMode(null);
     }
   };
 
@@ -64,12 +68,14 @@ export function LojaToggle() {
         setStatus({
           aberto: res.aberto,
           fechadoManual: res.fechadoManual,
+          abertoManual: res.abertoManual,
           proximaAbertura: res.proximaAbertura,
         });
       }
     } catch (_) {
     } finally {
       setLoading(false);
+      setConfirmMode(null);
     }
   };
 
@@ -80,7 +86,7 @@ export function LojaToggle() {
   return (
     <>
       <motion.button
-        onClick={() => (aberto ? setConfirmOpen(true) : abrir())}
+        onClick={() => setConfirmMode(aberto ? 'fechar' : 'abrir')}
         disabled={loading}
         className={cn(
           'flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all border disabled:opacity-60',
@@ -114,9 +120,9 @@ export function LojaToggle() {
         <span className="sm:hidden">{aberto ? 'Aberta' : 'Fechada'}</span>
       </motion.button>
 
-      {/* Modal de confirmacao para fechar */}
+      {/* Modal de confirmacao (fechar OU abrir a loja) */}
       <AnimatePresence>
-        {confirmOpen && (
+        {confirmMode && (
           <motion.div
             className="fixed inset-0 z-[100] flex items-center justify-center p-4"
             initial={{ opacity: 0 }}
@@ -125,7 +131,7 @@ export function LojaToggle() {
           >
             <div
               className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-              onClick={() => setConfirmOpen(false)}
+              onClick={() => setConfirmMode(null)}
             />
             <motion.div
               className="relative w-full max-w-md rounded-2xl bg-white dark:bg-[#0f1f35] border border-slate-200 dark:border-white/10 shadow-2xl p-6"
@@ -135,7 +141,7 @@ export function LojaToggle() {
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             >
               <button
-                onClick={() => setConfirmOpen(false)}
+                onClick={() => setConfirmMode(null)}
                 className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
                 aria-label="Fechar"
               >
@@ -143,41 +149,58 @@ export function LojaToggle() {
               </button>
 
               <div className="flex items-start gap-4">
-                <div className="size-12 shrink-0 rounded-xl bg-red-500/10 flex items-center justify-center">
-                  <AlertTriangle className="size-6 text-red-500" />
+                <div
+                  className={cn(
+                    'size-12 shrink-0 rounded-xl flex items-center justify-center',
+                    confirmMode === 'fechar' ? 'bg-red-500/10' : 'bg-emerald-500/10',
+                  )}
+                >
+                  {confirmMode === 'fechar' ? (
+                    <AlertTriangle className="size-6 text-red-500" />
+                  ) : (
+                    <Power className="size-6 text-emerald-500" />
+                  )}
                 </div>
                 <div className="flex-1">
                   <h3 className="font-bold text-lg text-slate-900 dark:text-white">
-                    Fechar a loja agora?
+                    {confirmMode === 'fechar' ? 'Fechar a loja agora?' : 'Abrir a loja agora?'}
                   </h3>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                    O cardapio sera bloqueado para novos pedidos imediatamente. A loja
-                    {status.proximaAbertura
-                      ? ` reabre automaticamente ${status.proximaAbertura.label}.`
-                      : ' permanecera fechada ate voce abrir novamente.'}
+                    {confirmMode === 'fechar'
+                      ? `O cardapio sera bloqueado para novos pedidos imediatamente. A loja${
+                          status.proximaAbertura
+                            ? ` reabre automaticamente ${status.proximaAbertura.label}.`
+                            : ' permanecera fechada ate voce abrir novamente.'
+                        }`
+                      : 'A loja abrira agora para receber pedidos, mesmo fora do horario configurado (ex.: feriado). Ela volta a seguir o horario normal automaticamente amanha.'}
                   </p>
                 </div>
               </div>
 
               <div className="flex gap-3 mt-6">
                 <button
-                  onClick={() => setConfirmOpen(false)}
+                  onClick={() => setConfirmMode(null)}
                   disabled={loading}
                   className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors disabled:opacity-60"
                 >
                   Cancelar
                 </button>
                 <button
-                  onClick={fechar}
+                  onClick={confirmMode === 'fechar' ? fechar : abrir}
                   disabled={loading}
-                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+                  className={cn(
+                    'flex-1 px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-colors flex items-center justify-center gap-2 disabled:opacity-60',
+                    confirmMode === 'fechar'
+                      ? 'bg-red-500 hover:bg-red-600'
+                      : 'bg-emerald-500 hover:bg-emerald-600',
+                  )}
                 >
                   {loading ? (
                     <Loader2 className="size-4 animate-spin" />
                   ) : (
                     <Power className="size-4" />
                   )}
-                  Fechar loja
+                  {confirmMode === 'fechar' ? 'Fechar loja' : 'Abrir loja'}
                 </button>
               </div>
             </motion.div>
