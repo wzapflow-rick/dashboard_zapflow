@@ -187,6 +187,16 @@ export async function getPublicMenu(slug: string) {
         }
 
         // 3. ORGANIZAÇÃO DOS PRODUTOS (ordenar categorias pela ordem)
+        // Produto indisponivel (toggle "Disponibilidade" desligado no admin) NUNCA
+        // pode aparecer no cardapio publico. O flag vem do Postgres podendo ser
+        // boolean false, 0 ou 'f'/'false'; qualquer um desses conta como esgotado.
+        // null/undefined = disponivel (mesmo default usado no admin).
+        const isDisponivel = (p: any) =>
+            p.disponivel !== false &&
+            p.disponivel !== 0 &&
+            p.disponivel !== 'f' &&
+            p.disponivel !== 'false';
+
         const categoriasOrdenadas = [...(categorias || [])].sort((a: any, b: any) => (a.ordem || 0) - (b.ordem || 0));
         
         const grouped = categoriasOrdenadas.map((cat: any) => {
@@ -199,10 +209,10 @@ export async function getPublicMenu(slug: string) {
             };
 
             const productsInCategory = (todosProdutos || []).filter((p: any) => 
-                (p.categoria_id === cat.id) && p.tipo !== 'composto'
+                (p.categoria_id === cat.id) && p.tipo !== 'composto' && isDisponivel(p)
             ).sort(ordenarPorOrdem);
             const compositeInCategory = (todosProdutos || []).filter((p: any) => 
-                (p.categoria_id === cat.id) && p.tipo === 'composto'
+                (p.categoria_id === cat.id) && p.tipo === 'composto' && isDisponivel(p)
             ).sort(ordenarPorOrdem);
 
             return {
@@ -322,8 +332,8 @@ export async function getPublicMenu(slug: string) {
             lojaAberta,
             proximaAbertura,
             grouped,
-            compositeProducts: (todosProdutos || []).filter((p: any) => p.tipo === 'composto'),
-            upsellProducts: (todosProdutos || []).map((p: any) => ({
+            compositeProducts: (todosProdutos || []).filter((p: any) => p.tipo === 'composto' && isDisponivel(p)),
+            upsellProducts: (todosProdutos || []).filter(isDisponivel).map((p: any) => ({
                 id: p.id,
                 nome: String(p.nome || ''),
                 preco: Number(p.preco ?? 0),
