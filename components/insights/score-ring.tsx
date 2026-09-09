@@ -4,22 +4,22 @@ import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 
 interface ScoreRingProps {
-  valor: number; // 0-100
+  valor: number;
   nivel: 'critico' | 'atencao' | 'saudavel' | 'excelente';
   size?: number;
 }
 
 const CORES: Record<ScoreRingProps['nivel'], { stroke: string; glow: string; text: string }> = {
-  critico: { stroke: '#ef4444', glow: 'rgba(239,68,68,0.45)', text: '#f87171' },
-  atencao: { stroke: '#f59e0b', glow: 'rgba(245,158,11,0.45)', text: '#fbbf24' },
-  saudavel: { stroke: '#22c55e', glow: 'rgba(34,197,94,0.45)', text: '#4ade80' },
-  excelente: { stroke: '#22c55e', glow: 'rgba(34,197,94,0.6)', text: '#4ade80' },
+  critico: { stroke: '#ef4444', glow: 'rgba(239,68,68,0.45)', text: '#ef4444' },
+  atencao: { stroke: '#f59e0b', glow: 'rgba(245,158,11,0.45)', text: '#f59e0b' },
+  saudavel: { stroke: '#22c55e', glow: 'rgba(34,197,94,0.45)', text: '#22c55e' },
+  excelente: { stroke: '#22c55e', glow: 'rgba(34,197,94,0.6)', text: '#22c55e' },
 };
 
 const LABEL: Record<ScoreRingProps['nivel'], string> = {
-  critico: 'Critico',
-  atencao: 'Atencao',
-  saudavel: 'Saudavel',
+  critico: 'Crítico',
+  atencao: 'Atenção',
+  saudavel: 'Saudável',
   excelente: 'Excelente',
 };
 
@@ -28,27 +28,41 @@ export function ScoreRing({ valor, nivel, size = 160 }: ScoreRingProps) {
   const cor = CORES[nivel];
   const stroke = 12;
   const radius = (size - stroke) / 2;
-  const circ = 2 * Math.PI * radius;
-  const offset = circ - (valor / 100) * circ;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (valor / 100) * circumference;
 
-  // Anima o numero de 0 ate o valor
   useEffect(() => {
-    let raf: number;
+    let animationFrame: number;
     const start = performance.now();
-    const dur = 900;
+    const duration = 900;
+
     const tick = (now: number) => {
-      const p = Math.min(1, (now - start) / dur);
-      setDisplay(Math.round(valor * (1 - Math.pow(1 - p, 3))));
-      if (p < 1) raf = requestAnimationFrame(tick);
+      const progress = Math.min(1, (now - start) / duration);
+      setDisplay(Math.round(valor * (1 - Math.pow(1 - progress, 3))));
+      if (progress < 1) animationFrame = requestAnimationFrame(tick);
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+
+    animationFrame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animationFrame);
   }, [valor]);
 
   return (
-    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={stroke} />
+    <div
+      className="relative flex items-center justify-center"
+      style={{ width: size, height: size }}
+      role="img"
+      aria-label={`Saúde do negócio: ${valor} de 100, nível ${LABEL[nivel]}`}
+    >
+      <svg width={size} height={size} className="-rotate-90" aria-hidden="true">
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={stroke}
+          className="text-slate-200 dark:text-slate-700"
+        />
         <motion.circle
           cx={size / 2}
           cy={size / 2}
@@ -57,8 +71,8 @@ export function ScoreRing({ valor, nivel, size = 160 }: ScoreRingProps) {
           stroke={cor.stroke}
           strokeWidth={stroke}
           strokeLinecap="round"
-          strokeDasharray={circ}
-          initial={{ strokeDashoffset: circ }}
+          strokeDasharray={circumference}
+          initial={{ strokeDashoffset: circumference }}
           animate={{ strokeDashoffset: offset }}
           transition={{ duration: 0.9, ease: 'easeOut' }}
           style={{ filter: `drop-shadow(0 0 8px ${cor.glow})` }}
@@ -68,7 +82,7 @@ export function ScoreRing({ valor, nivel, size = 160 }: ScoreRingProps) {
         <span className="text-4xl font-black tabular-nums" style={{ color: cor.text }}>
           {display}
         </span>
-        <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">{LABEL[nivel]}</span>
+        <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">{LABEL[nivel]}</span>
       </div>
     </div>
   );

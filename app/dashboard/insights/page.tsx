@@ -1,7 +1,5 @@
-'use client';
-
-import { ZapflowInsightsClient } from '@/components/insights/zapflow-insights-client';
+import { redirect } from 'next/navigation';
 
 export default function InsightsPage() {
-  return <ZapflowInsightsClient />;
+  redirect('/dashboard');
 }

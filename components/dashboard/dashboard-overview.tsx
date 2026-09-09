@@ -1,12 +1,26 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { TrendingUp, ShoppingBag, DollarSign, Zap, Clock, Loader2, RefreshCw, Activity } from 'lucide-react';
+import React, { useEffect, useState, type ReactNode } from 'react';
+import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'motion/react';
+import {
+  Activity,
+  BarChart3,
+  BrainCircuit,
+  DollarSign,
+  FileBarChart,
+  LayoutDashboard,
+  RefreshCw,
+  ShoppingBag,
+  Sparkles,
+  TrendingUp,
+  Zap,
+} from 'lucide-react';
 import { StatCard } from './stat-card';
 import { TopProductsList } from './top-products';
 import { RecentOrdersTable } from './recent-orders-table';
+import { ZapflowInsightsClient } from '@/components/insights/zapflow-insights-client';
 import { cn } from '@/lib/utils';
 import { getDashboardBundle } from '@/app/actions/dashboard';
 import { type OnboardingStatus } from '@/app/actions/onboarding-status';
@@ -20,42 +34,162 @@ const OrderDetailsModal = dynamic(() => import('@/components/modals/order-detail
 const DEFAULT_STATS = [
   { label: 'Faturamento Bruto', value: 'R$ 0,00', change: '...', trend: 'neutral', icon: DollarSign, color: 'blue' },
   { label: 'Total de Pedidos', value: '0', change: '...', trend: 'neutral', icon: ShoppingBag, color: 'indigo' },
-  { label: 'Ticket Medio', value: 'R$ 0,00', change: '...', trend: 'neutral', icon: TrendingUp, color: 'slate' },
+  { label: 'Ticket Médio', value: 'R$ 0,00', change: '...', trend: 'neutral', icon: TrendingUp, color: 'slate' },
   { label: 'Pedidos Pendentes', value: '0', change: '...', trend: 'neutral', icon: Zap, color: 'primary' },
 ];
 
-// Premium skeleton loading component
+const SECTION_LINKS = [
+  { label: 'Resumo', href: '#resumo', icon: LayoutDashboard },
+  { label: 'Inteligência IA', href: '#inteligencia', icon: Sparkles },
+  { label: 'Operação', href: '#operacao', icon: Activity },
+  { label: 'Desempenho', href: '#desempenho', icon: BarChart3 },
+];
+
 function DashboardSkeleton() {
   return (
-    <div className="space-y-8 animate-pulse">
-      {/* Header skeleton */}
-      <div className="flex justify-between items-center">
-        <div>
-          <div className="h-8 w-48 bg-slate-200/50 dark:bg-slate-800/50 rounded-lg" />
-          <div className="h-4 w-72 bg-slate-200/50 dark:bg-slate-800/50 rounded-lg mt-2" />
+    <div className="flex animate-pulse flex-col gap-8" aria-busy="true" aria-label="Carregando visão geral">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-2">
+          <div className="h-8 w-48 rounded-lg bg-slate-200/60 dark:bg-slate-800/60" />
+          <div className="h-4 w-72 max-w-full rounded-lg bg-slate-200/60 dark:bg-slate-800/60" />
         </div>
-        <div className="flex gap-2">
-          <div className="h-10 w-32 bg-slate-200/50 dark:bg-slate-800/50 rounded-xl" />
-          <div className="h-10 w-10 bg-slate-200/50 dark:bg-slate-800/50 rounded-xl" />
-        </div>
+        <div className="h-10 w-full rounded-xl bg-slate-200/60 dark:bg-slate-800/60 sm:w-80" />
       </div>
-      
-      {/* Stats skeleton */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[...Array(4)].map((_, i) => (
-          <div key={i} className="h-36 bg-slate-200/30 dark:bg-slate-800/30 rounded-2xl" />
+      <div className="h-14 rounded-2xl bg-slate-200/40 dark:bg-slate-800/40" />
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+        {[0, 1, 2, 3].map((item) => (
+          <div key={item} className="h-36 rounded-2xl bg-slate-200/40 dark:bg-slate-800/40" />
         ))}
       </div>
-      
-      {/* Chart and products skeleton */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 h-80 bg-slate-200/30 dark:bg-slate-800/30 rounded-2xl" />
-        <div className="h-80 bg-slate-200/30 dark:bg-slate-800/30 rounded-2xl" />
-      </div>
-      
-      {/* Table skeleton */}
-      <div className="h-96 bg-slate-200/30 dark:bg-slate-800/30 rounded-2xl" />
+      <div className="h-72 rounded-3xl bg-slate-200/40 dark:bg-slate-800/40" />
     </div>
+  );
+}
+
+function SectionHeading({
+  id,
+  eyebrow,
+  title,
+  description,
+  icon: Icon,
+  aside,
+}: {
+  id?: string;
+  eyebrow: string;
+  title: string;
+  description: string;
+  icon: React.ElementType;
+  aside?: ReactNode;
+}) {
+  return (
+    <header className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+          <Icon className="size-5" aria-hidden="true" />
+        </div>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-widest text-primary">{eyebrow}</p>
+          <h2 id={id} className="mt-1 text-xl font-bold text-slate-900 dark:text-white sm:text-2xl">{title}</h2>
+          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-500 dark:text-slate-400">{description}</p>
+        </div>
+      </div>
+      {aside}
+    </header>
+  );
+}
+
+function OperationSection({
+  dashboardData,
+  orders,
+  selectedPeriod,
+  lowPower,
+  onOpenModal,
+}: {
+  dashboardData: any;
+  orders: any[];
+  selectedPeriod: string;
+  lowPower: boolean;
+  onOpenModal: (order: any) => void;
+}) {
+  const chartData: number[] = dashboardData?.chartData || [];
+  const maxValue = Math.max(...chartData, 1);
+
+  return (
+    <section id="operacao" className="scroll-mt-32 flex flex-col gap-6" aria-labelledby="operacao-title">
+      <SectionHeading
+        id="operacao-title"
+        eyebrow="Operação"
+        title="Ritmo da loja"
+        description="Acompanhe o movimento por hora, os produtos mais vendidos e os pedidos mais recentes."
+        icon={Activity}
+        aside={(
+          <span className="w-fit rounded-full border border-slate-200/70 bg-white/70 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/50 dark:text-slate-300">
+            Período: {selectedPeriod}
+          </span>
+        )}
+      />
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <motion.div
+          initial={lowPower ? false : { opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={lowPower ? { duration: 0 } : { delay: 0.1 }}
+          className="relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white/75 p-5 shadow-lg shadow-slate-200/40 backdrop-blur-xl dark:border-slate-700/50 dark:bg-slate-900/50 dark:shadow-black/20 sm:p-6 lg:col-span-2"
+        >
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary/30 via-primary to-primary/30" />
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Activity className="size-4" aria-hidden="true" />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-800 dark:text-white">Vendas por hora</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Distribuição dos pedidos ao longo do dia</p>
+              </div>
+            </div>
+            <span className="flex items-center gap-2 rounded-full bg-slate-100/80 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:bg-slate-800/70 dark:text-slate-400">
+              <span className="relative flex size-2" aria-hidden="true">
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-75" />
+                <span className="relative inline-flex size-2 rounded-full bg-primary" />
+              </span>
+              Tempo real
+            </span>
+          </div>
+
+          <div className="custom-scrollbar -mx-2 overflow-x-auto px-2">
+            <div className="flex h-60 min-w-[600px] items-end justify-between gap-1 rounded-xl border border-slate-200/50 bg-gradient-to-b from-slate-50/60 to-slate-100/40 p-4 dark:border-slate-700/40 dark:from-slate-800/40 dark:to-slate-900/30 sm:min-w-0">
+              {chartData.length > 0 ? (
+                chartData.map((value, index) => {
+                  const height = value === 0 ? 4 : Math.max(8, Math.round((value / maxValue) * 180));
+
+                  return (
+                    <div key={index} className="group relative flex h-full flex-1 flex-col items-center justify-end">
+                      <motion.div
+                        initial={lowPower ? false : { height: 0, opacity: 0 }}
+                        animate={{ height: `${height}px`, opacity: 1 }}
+                        transition={lowPower ? { duration: 0 } : { delay: index * 0.03, type: 'spring', stiffness: 100 }}
+                        className="w-full rounded-t-md bg-gradient-to-t from-primary to-primary/70 shadow-lg shadow-primary/20 transition-all duration-300 group-hover:from-primary/90 group-hover:to-primary/60 group-hover:shadow-primary/40"
+                        title={`${value} pedidos às ${index}h`}
+                      />
+                      <span className="mt-2 text-[10px] font-bold text-slate-400 dark:text-slate-500">{index}h</span>
+                      <div className="pointer-events-none absolute -top-12 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white opacity-0 shadow-xl transition-opacity group-hover:opacity-100 dark:bg-slate-700">
+                        <span className="font-bold text-primary">{value}</span> pedidos às {index}h
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="flex w-full items-center justify-center text-sm text-slate-400">Nenhum dado disponível</div>
+              )}
+            </div>
+          </div>
+        </motion.div>
+
+        <TopProductsList products={dashboardData?.topProducts || []} />
+      </div>
+
+      <RecentOrdersTable orders={orders} onOpenModal={onOpenModal} />
+    </section>
   );
 }
 
@@ -73,15 +207,10 @@ export default function DashboardOverview() {
   const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus | null>(null);
 
   const loadData = async (showRefreshIndicator = false) => {
-    if (showRefreshIndicator) {
-      setIsRefreshing(true);
-    } else {
-      setLoading(true);
-    }
-    
+    if (showRefreshIndicator) setIsRefreshing(true);
+    else setLoading(true);
+
     try {
-      // Uma única chamada agregada (getMe + dados + onboarding) em vez de 3
-      // server actions separadas. As consultas pesadas rodam em paralelo no servidor.
       const bundle = await getDashboardBundle(selectedPeriod);
       setUser(bundle.user);
       setOnboardingStatus(bundle.onboarding);
@@ -91,15 +220,31 @@ export default function DashboardOverview() {
       setError(null);
 
       if (data.rawOrders) {
-        const formattedOrders = data.rawOrders.map((o: any) => ({
-          id: `#${o.id}`,
-          customer: o.cliente_nome || o.nome_cliente || 'Cliente',
-          phone: o.telefone_cliente || '',
-          time: o.criado_em ? new Date(o.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '...',
-          value: `R$ ${Number(o.valor_total || 0).toFixed(2).replace('.', ',')}`,
-          status: o.status === 'pendente' ? 'Pendente' : o.status === 'preparando' ? 'Preparando' : o.status === 'cancelado' ? 'Cancelado' : 'Finalizado',
-          statusColor: o.status === 'pendente' ? 'amber' : o.status === 'preparando' ? 'blue' : o.status === 'cancelado' ? 'red' : 'emerald',
-          raw: o
+        const formattedOrders = data.rawOrders.map((order: any) => ({
+          id: `#${order.id}`,
+          customer: order.cliente_nome || order.nome_cliente || 'Cliente',
+          phone: order.telefone_cliente || '',
+          time: order.criado_em
+            ? new Date(order.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+            : '...',
+          value: `R$ ${Number(order.valor_total || 0).toFixed(2).replace('.', ',')}`,
+          status:
+            order.status === 'pendente'
+              ? 'Pendente'
+              : order.status === 'preparando'
+                ? 'Preparando'
+                : order.status === 'cancelado'
+                  ? 'Cancelado'
+                  : 'Finalizado',
+          statusColor:
+            order.status === 'pendente'
+              ? 'amber'
+              : order.status === 'preparando'
+                ? 'blue'
+                : order.status === 'cancelado'
+                  ? 'red'
+                  : 'emerald',
+          raw: order,
         }));
         setOrders(formattedOrders);
       }
@@ -114,6 +259,7 @@ export default function DashboardOverview() {
 
   useEffect(() => {
     queueMicrotask(loadData);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPeriod]);
 
   const handleOpenModal = (order: any) => {
@@ -121,160 +267,140 @@ export default function DashboardOverview() {
     setIsModalOpen(true);
   };
 
-  if (loading) {
-    return <DashboardSkeleton />;
-  }
+  if (loading) return <DashboardSkeleton />;
 
-  const statsWithIcons = (dashboardData?.stats || DEFAULT_STATS).map((s: any, i: number) => ({
-    ...s,
-    icon: i === 0 ? DollarSign : i === 1 ? ShoppingBag : i === 2 ? TrendingUp : Zap
+  const statsWithIcons = (dashboardData?.stats || DEFAULT_STATS).map((stat: any, index: number) => ({
+    ...stat,
+    icon: index === 0 ? DollarSign : index === 1 ? ShoppingBag : index === 2 ? TrendingUp : Zap,
   }));
 
+  const operationContent = (
+    <OperationSection
+      dashboardData={dashboardData}
+      orders={orders}
+      selectedPeriod={selectedPeriod}
+      lowPower={lowPower}
+      onOpenModal={handleOpenModal}
+    />
+  );
+
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <motion.header 
-        initial={{ opacity: 0, y: -20 }}
+    <div className="flex flex-col gap-10 pb-8">
+      <motion.header
+        initial={lowPower ? false : { opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+        className="flex flex-col justify-between gap-5 xl:flex-row xl:items-end"
       >
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Ola, {user?.nome || 'Usuario'}
+          <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary">
+            <BrainCircuit className="size-4" aria-hidden="true" />
+            Painel operacional + IA
+          </div>
+          <h1 className="text-balance text-2xl font-bold text-slate-900 dark:text-white sm:text-3xl">
+            Olá, {user?.nome || 'Usuário'}
           </h1>
-          <p className="text-slate-500 text-sm mt-1 dark:text-slate-400">
-            Aqui esta o que esta acontecendo com sua loja {selectedPeriod.toLowerCase()}.
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+            Uma visão completa da sua loja: resultados, operação e recomendações inteligentes no mesmo lugar.
           </p>
         </div>
-        
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <motion.select
-            whileHover={{ scale: 1.02 }}
+
+        <div className="flex w-full flex-wrap items-center gap-2 xl:w-auto xl:justify-end">
+          <select
             value={selectedPeriod}
-            onChange={(e) => setSelectedPeriod(e.target.value)}
-            className="flex-1 sm:flex-none sm:w-auto bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-primary/30 transition-all cursor-pointer shadow-lg shadow-slate-200/50 dark:shadow-black/20"
+            onChange={(event) => setSelectedPeriod(event.target.value)}
+            aria-label="Período da visão geral"
+            className="min-w-40 flex-1 cursor-pointer rounded-xl border border-slate-200/70 bg-white/80 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-lg shadow-slate-200/40 outline-none transition-all focus:ring-2 focus:ring-primary/30 dark:border-slate-700/50 dark:bg-slate-900/60 dark:text-slate-300 dark:shadow-black/20 sm:flex-none"
           >
             <option value="Hoje">Hoje</option>
-            <option value="Ultimos 7 dias">Ultimos 7 dias</option>
-            <option value="Este Mes">Este Mes</option>
+            <option value="Ultimos 7 dias">Últimos 7 dias</option>
+            <option value="Este Mes">Este mês</option>
             <option value="Tudo">Tudo</option>
-          </motion.select>
-          
+          </select>
+
+          <Link
+            href="/dashboard/reports"
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200/70 bg-white/80 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-lg shadow-slate-200/40 transition-colors hover:border-primary/30 hover:text-primary dark:border-slate-700/50 dark:bg-slate-900/60 dark:text-slate-300 dark:shadow-black/20 dark:hover:text-primary"
+          >
+            <FileBarChart className="size-4" aria-hidden="true" />
+            Abrir relatórios
+          </Link>
+
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            type="button"
+            whileHover={lowPower ? undefined : { scale: 1.05 }}
+            whileTap={lowPower ? undefined : { scale: 0.95 }}
             onClick={() => loadData(true)}
             disabled={isRefreshing}
             className={cn(
-              "size-10 flex items-center justify-center bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 rounded-xl text-slate-600 dark:text-slate-400 transition-all shadow-lg shadow-slate-200/50 dark:shadow-black/20",
-              isRefreshing ? "opacity-50" : "hover:text-primary hover:border-primary/30"
+              'flex size-10 items-center justify-center rounded-xl border border-slate-200/70 bg-white/80 text-slate-600 shadow-lg shadow-slate-200/40 transition-all dark:border-slate-700/50 dark:bg-slate-900/60 dark:text-slate-400 dark:shadow-black/20',
+              isRefreshing ? 'opacity-50' : 'hover:border-primary/30 hover:text-primary',
             )}
+            aria-label="Atualizar dados do período"
             title="Atualizar dados"
           >
-            <RefreshCw className={cn("size-4", isRefreshing && "animate-spin")} />
+            <RefreshCw className={cn('size-4', isRefreshing && 'animate-spin')} aria-hidden="true" />
           </motion.button>
         </div>
       </motion.header>
 
-      {/* Setup Checklist */}
       {onboardingStatus && onboardingStatus.completedSteps < onboardingStatus.totalSteps && (
         <SetupChecklist initialStatus={onboardingStatus} />
       )}
 
-      {/* Error alert */}
       <AnimatePresence>
         {error && (
-          <motion.div 
+          <motion.div
+            role="alert"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="p-4 bg-red-50/80 dark:bg-red-900/20 backdrop-blur-xl border border-red-200/50 dark:border-red-800/50 rounded-2xl text-red-700 dark:text-red-400 text-sm"
+            className="rounded-2xl border border-red-200/60 bg-red-50/80 p-4 text-sm text-red-700 backdrop-blur-xl dark:border-red-800/50 dark:bg-red-900/20 dark:text-red-400"
           >
             {error}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statsWithIcons.map((stat: any, i: number) => (
-          <StatCard key={stat.label} stat={stat} index={i} />
-        ))}
-      </div>
+      <nav
+        aria-label="Atalhos da visão geral"
+        className="custom-scrollbar sticky top-20 z-30 -mx-1 overflow-x-auto rounded-2xl border border-slate-200/70 bg-white/85 p-1.5 shadow-lg shadow-slate-200/30 backdrop-blur-xl dark:border-slate-700/50 dark:bg-slate-900/85 dark:shadow-black/20"
+      >
+        <div className="flex min-w-max items-center gap-1">
+          {SECTION_LINKS.map(({ label, href, icon: Icon }) => (
+            <a
+              key={href}
+              href={href}
+              className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 dark:text-slate-300"
+            >
+              <Icon className="size-4" aria-hidden="true" />
+              {label}
+            </a>
+          ))}
+        </div>
+      </nav>
 
-      {/* Chart and Top Products */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Sales Chart */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="lg:col-span-2 relative bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl p-6 rounded-2xl border border-slate-200/50 dark:border-slate-700/50 shadow-lg shadow-slate-200/50 dark:shadow-black/20 overflow-hidden"
-        >
-          {/* Background decoration */}
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/50 via-primary to-primary/50" />
-          
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-blue-100/80 dark:bg-blue-900/30">
-                <Activity className="size-4 text-blue-600 dark:text-blue-400" />
-              </div>
-              <h4 className="font-bold text-slate-800 dark:text-white">Vendas por Hora</h4>
-            </div>
-            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-1.5 px-3 py-1.5 bg-slate-100/80 dark:bg-slate-800/50 rounded-full">
-              <span className="relative flex size-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full size-2 bg-emerald-500" />
-              </span>
-              Tempo real
+      <section id="resumo" className="scroll-mt-32 flex flex-col gap-6" aria-labelledby="resumo-title">
+        <SectionHeading
+          id="resumo-title"
+          eyebrow="Resumo"
+          title="Números do período"
+          description="Indicadores consolidados conforme o período selecionado no topo da página."
+          icon={LayoutDashboard}
+          aside={(
+            <span className="w-fit rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">
+              {selectedPeriod}
             </span>
-          </div>
-          
-          {/* Chart */}
-          <div className="overflow-x-auto custom-scrollbar -mx-2 px-2">
-            <div className="h-[240px] flex items-end justify-between gap-1 bg-gradient-to-b from-slate-50/50 to-slate-100/30 dark:from-slate-800/30 dark:to-slate-900/30 rounded-xl p-4 border border-slate-200/30 dark:border-slate-700/30 min-w-[600px] sm:min-w-0">
-              {dashboardData?.chartData && dashboardData.chartData.length > 0 ? (
-                dashboardData.chartData.map((val: number, i: number) => {
-                  const maxVal = Math.max(...dashboardData.chartData);
-                  const height = val === 0 ? 4 : Math.max(8, Math.round((val / Math.max(maxVal, 1)) * 180));
+          )}
+        />
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {statsWithIcons.map((stat: any, index: number) => (
+            <StatCard key={stat.label} stat={stat} index={index} />
+          ))}
+        </div>
+      </section>
 
-                  return (
-                    <div key={i} className="flex-1 flex flex-col items-center relative group h-full justify-end">
-                      <motion.div
-                        initial={lowPower ? false : { height: 0, opacity: 0 }}
-                        animate={{ height: `${height}px`, opacity: 1 }}
-                        transition={lowPower ? { duration: 0 } : { delay: i * 0.03, type: 'spring', stiffness: 100 }}
-                        className="w-full bg-gradient-to-t from-primary to-primary/70 rounded-t-md transition-all duration-300 group-hover:from-primary/90 group-hover:to-primary/60 shadow-lg shadow-primary/20 group-hover:shadow-primary/40"
-                        title={`${val} pedidos`}
-                      />
-                      <span className="text-[10px] font-bold mt-2 text-slate-400 dark:text-slate-500">
-                        {i}h
-                      </span>
-                      {/* Tooltip */}
-                      <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-slate-900 dark:bg-slate-700 text-white text-xs px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-10 shadow-xl border border-white/10 whitespace-nowrap">
-                        <span className="font-bold text-primary">{val}</span> pedidos as {i}h
-                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 dark:bg-slate-700 rotate-45" />
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="w-full flex items-center justify-center text-slate-400">
-                  Nenhum dado disponivel
-                </div>
-              )}
-            </div>
-          </div>
-        </motion.div>
+      <ZapflowInsightsClient operationContent={operationContent} />
 
-        {/* Top Products */}
-        <TopProductsList products={dashboardData?.topProducts || []} />
-      </div>
-
-      {/* Recent Orders */}
-      <RecentOrdersTable orders={orders} onOpenModal={handleOpenModal} />
-
-      {/* Order Details Modal */}
       {isModalOpen && (
         <OrderDetailsModal
           isOpen={isModalOpen}

@@ -15,7 +15,6 @@ import {
     Star,
     DollarSign,
     LayoutGrid,
-    Lightbulb,
     ChevronRight,
     Home,
     Menu,
@@ -31,8 +30,7 @@ import Link from 'next/link';
 const MotionLink = motion.create(Link);
 
 const navItems = [
-    { name: 'Visão Geral', href: '/dashboard', icon: LayoutDashboard, roles: ['admin'] },
-    { name: 'Insights', href: '/dashboard/insights', icon: Lightbulb, roles: ['admin', 'gerente'] },
+    { name: 'Visão Geral', href: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'gerente'] },
     { name: 'Cardápio', href: '/dashboard/menu', icon: UtensilsCrossed, roles: ['admin'] },
     { name: 'Expedição', href: '/dashboard/expedition', icon: Truck, roles: ['admin', 'gerente', 'atendente', 'cozinheiro'] },
     { name: 'Mesas', href: '/dashboard/mesas', icon: LayoutGrid, roles: ['admin', 'gerente', 'atendente'] },
