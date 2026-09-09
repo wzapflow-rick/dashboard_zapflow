@@ -228,9 +228,11 @@ export default function OnboardingTutorial() {
     // Botão para replay do tutorial
     return (
       <button
+        type="button"
         onClick={handleReplay}
-        className="fixed bottom-4 right-4 p-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full shadow-lg hover:scale-110 transition-transform z-50"
+        className="fixed bottom-24 right-20 z-50 flex size-14 items-center justify-center rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background lg:bottom-6 lg:right-24"
         title="Ver tutorial novamente"
+        aria-label="Ver tutorial novamente"
       >
         <Sparkles className="size-5" />
       </button>
