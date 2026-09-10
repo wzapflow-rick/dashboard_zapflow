@@ -1,19 +1,9 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 
 export const metadata: Metadata = {
-  title: 'ZapFlow - Sistema de Delivery Completo',
-  description: 'Cardapio digital, pedidos pelo WhatsApp, gestao completa e muito mais. Tudo que seu restaurante precisa para vender mais.',
-  openGraph: {
-    title: 'ZapFlow - Sistema de Delivery Completo',
-    description: 'Cardapio digital, pedidos pelo WhatsApp, gestao completa e muito mais.',
-    type: 'website',
-  },
+  title: 'Zapflow — Seu delivery, em um novo fluxo',
+  description: 'Cardápio digital e gestão de pedidos para restaurantes e delivery. Conheça os recursos e planos do Zapflow.',
+  openGraph: { title: 'Zapflow — Seu delivery, em um novo fluxo', description: 'Cardápio digital e gestão de pedidos para restaurantes e delivery.', type: 'website' },
 };
-
-export default function LandingLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return children;
-}
+export const viewport: Viewport = { themeColor: '#073c2f', width: 'device-width', initialScale: 1, maximumScale: 5, userScalable: true };
+export default function LandingLayout({ children }: { children: React.ReactNode }) { return children; }
