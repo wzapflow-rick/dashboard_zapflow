@@ -38,20 +38,59 @@ interface ConfigLoja {
   aberto_manual_ate?: string | null;
 }
 
+/** Colunas de override manual exigidas em `configuracoes_loja`. */
+const OVERRIDE_COLUMNS = ['fechado_manual_ate', 'aberto_manual_ate'] as const;
+
 /**
- * Garante que as colunas de override manual existam em `configuracoes_loja`.
+ * SQL para o lojista aplicar manualmente no pgAdmin caso as colunas de override
+ * ainda nao existam. Exibido no log uma unica vez por processo.
+ */
+const OVERRIDE_SCHEMA_SQL =
+  `ALTER TABLE ${CONFIGURACOES_LOJA_TABLE} ADD COLUMN IF NOT EXISTS fechado_manual_ate TEXT;\n` +
+  `ALTER TABLE ${CONFIGURACOES_LOJA_TABLE} ADD COLUMN IF NOT EXISTS aberto_manual_ate TEXT;`;
+
+// Cache por processo: a verificacao roda uma unica vez, nao a cada request.
+let overrideSchemaVerificado = false;
+
+/**
+ * Verifica (sem alterar o banco) se as colunas de override manual existem em
+ * `configuracoes_loja`.
  *
- * O banco roda numa VPS do cliente com migracoes manuais; se a coluna nao
- * existir, o UPDATE de abertura/fechamento falharia. `ADD COLUMN IF NOT EXISTS`
- * e idempotente e barato, entao pode rodar a cada acesso sem risco (no-op quando
- * as colunas ja existem). Isso dispensa qualquer alteracao manual no banco.
+ * O banco roda numa VPS do cliente e o usuario de conexao NAO e dono da tabela,
+ * entao qualquer `ALTER TABLE` falha com 42501 ("must be owner of table") —
+ * mesmo com `IF NOT EXISTS`, pois o Postgres checa a propriedade antes de ver
+ * se a coluna existe. Por isso apenas consultamos `information_schema` (um
+ * SELECT, permitido a qualquer usuario) e, se faltar alguma coluna, registramos
+ * o SQL para o lojista aplicar manualmente no pgAdmin. O resultado e cacheado
+ * por processo para nao repetir a consulta a cada acesso.
  */
 async function ensureLojaStatusSchema() {
+  if (overrideSchemaVerificado) return;
+
   try {
-    await pg.raw(`ALTER TABLE ${CONFIGURACOES_LOJA_TABLE} ADD COLUMN IF NOT EXISTS fechado_manual_ate TEXT`);
-    await pg.raw(`ALTER TABLE ${CONFIGURACOES_LOJA_TABLE} ADD COLUMN IF NOT EXISTS aberto_manual_ate TEXT`);
+    const rows = await pg.raw<{ column_name: string }>(
+      `SELECT column_name FROM information_schema.columns
+       WHERE table_name = $1 AND column_name = ANY($2)`,
+      [CONFIGURACOES_LOJA_TABLE, OVERRIDE_COLUMNS as unknown as string[]],
+    );
+
+    const existentes = new Set(rows.map((r) => r.column_name));
+    const faltando = OVERRIDE_COLUMNS.filter((c) => !existentes.has(c));
+
+    if (faltando.length > 0) {
+      console.warn(
+        `[LOJA_STATUS] Colunas de override manual ausentes em ${CONFIGURACOES_LOJA_TABLE}: ${faltando.join(', ')}. ` +
+          `Aplique no pgAdmin:\n${OVERRIDE_SCHEMA_SQL}`,
+      );
+    }
+
+    // Marca como verificado mesmo se faltarem colunas: nao adianta repetir a
+    // consulta a cada request; o aviso acima ja instrui a correcao manual.
+    overrideSchemaVerificado = true;
   } catch (error) {
-    console.error('[LOJA_STATUS] Erro ao garantir schema de override manual:', error);
+    // Nao marca como verificado para permitir nova tentativa em caso de falha
+    // transitoria de conexao.
+    console.error('[LOJA_STATUS] Erro ao verificar schema de override manual:', error);
   }
 }
 
