@@ -79,7 +79,7 @@ export function InstallPrompt() {
   if (!showBanner) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-[100] p-4 md:left-auto md:right-4 md:bottom-4 md:max-w-sm">
+    <div className="fixed inset-x-0 bottom-28 z-[100] p-4 md:left-auto md:right-4 md:max-w-sm lg:bottom-4">
       <div className="rounded-2xl border border-border bg-card shadow-lg p-4">
         {showIOSHelp ? (
           <div className="flex flex-col gap-3">

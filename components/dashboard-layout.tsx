@@ -3,11 +3,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Sidebar } from './layout/sidebar';
 import { Header } from './layout/header';
+import { DashboardDock } from './layout/dashboard-dock';
 import { PaymentAlert } from './dashboard/payment-alert';
 import { TrialWarningBanner } from './dashboard/trial-warning-banner';
 import { OfflineIndicator } from './offline-indicator';
 import { InstallPrompt } from './install-prompt';
-import { cn } from '@/lib/utils';
 import { RefreshCw, AlertTriangle } from 'lucide-react';
 import { Component, ReactNode, ErrorInfo } from 'react';
 
@@ -86,7 +86,7 @@ export function useSidebar() {
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { isOpen, setIsOpen } = useSidebar();
+  const { isOpen } = useSidebar();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -142,26 +142,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-screen bg-background-light dark:bg-[#0a1628]">
       {!isLoading && !isCozinheiro && (
-        <Sidebar
-          isOpen={isOpen}
-          isMobileMenuOpen={isMobileMenuOpen}
-          setIsMobileMenuOpen={setIsMobileMenuOpen}
-          user={user}
-        />
+        <div hidden aria-hidden="true">
+          <Sidebar
+            isOpen={isOpen}
+            isMobileMenuOpen={isMobileMenuOpen}
+            setIsMobileMenuOpen={setIsMobileMenuOpen}
+            user={user}
+          />
+        </div>
       )}
 
-      {/* Main Content */}
-      <main className={cn(
-        "flex-1 transition-all duration-300 min-w-0 flex flex-col min-h-screen",
-        isCozinheiro ? "ml-0" : (isOpen ? "lg:ml-64" : "lg:ml-20"),
-        "ml-0"
-      )}>
-        <Header
-          isOpen={isOpen}
-          setIsOpen={setIsOpen}
-          setIsMobileMenuOpen={setIsMobileMenuOpen}
-        />
-        <div className="p-4 sm:p-6 lg:p-8 pb-24 lg:pb-8 flex-1 dark:bg-[#0a1628]">
+      <main className="flex min-h-screen min-w-0 flex-1 flex-col">
+        <Header />
+        <div className="flex-1 p-4 pb-32 sm:p-6 sm:pb-36 lg:p-8 lg:pb-40 dark:bg-[#0a1628]">
           {user?.empresaId && <PaymentAlert empresaId={user.empresaId} />}
           {user && (
             <TrialWarningBanner 
@@ -175,9 +168,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </DashboardErrorBoundary>
         </div>
       </main>
-      
+
+      {!isLoading && <DashboardDock user={user} />}
+
       {/* Indicador global de status offline */}
-      <OfflineIndicator />
+      <OfflineIndicator className="bottom-28 lg:bottom-4" />
 
       {/* Banner de instalacao do PWA - so aparece apos login */}
       {!isLoading && user && <InstallPrompt />}

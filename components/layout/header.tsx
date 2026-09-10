@@ -5,7 +5,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-    LayoutDashboard,
     Bell,
     ChevronDown,
     Truck,
@@ -22,12 +21,6 @@ import {
 import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
 import { LojaToggle } from '@/components/layout/loja-toggle';
-
-interface HeaderProps {
-    isOpen: boolean;
-    setIsOpen: (open: boolean) => void;
-    setIsMobileMenuOpen: (open: boolean) => void;
-}
 
 function playNewOrderSound() {
     try {
@@ -57,7 +50,7 @@ function playNewOrderSound() {
     } catch (_) { }
 }
 
-export function Header({ isOpen, setIsOpen, setIsMobileMenuOpen }: HeaderProps) {
+export function Header() {
     const [user, setUser] = React.useState<any>(null);
     const [empresaData, setEmpresaData] = React.useState<any>(null);
     const [notifications, setNotifications] = React.useState<any[]>([]);
@@ -179,27 +172,18 @@ export function Header({ isOpen, setIsOpen, setIsMobileMenuOpen }: HeaderProps) 
             <div className="relative h-full px-4 lg:px-8 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     {!isCozinheiro && (
-                        <>
-                            {/* Mobile menu button */}
-                            <motion.button
-                                onClick={() => setIsMobileMenuOpen(true)}
-                                className="lg:hidden p-2.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white rounded-xl bg-slate-100/50 dark:bg-white/5 hover:bg-slate-200/50 dark:hover:bg-white/10 transition-all"
-                                whileTap={{ scale: 0.95 }}
-                            >
-                                <LayoutDashboard className="size-5" />
-                            </motion.button>
-                            
-                            {/* Desktop sidebar toggle */}
-                            <motion.button
-                                onClick={() => setIsOpen(!isOpen)}
-                                className="hidden lg:flex p-2.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white rounded-xl bg-slate-100/50 dark:bg-white/5 hover:bg-slate-200/50 dark:hover:bg-white/10 transition-all"
-                                whileTap={{ scale: 0.95 }}
-                                whileHover={{ rotate: isOpen ? 0 : 180 }}
-                                transition={{ duration: 0.3 }}
-                            >
-                                <LayoutDashboard className="size-5" />
-                            </motion.button>
-                        </>
+                        <Link
+                            href="/dashboard"
+                            aria-label="Ir para a visão geral"
+                            className="flex items-center gap-2 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        >
+                            <span className="relative size-9 overflow-hidden rounded-xl bg-primary/10 ring-1 ring-primary/20">
+                                <Image src="/logo-zapflow.png" alt="" fill sizes="36px" className="object-cover" />
+                            </span>
+                            <span className="hidden text-sm font-bold tracking-tight text-slate-900 sm:block dark:text-white">
+                                ZapFlow
+                            </span>
+                        </Link>
                     )}
                     
                     {isCozinheiro && (

@@ -2,62 +2,21 @@
 
 import React, { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import {
-    LayoutDashboard,
-    UtensilsCrossed,
-    Truck,
-    Users,
-    Megaphone,
-    Settings,
-    CreditCard,
-    X,
-    PackageOpen,
-    Star,
-    DollarSign,
-    LayoutGrid,
-    ChevronRight,
-    Home,
-    Menu,
-    Link2,
-} from 'lucide-react';
+import { ChevronRight, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from 'motion/react';
 import Image from 'next/image';
 import Link from 'next/link';
+import {
+    dashboardManagementItems as adminItems,
+    dashboardMobileNavigationItems as mobileNavItems,
+    dashboardNavigationItems as navItems,
+    getDashboardNavigation,
+} from '@/lib/dashboard-navigation';
 
 // Link do Next com animacoes do motion: navegacao client-side (sem recarregar a pagina inteira)
 // e prefetch automatico da proxima rota, mantendo as animacoes existentes.
 const MotionLink = motion.create(Link);
-
-const navItems = [
-    { name: 'Visão Geral', href: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'gerente'] },
-    { name: 'Cardápio', href: '/dashboard/menu', icon: UtensilsCrossed, roles: ['admin'] },
-    { name: 'Expedição', href: '/dashboard/expedition', icon: Truck, roles: ['admin', 'gerente', 'atendente', 'cozinheiro'] },
-    { name: 'Mesas', href: '/dashboard/mesas', icon: LayoutGrid, roles: ['admin', 'gerente', 'atendente'] },
-    { name: 'Clientes', href: '/dashboard/customers', icon: Users, roles: ['admin', 'gerente', 'atendente'] },
-    { name: 'Divulgação', href: '/dashboard/growth', icon: Megaphone, roles: ['admin'] },
-    { name: 'Campanhas', href: '/dashboard/campanhas', icon: Megaphone, roles: ['admin'] },
-    { name: 'Insumos', href: '/dashboard/insumos', icon: PackageOpen, roles: ['admin'] },
-];
-
-const adminItems = [
-    { name: 'Avaliações', href: '/dashboard/ratings', icon: Star, roles: ['admin', 'gerente'] },
-    { name: 'Usuários', href: '/dashboard/users', icon: Users, roles: ['admin'] },
-    { name: 'Acertos', href: '/dashboard/acertos', icon: DollarSign, roles: ['admin', 'gerente'] },
-    { name: 'Relatórios', href: '/dashboard/reports', icon: DollarSign, roles: ['admin', 'gerente'] },
-    // { name: 'Integrações', href: '/dashboard/integracoes', icon: Link2, roles: ['admin'] }, // Desativado temporariamente
-    { name: 'Configurações', href: '/dashboard/settings', icon: Settings, roles: ['admin'] },
-    { name: 'Assinatura', href: '/dashboard/subscription', icon: CreditCard, roles: ['admin'] },
-];
-
-// Itens do bottom nav mobile (5 principais)
-const mobileNavItems = [
-    { name: 'Início', href: '/dashboard', icon: Home },
-    { name: 'Cardápio', href: '/dashboard/menu', icon: UtensilsCrossed },
-    { name: 'Expedição', href: '/dashboard/expedition', icon: Truck },
-    { name: 'Mesas', href: '/dashboard/mesas', icon: LayoutGrid },
-    { name: 'Mais', href: '#menu', icon: Menu },
-];
 
 interface SidebarProps {
     isOpen: boolean;
@@ -268,26 +227,10 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen, user }:
         }
     };
 
-    const filteredNavItems = navItems
-        .filter(item => {
-            if (!user?.controle_estoque && item.name === 'Insumos') {
-                return false;
-            }
-            return true;
-        })
-        .filter(item => {
-            if (user?.role && user.role !== 'admin') {
-                return item.roles?.includes(user.role);
-            }
-            return true;
-        });
-
-    const filteredAdminItems = adminItems.filter(item => {
-        if (user?.role && user.role !== 'admin') {
-            return item.roles?.includes(user.role);
-        }
-        return true;
-    });
+    const {
+        main: filteredNavItems,
+        management: filteredAdminItems,
+    } = getDashboardNavigation(user);
 
     return (
         <>
