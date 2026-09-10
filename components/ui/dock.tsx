@@ -33,6 +33,7 @@ interface DockItemProps {
   active?: boolean;
   href?: string;
   onClick?: MouseEventHandler<HTMLButtonElement>;
+  onLinkClick?: MouseEventHandler<HTMLAnchorElement>;
   expanded?: boolean;
   controls?: string;
 }
@@ -43,6 +44,7 @@ export function DockItem({
   active = false,
   href,
   onClick,
+  onLinkClick,
   expanded,
   controls,
 }: DockItemProps) {
@@ -86,6 +88,7 @@ export function DockItem({
         aria-label={label}
         aria-current={active ? 'page' : undefined}
         className={className}
+        onClick={onLinkClick}
         {...motionProps}
       >
         {content}

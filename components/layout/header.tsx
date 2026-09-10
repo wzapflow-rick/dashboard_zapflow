@@ -178,7 +178,7 @@ export function Header() {
                             className="flex items-center gap-2 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         >
                             <span className="relative size-9 overflow-hidden rounded-xl bg-primary/10 ring-1 ring-primary/20">
-                                <Image src="/logo-zapflow.png" alt="" fill sizes="36px" className="object-cover" />
+                                <Image src="/logo-zapflow.png" alt="" fill sizes="36px" className="object-contain p-1" />
                             </span>
                             <span className="hidden text-sm font-bold tracking-tight text-slate-900 sm:block dark:text-white">
                                 ZapFlow

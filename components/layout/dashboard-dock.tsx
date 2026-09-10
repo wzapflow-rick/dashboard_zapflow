@@ -118,6 +118,7 @@ export function DashboardDock({ user }: DashboardDockProps) {
               icon={item.icon}
               label={item.name}
               active={isDashboardRouteActive(pathname, item.href)}
+              onLinkClick={() => setIsMoreOpen(false)}
             />
           ))}
           {moreItems.length > 0 && (
