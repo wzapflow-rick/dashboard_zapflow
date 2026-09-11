@@ -33,8 +33,7 @@ export const dashboardNavigationItems: DashboardNavigationItem[] = [
   { name: 'Expedição', href: '/dashboard/expedition', icon: Truck, roles: ['admin', 'gerente', 'atendente', 'cozinheiro'] },
   { name: 'Mesas', href: '/dashboard/mesas', icon: LayoutGrid, roles: ['admin', 'gerente', 'atendente'] },
   { name: 'Clientes', href: '/dashboard/customers', icon: Users, roles: ['admin', 'gerente', 'atendente'] },
-  { name: 'Divulgação', href: '/dashboard/growth', icon: Megaphone, roles: ['admin'] },
-  { name: 'Campanhas', href: '/dashboard/campanhas', icon: Megaphone, roles: ['admin'] },
+  { name: 'Marketing', href: '/dashboard/marketing?tab=divulgacao', icon: Megaphone, roles: ['admin'] },
   { name: 'Insumos', href: '/dashboard/insumos', icon: PackageOpen, roles: ['admin'] },
 ];
 
@@ -69,5 +68,7 @@ export function getDashboardNavigation(user?: DashboardNavigationUser | null) {
 }
 
 export function isDashboardRouteActive(pathname: string, href: string) {
-  return pathname === href || (href !== '/dashboard' && pathname.startsWith(`${href}/`));
+  const hrefPathname = href.split('?')[0];
+
+  return pathname === hrefPathname || (hrefPathname !== '/dashboard' && pathname.startsWith(`${hrefPathname}/`));
 }

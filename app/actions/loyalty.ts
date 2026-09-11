@@ -104,7 +104,7 @@ export async function saveLoyaltyConfig(configData: Partial<LoyaltyConfig>) {
         }
 
         await logAction('LOYALTY_CONFIG_UPDATE', `Configuração de fidelidade atualizada para empresa ${user.empresaId}`);
-        revalidatePath('/dashboard/growth');
+        revalidatePath('/dashboard/marketing');
         return { success: true };
     } catch (error) {
         console.error('saveLoyaltyConfig error:', error);

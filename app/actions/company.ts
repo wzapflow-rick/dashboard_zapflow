@@ -116,7 +116,7 @@ export async function updateCompany(data: any) {
         }
 
         revalidatePath('/dashboard/settings');
-        revalidatePath('/dashboard/growth');
+        revalidatePath('/dashboard/marketing');
         
         return updatedData;
     } catch (error: any) {

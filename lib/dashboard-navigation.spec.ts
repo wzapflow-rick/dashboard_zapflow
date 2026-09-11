@@ -14,8 +14,7 @@ describe('getDashboardNavigation', () => {
       'Expedição',
       'Mesas',
       'Clientes',
-      'Divulgação',
-      'Campanhas',
+      'Marketing',
     ]);
     expect(itemNames(management)).toEqual([
       'Avaliações',
@@ -49,9 +48,10 @@ describe('getDashboardNavigation', () => {
 });
 
 describe('isDashboardRouteActive', () => {
-  it('matches exact routes and nested routes', () => {
+  it('matches exact routes, nested routes, and links with query strings', () => {
     expect(isDashboardRouteActive('/dashboard/menu', '/dashboard/menu')).toBe(true);
     expect(isDashboardRouteActive('/dashboard/menu/novo', '/dashboard/menu')).toBe(true);
+    expect(isDashboardRouteActive('/dashboard/marketing', '/dashboard/marketing?tab=divulgacao')).toBe(true);
   });
 
   it('does not mark the dashboard root active on every dashboard route', () => {

@@ -94,7 +94,7 @@ export async function createCampanha(data: CampanhaFormData): Promise<{ success:
 
         const result = await pg.create('campanhas_config', payload);
 
-        revalidatePath('/dashboard/campanhas');
+        revalidatePath('/dashboard/marketing');
         return { success: true, data: result };
     } catch (error: any) {
         console.error('createCampanha error:', error);
@@ -113,7 +113,7 @@ export async function updateCampanha(id: number, data: Partial<CampanhaFormData>
 
         await pg.update('campanhas_config', id, payload);
 
-        revalidatePath('/dashboard/campanhas');
+        revalidatePath('/dashboard/marketing');
         return { success: true };
     } catch (error: any) {
         console.error('updateCampanha error:', error);
@@ -127,7 +127,7 @@ export async function deleteCampanha(id: number): Promise<{ success: boolean; er
 
         await pg.delete('campanhas_config', id);
 
-        revalidatePath('/dashboard/campanhas');
+        revalidatePath('/dashboard/marketing');
         return { success: true };
     } catch (error: any) {
         console.error('deleteCampanha error:', error);
@@ -141,7 +141,7 @@ export async function toggleCampanha(id: number, ativo: boolean): Promise<{ succ
 
         await pg.update('campanhas_config', id, { ativo });
 
-        revalidatePath('/dashboard/campanhas');
+        revalidatePath('/dashboard/marketing');
         return { success: true };
     } catch (error: any) {
         console.error('toggleCampanha error:', error);
@@ -267,7 +267,7 @@ export async function registrarDisparo(data: {
 
         await pg.create('campanhas_disparos', payload);
 
-        revalidatePath('/dashboard/campanhas');
+        revalidatePath('/dashboard/marketing');
         return { success: true };
     } catch (error: any) {
         console.error('registrarDisparo error:', error);
@@ -296,7 +296,7 @@ export async function dispararCampanhasManual(): Promise<{
         
         console.log('[dispararCampanhasManual] Resultado:', JSON.stringify(result, null, 2));
         
-        revalidatePath('/dashboard/campanhas');
+        revalidatePath('/dashboard/marketing');
         
         if (!result.success) {
             return { 

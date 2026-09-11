@@ -41,7 +41,7 @@ const tips: Tip[] = [
     description: 'Lembre dele primeiro! Crie uma campanha de WhatsApp para clientes que nao compram ha mais de 15 dias.',
     category: 'marketing',
     actionLabel: 'Criar Campanha',
-    actionHref: '/dashboard/campanhas',
+    actionHref: '/dashboard/marketing?tab=campanhas',
   },
   {
     id: 2,
@@ -50,7 +50,7 @@ const tips: Tip[] = [
     description: 'Crie um cupom de desconto e poste no story: "Cupom disponivel para os 5 primeiros!" - Gera urgencia e engajamento.',
     category: 'marketing',
     actionLabel: 'Criar Cupom',
-    actionHref: '/dashboard/growth',
+    actionHref: '/dashboard/marketing?tab=divulgacao',
   },
   {
     id: 3,

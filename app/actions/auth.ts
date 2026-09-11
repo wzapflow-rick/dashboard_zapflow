@@ -222,7 +222,7 @@ export async function updateOnboarding(onboardingData: any) {
 
     revalidatePath('/dashboard');
     revalidatePath('/dashboard/settings');
-    revalidatePath('/dashboard/growth');
+    revalidatePath('/dashboard/marketing');
 
     return { success: true };
 }

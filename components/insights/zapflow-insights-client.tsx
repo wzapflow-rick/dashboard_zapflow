@@ -38,9 +38,9 @@ import { ZapflowChat } from './zapflow-chat';
 const fmtMoeda = (value: number) => `R$ ${(value ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 
 const ACAO_INFO: Record<TipoAcao, { label: string; icon: typeof Megaphone; toastMsg: string; href?: string }> = {
-  campanha: { label: 'Criar campanha', icon: Megaphone, toastMsg: 'Abrindo suas campanhas...', href: '/dashboard/campanhas' },
+  campanha: { label: 'Criar campanha', icon: Megaphone, toastMsg: 'Abrindo suas campanhas...', href: '/dashboard/marketing?tab=campanhas' },
   cupom: { label: 'Criar cupom', icon: Ticket, toastMsg: 'Abrindo a gestão de cupons...', href: '/dashboard/settings?section=coupons' },
-  whatsapp: { label: 'Enviar WhatsApp', icon: MessageCircle, toastMsg: 'Abrindo campanhas de WhatsApp...', href: '/dashboard/campanhas' },
+  whatsapp: { label: 'Enviar WhatsApp', icon: MessageCircle, toastMsg: 'Abrindo campanhas de WhatsApp...', href: '/dashboard/marketing?tab=campanhas' },
   cardapio: { label: 'Ajustar cardápio', icon: UtensilsCrossed, toastMsg: 'Abrindo seu cardápio...', href: '/dashboard/menu' },
   clientes: { label: 'Recuperar clientes', icon: Users, toastMsg: 'Abrindo sua base de clientes...', href: '/dashboard/customers' },
   geral: { label: 'Ver detalhes', icon: ArrowRight, toastMsg: 'Ação registrada.' },
