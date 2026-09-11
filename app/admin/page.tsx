@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { loginAdmin } from '@/app/actions/admin-auth';
 import { Bolt, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -98,8 +99,10 @@ export default function AdminLoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-3 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20"
+              aria-busy={loading}
+              className="inline-flex w-full items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-3 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20"
             >
+              {loading && <MorphingInfinity className="size-5" aria-hidden="true" />}
               {loading ? 'Entrando...' : 'Entrar'}
             </button>
           </form>

@@ -17,9 +17,12 @@ interface KanbanColumnProps {
 
 export function KanbanColumn({ col, columnOrders, onOpenPrintModal, onMoveOrder, onRegisterCustomer, onOpenDetails, onCancelOrder, onEditOrder, selectedOrderId, onSelectOrder }: KanbanColumnProps) {
     return (
-        <div className="min-w-[320px] flex flex-col h-full bg-slate-100/50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-700">
+        <section
+            className="flex h-full min-h-0 w-80 min-w-80 shrink-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-slate-100/50 dark:border-slate-700 dark:bg-slate-700/50"
+            aria-labelledby={`kanban-column-${col.id}`}
+        >
             <div className={cn(
-                "p-4 flex items-center justify-between border-b rounded-t-xl",
+                "flex shrink-0 items-center justify-between rounded-t-xl border-b p-4",
                 col.color === 'red' ? "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30" :
                     col.color === 'amber' ? "border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30" :
                         col.color === 'blue' ? "border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30" :
@@ -34,7 +37,7 @@ export function KanbanColumn({ col, columnOrders, onOpenPrintModal, onMoveOrder,
                                     col.color === 'orange' ? "bg-orange-500" :
                                         "bg-green-500"
                     )}></span>
-                    <h3 className={cn("font-bold text-sm uppercase tracking-wide",
+                    <h3 id={`kanban-column-${col.id}`} className={cn("font-bold text-sm uppercase tracking-wide",
                         col.color === 'red' ? "text-red-900 dark:text-red-200" :
                             col.color === 'amber' ? "text-amber-900 dark:text-amber-200" :
                                 col.color === 'blue' ? "text-blue-900 dark:text-blue-200" :
@@ -53,7 +56,11 @@ export function KanbanColumn({ col, columnOrders, onOpenPrintModal, onMoveOrder,
                 </span>
             </div>
 
-            <div className="p-3 space-y-4 overflow-y-auto custom-scrollbar">
+            <div
+                className="custom-scrollbar flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-3 pb-28"
+                tabIndex={0}
+                aria-label={`Pedidos em ${col.title}`}
+            >
                 {columnOrders.map((order) => (
                     <OrderCard
                         key={order.id}
@@ -70,6 +77,6 @@ export function KanbanColumn({ col, columnOrders, onOpenPrintModal, onMoveOrder,
                     />
                 ))}
             </div>
-        </div>
+        </section>
     );
 }

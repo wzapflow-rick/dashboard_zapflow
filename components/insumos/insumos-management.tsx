@@ -1,7 +1,9 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState, useEffect } from 'react';
-import { Plus, PackageOpen, AlertTriangle, Loader2, Edit3, Trash2, Layers, Package, TrendingDown, DollarSign, Truck } from 'lucide-react';
+import { Plus, PackageOpen, AlertTriangle, Edit3, Trash2, Layers, Package, TrendingDown, DollarSign, Truck } from 'lucide-react';
 import { cn, parseCurrency } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { Insumo, getInsumos, upsertInsumo, deleteInsumo, setNovoEstoqueInsumo } from '@/app/actions/insumos';
@@ -160,7 +162,7 @@ export default function InsumosManagement() {
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden relative min-h-[300px]">
                 {isLoading && (
                     <div className="absolute inset-0 bg-white/50 dark:bg-slate-800/50 backdrop-blur-[1px] z-10 flex items-center justify-center">
-                        <Loader2 className="size-8 text-primary animate-spin" />
+                        <MorphingInfinity className="size-8 text-primary" />
                     </div>
                 )}
                 <div className="overflow-x-auto custom-scrollbar">

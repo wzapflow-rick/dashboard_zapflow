@@ -8,6 +8,7 @@ import { upsertItemBase, type ItemBase, getReceitaDoItemBase, saveReceitaDoItemB
 import { getInsumos, type Insumo } from '@/app/actions/insumos';
 import { parseCurrency as globalParseCurrency } from '@/lib/utils';
 import { getMe } from '@/app/actions/auth';
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 
 interface BibliotecaItemModalProps {
     isOpen: boolean;
@@ -329,8 +330,10 @@ export function BibliotecaItemModal({ isOpen, editingItem, onClose, onSaved, con
                             <button
                                 onClick={handleSave}
                                 disabled={saving}
-                                className="flex-1 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-white font-medium transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                aria-busy={saving}
+                                className="inline-flex flex-1 items-center justify-center gap-2 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-white font-medium transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                             >
+                                {saving && <MorphingInfinity className="size-4" aria-hidden="true" />}
                                 {saving ? 'Salvando...' : (editingItem?.id ? 'Salvar' : 'Criar Sabor')}
                             </button>
                         </div>

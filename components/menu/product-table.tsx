@@ -1,8 +1,10 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React from 'react';
 import Image from 'next/image';
-import { Loader2, Edit3, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Edit3, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { type Category } from '@/app/actions/products';
 
@@ -52,7 +54,7 @@ export default function ProductTable({
             {loading && (
                 <div className="absolute inset-0 bg-white/50 dark:bg-slate-800/50 backdrop-blur-[1px] z-10 flex items-center justify-center">
                     <div className="flex flex-col items-center gap-2">
-                        <Loader2 className="size-8 text-primary animate-spin" />
+                        <MorphingInfinity className="size-8 text-primary" />
                         <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Carregando...</p>
                     </div>
                 </div>

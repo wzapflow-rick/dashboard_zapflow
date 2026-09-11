@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { MessageCircle, Send, Sparkles, X } from 'lucide-react';
 import { perguntarAoZapflow } from '@/app/actions/zapflow-insights';
 import { cn } from '@/lib/utils';
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 
 interface Msg {
   role: 'user' | 'assistant';
@@ -136,11 +137,10 @@ export function ZapflowChat() {
               ))}
 
               {carregando && (
-                <div className="flex justify-start" aria-label="ZapFlow está respondendo">
-                  <div className="flex gap-1 rounded-2xl rounded-bl-md bg-slate-100 px-4 py-3 dark:bg-white/[0.06]">
-                    <span className="size-2 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.3s]" />
-                    <span className="size-2 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.15s]" />
-                    <span className="size-2 animate-bounce rounded-full bg-slate-400" />
+                <div className="flex justify-start" role="status" aria-label="ZapFlow está respondendo">
+                  <div className="flex items-center gap-2 rounded-2xl rounded-bl-md bg-slate-100 px-4 py-3 text-slate-500 dark:bg-white/[0.06] dark:text-slate-300">
+                    <MorphingInfinity className="size-5 text-primary" aria-hidden="true" />
+                    <span className="text-xs font-medium">Pensando...</span>
                   </div>
                 </div>
               )}

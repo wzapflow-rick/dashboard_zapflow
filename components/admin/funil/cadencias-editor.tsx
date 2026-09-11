@@ -1,15 +1,9 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import { useEffect, useState } from 'react';
-import {
-  Loader2,
-  Plus,
-  Trash2,
-  Save,
-  Zap,
-  Hand,
-  Clock,
-} from 'lucide-react';
+import { Plus, Trash2, Save, Zap, Hand, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   getCadencias,
@@ -133,7 +127,7 @@ export function CadenciasEditor() {
   if (loading) {
     return (
       <div className="flex justify-center py-20">
-        <Loader2 className="size-8 animate-spin text-orange-500" />
+        <MorphingInfinity className="size-8 text-orange-500" />
       </div>
     );
   }
@@ -159,7 +153,7 @@ export function CadenciasEditor() {
                 className="flex items-center gap-1.5 text-sm bg-[#1e3a5f] hover:bg-[#2a4a6f] text-white px-3 py-1.5 rounded-lg transition-all disabled:opacity-50"
               >
                 {savingId === `novo-${estagio}` ? (
-                  <Loader2 className="size-4 animate-spin" />
+                  <MorphingInfinity className="size-4" />
                 ) : (
                   <Plus className="size-4" />
                 )}
@@ -254,7 +248,7 @@ export function CadenciasEditor() {
                         className="flex-1 flex items-center justify-center gap-1.5 bg-orange-600 hover:bg-orange-500 text-white text-sm px-2.5 py-1.5 rounded-lg transition-all disabled:opacity-50"
                       >
                         {savingId === cad.id ? (
-                          <Loader2 className="size-4 animate-spin" />
+                          <MorphingInfinity className="size-4" />
                         ) : (
                           <Save className="size-4" />
                         )}

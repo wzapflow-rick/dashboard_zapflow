@@ -1,11 +1,9 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState, useEffect, Suspense } from 'react';
-import {
-  CheckCircle2, ArrowRight, ChevronLeft,
-  Utensils, Pizza, Beef, Coffee, IceCream, CakeSlice,
-  QrCode, Check, Zap, Loader2, RefreshCw, Wifi, WifiOff, Clock
-} from 'lucide-react';
+import { CheckCircle2, ArrowRight, ChevronLeft, Utensils, Pizza, Beef, Coffee, IceCream, CakeSlice, QrCode, Check, Zap, RefreshCw, Wifi, WifiOff, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { updateOnboarding } from '@/app/actions/auth';
@@ -322,7 +320,11 @@ function OnboardingContent() {
                       </div>
                       <button onClick={refreshQRCode} disabled={loadingQr}
                         className="flex items-center gap-2 text-xs text-slate-500 hover:text-primary mx-auto transition-colors">
-                        <RefreshCw className={cn("size-3", loadingQr && "animate-spin")} />
+                        {loadingQr ? (
+                    <MorphingInfinity className="size-3" aria-hidden="true" />
+                  ) : (
+                    <RefreshCw className="size-3" aria-hidden="true" />
+                  )}
                         Atualizar QR Code
                       </button>
                     </div>
@@ -330,7 +332,7 @@ function OnboardingContent() {
                     <div className="aspect-square bg-slate-50 dark:bg-slate-900 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 flex items-center justify-center">
                       {loadingQr ? (
                         <div className="flex flex-col items-center gap-3">
-                          <Loader2 className="size-12 text-primary animate-spin" />
+                          <MorphingInfinity className="size-12 text-primary" />
                           <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">Gerando QR Code...</span>
                         </div>
                       ) : (
@@ -419,7 +421,7 @@ function OnboardingContent() {
                   </button>
                   <button onClick={handleFinish} disabled={loading}
                     className="w-full md:w-64 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/25 flex items-center justify-center gap-2 transition-all">
-                    {loading ? <Loader2 className="size-5 animate-spin" /> : <>Finalizar e Salvar <ArrowRight className="size-5" /></>}
+                    {loading ? <MorphingInfinity className="size-5" /> : <>Finalizar e Salvar <ArrowRight className="size-5" /></>}
                   </button>
                 </div>
               </motion.div>
@@ -452,7 +454,7 @@ export default function OnboardingPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="size-8 text-primary animate-spin" />
+        <MorphingInfinity className="size-8 text-primary" />
       </div>
     }>
       <OnboardingContent />

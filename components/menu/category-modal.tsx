@@ -1,7 +1,9 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState, useEffect } from 'react';
-import { X, Edit3, Trash2, Check, GripVertical, ChevronUp, ChevronDown, ImageIcon, UploadCloud, Loader2 } from 'lucide-react';
+import { X, Edit3, Trash2, Check, GripVertical, ChevronUp, ChevronDown, ImageIcon, UploadCloud } from 'lucide-react';
 import { MobileDrawer } from '@/components/ui/mobile-drawer';
 import { uploadImageAction, applyImageToCategory, type Category } from '@/app/actions/products';
 import { processImage, isValidImageFile } from '@/lib/image-utils';
@@ -28,6 +30,7 @@ export default function CategoryModal({
 }: CategoryModalProps) {
   const [orderedCategories, setOrderedCategories] = useState<Category[]>([]);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
+  const [isSavingCategory, setIsSavingCategory] = useState(false);
 
   // Modal "aplicar foto a categoria"
   const [imageCategory, setImageCategory] = useState<Category | null>(null);
@@ -107,6 +110,7 @@ export default function CategoryModal({
       ordem: editingCategory?.ordem ?? (maxOrdem + 1)
     };
 
+    setIsSavingCategory(true);
     try {
       await onSave(data);
       if (!editingCategory) {
@@ -117,6 +121,8 @@ export default function CategoryModal({
       }
     } catch (error) {
       console.error('Erro ao salvar categoria:', error);
+    } finally {
+      setIsSavingCategory(false);
     }
   };
 
@@ -174,10 +180,16 @@ export default function CategoryModal({
           <div className="flex gap-2">
             <button
               type="submit"
-              className="flex-1 px-6 py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 text-sm"
+              disabled={isSavingCategory}
+              aria-busy={isSavingCategory}
+              className="flex-1 px-6 py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 text-sm disabled:cursor-wait disabled:opacity-60"
             >
-              <Check className="size-4" />
-              {editingCategory ? 'Salvar' : 'Criar Categoria'}
+              {isSavingCategory ? (
+                <MorphingInfinity className="size-4" aria-hidden="true" />
+              ) : (
+                <Check className="size-4" aria-hidden="true" />
+              )}
+              {isSavingCategory ? 'Salvando...' : editingCategory ? 'Salvar' : 'Criar Categoria'}
             </button>
             {editingCategory && (
               <button
@@ -198,8 +210,9 @@ export default function CategoryModal({
               <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                 Ordenar Categorias
               </h3>
-              <span className="text-xs text-slate-500 dark:text-slate-400">
-                Use as setas para reordenar
+              <span className="inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400" role="status" aria-live="polite">
+                {isSavingOrder && <MorphingInfinity className="size-3.5 text-primary" aria-hidden="true" />}
+                {isSavingOrder ? 'Salvando ordem...' : 'Use as setas para reordenar'}
               </span>
             </div>
             <div className="space-y-2">
@@ -311,7 +324,7 @@ export default function CategoryModal({
               <label className="group relative flex flex-col items-center justify-center gap-2 w-full aspect-video rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-primary cursor-pointer overflow-hidden transition-colors bg-slate-50 dark:bg-slate-700/50">
                 {previewUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={previewUrl || "/placeholder.svg"} alt="Pré-visualização" className="absolute inset-0 w-full h-full object-cover" />
+                  <img src={previewUrl || "/placeholder.svg"} alt="Pré-visualizaç��o" className="absolute inset-0 w-full h-full object-cover" />
                 ) : (
                   <>
                     <UploadCloud className="size-7 text-slate-400 group-hover:text-primary transition-colors" />
@@ -337,7 +350,7 @@ export default function CategoryModal({
                 disabled={!selectedFile || applyingImage}
                 className="w-full px-6 py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {applyingImage ? <Loader2 className="size-4 animate-spin" /> : <ImageIcon className="size-4" />}
+                {applyingImage ? <MorphingInfinity className="size-4" /> : <ImageIcon className="size-4" />}
                 {applyingImage ? 'Aplicando...' : 'Aplicar a todos os produtos'}
               </button>
             </div>

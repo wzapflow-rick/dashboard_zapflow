@@ -6,6 +6,7 @@ import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { getAvailableDrivers, assignDriverToOrder, Driver } from '@/app/actions/drivers';
 import { AddExtraValueModal } from './add-extra-value-modal';
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 
 // Funcao para calcular tempo decorrido de forma legivel
 function getTimeAgo(dateString: string): string {
@@ -366,6 +367,7 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
                         <button
                             onClick={() => setShowDriverDropdown(!showDriverDropdown)}
                             disabled={assigning}
+                            aria-busy={assigning}
                             className={cn(
                                 "w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm transition-colors",
                                 selectedDriver
@@ -374,9 +376,14 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
                             )}
                         >
                             <span className="flex items-center gap-2">
-                                <Truck className="size-4" />
-                                {assigning ? 'Atribuindo...' :
-                                    selectedDriver
+                                {assigning ? (
+                                    <MorphingInfinity className="size-4" aria-hidden="true" />
+                                ) : (
+                                    <Truck className="size-4" aria-hidden="true" />
+                                )}
+                                {assigning
+                                    ? 'Atribuindo...'
+                                    : selectedDriver
                                         ? drivers.find(d => d.id === selectedDriver)?.nome || 'Entregador atribuído'
                                         : 'Atribuir entregador'}
                             </span>

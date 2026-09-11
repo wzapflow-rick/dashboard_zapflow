@@ -1,7 +1,9 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import { useEffect, useState } from 'react';
-import { Zap, CreditCard, LogOut, Loader2, ShieldCheck, Check } from 'lucide-react';
+import { Zap, CreditCard, LogOut, ShieldCheck, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { getBillingStatus, generateCheckoutLink, type BillingStatus } from '@/app/actions/billing';
 import { logout } from '@/app/actions/auth';
@@ -205,7 +207,7 @@ export function BlockScreen({ empresaId, nome, initialStatus = null }: BlockScre
             className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3.5 text-sm font-bold text-background-dark transition-colors hover:bg-primary-hover disabled:opacity-60"
           >
             {paying ? (
-              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              <MorphingInfinity className="size-4" aria-hidden="true" />
             ) : (
               <CreditCard className="size-4" aria-hidden="true" />
             )}
@@ -234,7 +236,7 @@ export function BlockScreen({ empresaId, nome, initialStatus = null }: BlockScre
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:text-white disabled:opacity-60"
           >
             {leaving ? (
-              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              <MorphingInfinity className="size-4" aria-hidden="true" />
             ) : (
               <LogOut className="size-4" aria-hidden="true" />
             )}

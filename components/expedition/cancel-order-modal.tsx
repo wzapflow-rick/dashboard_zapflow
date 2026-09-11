@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Ban, AlertTriangle } from 'lucide-react';
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 
 interface CancelOrderModalProps {
     isOpen: boolean;
@@ -32,13 +33,17 @@ export default function CancelOrderModal({ isOpen, onClose, onConfirm, orderId }
         if (!motivo) return;
 
         setIsSubmitting(true);
-        await onConfirm(motivo);
-        setIsSubmitting(false);
-        setSelectedReason('');
-        setCustomReason('');
+        try {
+            await onConfirm(motivo);
+            setSelectedReason('');
+            setCustomReason('');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const handleClose = () => {
+        if (isSubmitting) return;
         setSelectedReason('');
         setCustomReason('');
         onClose();
@@ -135,8 +140,10 @@ export default function CancelOrderModal({ isOpen, onClose, onConfirm, orderId }
                         <button
                             onClick={handleSubmit}
                             disabled={!selectedReason || (selectedReason === 'Outro motivo' && !customReason) || isSubmitting}
+                            aria-busy={isSubmitting}
                             className="flex-1 px-4 py-2.5 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
                         >
+                            {isSubmitting && <MorphingInfinity className="size-4" aria-hidden="true" />}
                             {isSubmitting ? 'Cancelando...' : 'Confirmar Cancelamento'}
                         </button>
                     </div>

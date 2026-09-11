@@ -1,5 +1,7 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import { useEffect, useState } from 'react';
 import { getAdminStats } from '@/app/actions/admin';
 import { Building2, CreditCard, TrendingUp, AlertCircle, Users, Clock } from 'lucide-react';
@@ -32,7 +34,7 @@ export default function AdminDashboardPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+        <MorphingInfinity className="size-8 text-orange-500" />
       </div>
     );
   }

@@ -1,22 +1,9 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import { useEffect, useState } from 'react';
-import { 
-  ListTodo, 
-  RefreshCw, 
-  X,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  AlertCircle,
-  ChevronLeft,
-  ChevronRight,
-  Zap,
-  Loader2,
-  Send,
-  Filter,
-  Trash2,
-} from 'lucide-react';
+import { ListTodo, RefreshCw, X, Clock, CheckCircle2, XCircle, AlertCircle, ChevronLeft, ChevronRight, Zap, Send, Filter, Trash2 } from 'lucide-react';
 import { 
   getFila, 
   cancelarFilaItem,
@@ -150,7 +137,7 @@ export default function FilaPage() {
               disabled={processingAll}
               className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2.5 rounded-xl font-medium transition-all shadow-lg shadow-green-500/20 disabled:opacity-50"
             >
-              {processingAll ? <Loader2 className="size-4 animate-spin" /> : <Zap className="size-4" />}
+              {processingAll ? <MorphingInfinity className="size-4" /> : <Zap className="size-4" />}
               <span>{processingAll ? 'Processando...' : `Enviar ${stats.pendente} Agora`}</span>
             </button>
           )}
@@ -159,7 +146,7 @@ export default function FilaPage() {
             disabled={loading}
             className="flex items-center gap-2 bg-[#1e3a5f] hover:bg-[#2a4a6f] text-white px-4 py-2.5 rounded-xl font-medium transition-all disabled:opacity-50"
           >
-            {loading ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
+            {loading ? <MorphingInfinity className="size-4" /> : <RefreshCw className="size-4" />}
             <span>Atualizar</span>
           </button>
         </div>
@@ -223,7 +210,7 @@ export default function FilaPage() {
       <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-2xl overflow-hidden">
         {loading ? (
           <div className="flex justify-center py-16">
-            <Loader2 className="size-8 animate-spin text-orange-500" />
+            <MorphingInfinity className="size-8 text-orange-500" />
           </div>
         ) : fila.length === 0 ? (
           <div className="text-center py-16 px-4">
@@ -247,11 +234,11 @@ export default function FilaPage() {
                   <div className="flex items-start gap-4">
                     {/* Status Icon */}
                     <div className={cn("p-3 rounded-xl", statusClasses.bg)}>
-                      <StatusIcon className={cn(
-                        "size-5",
-                        statusClasses.text,
-                        statusConfig.color === 'blue' && "animate-spin"
-                      )} />
+                      {statusConfig.color === 'blue' ? (
+                        <MorphingInfinity className={cn('size-5', statusClasses.text)} aria-hidden="true" />
+                      ) : (
+                        <StatusIcon className={cn('size-5', statusClasses.text)} aria-hidden="true" />
+                      )}
                     </div>
                     
                     {/* Info */}
@@ -314,7 +301,7 @@ export default function FilaPage() {
                           title="Enviar agora"
                         >
                           {isSending ? (
-                            <Loader2 className="size-4 animate-spin" />
+                            <MorphingInfinity className="size-4" />
                           ) : (
                             <Send className="size-4" />
                           )}
@@ -326,7 +313,7 @@ export default function FilaPage() {
                           title="Cancelar"
                         >
                           {isCanceling ? (
-                            <Loader2 className="size-4 animate-spin" />
+                            <MorphingInfinity className="size-4" />
                           ) : (
                             <X className="size-4" />
                           )}
@@ -341,7 +328,7 @@ export default function FilaPage() {
                         title="Tentar novamente"
                       >
                         {isSending ? (
-                          <Loader2 className="size-4 animate-spin" />
+                          <MorphingInfinity className="size-4" />
                         ) : (
                           <RefreshCw className="size-4" />
                         )}

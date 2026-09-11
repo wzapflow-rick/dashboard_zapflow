@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import { Toaster } from 'sonner';
 import { MetaPixel } from "@/components/meta-pixel";
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -38,7 +39,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" suppressHydrationWarning>
+    <html lang="pt-BR" className="bg-background-light dark:bg-background-dark" suppressHydrationWarning>
       <head>
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -52,7 +53,13 @@ export default function RootLayout({
         >
           {children}
         </ThemeProvider>
-        <Toaster position="top-right" richColors />
+        <Toaster
+          position="top-right"
+          richColors
+          icons={{
+            loading: <MorphingInfinity className="size-4" aria-hidden="true" />,
+          }}
+        />
         <ServiceWorkerRegistration />
         <MetaPixel />
       </body>

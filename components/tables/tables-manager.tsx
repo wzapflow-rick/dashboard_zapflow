@@ -1,5 +1,7 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState, useCallback, useMemo } from 'react';
 import { Plus, Users, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -77,7 +79,11 @@ export default function TablesManager() {
             onClick={handleRefresh}
             className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 transition-colors"
           >
-            <RefreshCw className={cn('size-4', isLoading && 'animate-spin')} />
+            {isLoading ? (
+            <MorphingInfinity className="size-4" aria-hidden="true" />
+          ) : (
+            <RefreshCw className="size-4" aria-hidden="true" />
+          )}
             <span className="hidden sm:inline">Atualizar</span>
           </button>
 
@@ -141,7 +147,7 @@ export default function TablesManager() {
       {isLoading && mesas.length === 0 ? (
         <div className="flex items-center justify-center h-64">
           <div className="flex flex-col items-center gap-3">
-            <RefreshCw className="size-8 text-primary animate-spin" />
+            <MorphingInfinity className="size-8 text-primary" />
             <span className="text-slate-400">Carregando mesas...</span>
           </div>
         </div>

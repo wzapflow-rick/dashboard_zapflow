@@ -1,18 +1,9 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState } from 'react';
-import {
-  Search,
-  Plus,
-  Edit3,
-  Trash2,
-  Filter,
-  X,
-  Check,
-  Loader2,
-  Sparkles,
-  Folder
-} from 'lucide-react';
+import { Search, Plus, Edit3, Trash2, Filter, X, Check, Sparkles, Folder } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { type Category } from '@/app/actions/products';

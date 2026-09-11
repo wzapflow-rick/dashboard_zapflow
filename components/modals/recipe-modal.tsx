@@ -3,6 +3,7 @@
 import React from 'react';
 import { X, Trash2, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 
 interface RecipeModalProps {
     isOpen: boolean;
@@ -135,10 +136,12 @@ export function RecipeModal({
                             <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200 rounded-lg transition-colors">Cancelar</button>
                             <button
                                 onClick={onSaveRecipe}
-                                disabled={savingRecipe}
-                                className="px-5 py-2.5 text-sm font-semibold bg-primary text-white hover:bg-primary/90 rounded-lg transition-colors shadow-sm flex items-center gap-2"
-                            >
-                                {savingRecipe ? 'Salvando...' : 'Salvar Ficha Técnica'}
+                            disabled={savingRecipe}
+                            aria-busy={savingRecipe}
+                            className="px-5 py-2.5 text-sm font-semibold bg-primary text-white hover:bg-primary/90 rounded-lg transition-colors shadow-sm flex items-center gap-2 disabled:cursor-wait disabled:opacity-60"
+                        >
+                            {savingRecipe && <MorphingInfinity className="size-4" aria-hidden="true" />}
+                            {savingRecipe ? 'Salvando...' : 'Salvar Ficha Técnica'}
                             </button>
                         </div>
                     </motion.div>

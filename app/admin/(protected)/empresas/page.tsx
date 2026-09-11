@@ -1,5 +1,7 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import { useEffect, useState } from 'react';
 import { getEmpresas, createEmpresa, updateEmpresa, concederTrialGratuito, deleteEmpresa } from '@/app/actions/admin';
 import { 
@@ -171,7 +173,7 @@ export default function EmpresasAdminPage() {
       <div className="lg:hidden space-y-4">
         {loading ? (
           <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+            <MorphingInfinity className="size-8 text-orange-500" />
           </div>
         ) : empresas.length === 0 ? (
           <div className="text-center py-12 text-slate-400 bg-[#0f1f35] border border-[#1e3a5f] rounded-xl">
@@ -247,7 +249,7 @@ export default function EmpresasAdminPage() {
               {loading ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
+                    <MorphingInfinity className="mx-auto size-8 text-orange-500" />
                   </td>
                 </tr>
               ) : empresas.length === 0 ? (
@@ -472,8 +474,10 @@ export default function EmpresasAdminPage() {
                 <button
                   onClick={handleDelete}
                   disabled={deleting}
-                  className="flex-1 bg-red-500 hover:bg-red-600 text-white px-4 py-3 rounded-lg font-medium transition-all disabled:opacity-50"
+                  aria-busy={deleting}
+                  className="inline-flex flex-1 items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-3 rounded-lg font-medium transition-all disabled:opacity-50"
                 >
+                  {deleting && <MorphingInfinity className="size-4" aria-hidden="true" />}
                   {deleting ? 'Excluindo...' : 'Sim, Excluir'}
                 </button>
               </div>
@@ -685,8 +689,10 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-3 rounded-lg font-medium transition-all disabled:opacity-50"
+              aria-busy={loading}
+              className="inline-flex flex-1 items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-3 rounded-lg font-medium transition-all disabled:opacity-50"
             >
+              {loading && <MorphingInfinity className="size-4" aria-hidden="true" />}
               {loading ? 'Criando...' : 'Criar Empresa'}
             </button>
           </div>
@@ -804,8 +810,10 @@ function EditEmpresaModal({ empresa, onClose, onSuccess }: { empresa: Empresa; o
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-3 rounded-lg font-medium transition-all disabled:opacity-50"
+              aria-busy={loading}
+              className="inline-flex flex-1 items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-3 rounded-lg font-medium transition-all disabled:opacity-50"
             >
+              {loading && <MorphingInfinity className="size-4" aria-hidden="true" />}
               {loading ? 'Salvando...' : 'Salvar'}
             </button>
           </div>
@@ -893,8 +901,10 @@ function TrialModal({ empresa, onClose, onSuccess }: { empresa: Empresa; onClose
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-3 rounded-lg font-medium transition-all disabled:opacity-50"
+              aria-busy={loading}
+              className="inline-flex flex-1 items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-3 rounded-lg font-medium transition-all disabled:opacity-50"
             >
+              {loading && <MorphingInfinity className="size-4" aria-hidden="true" />}
               {loading ? 'Concedendo...' : 'Conceder Acesso'}
             </button>
           </div>

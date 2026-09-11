@@ -1,18 +1,10 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import { useState } from 'react';
 import { buscarLeads, importarLeads, type LeadCaptado } from '@/app/actions/captacao';
-import {
-    Search,
-    Loader2,
-    MapPin,
-    Phone,
-    Radar,
-    Send,
-    CheckCircle2,
-    ExternalLink,
-    PhoneOff,
-} from 'lucide-react';
+import { Search, MapPin, Phone, Radar, Send, CheckCircle2, ExternalLink, PhoneOff } from 'lucide-react';
 
 export default function CaptacaoClient() {
     const [cidade, setCidade] = useState('');
@@ -171,7 +163,7 @@ export default function CaptacaoClient() {
                     >
                         {buscando ? (
                             <>
-                                <Loader2 className="size-5 animate-spin" /> Procurando lojas no mapa...
+                                <MorphingInfinity className="size-5" /> Procurando lojas no mapa...
                             </>
                         ) : (
                             <>
@@ -221,7 +213,7 @@ export default function CaptacaoClient() {
                                 >
                                     {importando ? (
                                         <>
-                                            <Loader2 className="size-4 animate-spin" /> Importando...
+                                            <MorphingInfinity className="size-4" /> Importando...
                                         </>
                                     ) : (
                                         <>

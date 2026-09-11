@@ -1,7 +1,9 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState } from 'react';
-import { X, Plus, Loader2 } from 'lucide-react';
+import { X, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { createMesa } from '@/app/actions/tables';
 
@@ -161,7 +163,7 @@ export default function CreateTableModal({
                   >
                     {isLoading ? (
                       <>
-                        <Loader2 className="size-4 animate-spin" />
+                        <MorphingInfinity className="size-4" />
                         <span>Criando...</span>
                       </>
                     ) : (

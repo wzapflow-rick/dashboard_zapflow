@@ -1,5 +1,7 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Image as ImageIcon, Plus, Check, PackageOpen, Trash2, Ruler, Sparkles } from 'lucide-react';
@@ -607,7 +609,7 @@ export default function ProductFormModal({
                             >
                                 {isSubmitting ? (
                                     <>
-                                        <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        <MorphingInfinity className="size-4" aria-hidden="true" />
                                         Salvando...
                                     </>
                                 ) : (

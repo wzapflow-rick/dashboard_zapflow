@@ -1,20 +1,9 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState, useEffect } from 'react';
-import { 
-  Check, 
-  CreditCard, 
-  ArrowRight,
-  Star,
-  Loader2,
-  AlertCircle,
-  X,
-  QrCode,
-  Copy,
-  CheckCircle2,
-  Calendar,
-  Receipt
-} from 'lucide-react';
+import { Check, CreditCard, ArrowRight, Star, AlertCircle, X, QrCode, Copy, CheckCircle2, Calendar, Receipt } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { 
@@ -198,7 +187,7 @@ export default function SubscriptionPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="size-8 animate-spin text-primary" />
+        <MorphingInfinity className="size-8 text-primary" />
       </div>
     );
   }
@@ -242,7 +231,7 @@ export default function SubscriptionPage() {
                   disabled={processingPlan === 'cancel'}
                   className="px-4 md:px-6 py-3 bg-white/10 border border-white/20 text-white font-bold rounded-xl hover:bg-white/20 transition-all text-sm md:text-base disabled:opacity-50"
                 >
-                  {processingPlan === 'cancel' ? <Loader2 className="size-5 animate-spin" /> : 'Cancelar'}
+                  {processingPlan === 'cancel' ? <MorphingInfinity className="size-5" /> : 'Cancelar'}
                 </button>
               </div>
             </div>
@@ -322,7 +311,7 @@ export default function SubscriptionPage() {
                       )}
                     >
                       {isProcessing ? (
-                        <Loader2 className="size-5 animate-spin" />
+                        <MorphingInfinity className="size-5" />
                       ) : isCurrent ? (
                         'Plano Atual'
                       ) : (

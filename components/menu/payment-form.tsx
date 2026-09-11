@@ -1,8 +1,10 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import { useState, useEffect, useRef } from 'react';
 import { getMPPublicKey, createPayment, getPaymentStatus } from '@/app/actions/mercadopago';
-import { Loader2, CreditCard, Lock, CheckCircle, XCircle } from 'lucide-react';
+import { CreditCard, Lock, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface PaymentFormProps {
@@ -243,7 +245,7 @@ export default function PaymentForm({ pedidoId, total, empresaId, onSuccess, onE
 
       {!sdkReady && (
         <div className="flex items-center gap-2 text-sm text-slate-500">
-          <Loader2 className="size-4 animate-spin" />
+          <MorphingInfinity className="size-4" />
           Carregando módulo de pagamento...
         </div>
       )}
@@ -318,7 +320,7 @@ export default function PaymentForm({ pedidoId, total, empresaId, onSuccess, onE
 
       {paymentState === 'waiting_confirmation' && (
         <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-xl flex items-center gap-2 text-blue-600 dark:text-blue-400 text-sm">
-          <Loader2 className="size-4 animate-spin shrink-0" />
+          <MorphingInfinity className="size-4 shrink-0" />
           {statusMessage}
         </div>
       )}
@@ -330,7 +332,7 @@ export default function PaymentForm({ pedidoId, total, empresaId, onSuccess, onE
       >
         {loading ? (
           <>
-            <Loader2 className="size-5 animate-spin" />
+            <MorphingInfinity className="size-5" />
             Processando...
           </>
         ) : (

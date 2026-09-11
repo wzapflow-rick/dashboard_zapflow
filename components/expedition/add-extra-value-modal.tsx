@@ -1,7 +1,9 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState } from 'react';
-import { X, Plus, Loader2, DollarSign } from 'lucide-react';
+import { X, Plus, DollarSign } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { addExtraValueToOrder } from '@/app/actions/orders';
 
@@ -179,7 +181,7 @@ export function AddExtraValueModal({
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-white font-medium rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isLoading ? (
-                      <Loader2 className="size-4 animate-spin" />
+                      <MorphingInfinity className="size-4" />
                     ) : (
                       <>
                         <Plus className="size-4" />

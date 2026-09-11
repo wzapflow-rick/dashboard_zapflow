@@ -1,8 +1,10 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Truck, Mail, Lock, Loader2 } from 'lucide-react';
+import { Truck, Mail, Lock } from 'lucide-react';
 import { motion } from 'motion/react';
 import { driverLogin } from '@/app/actions/driver-auth';
 
@@ -97,7 +99,7 @@ export default function DriverLoginPage() {
             >
               {loading ? (
                 <>
-                  <Loader2 className="size-5 animate-spin" />
+                  <MorphingInfinity className="size-5" />
                   Entrando...
                 </>
               ) : (

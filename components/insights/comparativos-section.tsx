@@ -1,5 +1,7 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import { RefreshCw, TrendingUp } from 'lucide-react';
@@ -83,7 +85,7 @@ export function ComparativosSection({
           >
             {atualizando ? (
               <>
-                <RefreshCw className="size-3.5 animate-spin" />
+                <MorphingInfinity className="size-3.5" aria-hidden="true" />
                 Atualizando
               </>
             ) : null}
@@ -110,7 +112,7 @@ export function ComparativosSection({
                   )}
                 >
                   {selecionado && atualizando ? (
-                    <RefreshCw className="size-3 animate-spin sm:hidden" aria-hidden="true" />
+                    <MorphingInfinity className="size-3 sm:hidden" aria-hidden="true" />
                   ) : null}
                   {filtro.label}
                 </button>

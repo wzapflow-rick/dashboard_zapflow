@@ -154,7 +154,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       <main className="flex min-h-screen min-w-0 flex-1 flex-col">
         <Header />
-        <div className="flex-1 p-4 pb-32 sm:p-6 sm:pb-36 lg:p-8 lg:pb-40 dark:bg-[#0a1628]">
+        <div className="min-w-0 flex-1 p-4 pb-32 sm:p-6 sm:pb-36 lg:p-8 lg:pb-40 dark:bg-[#0a1628]">
           {user?.empresaId && <PaymentAlert empresaId={user.empresaId} />}
           {user && (
             <TrialWarningBanner 

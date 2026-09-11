@@ -395,7 +395,7 @@ export default function ExpeditionMonitor() {
   return (
     <>
       <FeedbackComponent />
-      <div className="h-[calc(100vh-120px)] flex flex-col bg-white dark:bg-slate-950">
+      <div className="flex h-[calc(100dvh-6rem)] min-h-[48rem] min-w-0 flex-col overflow-hidden rounded-xl bg-white dark:bg-slate-950">
       <header className="h-auto min-h-16 border-b border-slate-200 dark:border-slate-800/50 bg-white dark:bg-gradient-to-r dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 px-4 sm:px-8 py-3 flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0 rounded-t-xl shadow-sm dark:shadow-2xl dark:shadow-black/30">
         <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
           <div className="flex items-center gap-4">
@@ -420,7 +420,7 @@ export default function ExpeditionMonitor() {
             )}
             {pendingCount > 0 && (
               <span className="px-2 py-1 rounded-full bg-orange-100 dark:bg-orange-900/50 text-[10px] font-medium text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-500/50 flex items-center gap-1">
-                <RefreshCw className={`size-3 ${isSyncing ? 'animate-spin' : ''}`} />
+                <RefreshCw className="size-3" aria-hidden="true" />
                 {pendingCount} pendente{pendingCount > 1 ? 's' : ''}
               </span>
             )}
@@ -462,7 +462,7 @@ export default function ExpeditionMonitor() {
       </header>
 
       {/* Banners contextuais */}
-      <div className="px-4 sm:px-8 pt-4 space-y-2 shrink-0">
+      <div className="flex shrink-0 flex-col gap-2 px-4 pt-4 sm:px-8">
         {onboardingStatus && !onboardingStatus.hasMercadoPago && (
           <ContextualBanner 
             type="mercadopago" 
@@ -477,7 +477,10 @@ export default function ExpeditionMonitor() {
         )}
       </div>
 
-      <div className="flex-1 overflow-x-auto p-4 sm:p-6 flex gap-4 sm:gap-6 bg-gradient-to-br from-slate-50 via-slate-50 to-slate-100 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 rounded-b-xl border-x border-b border-slate-200 dark:border-slate-800/50 custom-scrollbar">
+      <div
+        className="custom-scrollbar flex min-h-0 min-w-0 flex-1 items-stretch gap-4 overflow-x-auto overflow-y-hidden rounded-b-xl border-x border-b border-slate-200 bg-gradient-to-br from-slate-50 via-slate-50 to-slate-100 p-4 dark:border-slate-800/50 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 sm:gap-6 sm:p-6"
+        aria-label="Quadro Kanban de pedidos"
+      >
         {columns.map((col) => {
           const columnOrders = filteredOrders.filter(o => o.status === col.id);
           return (

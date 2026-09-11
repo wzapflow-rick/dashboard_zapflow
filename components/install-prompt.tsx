@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Download, X, Share } from 'lucide-react';
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -15,6 +16,7 @@ export function InstallPrompt() {
   const [showBanner, setShowBanner] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [showIOSHelp, setShowIOSHelp] = useState(false);
+  const [isInstalling, setIsInstalling] = useState(false);
 
   useEffect(() => {
     // Se ja esta instalado (standalone), nao mostra nada
@@ -59,15 +61,20 @@ export function InstallPrompt() {
       return;
     }
 
-    if (!deferredPrompt) return;
+    if (!deferredPrompt || isInstalling) return;
 
-    await deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
+    setIsInstalling(true);
+    try {
+      await deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
 
-    if (outcome === 'accepted') {
-      setShowBanner(false);
+      if (outcome === 'accepted') {
+        setShowBanner(false);
+      }
+      setDeferredPrompt(null);
+    } finally {
+      setIsInstalling(false);
     }
-    setDeferredPrompt(null);
   };
 
   const handleDismiss = () => {
@@ -135,9 +142,12 @@ export function InstallPrompt() {
           <div className="mt-3 flex gap-2">
             <button
               onClick={handleInstall}
-              className="flex-1 rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+              disabled={isInstalling}
+              aria-busy={isInstalling}
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors disabled:cursor-wait disabled:opacity-60"
             >
-              {isIOS ? 'Ver como instalar' : 'Instalar agora'}
+              {isInstalling && <MorphingInfinity className="size-4" aria-hidden="true" />}
+              {isInstalling ? 'Instalando...' : isIOS ? 'Ver como instalar' : 'Instalar agora'}
             </button>
             <button
               onClick={handleDismiss}

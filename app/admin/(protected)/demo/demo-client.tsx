@@ -1,25 +1,14 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import { useState, useRef } from 'react';
 import {
     estruturarCardapio,
     criarDemoCardapio,
     type CardapioEstruturado,
 } from '@/app/actions/demo-cardapio';
-import {
-    Sparkles,
-    Loader2,
-    ImagePlus,
-    Trash2,
-    Plus,
-    ExternalLink,
-    Copy,
-    Check,
-    MessageCircle,
-    UtensilsCrossed,
-    ArrowLeft,
-    ClipboardPaste,
-} from 'lucide-react';
+import { Sparkles, ImagePlus, Trash2, Plus, ExternalLink, Copy, Check, MessageCircle, UtensilsCrossed, ArrowLeft, ClipboardPaste } from 'lucide-react';
 
 type Etapa = 'entrada' | 'revisao' | 'pronto';
 
@@ -299,7 +288,7 @@ export default function DemoCardapioClient() {
                         >
                             {processando ? (
                                 <>
-                                    <Loader2 className="size-5 animate-spin" /> A IA está lendo o cardápio...
+                                    <MorphingInfinity className="size-5" /> A IA está lendo o cardápio...
                                 </>
                             ) : (
                                 <>
@@ -419,7 +408,7 @@ export default function DemoCardapioClient() {
                             >
                                 {processando ? (
                                     <>
-                                        <Loader2 className="size-5 animate-spin" /> Criando a loja...
+                                        <MorphingInfinity className="size-5" /> Criando a loja...
                                     </>
                                 ) : (
                                     <>

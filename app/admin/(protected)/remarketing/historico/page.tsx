@@ -1,5 +1,7 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import { useEffect, useState } from 'react';
 import { 
   History, 
@@ -83,7 +85,11 @@ export default function HistoricoPage() {
           disabled={loading}
           className="flex items-center justify-center gap-2 bg-[#162438] hover:bg-[#1e3a5f] text-white px-4 py-2.5 rounded-lg font-medium transition-all w-full sm:w-auto"
         >
-          <RefreshCw className={cn("size-5", loading && "animate-spin")} />
+          {loading ? (
+          <MorphingInfinity className="size-5" aria-hidden="true" />
+        ) : (
+          <RefreshCw className="size-5" aria-hidden="true" />
+        )}
           <span>Atualizar</span>
         </button>
       </div>
@@ -107,7 +113,7 @@ export default function HistoricoPage() {
       <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl overflow-hidden">
         {loading ? (
           <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+            <MorphingInfinity className="size-8 text-orange-500" />
           </div>
         ) : filteredHistorico.length === 0 ? (
           <div className="text-center py-12 text-slate-400">

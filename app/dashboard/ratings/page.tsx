@@ -1,5 +1,7 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState, useEffect } from 'react';
 import { Star, TrendingUp, TrendingDown, ThumbsUp, ThumbsDown, MessageCircle, Calendar, Search, User } from 'lucide-react';
 import { getRatingsByEmpresa, getAverageRatings, getClientByPhone } from '@/app/actions/ratings';
@@ -89,7 +91,7 @@ export default function RatingsPage() {
     if (loading) {
         return (
             <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-500"></div>
+                <MorphingInfinity className="size-8 text-violet-500" />
             </div>
         );
     }

@@ -1,32 +1,10 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import {
-  ShoppingCart,
-  X,
-  Plus,
-  Minus,
-  Trash2,
-  Tag,
-  Star,
-  Check,
-  Loader2,
-  Sparkles,
-  CreditCard,
-  Banknote,
-  QrCode,
-  MapPin,
-  Phone,
-  User,
-  ChevronRight,
-  ArrowLeft,
-  AlertCircle,
-  Copy,
-  CheckCircle,
-  Edit2,
-  MessageSquare
-} from 'lucide-react';
+import { ShoppingCart, X, Plus, Minus, Trash2, Tag, Star, Check, Sparkles, CreditCard, Banknote, QrCode, MapPin, Phone, User, ChevronRight, ArrowLeft, AlertCircle, Copy, CheckCircle, Edit2, MessageSquare } from 'lucide-react';
 import { useCart } from './cart-context';
 import { cn } from '@/lib/utils';
 import { validateCoupon } from '@/app/actions/coupons';
@@ -728,7 +706,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
 
                             {deliveryLoading && (
                               <div className="flex items-center justify-center gap-2 py-3 text-gray-500 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl">
-                                <Loader2 className="size-4 animate-spin" />
+                                <MorphingInfinity className="size-4" />
                                 <span className="text-sm">Calculando entrega...</span>
                               </div>
                             )}
@@ -842,7 +820,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
         disabled={loading || items.length === 0}
         className="w-full p-4 bg-[#22c55e] hover:bg-[#1ea34d] disabled:bg-[#1a1a1a] disabled:text-gray-600 text-white font-black rounded-xl shadow-lg shadow-green-900/30 transition-all flex items-center justify-center gap-2"
       >
-        {loading ? <Loader2 className="animate-spin size-5" /> : (
+        {loading ? <MorphingInfinity className="size-5" /> : (
           <>
             {step === 'cart' && 'CONTINUAR'}
             {step === 'customer' && 'IR PARA PAGAMENTO'}

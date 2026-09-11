@@ -1,20 +1,10 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  Truck, 
-  LogOut, 
-  MapPin, 
-  Phone, 
-  Clock, 
-  CheckCircle,
-  Package,
-  Loader2,
-  RefreshCw,
-  DollarSign,
-  User
-} from 'lucide-react';
+import { Truck, LogOut, MapPin, Phone, Clock, CheckCircle, Package, RefreshCw, DollarSign, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   getDriverSession, 
@@ -148,7 +138,7 @@ export default function DriverDashboard() {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-100 flex items-center justify-center">
-        <Loader2 className="size-10 text-purple-500 animate-spin" />
+        <MorphingInfinity className="size-10 text-purple-500" />
       </div>
     );
   }
@@ -182,7 +172,11 @@ export default function DriverDashboard() {
               disabled={refreshing}
               className="p-2 bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
             >
-              <RefreshCw className={`size-4 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? (
+            <MorphingInfinity className="size-4" aria-hidden="true" />
+          ) : (
+            <RefreshCw className="size-4" aria-hidden="true" />
+          )}
             </button>
             <button
               onClick={handleLogout}
@@ -335,7 +329,7 @@ export default function DriverDashboard() {
                       >
                         {updating === order.id ? (
                           <>
-                            <Loader2 className="size-5 animate-spin" />
+                            <MorphingInfinity className="size-5" />
                             Atualizando...
                           </>
                         ) : (

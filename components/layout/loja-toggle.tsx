@@ -1,8 +1,10 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Power, Loader2, AlertTriangle, X } from 'lucide-react';
+import { Power, AlertTriangle, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Status {
@@ -99,7 +101,7 @@ export function LojaToggle() {
         title={aberto ? 'Clique para fechar a loja agora' : 'Clique para abrir a loja'}
       >
         {loading ? (
-          <Loader2 className="size-4 animate-spin" />
+          <MorphingInfinity className="size-4" />
         ) : (
           <span className="relative flex size-2.5">
             <span
@@ -196,7 +198,7 @@ export function LojaToggle() {
                   )}
                 >
                   {loading ? (
-                    <Loader2 className="size-4 animate-spin" />
+                    <MorphingInfinity className="size-4" />
                   ) : (
                     <Power className="size-4" />
                   )}

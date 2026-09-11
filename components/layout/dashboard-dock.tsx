@@ -69,15 +69,6 @@ const navigationItemVariants: Variants = {
     scale: 1,
     transition: { type: 'spring', stiffness: 430, damping: 27 },
   },
-  hover: { x: 3 },
-  tap: { x: 5, scale: 0.975 },
-};
-
-const navigationGlowVariants: Variants = {
-  hidden: { opacity: 0, x: -28 },
-  visible: { opacity: 0, x: -28 },
-  hover: { opacity: 0.42, x: 0 },
-  tap: { opacity: 0.72, x: 52 },
 };
 
 export function DashboardDock({ user }: DashboardDockProps) {
@@ -272,19 +263,18 @@ function NavigationGroup({
               }}
               aria-current={active ? 'page' : undefined}
               variants={reduceMotion ? undefined : navigationItemVariants}
-              whileHover={reduceMotion ? undefined : 'hover'}
-              whileTap={reduceMotion ? undefined : 'tap'}
+              whileHover={reduceMotion ? undefined : { x: 3 }}
+              whileTap={reduceMotion ? undefined : { x: 5, scale: 0.975 }}
               className={cn(
-                'group relative flex items-center gap-3 overflow-hidden rounded-2xl px-3 py-2.5 text-sm font-medium text-text-secondary outline-none transition-colors hover:bg-surface-elevated hover:text-text-primary focus-visible:ring-2 focus-visible:ring-primary',
+                'group/nav relative flex items-center gap-3 overflow-hidden rounded-2xl px-3 py-2.5 text-sm font-medium text-text-secondary outline-none transition-colors hover:bg-surface-elevated hover:text-text-primary focus-visible:bg-surface-elevated focus-visible:text-text-primary focus-visible:ring-2 focus-visible:ring-primary',
                 active && 'bg-primary/15 text-primary',
               )}
             >
-              <motion.span
-                variants={reduceMotion ? undefined : navigationGlowVariants}
-                className="pointer-events-none absolute inset-y-1 left-1 w-20 rounded-xl bg-primary/20 blur-lg"
+              <span
+                className="pointer-events-none absolute inset-y-1 left-1 w-20 -translate-x-7 rounded-xl bg-primary/20 opacity-0 blur-lg transition-[opacity,transform] duration-200 group-hover/nav:translate-x-0 group-hover/nav:opacity-40 group-active/nav:translate-x-12 group-active/nav:opacity-70 group-focus-visible/nav:translate-x-0 group-focus-visible/nav:opacity-40 motion-reduce:transition-none"
                 aria-hidden="true"
               />
-              <span className="relative grid size-9 shrink-0 place-items-center rounded-xl bg-surface-elevated transition-colors group-hover:bg-primary/10">
+              <span className="relative grid size-9 shrink-0 place-items-center rounded-xl bg-surface-elevated transition-colors group-hover/nav:bg-primary/10 group-focus-visible/nav:bg-primary/10">
                 <item.icon className="size-[18px]" />
               </span>
               <span className="relative truncate">{item.name}</span>

@@ -1,5 +1,7 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 /*
 SETUP NECESSÁRIO:
 1. As tabelas "campanhas_config" e "campanhas_disparos" já existem no PostgreSQL
@@ -8,25 +10,7 @@ SETUP NECESSÁRIO:
 */
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import {
-    Megaphone,
-    Plus,
-    Edit,
-    Trash2,
-    X,
-    Loader2,
-    Send,
-    AlertCircle,
-    Users,
-    TrendingUp,
-    ChevronLeft,
-    ChevronRight,
-    Check,
-    Clock,
-    CalendarDays,
-    Filter,
-    Search
-} from 'lucide-react';
+import { Megaphone, Plus, Edit, Trash2, X, Send, AlertCircle, Users, TrendingUp, ChevronLeft, ChevronRight, Check, Clock, CalendarDays, Filter, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import {
@@ -349,7 +333,7 @@ export default function CampaignsPanel() {
                                 className="flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-border-dark bg-surface-dark px-4 py-2.5 text-sm font-semibold text-text-secondary shadow-sm transition-all hover:border-primary/40 hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background-dark active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-border-dark disabled:hover:bg-surface-dark disabled:hover:text-text-secondary"
                             >
                                 {disparando ? (
-                                    <Loader2 aria-hidden="true" className="size-4 animate-spin text-primary" />
+                                    <MorphingInfinity aria-hidden="true" className="size-4 text-primary" />
                                 ) : (
                                     <Send aria-hidden="true" className="size-4 text-primary" />
                                 )}
@@ -411,7 +395,7 @@ export default function CampaignsPanel() {
 
                         {loading ? (
                             <div className="flex items-center justify-center py-12">
-                                <Loader2 className="size-8 animate-spin text-violet-500" />
+                                <MorphingInfinity className="size-8 text-violet-500" />
                             </div>
                         ) : campanhas.length === 0 ? (
                             <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-12 text-center">
@@ -905,7 +889,7 @@ export default function CampaignsPanel() {
                                     >
                                         {saving ? (
                                             <>
-                                                <Loader2 className="size-4 animate-spin" />
+                                                <MorphingInfinity className="size-4" />
                                                 Salvando...
                                             </>
                                         ) : (

@@ -1,7 +1,9 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useEffect, useState } from 'react';
-import { Users, Plus, Trash2, Shield, UserCheck, Loader2, X, ChefHat, Edit } from 'lucide-react';
+import { Users, Plus, Trash2, Shield, UserCheck, X, ChefHat, Edit } from 'lucide-react';
 import { getUsers, createUser, deleteUser, updateUser } from '@/app/actions/users';
 import { toast } from 'sonner';
 
@@ -143,7 +145,7 @@ export default function UsersPage() {
                     <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
                         {loading ? (
                             <div className="flex justify-center items-center py-16">
-                                <Loader2 className="size-7 animate-spin text-primary" />
+                                <MorphingInfinity className="size-7 text-primary" />
                             </div>
                         ) : users.length === 0 ? (
                             <div className="text-center py-16 text-slate-500 dark:text-slate-400">
@@ -273,7 +275,7 @@ export default function UsersPage() {
                                     </button>
                                     <button type="submit" disabled={saving}
                                         className="flex-1 py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 transition-all flex items-center justify-center gap-2">
-                                        {saving ? <Loader2 className="size-4 animate-spin" /> : (editingUser ? 'Salvar Alterações' : 'Criar Usuário')}
+                                        {saving ? <MorphingInfinity className="size-4" /> : (editingUser ? 'Salvar Alterações' : 'Criar Usuário')}
                                     </button>
                                 </div>
                             </form>

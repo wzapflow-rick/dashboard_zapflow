@@ -1,5 +1,7 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
@@ -35,6 +37,7 @@ import { cn } from '@/lib/utils';
 import { ScoreRing } from './score-ring';
 import { ComparativosSection } from './comparativos-section';
 import { ZapflowChat } from './zapflow-chat';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const fmtMoeda = (value: number) => `R$ ${(value ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 
@@ -154,14 +157,53 @@ function MetricCard({
 
 function InsightsSkeleton() {
   return (
-    <div className="flex animate-pulse flex-col gap-6" aria-busy="true" aria-label="Carregando inteligência ZapFlow">
-      <div className="h-52 rounded-3xl bg-slate-200/50 dark:bg-slate-800/50" />
+    <div className="flex flex-col gap-6 text-slate-900 dark:text-white" role="status" aria-busy="true">
+      <span className="sr-only">Carregando inteligência ZapFlow...</span>
+
+      <div className="flex min-h-64 flex-col justify-between gap-6 rounded-3xl border border-current/10 p-6 sm:p-8">
+        <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex w-full flex-1 flex-col gap-3">
+            <Skeleton className="h-6 w-36 rounded-full" />
+            <Skeleton className="h-9 w-64 max-w-full" />
+            <Skeleton className="h-4 w-full max-w-xl" />
+            <Skeleton className="h-4 w-48 max-w-full" />
+          </div>
+          <div className="flex shrink-0 flex-col items-center gap-2 self-center">
+            <Skeleton className="h-3 w-28" />
+            <Skeleton className="size-28 rounded-full" />
+          </div>
+        </div>
+        <div className="flex flex-col justify-between gap-3 border-t border-current/10 pt-4 sm:flex-row sm:items-center">
+          <Skeleton className="h-4 w-52 max-w-full" />
+          <Skeleton className="h-9 w-28" />
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {[0, 1, 2, 3].map((item) => (
-          <div key={item} className="h-24 rounded-2xl bg-slate-200/50 dark:bg-slate-800/50" />
+          <div key={item} className="flex min-h-24 flex-col justify-between rounded-2xl border border-current/10 p-4">
+            <div className="flex items-center gap-2">
+              <Skeleton className="size-8 rounded-lg" />
+              <Skeleton className="h-3 w-20 max-w-full" />
+            </div>
+            <Skeleton className="h-7 w-24 max-w-full" />
+          </div>
         ))}
       </div>
-      <div className="h-40 rounded-3xl bg-slate-200/50 dark:bg-slate-800/50" />
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        {[0, 1].map((item) => (
+          <div key={item} className="flex min-h-40 flex-col gap-3 rounded-3xl border border-current/10 p-6">
+            <div className="flex items-center gap-2">
+              <Skeleton className="size-5" />
+              <Skeleton className="h-5 w-36" />
+            </div>
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-4/5" />
+            <Skeleton className="mt-auto h-9 w-32" />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -230,7 +272,9 @@ export function ZapflowInsightsClient({ initialData, operationContent }: Zapflow
             icon={BarChart3}
             scope="Hoje + semana"
           />
-          <div className="h-52 animate-pulse rounded-3xl bg-slate-200/50 dark:bg-slate-800/50" />
+          <div className="text-slate-900 dark:text-white" role="status" aria-label="Carregando tendências do negócio">
+            <Skeleton className="h-52 rounded-3xl" />
+          </div>
         </section>
       </>
     );
@@ -323,7 +367,11 @@ export function ZapflowInsightsClient({ initialData, operationContent }: Zapflow
               disabled={atualizando}
               className="flex w-fit items-center gap-2 rounded-xl border border-slate-200/70 bg-white/60 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:border-primary/30 hover:text-primary disabled:opacity-50 dark:border-slate-700/50 dark:bg-slate-900/40 dark:text-slate-200 dark:hover:text-primary"
             >
-              <RefreshCw className={cn('size-4', atualizando && 'animate-spin')} aria-hidden="true" />
+              {atualizando ? (
+          <MorphingInfinity className="size-4" aria-hidden="true" />
+        ) : (
+          <RefreshCw className="size-4" aria-hidden="true" />
+        )}
               Atualizar IA
             </button>
           </div>

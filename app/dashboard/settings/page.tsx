@@ -1,35 +1,9 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React from 'react';
-import {
-  Settings as SettingsIcon,
-  Store,
-  Clock,
-  MapPin,
-  Bell,
-  Shield,
-  Save,
-  ChevronRight,
-  Plus,
-  Trash2,
-  Package,
-  ShoppingBag,
-  Info,
-  Bot,
-  Ticket,
-  Award,
-  Truck,
-  Sparkles,
-  Upload,
-  Loader2,
-  QrCode,
-  Wifi,
-  WifiOff,
-  RefreshCw,
-  CheckCircle2,
-  Smartphone,
-  Zap
-} from 'lucide-react';
+import { Settings as SettingsIcon, Store, Clock, MapPin, Bell, Shield, Save, ChevronRight, Plus, Trash2, Package, ShoppingBag, Info, Bot, Ticket, Award, Truck, Sparkles, Upload, QrCode, Wifi, WifiOff, RefreshCw, CheckCircle2, Smartphone, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import Image from 'next/image';
@@ -97,11 +71,15 @@ export default function SettingsPage() {
   const [bannerUrl, setBannerUrl] = React.useState<string | null>(null);
   const [uploadingLogo, setUploadingLogo] = React.useState(false);
   const [uploadingBanner, setUploadingBanner] = React.useState(false);
+  const [isGeocoding, setIsGeocoding] = React.useState(false);
+  const [isTestingWhatsApp, setIsTestingWhatsApp] = React.useState(false);
+  const [isChangingPassword, setIsChangingPassword] = React.useState(false);
   
   // Estados do Bot de Saudacao
   const [botConfig, setBotConfig] = React.useState<BotConfig | null>(null);
   const [cardapioLink, setCardapioLink] = React.useState<string>('');
   const [savingBot, setSavingBot] = React.useState(false);
+  const [savingBotToggle, setSavingBotToggle] = React.useState(false);
   
   // Estados da Conexao WhatsApp
   const [whatsappStatus, setWhatsappStatus] = React.useState<'checking' | 'connected' | 'disconnected' | 'connecting'>('checking');
@@ -534,7 +512,7 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <MorphingInfinity className="size-8 text-primary" />
       </div>
     );
   }
@@ -593,7 +571,7 @@ export default function SettingsPage() {
                         )}
                         {uploadingLogo && (
                           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                            <Loader2 className="size-6 text-white animate-spin" />
+                            <MorphingInfinity className="size-6 text-white" />
                           </div>
                         )}
                       </div>
@@ -622,7 +600,7 @@ export default function SettingsPage() {
 	                      )}
 	                      {uploadingBanner && (
 	                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-	                          <Loader2 className="size-6 text-white animate-spin" />
+	                          <MorphingInfinity className="size-6 text-white" />
 	                        </div>
 	                      )}
 	                      <label className="absolute bottom-2 right-2 size-8 bg-primary text-white rounded-lg shadow-lg flex items-center justify-center cursor-pointer hover:scale-110 transition-transform">
@@ -952,34 +930,48 @@ export default function SettingsPage() {
                                       </div>
                                     </div>
 
-                                    <button
-                                      type="button"
-                                      disabled={!company?.endereco || !company?.cidade}
-                                      onClick={async () => {
-                                        if (!company?.endereco || !company?.cidade) {
-                                          toast.error('Preencha o endereco e cidade na aba Geral primeiro!');
-                                          return;
-                                        }
-                                        toast.loading('Buscando coordenadas...');
-                                        const { geocodeAddress } = await import('@/app/actions/delivery');
-                                        const coords = await geocodeAddress(`${company.endereco}, ${company.cidade}, ${company.estado || 'Brasil'}`);
-                                        toast.dismiss();
-                                        if (coords) {
-                                          const latInput = document.querySelector('input[name="lat_loja"]') as HTMLInputElement;
-                                          const lngInput = document.querySelector('input[name="lng_loja"]') as HTMLInputElement;
-                                          if (latInput) latInput.value = String(coords.lat);
-                                          if (lngInput) lngInput.value = String(coords.lng);
-                                          setCompany({ ...company, lat_loja: coords.lat, lng_loja: coords.lng });
-                                          toast.success(`Coordenadas encontradas! Lat: ${coords.lat.toFixed(6)}, Lng: ${coords.lng.toFixed(6)}`);
-                                        } else {
-                                          toast.error('Nao foi possivel encontrar as coordenadas. Verifique o endereco.');
-                                        }
-                                      }}
-                                      className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-slate-400 disabled:cursor-not-allowed text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2"
-                                    >
-                                      <MapPin className="size-4" />
-                                      Buscar Coordenadas do Endereco
-                                    </button>
+              <button
+                type="button"
+                disabled={!company?.endereco || !company?.cidade || isGeocoding}
+                aria-busy={isGeocoding}
+                onClick={async () => {
+                  if (!company?.endereco || !company?.cidade || isGeocoding) {
+                    if (!company?.endereco || !company?.cidade) {
+                      toast.error('Preencha o endereco e cidade na aba Geral primeiro!');
+                    }
+                    return;
+                  }
+
+                  setIsGeocoding(true);
+                  const toastId = toast.loading('Buscando coordenadas...');
+                  try {
+                    const { geocodeAddress } = await import('@/app/actions/delivery');
+                    const coords = await geocodeAddress(`${company.endereco}, ${company.cidade}, ${company.estado || 'Brasil'}`);
+                    if (coords) {
+                      const latInput = document.querySelector('input[name="lat_loja"]') as HTMLInputElement;
+                      const lngInput = document.querySelector('input[name="lng_loja"]') as HTMLInputElement;
+                      if (latInput) latInput.value = String(coords.lat);
+                      if (lngInput) lngInput.value = String(coords.lng);
+                      setCompany({ ...company, lat_loja: coords.lat, lng_loja: coords.lng });
+                      toast.success(`Coordenadas encontradas! Lat: ${coords.lat.toFixed(6)}, Lng: ${coords.lng.toFixed(6)}`, { id: toastId });
+                    } else {
+                      toast.error('Nao foi possivel encontrar as coordenadas. Verifique o endereco.', { id: toastId });
+                    }
+                  } catch {
+                    toast.error('Erro ao buscar coordenadas. Tente novamente.', { id: toastId });
+                  } finally {
+                    setIsGeocoding(false);
+                  }
+                }}
+                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-slate-400 disabled:cursor-not-allowed text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2"
+              >
+                {isGeocoding ? (
+                  <MorphingInfinity className="size-4" aria-hidden="true" />
+                ) : (
+                  <MapPin className="size-4" aria-hidden="true" />
+                )}
+                {isGeocoding ? 'Buscando coordenadas...' : 'Buscar Coordenadas do Endereco'}
+              </button>
                                   </div>
                                 </div>
                               </div>
@@ -1251,13 +1243,13 @@ export default function SettingsPage() {
                           <div className="flex items-center gap-2 mt-0.5">
                             {whatsappStatus === 'checking' && (
                               <>
-                                <Loader2 className="size-3 animate-spin text-amber-600" />
+                                <MorphingInfinity className="size-3 text-amber-600" />
                                 <span className="text-xs text-amber-600 dark:text-amber-400">Verificando...</span>
                               </>
                             )}
                             {whatsappStatus === 'connecting' && (
                               <>
-                                <Loader2 className="size-3 animate-spin text-amber-600" />
+                                <MorphingInfinity className="size-3 text-amber-600" />
                                 <span className="text-xs text-amber-600 dark:text-amber-400">Gerando QR Code...</span>
                               </>
                             )}
@@ -1289,7 +1281,7 @@ export default function SettingsPage() {
                           )}
                         >
                           {loadingQr ? (
-                            <Loader2 className="size-4 animate-spin" />
+                            <MorphingInfinity className="size-4" />
                           ) : whatsappStatus === 'connected' ? (
                             <RefreshCw className="size-4" />
                           ) : (
@@ -1356,32 +1348,38 @@ export default function SettingsPage() {
                         id="test-phone"
                         className="flex-1 px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
                       />
-                      <button
-                        onClick={async () => {
-                          const input = document.getElementById('test-phone') as HTMLInputElement;
-                          const phone = input?.value;
-                          if (!phone || phone.length < 10) {
-                            toast.error('Informe um numero valido com DDD');
-                            return;
-                          }
-                          toast.loading('Enviando mensagem de teste...', { id: 'whatsapp-test' });
-                          try {
-                            const { testWhatsApp } = await import('@/app/actions/whatsapp');
-                            const result = await testWhatsApp(phone);
-                            if (result.success) {
-                              toast.success(`Mensagem enviada para ${result.formattedPhone}!`, { id: 'whatsapp-test' });
-                            } else {
-                              toast.error(`Falha: ${result.error || 'Erro desconhecido'}`, { id: 'whatsapp-test' });
-                            }
-                          } catch (error: any) {
-                            toast.error(`Erro: ${error.message}`, { id: 'whatsapp-test' });
-                          }
-                        }}
-                        disabled={whatsappStatus !== 'connected'}
-                        className="px-6 py-2 bg-green-500 text-white rounded-lg text-sm font-bold hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Enviar Teste
-                      </button>
+              <button
+                onClick={async () => {
+                  const input = document.getElementById('test-phone') as HTMLInputElement;
+                  const phone = input?.value;
+                  if (!phone || phone.length < 10 || isTestingWhatsApp) {
+                    if (!phone || phone.length < 10) toast.error('Informe um numero valido com DDD');
+                    return;
+                  }
+
+                  setIsTestingWhatsApp(true);
+                  toast.loading('Enviando mensagem de teste...', { id: 'whatsapp-test' });
+                  try {
+                    const { testWhatsApp } = await import('@/app/actions/whatsapp');
+                    const result = await testWhatsApp(phone);
+                    if (result.success) {
+                      toast.success(`Mensagem enviada para ${result.formattedPhone}!`, { id: 'whatsapp-test' });
+                    } else {
+                      toast.error(`Falha: ${result.error || 'Erro desconhecido'}`, { id: 'whatsapp-test' });
+                    }
+                  } catch (error: any) {
+                    toast.error(`Erro: ${error.message}`, { id: 'whatsapp-test' });
+                  } finally {
+                    setIsTestingWhatsApp(false);
+                  }
+                }}
+                disabled={whatsappStatus !== 'connected' || isTestingWhatsApp}
+                aria-busy={isTestingWhatsApp}
+                className="inline-flex items-center justify-center gap-2 px-6 py-2 bg-green-500 text-white rounded-lg text-sm font-bold hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isTestingWhatsApp && <MorphingInfinity className="size-4" aria-hidden="true" />}
+                {isTestingWhatsApp ? 'Enviando...' : 'Enviar Teste'}
+              </button>
                     </div>
 
                     {whatsappStatus !== 'connected' && (
@@ -1419,29 +1417,36 @@ export default function SettingsPage() {
                         placeholder="Repita a nova senha"
                       />
                     </div>
-                    <button
-                      onClick={async () => {
-                        if (!newPassword || newPassword.length < 6) {
-                          toast.error('A senha deve ter pelo menos 6 caracteres');
-                          return;
-                        }
-                        if (newPassword !== confirmPassword) {
-                          toast.error('As senhas não coincidem');
-                          return;
-                        }
-                        try {
-                          await changePassword(newPassword);
-                          setNewPassword('');
-                          setConfirmPassword('');
-                          toast.success('Senha alterada com sucesso!');
-                        } catch (error: any) {
-                          toast.error(error.message || 'Erro ao alterar senha');
-                        }
-                      }}
-                      className="px-6 py-2.5 bg-slate-900 dark:bg-slate-700 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-all"
-                    >
-                      Alterar Senha
-                    </button>
+              <button
+                onClick={async () => {
+                  if (!newPassword || newPassword.length < 6 || isChangingPassword) {
+                    if (!newPassword || newPassword.length < 6) toast.error('A senha deve ter pelo menos 6 caracteres');
+                    return;
+                  }
+                  if (newPassword !== confirmPassword) {
+                    toast.error('As senhas não coincidem');
+                    return;
+                  }
+
+                  setIsChangingPassword(true);
+                  try {
+                    await changePassword(newPassword);
+                    setNewPassword('');
+                    setConfirmPassword('');
+                    toast.success('Senha alterada com sucesso!');
+                  } catch (error: any) {
+                    toast.error(error.message || 'Erro ao alterar senha');
+                  } finally {
+                    setIsChangingPassword(false);
+                  }
+                }}
+                disabled={isChangingPassword}
+                aria-busy={isChangingPassword}
+                className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-slate-900 dark:bg-slate-700 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-all disabled:cursor-wait disabled:opacity-60"
+              >
+                {isChangingPassword && <MorphingInfinity className="size-4" aria-hidden="true" />}
+                {isChangingPassword ? 'Alterando...' : 'Alterar Senha'}
+              </button>
                   </div>
                 </div>
               )}
@@ -1462,24 +1467,33 @@ export default function SettingsPage() {
                       <input
                         type="checkbox"
                         checked={botConfig?.bot_ativo ?? true}
+                        disabled={savingBotToggle}
+                        aria-busy={savingBotToggle}
                         onChange={async (e) => {
+                          if (savingBotToggle) return;
                           const newValue = e.target.checked;
                           setBotConfig(prev => prev ? { ...prev, bot_ativo: newValue } : null);
                           // Salvar automaticamente quando toggle e alterado
                           if (botConfig) {
+                            setSavingBotToggle(true);
                             try {
                               await saveBotConfig({ ...botConfig, bot_ativo: newValue });
                               toast.success(newValue ? 'Bot ativado!' : 'Bot desativado!');
                             } catch (err) {
                               toast.error('Erro ao salvar. Tente novamente.');
                               setBotConfig(prev => prev ? { ...prev, bot_ativo: !newValue } : null);
+                            } finally {
+                              setSavingBotToggle(false);
                             }
                           }
                         }}
                         className="sr-only peer"
                       />
                       <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-primary"></div>
-                      <span className="ms-3 text-sm font-bold text-slate-700 dark:text-slate-300">{botConfig?.bot_ativo ? 'Ativo' : 'Inativo'}</span>
+                      {savingBotToggle && <MorphingInfinity className="ms-3 size-4 text-primary" aria-hidden="true" />}
+                      <span className={cn('text-sm font-bold text-slate-700 dark:text-slate-300', !savingBotToggle && 'ms-3')}>
+                        {savingBotToggle ? 'Salvando...' : botConfig?.bot_ativo ? 'Ativo' : 'Inativo'}
+                      </span>
                     </label>
                   </div>
 
@@ -1634,23 +1648,28 @@ export default function SettingsPage() {
                   {/* Botao Salvar */}
                   <div className="flex justify-end pt-4">
                     <button
-                      onClick={async () => {
-                        if (!botConfig) return;
-                        setSavingBot(true);
-                        const result = await saveBotConfig(botConfig);
-                        setSavingBot(false);
-                        if (result.success) {
-                          toast.success('Configuracoes do bot salvas com sucesso!');
-                        } else {
-                          toast.error(result.error || 'Erro ao salvar configuracoes');
-                        }
-                      }}
+                onClick={async () => {
+                  if (!botConfig || savingBot) return;
+                  setSavingBot(true);
+                  try {
+                    const result = await saveBotConfig(botConfig);
+                    if (result.success) {
+                      toast.success('Configuracoes do bot salvas com sucesso!');
+                    } else {
+                      toast.error(result.error || 'Erro ao salvar configuracoes');
+                    }
+                  } catch {
+                    toast.error('Erro ao salvar configuracoes');
+                  } finally {
+                    setSavingBot(false);
+                  }
+                }}
                       disabled={savingBot}
                       className="bg-primary hover:bg-primary/90 text-white px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-primary/20 transition-all disabled:opacity-50"
                     >
                       {savingBot ? (
                         <>
-                          <Loader2 className="size-4 animate-spin" />
+                          <MorphingInfinity className="size-4" />
                           Salvando...
                         </>
                       ) : (

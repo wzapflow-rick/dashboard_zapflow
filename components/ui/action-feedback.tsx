@@ -1,8 +1,10 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { CheckCircle2, XCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export type FeedbackType = 'success' | 'error' | 'warning' | 'loading';
@@ -33,7 +35,7 @@ const feedbackConfig = {
     glow: 'shadow-amber-500/30',
   },
   loading: {
-    icon: Loader2,
+    icon: MorphingInfinity,
     bg: 'bg-blue-500/90',
     glow: 'shadow-blue-500/30',
   },
@@ -80,7 +82,7 @@ export function ActionFeedback({
             positionClasses[position]
           )}
         >
-          <Icon className={cn('size-4', type === 'loading' && 'animate-spin')} />
+          <Icon className="size-4" aria-hidden="true" />
           <span>{message}</span>
         </motion.div>
       )}

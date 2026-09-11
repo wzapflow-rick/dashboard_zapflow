@@ -1,5 +1,7 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import { useEffect, useState } from 'react';
 import {
     getCronStatuses,
@@ -8,18 +10,7 @@ import {
     type CronStatus,
 } from '@/app/actions/cron-monitoring';
 import type { CronLastRun } from '@/lib/cron-logger';
-import {
-    Activity,
-    CheckCircle,
-    XCircle,
-    Clock,
-    Play,
-    Loader2,
-    RefreshCw,
-    AlertTriangle,
-    ChevronDown,
-    ChevronRight,
-} from 'lucide-react';
+import { Activity, CheckCircle, XCircle, Clock, Play, RefreshCw, AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react';
 
 function formatDateTime(iso: string | null | undefined): string {
     if (!iso) return '—';
@@ -178,7 +169,7 @@ function CronCard({ cron, onChanged }: { cron: CronStatus; onChanged: () => void
                     disabled={running}
                     className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:opacity-60 text-white text-sm font-semibold transition-all shadow-lg shadow-orange-500/20"
                 >
-                    {running ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
+                    {running ? <MorphingInfinity className="size-4" /> : <Play className="size-4" />}
                     Executar agora
                 </button>
             </div>
@@ -223,7 +214,7 @@ function CronCard({ cron, onChanged }: { cron: CronStatus; onChanged: () => void
                 <div className="mt-3 space-y-2">
                     {loadingHistory ? (
                         <div className="flex items-center gap-2 text-slate-500 text-sm">
-                            <Loader2 className="size-4 animate-spin" /> Carregando...
+                            <MorphingInfinity className="size-4" /> Carregando...
                         </div>
                     ) : history.length === 0 ? (
                         <p className="text-sm text-slate-500">Nenhuma execução registrada ainda.</p>
@@ -288,14 +279,18 @@ export default function MonitoramentoPage() {
                     disabled={loading}
                     className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#0f1f35] border border-[#1e3a5f] hover:border-orange-500/50 text-slate-300 hover:text-white text-sm font-medium transition-all"
                 >
-                    <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
+                    {loading ? (
+          <MorphingInfinity className="size-4" aria-hidden="true" />
+        ) : (
+          <RefreshCw className="size-4" aria-hidden="true" />
+        )}
                     Atualizar
                 </button>
             </div>
 
             {loading ? (
                 <div className="flex items-center justify-center py-20 text-slate-500">
-                    <Loader2 className="size-6 animate-spin mr-2" /> Carregando...
+                    <MorphingInfinity className="size-6 mr-2" /> Carregando...
                 </div>
             ) : (
                 <div className="space-y-5">

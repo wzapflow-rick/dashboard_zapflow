@@ -1,7 +1,9 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Plus, Minus, ChefHat, X, Loader2 } from 'lucide-react';
+import { Search, Plus, Minus, ChefHat, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -156,7 +158,7 @@ export function GrupoSlotItens({ grupo, onClose }: GrupoSlotItensProps) {
                             </div>
                             {loading ? (
                                 <div className="flex-1 flex items-center justify-center text-slate-500 text-sm">
-                                    <Loader2 className="w-5 h-5 animate-spin mr-2 text-primary" />
+                                    <MorphingInfinity className="w-5 h-5 mr-2 text-primary" />
                                     Carregando...
                                 </div>
                             ) : (
@@ -192,7 +194,7 @@ export function GrupoSlotItens({ grupo, onClose }: GrupoSlotItensProps) {
                                                         )}
                                                     >
                                                         {isLoading ? (
-                                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                                            <MorphingInfinity className="w-4 h-4" />
                                                         ) : (
                                                             <Plus className="w-4 h-4" />
                                                         )}
@@ -241,7 +243,7 @@ export function GrupoSlotItens({ grupo, onClose }: GrupoSlotItensProps) {
                                                     className="flex-shrink-0 w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-600 flex items-center justify-center transition-all"
                                                 >
                                                     {isLoading ? (
-                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                        <MorphingInfinity className="w-4 h-4" />
                                                     ) : (
                                                         <Minus className="w-4 h-4" />
                                                     )}

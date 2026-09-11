@@ -1,5 +1,7 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState, useRef, useEffect } from 'react';
 import { QrCode, Download, Printer, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
@@ -41,6 +43,9 @@ export default function QrCodeGenerator({ empresaId, empresaNome, slug }: QrCode
     }, [empresaId, slug]);
 
     const downloadPdf = async () => {
+        if (loading) return;
+        setLoading(true);
+
         try {
             const { default: jsPDF } = await import('jspdf');
             const doc = new jsPDF({
@@ -78,6 +83,8 @@ export default function QrCodeGenerator({ empresaId, empresaNome, slug }: QrCode
         } catch (error) {
             console.error('Erro ao gerar PDF:', error);
             toast.error('Erro ao gerar PDF');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -134,10 +141,11 @@ export default function QrCodeGenerator({ empresaId, empresaNome, slug }: QrCode
                         <button
                             onClick={downloadPdf}
                             disabled={loading}
-                            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-violet-500 hover:bg-violet-600 text-white font-bold rounded-xl transition-colors"
+                            aria-busy={loading}
+                            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-violet-500 hover:bg-violet-600 text-white font-bold rounded-xl transition-colors disabled:cursor-wait disabled:opacity-60"
                         >
                             {loading ? (
-                                <span className="animate-spin">⏳</span>
+                                <MorphingInfinity className="size-5" aria-hidden="true" />
                             ) : (
                                 <>
                                     <Download className="size-5" />

@@ -21,6 +21,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
 import { LojaToggle } from '@/components/layout/loja-toggle';
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 
 function playNewOrderSound() {
     try {
@@ -64,6 +65,7 @@ export function Header() {
     const [mounted, setMounted] = React.useState(false);
     const [isNotifOpen, setIsNotifOpen] = React.useState(false);
     const [isProfileOpen, setIsProfileOpen] = React.useState(false);
+    const [isLoggingOut, setIsLoggingOut] = React.useState(false);
 
     React.useEffect(() => {
         queueMicrotask(() => {
@@ -142,6 +144,20 @@ export function Header() {
             case 'creditcard': return CreditCard;
             case 'cancel': return X;
             default: return Bell;
+        }
+    };
+
+    const handleLogout = async () => {
+        if (isLoggingOut) return;
+        setIsLoggingOut(true);
+
+        try {
+            const { logout } = await import('@/app/actions/auth');
+            await logout();
+            window.location.href = '/';
+        } catch (error) {
+            console.error('Erro ao sair da conta:', error);
+            setIsLoggingOut(false);
         }
     };
 
@@ -517,16 +533,18 @@ export function Header() {
                                             <div className="my-2 h-px bg-slate-200/50 dark:bg-white/5" />
                                             
                                             <motion.button
-                                                onClick={async () => {
-                                                    const { logout } = await import('@/app/actions/auth');
-                                                    await logout();
-                                                    window.location.href = '/';
-                                                }}
-                                                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-colors"
-                                                whileHover={{ x: 4 }}
+                                                onClick={handleLogout}
+                                                disabled={isLoggingOut}
+                                                aria-busy={isLoggingOut}
+                                                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-colors disabled:cursor-wait disabled:opacity-60"
+                                                whileHover={isLoggingOut ? undefined : { x: 4 }}
                                             >
-                                                <LogOut className="size-4" />
-                                                <span>Sair da conta</span>
+                                                {isLoggingOut ? (
+                                                    <MorphingInfinity className="size-4" aria-hidden="true" />
+                                                ) : (
+                                                    <LogOut className="size-4" aria-hidden="true" />
+                                                )}
+                                                <span>{isLoggingOut ? 'Saindo...' : 'Sair da conta'}</span>
                                             </motion.button>
                                         </div>
                                     </div>

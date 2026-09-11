@@ -1,5 +1,7 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import { useEffect, useState } from 'react';
 import { 
   MessageSquare, 
@@ -303,7 +305,7 @@ export default function MensagensPage() {
 
       {loading ? (
         <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+          <MorphingInfinity className="size-8 text-orange-500" />
         </div>
       ) : (
         <div className="grid lg:grid-cols-3 gap-6">
@@ -521,8 +523,10 @@ export default function MensagensPage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-3 rounded-lg font-medium transition-all disabled:opacity-50"
+                  aria-busy={saving}
+                  className="inline-flex flex-1 items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-3 rounded-lg font-medium transition-all disabled:opacity-50"
                 >
+                  {saving && <MorphingInfinity className="size-4" aria-hidden="true" />}
                   {saving ? 'Salvando...' : 'Salvar'}
                 </button>
               </div>
@@ -584,8 +588,10 @@ export default function MensagensPage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-3 rounded-lg font-medium transition-all disabled:opacity-50"
+                  aria-busy={saving}
+                  className="inline-flex flex-1 items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-3 rounded-lg font-medium transition-all disabled:opacity-50"
                 >
+                  {saving && <MorphingInfinity className="size-4" aria-hidden="true" />}
                   {saving ? 'Salvando...' : 'Salvar'}
                 </button>
               </div>

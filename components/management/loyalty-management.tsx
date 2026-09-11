@@ -1,20 +1,9 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState, useEffect } from 'react';
-import {
-  Award,
-  Star,
-  Users,
-  TrendingUp,
-  Settings,
-  Gift,
-  DollarSign,
-  Save,
-  Loader2,
-  Crown,
-  Medal,
-  Trophy
-} from 'lucide-react';
+import { Award, Star, Users, TrendingUp, Settings, Gift, DollarSign, Save, Crown, Medal, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -118,7 +107,7 @@ export default function LoyaltyManagement() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="size-8 text-primary animate-spin" />
+        <MorphingInfinity className="size-8 text-primary" />
       </div>
     );
   }
@@ -321,7 +310,7 @@ export default function LoyaltyManagement() {
                 className="flex items-center gap-2 px-6 py-2.5 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary/90 transition-all disabled:opacity-50"
               >
                 {saving ? (
-                  <Loader2 className="size-4 animate-spin" />
+                  <MorphingInfinity className="size-4" />
                 ) : (
                   <Save className="size-4" />
                 )}

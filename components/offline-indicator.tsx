@@ -1,5 +1,7 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import { useState, useEffect } from 'react';
 import { WifiOff, RefreshCw, X, CloudOff, AlertTriangle } from 'lucide-react';
 import { useOffline } from '@/hooks/use-offline';
@@ -121,7 +123,11 @@ export function OfflineIndicator({ className }: OfflineIndicatorProps) {
                   disabled={isSyncing}
                   className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50"
                 >
-                  <RefreshCw className={cn('size-3', isSyncing && 'animate-spin')} />
+                  {isSyncing ? (
+                    <MorphingInfinity className="size-3" aria-hidden="true" />
+                  ) : (
+                    <RefreshCw className="size-3" aria-hidden="true" />
+                  )}
                   {isSyncing ? 'Sincronizando...' : 'Sincronizar'}
                 </button>
               )}
@@ -137,7 +143,7 @@ export function OfflineIndicator({ className }: OfflineIndicatorProps) {
  * Indicador compacto para usar em headers
  */
 export function OfflineStatusBadge({ className }: { className?: string }) {
-  const { isOnline, pendingCount, isSyncing } = useOffline();
+  const { isOnline, pendingCount } = useOffline();
 
   if (isOnline && pendingCount === 0) {
     return null;
@@ -154,7 +160,7 @@ export function OfflineStatusBadge({ className }: { className?: string }) {
       )}
     >
       {isOnline ? (
-        <RefreshCw className={cn('size-3', isSyncing && 'animate-spin')} />
+        <RefreshCw className="size-3" aria-hidden="true" />
       ) : (
         <WifiOff className="size-3" />
       )}

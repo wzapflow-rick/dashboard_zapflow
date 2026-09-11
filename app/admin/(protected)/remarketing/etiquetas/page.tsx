@@ -1,14 +1,9 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import { useEffect, useState } from 'react';
-import { 
-  Tag, 
-  Plus, 
-  Edit2, 
-  Trash2, 
-  X,
-  Loader2,
-} from 'lucide-react';
+import { Tag, Plus, Edit2, Trash2, X } from 'lucide-react';
 import { 
   getEtiquetas, 
   createEtiqueta, 
@@ -147,7 +142,7 @@ export default function EtiquetasPage() {
       <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-2xl overflow-hidden">
         {loading ? (
           <div className="p-12 text-center">
-            <Loader2 className="size-8 animate-spin text-orange-500 mx-auto" />
+            <MorphingInfinity className="size-8 text-orange-500 mx-auto" />
             <p className="text-slate-400 mt-2">Carregando etiquetas...</p>
           </div>
         ) : etiquetas.length === 0 ? (
@@ -198,7 +193,7 @@ export default function EtiquetasPage() {
                       className="p-2 hover:bg-red-500/20 rounded-lg transition-colors text-slate-400 hover:text-red-400 disabled:opacity-50"
                     >
                       {loadingActions.has(`delete-${etiqueta.id}`) ? (
-                        <Loader2 className="size-4 animate-spin" />
+                        <MorphingInfinity className="size-4" />
                       ) : (
                         <Trash2 className="size-4" />
                       )}
@@ -296,7 +291,7 @@ export default function EtiquetasPage() {
                 disabled={saving}
                 className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium disabled:opacity-50"
               >
-                {saving && <Loader2 className="size-4 animate-spin" />}
+                {saving && <MorphingInfinity className="size-4" />}
                 {editingEtiqueta ? 'Salvar' : 'Criar'}
               </button>
             </div>

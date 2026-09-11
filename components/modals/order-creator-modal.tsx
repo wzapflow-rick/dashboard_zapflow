@@ -1,7 +1,9 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { X, Search, Plus, Minus, ShoppingCart, User, Phone, Check, Loader2 } from 'lucide-react';
+import { X, Search, Plus, Minus, ShoppingCart, User, Phone, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getProducts, getCategories, type Category } from '@/app/actions/products';
 import { getCompositeProducts, type CompositeProduct, type CompositeItem } from '@/app/actions/grupos-slots';
@@ -383,7 +385,7 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                         <div className="flex-1 overflow-y-auto overscroll-contain p-3 md:p-4 space-y-4 md:space-y-6 custom-scrollbar touch-pan-y">
                             {isLoadingProducts ? (
                                 <div className="flex items-center justify-center py-20">
-                                    <Loader2 className="size-10 text-primary animate-spin" />
+                                    <MorphingInfinity className="size-10 text-primary" />
                                 </div>
                             ) : (
                                 <>
@@ -537,7 +539,7 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                                                 onChange={(e) => setClienteTelefone(e.target.value)}
                                             />
                                             {checkingCustomer && (
-                                                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-primary animate-spin" />
+                                                <MorphingInfinity className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-primary" />
                                             )}
                                             {!checkingCustomer && phoneChecked && isExistingCustomer && (
                                                 <Check className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-green-500" />
@@ -570,7 +572,7 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                                 disabled={isSubmitting || cart.length === 0}
                                 className="w-full h-12 md:h-14 bg-primary text-white font-black rounded-2xl shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all active:scale-[0.98] disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-2"
                             >
-                                {isSubmitting ? <Loader2 className="size-5 md:size-6 animate-spin" /> : <Check className="size-5 md:size-6" />}
+                                {isSubmitting ? <MorphingInfinity className="size-5 md:size-6" /> : <Check className="size-5 md:size-6" />}
                                 <span className="text-sm md:text-base">FINALIZAR</span>
                             </button>
                         </div>

@@ -1,8 +1,10 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Search, Loader2, CheckCircle2, ChevronRight, PackageOpen } from 'lucide-react';
+import { X, Search, CheckCircle2, ChevronRight, PackageOpen } from 'lucide-react';
 import { bulkCreateComplements } from '@/app/actions/complements';
 import { toast } from 'sonner';
 
@@ -211,7 +213,7 @@ export default function BulkComplementModal({
                             >
                                 {isSubmitting ? (
                                     <>
-                                        <Loader2 className="size-4 animate-spin" />
+                                        <MorphingInfinity className="size-4" />
                                         Processando...
                                     </>
                                 ) : (

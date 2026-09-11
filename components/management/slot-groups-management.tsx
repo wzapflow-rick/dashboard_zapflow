@@ -1,9 +1,9 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState, useEffect, useRef } from 'react';
-import {
-    Plus, Edit3, Trash2, ChefHat, Layers, List, Settings, Loader2, Sparkles
-} from 'lucide-react';
+import { Plus, Edit3, Trash2, ChefHat, Layers, List, Settings, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
@@ -337,7 +337,7 @@ export default function SlotGroupsManagement() {
                     >
                         {loadingGrupos ? (
                             <div className="flex items-center justify-center py-20 text-slate-500">
-                                <Loader2 className="w-6 h-6 animate-spin mr-3 text-primary" />
+                                <MorphingInfinity className="w-6 h-6 mr-3 text-primary" />
                                 Carregando grupos...
                             </div>
                         ) : grupos.length === 0 ? (
@@ -448,7 +448,7 @@ export default function SlotGroupsManagement() {
                     >
                         {loadingBib ? (
                             <div className="flex items-center justify-center py-20 text-slate-500">
-                                <Loader2 className="w-6 h-6 animate-spin mr-3 text-primary" />
+                                <MorphingInfinity className="w-6 h-6 mr-3 text-primary" />
                                 Carregando biblioteca...
                             </div>
                         ) : itensBase.length === 0 ? (

@@ -1,7 +1,9 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState } from 'react';
-import { Package, X, Check, Loader2 } from 'lucide-react';
+import { Package, X, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Insumo } from '@/app/actions/insumos';
 
@@ -93,7 +95,7 @@ export default function QuickRestockModal({ isOpen, onClose, onConfirm, insumo }
                                 disabled={isSubmitting || !quantity}
                                 className="w-full py-4 bg-primary text-white font-black rounded-2xl shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all active:scale-[0.98] disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-2"
                             >
-                                {isSubmitting ? <Loader2 className="size-5 animate-spin" /> : <Check className="size-5" />}
+                                {isSubmitting ? <MorphingInfinity className="size-5" /> : <Check className="size-5" />}
                                 ATUALIZAR ESTOQUE
                             </button>
                         </form>

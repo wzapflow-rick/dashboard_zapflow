@@ -1,21 +1,9 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import { useEffect, useState } from 'react';
-import { 
-  Settings, 
-  Save,
-  AlertCircle,
-  Check,
-  RefreshCw,
-  Key,
-  Clock,
-  Calendar,
-  MessageSquare,
-  Zap,
-  Play,
-  Loader2,
-  ExternalLink,
-} from 'lucide-react';
+import { Settings, Save, AlertCircle, Check, RefreshCw, Key, Clock, Calendar, MessageSquare, Zap, Play, ExternalLink } from 'lucide-react';
 import { 
   getConfig,
   saveConfig,
@@ -151,7 +139,7 @@ export default function ConfigPage() {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+        <MorphingInfinity className="size-8 text-orange-500" />
       </div>
     );
   }
@@ -412,7 +400,7 @@ export default function ConfigPage() {
               className="flex items-center justify-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 px-4 py-3 rounded-lg font-medium transition-all disabled:opacity-50"
             >
               {cronRunning === 'classificar' ? (
-                <Loader2 className="size-5 animate-spin" />
+                <MorphingInfinity className="size-5" />
               ) : (
                 <Play className="size-5" />
               )}
@@ -426,7 +414,7 @@ export default function ConfigPage() {
               className="flex items-center justify-center gap-2 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-400 px-4 py-3 rounded-lg font-medium transition-all disabled:opacity-50"
             >
               {cronRunning === 'agendar' ? (
-                <Loader2 className="size-5 animate-spin" />
+                <MorphingInfinity className="size-5" />
               ) : (
                 <Play className="size-5" />
               )}
@@ -440,7 +428,7 @@ export default function ConfigPage() {
               className="flex items-center justify-center gap-2 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 text-green-400 px-4 py-3 rounded-lg font-medium transition-all disabled:opacity-50"
             >
               {cronRunning === 'processar' ? (
-                <Loader2 className="size-5 animate-spin" />
+                <MorphingInfinity className="size-5" />
               ) : (
                 <Play className="size-5" />
               )}
@@ -457,7 +445,7 @@ export default function ConfigPage() {
               className="flex items-center justify-center gap-2 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 text-yellow-400 px-4 py-3 rounded-lg font-medium transition-all disabled:opacity-50 w-full"
             >
               {cronRunning === 'status' ? (
-                <Loader2 className="size-5 animate-spin" />
+                <MorphingInfinity className="size-5" />
               ) : (
                 <Zap className="size-5" />
               )}
@@ -529,7 +517,7 @@ export default function ConfigPage() {
             className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-3 rounded-lg font-medium transition-all disabled:opacity-50"
           >
             {saving ? (
-              <RefreshCw className="size-5 animate-spin" />
+              <MorphingInfinity className="size-5" aria-hidden="true" />
             ) : (
               <Save className="size-5" />
             )}

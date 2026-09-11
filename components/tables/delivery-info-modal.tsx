@@ -1,8 +1,10 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, MapPin, Loader2, AlertCircle } from 'lucide-react';
+import { X, MapPin, AlertCircle } from 'lucide-react';
 import { salvarDadosEntregaComanda } from '@/app/actions/tables';
 
 interface DeliveryInfoModalProps {
@@ -176,7 +178,7 @@ export default function DeliveryInfoModal({
               className="flex-1 px-4 py-2.5 bg-blue-500 text-white font-semibold rounded-xl hover:bg-blue-600 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
             >
               {isLoading ? (
-                <Loader2 className="size-4 animate-spin" />
+                <MorphingInfinity className="size-4" />
               ) : (
                 <>
                   <MapPin className="size-4" />

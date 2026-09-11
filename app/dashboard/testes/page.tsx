@@ -1,19 +1,11 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
-import {
-    FlaskConical,
-    Play,
-    RefreshCcw,
-    Trash2,
-    ShieldCheck,
-    Info,
-    CheckCircle2,
-    Loader2,
-    LayoutDashboard
-} from 'lucide-react';
+import { FlaskConical, Play, RefreshCcw, Trash2, ShieldCheck, Info, CheckCircle2, LayoutDashboard } from 'lucide-react';
 import { generateMockOrder, setupPizzariaFicticia } from '@/app/actions/testing';
 import { toast } from 'sonner';
 
@@ -130,7 +122,7 @@ export default function TestPage() {
                                 disabled={isGenerating}
                                 className="w-full h-12 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                             >
-                                {isGenerating ? <Loader2 className="animate-spin size-5" /> : <Play className="size-4" />}
+                                {isGenerating ? <MorphingInfinity className="size-5" /> : <Play className="size-4" />}
                                 Gerar 1 Pedido
                             </button>
                         </motion.div>
@@ -186,7 +178,7 @@ export default function TestPage() {
                                     disabled={isSettingUp || isGenerating}
                                     className="h-12 px-8 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 whitespace-nowrap"
                                 >
-                                    {isSettingUp ? <Loader2 className="animate-spin size-5" /> : <LayoutDashboard className="size-4" />}
+                                    {isSettingUp ? <MorphingInfinity className="size-5" /> : <LayoutDashboard className="size-4" />}
                                     Configurar Pizzaria Completa
                                 </button>
                             </div>

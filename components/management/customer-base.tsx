@@ -1,5 +1,7 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState, useEffect } from 'react';
 import {
   Search,
@@ -42,6 +44,7 @@ export default function CustomerBase() {
   }, []);
   const [loading, setLoading] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [updatingBotStatus, setUpdatingBotStatus] = useState(false);
   const [customerHistory, setCustomerHistory] = useState<any[]>([]);
 
   useEffect(() => {
@@ -124,6 +127,29 @@ export default function CustomerBase() {
     alert('Funcionalidade de Criar Novo Pedido será integrada com o PDV em breve!');
   };
 
+  const handleToggleBotStatus = async () => {
+    if (!selectedCustomer || updatingBotStatus) return;
+
+    const newStatus = !(selectedCustomer.modo_robo !== false);
+    setUpdatingBotStatus(true);
+    try {
+      const result = await toggleBotStatus(selectedCustomer.telefone, newStatus);
+      if (result.success) {
+        setSelectedCustomer({ ...selectedCustomer, modo_robo: newStatus });
+        setCustomers((current) => current.map((customer) =>
+          customer.id === selectedCustomer.id ? { ...customer, modo_robo: newStatus } : customer,
+        ));
+        toast?.success(newStatus ? 'Bot reativado!' : 'Atendimento humano ativado.');
+      } else {
+        toast?.error('Erro ao alterar status.');
+      }
+    } catch {
+      toast?.error('Erro ao alterar status.');
+    } finally {
+      setUpdatingBotStatus(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
       <header className="flex items-center justify-between">
@@ -201,7 +227,7 @@ export default function CustomerBase() {
                 <tr>
                   <td colSpan={5} className="px-6 py-20 text-center">
                     <div className="flex flex-col items-center gap-3">
-                      <div className="size-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                      <MorphingInfinity className="size-10 text-primary" />
                       <p className="text-xs font-bold text-slate-400 uppercase dark:text-slate-500">Carregando base de clientes...</p>
                     </div>
                   </td>
@@ -376,17 +402,9 @@ export default function CustomerBase() {
                       </div>
                     </div>
                     <button
-                      onClick={async () => {
-                        const newStatus = !(selectedCustomer?.modo_robo !== false);
-                        const res = await toggleBotStatus(selectedCustomer.telefone, newStatus);
-                        if (res.success) {
-                          setSelectedCustomer({ ...selectedCustomer, modo_robo: newStatus });
-                          setCustomers(customers.map(c => c.id === selectedCustomer.id ? { ...c, modo_robo: newStatus } : c));
-                          toast.success(newStatus ? 'Bot reativado!' : 'Atendimento humano ativado.');
-                        } else {
-                          toast.error('Erro ao alterar status.');
-                        }
-                      }}
+                      onClick={handleToggleBotStatus}
+                      disabled={updatingBotStatus}
+                      aria-busy={updatingBotStatus}
                       className={cn(
                         "px-4 py-2.5 rounded-xl text-xs font-black uppercase transition-all shadow-sm flex items-center gap-2",
                         (selectedCustomer?.modo_robo !== false)
@@ -394,10 +412,12 @@ export default function CustomerBase() {
                           : "bg-primary text-white hover:bg-primary/90"
                       )}
                     >
-                      {(selectedCustomer?.modo_robo !== false) ? (
-                        <><RefreshCcw className="size-3" /> Pausar IA</>
+                      {updatingBotStatus ? (
+                        <><MorphingInfinity className="size-3" aria-hidden="true" /> Atualizando...</>
+                      ) : (selectedCustomer?.modo_robo !== false) ? (
+                        <><RefreshCcw className="size-3" aria-hidden="true" /> Pausar IA</>
                       ) : (
-                        <><Bot className="size-3" /> Ativar IA</>
+                        <><Bot className="size-3" aria-hidden="true" /> Ativar IA</>
                       )}
                     </button>
                   </div>
@@ -412,7 +432,7 @@ export default function CustomerBase() {
                   <div className="space-y-3 pb-8">
                     {historyLoading ? (
                       <div className="py-12 flex flex-col items-center justify-center text-slate-400 gap-2 dark:text-slate-500">
-                        <div className="size-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                        <MorphingInfinity className="size-8 text-primary" />
                         <p className="text-xs font-bold uppercase">Carregando histórico...</p>
                       </div>
                     ) : customerHistory.length === 0 ? (

@@ -1,11 +1,13 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createCheckoutSession, createPixCheckoutSession } from '@/app/actions/signup';
 import { createTrialAccount } from '@/app/actions/signup-trial';
 import { useRouter } from 'next/navigation';
-import { Loader2, Mail, User, Phone, CreditCard, QrCode, Check, Lock, ArrowRight } from 'lucide-react';
+import { Mail, User, Phone, CreditCard, QrCode, Check, Lock, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -362,7 +364,7 @@ function SignupContent() {
                 >
                   {loading ? (
                     <>
-                      <Loader2 className="size-5 animate-spin" />
+                      <MorphingInfinity className="size-5" />
                       {isParceria ? 'Criando sua conta...' : 'Processando...'}
                     </>
                   ) : (
@@ -497,7 +499,7 @@ function SignupContent() {
 function SignupLoading() {
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0A0F14' }}>
-      <Loader2 className="size-8 animate-spin" style={{ color: '#7CFF6B' }} />
+      <MorphingInfinity className="size-8" style={{ color: '#7CFF6B' }} />
     </div>
   );
 }

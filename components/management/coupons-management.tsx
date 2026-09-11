@@ -1,20 +1,9 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState, useEffect } from 'react';
-import {
-  Ticket,
-  Plus,
-  Edit,
-  Trash2,
-  Percent,
-  DollarSign,
-  Calendar,
-  Users,
-  TrendingUp,
-  X,
-  Check,
-  Loader2
-} from 'lucide-react';
+import { Ticket, Plus, Edit, Trash2, Percent, DollarSign, Calendar, Users, TrendingUp, X, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { getCoupons, upsertCoupon, deleteCoupon, getCouponStats } from '@/app/actions/coupons';
@@ -136,7 +125,7 @@ export default function CouponsManagement() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="size-8 text-primary animate-spin" />
+        <MorphingInfinity className="size-8 text-primary" />
       </div>
     );
   }

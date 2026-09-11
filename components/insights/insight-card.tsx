@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { type Insight } from '@/app/actions/insights';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const iconMap: { [key: string]: any } = {
   TrendingUp,
@@ -176,15 +177,18 @@ export function InsightCardSkeleton({ index }: { index: number }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ delay: index * 0.05 }}
-      className="relative p-5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80"
+      className="relative min-h-36 rounded-2xl border border-slate-200 bg-white/80 p-5 text-slate-900 dark:border-slate-700 dark:bg-slate-800/80 dark:text-white"
+      aria-hidden="true"
     >
       <div className="flex items-start gap-4">
-        <div className="size-12 rounded-xl bg-slate-200 dark:bg-slate-700 animate-pulse" />
-        <div className="flex-1 space-y-2">
-          <div className="h-3 w-24 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-          <div className="h-7 w-16 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-          <div className="h-4 w-full bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+        <Skeleton className="size-12 shrink-0 rounded-xl" />
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <Skeleton className="h-3 w-24 max-w-full" />
+          <Skeleton className="h-7 w-20" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-3/4" />
         </div>
+        <Skeleton className="size-8 shrink-0 rounded-full" />
       </div>
     </motion.div>
   );

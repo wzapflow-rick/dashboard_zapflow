@@ -1,8 +1,10 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState, useEffect } from 'react';
 import { getMPAuthorizationUrl, getMPConnectionStatus, disconnectMP, checkPixAvailability } from '@/app/actions/mercadopago';
-import { CreditCard, CheckCircle, XCircle, Loader2, ExternalLink, RefreshCw, AlertTriangle } from 'lucide-react';
+import { CreditCard, CheckCircle, XCircle, ExternalLink, RefreshCw, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSearchParams } from 'next/navigation';
 
@@ -85,7 +87,7 @@ export default function MercadoPagoConnection() {
     if (loading) {
         return (
             <div className="flex items-center justify-center p-8">
-                <Loader2 className="size-6 text-primary animate-spin" />
+                <MorphingInfinity className="size-6 text-primary" />
             </div>
         );
     }
@@ -140,7 +142,7 @@ export default function MercadoPagoConnection() {
                                         disabled={pixCheck.checking}
                                         className="inline-flex items-center gap-2 mt-2 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-60 text-white rounded-lg text-xs font-bold transition-all"
                                     >
-                                        {pixCheck.checking ? <Loader2 className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" />}
+                                        {pixCheck.checking ? <MorphingInfinity className="size-3.5" /> : <RefreshCw className="size-3.5" />}
                                         Verificar novamente
                                     </button>
                                 </div>
@@ -157,7 +159,7 @@ export default function MercadoPagoConnection() {
 
                         {pixCheck.checking && pixCheck.available === null && (
                             <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                                <Loader2 className="size-4 animate-spin" />
+                                <MorphingInfinity className="size-4" />
                                 Verificando disponibilidade do PIX...
                             </div>
                         )}

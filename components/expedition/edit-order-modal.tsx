@@ -1,7 +1,9 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState, useEffect, useTransition } from 'react';
-import { X, Plus, Minus, Trash2, Search, Package, Save, Loader2 } from 'lucide-react';
+import { X, Plus, Minus, Trash2, Search, Package, Save } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { updateOrderItems } from '@/app/actions/orders';
@@ -391,7 +393,7 @@ export default function EditOrderModal({ isOpen, onClose, order, onSuccess }: Ed
               >
                 {isPending ? (
                   <>
-                    <Loader2 className="size-4 animate-spin" />
+                    <MorphingInfinity className="size-4" />
                     Salvando...
                   </>
                 ) : (

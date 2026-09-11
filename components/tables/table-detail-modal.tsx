@@ -1,25 +1,10 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState } from 'react';
 import Link from 'next/link';
-import {
-  X,
-  Plus,
-  Receipt,
-  Trash2,
-  Loader2,
-  Check,
-  UserPlus,
-  ShoppingBag,
-  DollarSign,
-  Clock,
-  AlertCircle,
-  Printer,
-  PlusCircle,
-  ExternalLink,
-  Pencil,
-  MapPin,
-} from 'lucide-react';
+import { X, Plus, Receipt, Trash2, Check, UserPlus, ShoppingBag, DollarSign, Clock, AlertCircle, Printer, PlusCircle, ExternalLink, Pencil, MapPin } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import {
@@ -345,7 +330,7 @@ export default function TableDetailModal({
                             className="flex-1 px-3 py-1.5 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-1"
                           >
                             {isLoading ? (
-                              <Loader2 className="size-4 animate-spin" />
+                              <MorphingInfinity className="size-4" />
                             ) : (
                               <>
                                 <Plus className="size-3.5" />
@@ -443,8 +428,10 @@ export default function TableDetailModal({
                       <button
                         onClick={handleSalvarTaxa}
                         disabled={savingTaxa}
-                        className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                        aria-busy={savingTaxa}
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
                       >
+                        {savingTaxa && <MorphingInfinity className="size-4" aria-hidden="true" />}
                         {savingTaxa ? 'Salvando...' : 'Aplicar'}
                       </button>
                     </div>
@@ -526,10 +513,12 @@ export default function TableDetailModal({
                       </button>
                       <button
                         onClick={handleDeleteMesa}
-                        disabled={isLoading}
-                        className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50"
-                      >
-                        {isLoading ? 'Excluindo...' : 'Excluir'}
+              disabled={isLoading}
+              aria-busy={isLoading}
+              className="inline-flex flex-1 items-center justify-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50"
+            >
+              {isLoading && <MorphingInfinity className="size-4" aria-hidden="true" />}
+              {isLoading ? 'Excluindo...' : 'Excluir'}
                       </button>
                     </div>
                   </div>
@@ -571,10 +560,12 @@ export default function TableDetailModal({
                       </button>
                       <button
                         onClick={handleFecharMesa}
-                        disabled={isLoading}
-                        className="flex-1 px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50"
-                      >
-                        {isLoading ? 'Fechando...' : 'Confirmar'}
+              disabled={isLoading}
+              aria-busy={isLoading}
+              className="inline-flex flex-1 items-center justify-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50"
+            >
+              {isLoading && <MorphingInfinity className="size-4" aria-hidden="true" />}
+              {isLoading ? 'Fechando...' : 'Confirmar'}
                       </button>
                     </div>
                   </div>
@@ -876,7 +867,7 @@ function ComandaCard({
                     title="Cancelar pedido"
                   >
                     {cancelingId === pedido.id ? (
-                      <Loader2 className="size-2.5 animate-spin" />
+                      <MorphingInfinity className="size-2.5" />
                     ) : (
                       <Trash2 className="size-2.5" />
                     )}

@@ -4,6 +4,7 @@ import React from 'react';
 import { X, Search, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 
 interface ImportModalProps {
     isOpen: boolean;
@@ -185,9 +186,14 @@ export function ImportModal({
                                 <button
                                     onClick={onImport}
                                     disabled={selectedProdutosToImport.length === 0 || importing}
+                                    aria-busy={importing}
                                     className="px-5 py-2 text-sm font-semibold bg-primary text-white hover:bg-primary/90 rounded-lg transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
                                 >
-                                    <Check className="size-4" />
+                                    {importing ? (
+                                        <MorphingInfinity className="size-4" aria-hidden="true" />
+                                    ) : (
+                                        <Check className="size-4" aria-hidden="true" />
+                                    )}
                                     {importing ? 'Importando...' : `Adicionar ${selectedProdutosToImport.length} ao Grupo`}
                                 </button>
                             </div>

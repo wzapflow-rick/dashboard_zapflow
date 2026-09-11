@@ -1,16 +1,9 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import { useEffect, useState } from 'react';
-import { 
-  Target, 
-  Plus, 
-  Edit2, 
-  Trash2, 
-  X,
-  AlertCircle,
-  Check,
-  Loader2,
-} from 'lucide-react';
+import { Target, Plus, Edit2, Trash2, X, AlertCircle, Check } from 'lucide-react';
 import { 
   getCategorias, 
   createCategoria, 
@@ -196,7 +189,7 @@ export default function CategoriasPage() {
       <div className="space-y-3">
         {loading ? (
           <div className="flex justify-center py-16">
-            <Loader2 className="size-8 animate-spin text-orange-500" />
+            <MorphingInfinity className="size-8 text-orange-500" />
           </div>
         ) : categorias.length === 0 ? (
           <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-2xl text-center py-16 px-4">
@@ -281,7 +274,7 @@ export default function CategoriasPage() {
                       title={categoria.ativo ? "Desativar" : "Ativar"}
                     >
                       {isToggling ? (
-                        <Loader2 className="size-4 animate-spin" />
+                        <MorphingInfinity className="size-4" />
                       ) : (
                         <Check className="size-4" />
                       )}
@@ -301,7 +294,7 @@ export default function CategoriasPage() {
                       title="Excluir"
                     >
                       {isDeleting ? (
-                        <Loader2 className="size-4 animate-spin" />
+                        <MorphingInfinity className="size-4" />
                       ) : (
                         <Trash2 className="size-4" />
                       )}
@@ -463,7 +456,7 @@ export default function CategoriasPage() {
                   disabled={saving}
                   className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-3 rounded-xl font-medium transition-all disabled:opacity-50"
                 >
-                  {saving && <Loader2 className="size-4 animate-spin" />}
+                  {saving && <MorphingInfinity className="size-4" />}
                   <span>{saving ? 'Salvando...' : 'Salvar'}</span>
                 </button>
               </div>

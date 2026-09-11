@@ -1,5 +1,7 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState, useEffect } from 'react';
 import {
     DollarSign,
@@ -177,7 +179,7 @@ function ReportsContent() {
 
             {loading ? (
                 <div className="text-center py-12">
-                    <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto" />
+                    <MorphingInfinity className="mx-auto size-8 text-primary" />
                     <p className="text-slate-500 dark:text-slate-400 mt-2">Carregando...</p>
                 </div>
             ) : report ? (

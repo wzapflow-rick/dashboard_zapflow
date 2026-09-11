@@ -1,18 +1,9 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState } from 'react';
-import {
-    ArrowRight,
-    Loader2,
-    Lock,
-    Mail,
-    TrendingUp,
-    CheckCircle2,
-    Zap,
-    BarChart3,
-    Users,
-    Clock
-} from 'lucide-react';
+import { ArrowRight, Lock, Mail, TrendingUp, CheckCircle2, Zap, BarChart3, Users, Clock } from 'lucide-react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -266,7 +257,7 @@ export default function LoginPage() {
                             }}
                         >
                             {loading ? (
-                                <Loader2 className="size-5 animate-spin" />
+                                <MorphingInfinity className="size-5" />
                             ) : (
                                 <>
                                     Entrar no Painel

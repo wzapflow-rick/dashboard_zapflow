@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { logoutAdmin } from '@/app/actions/admin-auth';
 import { cn } from '@/lib/utils';
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 
 interface AdminSidebarProps {
   username: string;
@@ -75,10 +76,19 @@ export default function AdminSidebar({ username }: AdminSidebarProps) {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [remarketingOpen, setRemarketingOpen] = useState(pathname.startsWith('/admin/remarketing'));
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
-    await logoutAdmin();
-    router.push('/admin');
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+
+    try {
+      await logoutAdmin();
+      router.push('/admin');
+    } catch (error) {
+      console.error('Erro ao sair da administração:', error);
+      setIsLoggingOut(false);
+    }
   };
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
@@ -222,10 +232,16 @@ export default function AdminSidebar({ username }: AdminSidebarProps) {
           </div>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-colors"
+            disabled={isLoggingOut}
+            aria-busy={isLoggingOut}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-colors disabled:cursor-wait disabled:opacity-60"
           >
-            <LogOut className="size-5" />
-            <span className="font-medium">Sair</span>
+            {isLoggingOut ? (
+              <MorphingInfinity className="size-5" aria-hidden="true" />
+            ) : (
+              <LogOut className="size-5" aria-hidden="true" />
+            )}
+            <span className="font-medium">{isLoggingOut ? 'Saindo...' : 'Sair'}</span>
           </button>
         </div>
       </aside>

@@ -1,7 +1,9 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState } from 'react';
-import { X, User, Phone, MapPin, Home, CheckCircle2, Loader2 } from 'lucide-react';
+import { X, User, Phone, MapPin, Home, CheckCircle2 } from 'lucide-react';
 import { upsertCustomer } from '@/app/actions/customers';
 
 interface RegisterCustomerModalProps {
@@ -123,7 +125,7 @@ export default function RegisterCustomerModal({ isOpen, onClose, order, onSucces
                             className="flex-[2] py-3 bg-primary text-white text-sm font-black rounded-xl hover:opacity-90 transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2 uppercase tracking-widest"
                         >
                             {loading ? (
-                                <Loader2 className="size-4 animate-spin" />
+                                <MorphingInfinity className="size-4" />
                             ) : (
                                 <CheckCircle2 className="size-4" />
                             )}

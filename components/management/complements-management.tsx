@@ -27,6 +27,7 @@ import { GrupoModal } from '@/components/modals/grupo-modal';
 import { ItemModal } from '@/components/modals/item-modal';
 import { ImportModal } from '@/components/modals/import-modal';
 import { RecipeModal } from '@/components/modals/recipe-modal';
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 
 export default function ComplementsManagement() {
     const [grupos, setGrupos] = useState<any[]>([]);
@@ -59,8 +60,9 @@ export default function ComplementsManagement() {
     // Import modal state
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [selectedProdutosToImport, setSelectedProdutosToImport] = useState<number[]>([]);
-    const [importing, setImporting] = useState(false);
-    const [importSearch, setImportSearch] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [importingProductId, setImportingProductId] = useState<number | null>(null);
+  const [importSearch, setImportSearch] = useState('');
     const [importFator, setImportFator] = useState<number>(1);
     const [activeCatTab, setActiveCatTab] = useState<number | null>(null);
 
@@ -389,7 +391,10 @@ export default function ComplementsManagement() {
 
                                 <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
                                     {loadingItens ? (
-                                        <p className="text-center text-slate-500 text-sm mt-4">Carregando opções...</p>
+                                        <div className="mt-4 flex items-center justify-center gap-2 text-sm text-slate-500" role="status">
+                                            <MorphingInfinity className="size-5 text-primary" aria-hidden="true" />
+                                            <span>Carregando opções...</span>
+                                        </div>
                                     ) : itens.length === 0 ? (
                                         <div className="text-center py-10 space-y-2">
                                             <Tag className="size-8 text-slate-300 mx-auto" />
@@ -538,7 +543,7 @@ export default function ComplementsManagement() {
                                                     setActiveTab('grupos');
                                                     return;
                                                 }
-                                                setImporting(true);
+                                                setImportingProductId(produto.id);
                                                 try {
                                                     await bulkCreateComplements(activeGrupo.id, [produto], 1);
                                                     const updated = await getItensDoGrupo(activeGrupo.id);
@@ -547,11 +552,18 @@ export default function ComplementsManagement() {
                                                 } catch (e) {
                                                     toast.error('Erro ao adicionar sabor.');
                                                 } finally {
-                                                    setImporting(false);
+                                                    setImportingProductId(null);
                                                 }
                                             }}
+                                            disabled={importingProductId !== null}
+                                            aria-busy={importingProductId === produto.id}
                                         >
-                                            <Plus className="size-3" /> Adicionar ao Grupo {activeGrupo?.nome ? `(${activeGrupo.nome})` : ''}
+                                            {importingProductId === produto.id ? (
+                                                <MorphingInfinity className="size-3" aria-hidden="true" />
+                                            ) : (
+                                                <Plus className="size-3" aria-hidden="true" />
+                                            )}
+                                            {importingProductId === produto.id ? 'Adicionando...' : 'Adicionar ao Grupo'} {activeGrupo?.nome ? `(${activeGrupo.nome})` : ''}
                                         </button>
                                     </div>
                                 ))

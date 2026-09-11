@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Check, PackageOpen } from 'lucide-react';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { MobileDrawer } from '@/components/ui/mobile-drawer';
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import { Insumo } from '@/app/actions/insumos';
 
 interface InsumoFormModalProps {
@@ -210,11 +211,16 @@ export default function InsumoFormModal({ isOpen, onClose, editingInsumo, onSubm
                             </button>
                             <button
                                 type="submit"
-                                disabled={isSubmitting}
-                                className="order-1 sm:order-2 flex-1 px-6 py-2.5 sm:py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50"
-                            >
-                                <Check className="size-4" />
-                                {isSubmitting ? 'Salvando...' : 'Salvar Insumo'}
+                            disabled={isSubmitting}
+                            aria-busy={isSubmitting}
+                            className="order-1 sm:order-2 flex-1 px-6 py-2.5 sm:py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+                        >
+                            {isSubmitting ? (
+                                <MorphingInfinity className="size-4" aria-hidden="true" />
+                            ) : (
+                                <Check className="size-4" aria-hidden="true" />
+                            )}
+                            {isSubmitting ? 'Salvando...' : 'Salvar Insumo'}
                             </button>
                         </div>
                     </form>

@@ -1,9 +1,11 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { getPendingSignup, completeSignup } from '@/app/actions/signup';
-import { Loader2, CheckCircle, XCircle, Lock, Eye, EyeOff } from 'lucide-react';
+import { CheckCircle, XCircle, Lock, Eye, EyeOff } from 'lucide-react';
 import Image from 'next/image';
 
 interface SignupData {
@@ -109,7 +111,7 @@ export default function AtivarContaPage() {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="size-12 text-primary animate-spin mx-auto mb-4" />
+          <MorphingInfinity className="size-12 text-primary mx-auto mb-4" />
           <p className="text-gray-400">Verificando seu cadastro...</p>
         </div>
       </div>
@@ -150,7 +152,7 @@ export default function AtivarContaPage() {
             Bem-vindo ao ZapFlow, {signupData?.nome}!<br />
             Redirecionando para configuracao inicial...
           </p>
-          <Loader2 className="size-6 text-primary animate-spin mx-auto" />
+          <MorphingInfinity className="size-6 text-primary mx-auto" />
         </div>
       </div>
     );
@@ -259,7 +261,7 @@ export default function AtivarContaPage() {
           >
             {submitting ? (
               <>
-                <Loader2 className="size-5 animate-spin" />
+                <MorphingInfinity className="size-5" />
                 Criando conta...
               </>
             ) : (

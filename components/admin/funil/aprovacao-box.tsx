@@ -1,15 +1,9 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import { useEffect, useState } from 'react';
-import {
-  Loader2,
-  RefreshCw,
-  Send,
-  Trash2,
-  Phone,
-  MessageSquare,
-  Inbox,
-} from 'lucide-react';
+import { RefreshCw, Send, Trash2, Phone, MessageSquare, Inbox } from 'lucide-react';
 import { toast } from 'sonner';
 import { getFilaAprovacao, aprovarEnvio, rejeitarEnvio } from '@/app/actions/funil';
 import { type FilaAprovacaoItem } from '@/lib/funil-config';
@@ -70,7 +64,7 @@ export function AprovacaoBox() {
   if (loading && itens.length === 0) {
     return (
       <div className="flex justify-center py-20">
-        <Loader2 className="size-8 animate-spin text-orange-500" />
+        <MorphingInfinity className="size-8 text-orange-500" />
       </div>
     );
   }
@@ -86,7 +80,7 @@ export function AprovacaoBox() {
           disabled={loading}
           className="flex items-center gap-2 bg-[#1e3a5f] hover:bg-[#2a4a6f] text-white px-3 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50"
         >
-          {loading ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
+          {loading ? <MorphingInfinity className="size-4" /> : <RefreshCw className="size-4" />}
           <span className="hidden sm:inline">Atualizar</span>
         </button>
       </div>
@@ -141,7 +135,7 @@ export function AprovacaoBox() {
                   disabled={acaoId === item.id}
                   className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50"
                 >
-                  {acaoId === item.id ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+                  {acaoId === item.id ? <MorphingInfinity className="size-4" /> : <Send className="size-4" />}
                   Enviar agora
                 </button>
                 <button

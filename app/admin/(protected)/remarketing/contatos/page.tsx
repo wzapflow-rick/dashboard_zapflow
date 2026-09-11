@@ -1,26 +1,9 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import { useEffect, useState } from 'react';
-import { 
-  Users, 
-  Search, 
-  RefreshCw, 
-  Download, 
-  Plus,
-  X,
-  Tag,
-  Target,
-  ChevronLeft,
-  ChevronRight,
-  Phone,
-  Calendar,
-  MessageSquare,
-  Ban,
-  Check,
-  Trash2,
-  Loader2,
-  UserPlus,
-} from 'lucide-react';
+import { Users, Search, RefreshCw, Download, Plus, X, Tag, Target, ChevronLeft, ChevronRight, Phone, Calendar, MessageSquare, Ban, Check, Trash2, UserPlus } from 'lucide-react';
 import { 
   getContatos, 
   getEtiquetas,
@@ -375,7 +358,7 @@ export default function ContatosPage() {
               disabled={bulkDeleting}
               className="flex items-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 px-4 py-2.5 rounded-xl font-medium transition-all border border-red-500/20 disabled:opacity-50"
             >
-              {bulkDeleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+              {bulkDeleting ? <MorphingInfinity className="size-4" /> : <Trash2 className="size-4" />}
               <span>{bulkDeleting ? 'Excluindo...' : `Excluir ${selectedContatos.size}`}</span>
             </button>
           )}
@@ -412,7 +395,7 @@ export default function ContatosPage() {
       <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-2xl overflow-hidden">
         {loading ? (
           <div className="flex justify-center py-16">
-            <Loader2 className="size-8 animate-spin text-orange-500" />
+            <MorphingInfinity className="size-8 text-orange-500" />
           </div>
         ) : contatos.length === 0 ? (
           <div className="text-center py-16 px-4">
@@ -576,7 +559,7 @@ export default function ContatosPage() {
                       title={contato.bloqueado ? "Desbloquear" : "Bloquear"}
                     >
                       {loadingActions.has(`block-${contato.id}`) ? (
-                        <Loader2 className="size-4 animate-spin" />
+                        <MorphingInfinity className="size-4" />
                       ) : contato.bloqueado ? (
                         <Check className="size-4" />
                       ) : (
@@ -590,7 +573,7 @@ export default function ContatosPage() {
                       title="Excluir"
                     >
                       {loadingActions.has(`delete-${contato.id}`) ? (
-                        <Loader2 className="size-4 animate-spin" />
+                        <MorphingInfinity className="size-4" />
                       ) : (
                         <Trash2 className="size-4" />
                       )}
@@ -676,7 +659,7 @@ export default function ContatosPage() {
                   disabled={addingManual || !manualForm.telefone.trim()}
                   className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-3 rounded-xl font-medium transition-all disabled:opacity-50"
                 >
-                  {addingManual ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+                  {addingManual ? <MorphingInfinity className="size-4" /> : <Plus className="size-4" />}
                   <span>{addingManual ? 'Adicionando...' : 'Adicionar'}</span>
                 </button>
               </div>
@@ -710,7 +693,7 @@ export default function ContatosPage() {
                   disabled={importLoading}
                   className="flex items-center gap-2 bg-[#1e3a5f] hover:bg-[#2a4a6f] text-white px-5 py-3 rounded-xl font-medium transition-colors disabled:opacity-50"
                 >
-                  {importLoading ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
+                  {importLoading ? <MorphingInfinity className="size-4" /> : <RefreshCw className="size-4" />}
                   <span>Buscar</span>
                 </button>
               </div>
@@ -842,7 +825,7 @@ export default function ContatosPage() {
                 disabled={importing || selectedForImport.size === 0}
                 className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-3 rounded-xl font-medium transition-all disabled:opacity-50"
               >
-                {importing ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
+                {importing ? <MorphingInfinity className="size-4" /> : <Download className="size-4" />}
                 <span>{importing ? 'Importando...' : `Importar ${selectedForImport.size} contatos`}</span>
               </button>
             </div>
@@ -895,7 +878,7 @@ export default function ContatosPage() {
                         {etiqueta.nome}
                       </span>
                       {isLoading ? (
-                        <Loader2 className="size-4 animate-spin text-slate-400" />
+                        <MorphingInfinity className="size-4 text-slate-400" />
                       ) : isActive ? (
                         <Check className="size-4" style={{ color: etiqueta.cor }} />
                       ) : null}
@@ -953,7 +936,7 @@ export default function ContatosPage() {
                         {categoria.nome}
                       </span>
                       {isLoading ? (
-                        <Loader2 className="size-4 animate-spin text-slate-400" />
+                        <MorphingInfinity className="size-4 text-slate-400" />
                       ) : isActive ? (
                         <Check className="size-4" style={{ color: categoria.cor }} />
                       ) : null}

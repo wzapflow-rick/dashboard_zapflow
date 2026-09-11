@@ -1,23 +1,9 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState, useEffect } from 'react';
-import { 
-  Plus, 
-  Edit2, 
-  Trash2, 
-  User, 
-  Phone, 
-  Car, 
-  Star,
-  Save,
-  X,
-  Loader2,
-  Truck,
-  CheckCircle,
-  Clock,
-  XCircle,
-  Mail
-} from 'lucide-react';
+import { Plus, Edit2, Trash2, User, Phone, Car, Star, Save, X, Truck, CheckCircle, Clock, XCircle, Mail } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getDrivers, createDriver, updateDriver, deleteDriver, Driver } from '@/app/actions/drivers';
 import { toast } from 'sonner';
@@ -163,7 +149,7 @@ export default function DriversManagement() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="size-8 text-primary animate-spin" />
+        <MorphingInfinity className="size-8 text-primary" />
       </div>
     );
   }

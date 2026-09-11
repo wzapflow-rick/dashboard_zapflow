@@ -1,7 +1,9 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit3, Trash2, Check, X, Loader2 } from 'lucide-react';
+import { Plus, Edit3, Trash2, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { getCategories, upsertCategory, deleteCategory, type Category } from '@/app/actions/products';
@@ -87,7 +89,7 @@ export default function CategoryManagement() {
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden relative min-h-[300px]">
                 {loading && (
                     <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] z-10 flex items-center justify-center">
-                        <Loader2 className="size-8 text-primary animate-spin" />
+                        <MorphingInfinity className="size-8 text-primary" />
                     </div>
                 )}
                 <table className="w-full text-left border-collapse">

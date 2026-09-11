@@ -1,6 +1,8 @@
 'use client';
 
-import { AlertTriangle, XCircle, Clock, CreditCard, Loader2 } from 'lucide-react';
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
+import { AlertTriangle, XCircle, Clock, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -93,7 +95,7 @@ export function PaymentAlert({ empresaId }: PaymentAlertProps) {
                 disabled={paying}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-colors bg-amber-500 hover:bg-amber-600 text-black disabled:opacity-60"
               >
-                {paying ? <Loader2 className="size-4 animate-spin" /> : <CreditCard className="size-4" />}
+                {paying ? <MorphingInfinity className="size-4" /> : <CreditCard className="size-4" />}
                 Pagar agora
               </button>
             ) : (
@@ -190,7 +192,7 @@ export function PaymentAlert({ empresaId }: PaymentAlertProps) {
               : 'bg-amber-500 hover:bg-amber-600 text-black'
           }`}
         >
-          {paying ? <Loader2 className="size-4 animate-spin" /> : <CreditCard className="size-4" />}
+          {paying ? <MorphingInfinity className="size-4" /> : <CreditCard className="size-4" />}
           Pagar agora
         </button>
       </div>

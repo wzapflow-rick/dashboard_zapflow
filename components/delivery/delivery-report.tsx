@@ -1,5 +1,7 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState, useEffect } from 'react';
 import {
   Truck,
@@ -68,7 +70,7 @@ export default function DeliveryReport() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <MorphingInfinity className="size-8 text-primary" />
       </div>
     );
   }

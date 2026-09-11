@@ -1,7 +1,9 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import { useState, useEffect } from 'react';
-import { Star, Send, ThumbsUp, Loader2 } from 'lucide-react';
+import { Star, Send, ThumbsUp } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface RatingPageProps {
@@ -109,7 +111,7 @@ export default function RatingPage({ params }: RatingPageProps) {
     if (!resolvedParams) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-violet-50 to-purple-100 flex items-center justify-center">
-                <Loader2 className="size-8 animate-spin text-violet-500" />
+                <MorphingInfinity className="size-8 text-violet-500" />
             </div>
         );
     }
@@ -191,7 +193,7 @@ export default function RatingPage({ params }: RatingPageProps) {
                     disabled={loading || notaComida === 0 || notaEntrega === 0}
                     className="w-full bg-green-500 hover:bg-green-600 disabled:bg-slate-300 text-white font-bold py-4 rounded-2xl shadow-lg shadow-green-500/20 transition-all flex items-center justify-center gap-2"
                 >
-                    {loading ? <Loader2 className="size-5 animate-spin" /> : <><Send className="size-5" /> Enviar Avaliação</>}
+                    {loading ? <MorphingInfinity className="size-5" /> : <><Send className="size-5" /> Enviar Avaliação</>}
                 </button>
 
                 <p className="text-xs text-center text-slate-400">Sua opinião nos ajuda a melhorar!</p>

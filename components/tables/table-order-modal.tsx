@@ -1,7 +1,9 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState, useEffect } from 'react';
-import { X, Search, Plus, Minus, ShoppingCart, Loader2, Check, MessageSquare, ChevronLeft } from 'lucide-react';
+import { X, Search, Plus, Minus, ShoppingCart, Check, MessageSquare, ChevronLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getProducts, getCategories, type Category } from '@/app/actions/products';
 import { getCompositeProducts, type CompositeProduct, type CompositeItem } from '@/app/actions/grupos-slots';
@@ -376,7 +378,7 @@ export default function TableOrderModal({
             <div className="flex-1 overflow-y-auto p-3 space-y-4">
               {isLoadingProducts ? (
                 <div className="flex items-center justify-center py-20">
-                  <Loader2 className="size-8 text-primary animate-spin" />
+                  <MorphingInfinity className="size-8 text-primary" />
                 </div>
               ) : (
                 <>
@@ -585,7 +587,7 @@ export default function TableOrderModal({
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="size-4 animate-spin" />
+                    <MorphingInfinity className="size-4" />
                     Enviando...
                   </>
                 ) : (

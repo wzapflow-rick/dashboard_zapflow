@@ -1,5 +1,7 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
@@ -27,6 +29,7 @@ import { type OnboardingStatus } from '@/app/actions/onboarding-status';
 import { SetupChecklist } from '@/components/onboarding/setup-checklist';
 import { useLowPowerMode } from '@/hooks/use-low-power-mode';
 import { ZapflowLineChart } from '@/components/charts/zapflow-line-chart';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const OrderDetailsModal = dynamic(() => import('@/components/modals/order-details-modal'), {
   ssr: false,
@@ -48,21 +51,64 @@ const SECTION_LINKS = [
 
 function DashboardSkeleton() {
   return (
-    <div className="flex animate-pulse flex-col gap-8" aria-busy="true" aria-label="Carregando visão geral">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div className="flex flex-col gap-2">
-          <div className="h-8 w-48 rounded-lg bg-slate-200/60 dark:bg-slate-800/60" />
-          <div className="h-4 w-72 max-w-full rounded-lg bg-slate-200/60 dark:bg-slate-800/60" />
+    <div
+      className="flex flex-col gap-10 pb-8 text-slate-900 dark:text-white"
+      role="status"
+      aria-busy="true"
+    >
+      <span className="sr-only">Carregando visão geral...</span>
+
+      <header className="flex flex-col justify-between gap-5 xl:flex-row xl:items-end">
+        <div className="flex flex-col gap-3">
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-9 w-64 max-w-full" />
+          <Skeleton className="h-4 w-full max-w-xl" />
         </div>
-        <div className="h-10 w-full rounded-xl bg-slate-200/60 dark:bg-slate-800/60 sm:w-80" />
-      </div>
-      <div className="h-14 rounded-2xl bg-slate-200/40 dark:bg-slate-800/40" />
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {[0, 1, 2, 3].map((item) => (
-          <div key={item} className="h-36 rounded-2xl bg-slate-200/40 dark:bg-slate-800/40" />
-        ))}
-      </div>
-      <div className="h-72 rounded-3xl bg-slate-200/40 dark:bg-slate-800/40" />
+        <div className="flex w-full flex-wrap gap-2 xl:w-auto">
+          <Skeleton className="h-10 min-w-40 flex-1 xl:flex-none" />
+          <Skeleton className="h-10 w-36" />
+          <Skeleton className="size-10 shrink-0" />
+        </div>
+      </header>
+
+      <Skeleton className="h-12 w-full rounded-2xl" />
+
+      <section className="flex flex-col gap-6">
+        <div className="flex items-start gap-3">
+          <Skeleton className="size-10 shrink-0 rounded-xl" />
+          <div className="flex flex-1 flex-col gap-2">
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="h-7 w-48 max-w-full" />
+            <Skeleton className="h-4 w-full max-w-2xl" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {[0, 1, 2, 3].map((item) => (
+            <div key={item} className="flex min-h-36 flex-col justify-between rounded-2xl border border-current/10 p-5">
+              <div className="flex items-center justify-between gap-4">
+                <Skeleton className="size-11 rounded-xl" />
+                <Skeleton className="h-4 w-16" />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Skeleton className="h-8 w-28" />
+                <Skeleton className="h-4 w-36 max-w-full" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-6">
+        <div className="flex items-start gap-3">
+          <Skeleton className="size-10 shrink-0 rounded-xl" />
+          <div className="flex flex-1 flex-col gap-2">
+            <Skeleton className="h-3 w-28" />
+            <Skeleton className="h-7 w-56 max-w-full" />
+            <Skeleton className="h-4 w-full max-w-2xl" />
+          </div>
+        </div>
+        <Skeleton className="h-64 rounded-3xl" />
+      </section>
     </div>
   );
 }
@@ -325,7 +371,11 @@ export default function DashboardOverview() {
             aria-label="Atualizar dados do período"
             title="Atualizar dados"
           >
-            <RefreshCw className={cn('size-4', isRefreshing && 'animate-spin')} aria-hidden="true" />
+            {isRefreshing ? (
+              <MorphingInfinity className="size-4" aria-hidden="true" />
+            ) : (
+              <RefreshCw className="size-4" aria-hidden="true" />
+            )}
           </motion.button>
         </div>
       </motion.header>

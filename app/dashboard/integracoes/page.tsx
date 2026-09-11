@@ -1,5 +1,7 @@
 'use client';
 
+
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import { useState, useEffect } from 'react';
 import { 
   Link2, 
@@ -132,7 +134,7 @@ export default function IntegracoesPage() {
 
           {loading ? (
             <div className="flex items-center justify-center py-20">
-              <RefreshCw className="size-8 text-emerald-500 animate-spin" />
+              <MorphingInfinity className="size-8 text-emerald-500" />
             </div>
           ) : (
             <div className="space-y-8">
@@ -299,7 +301,11 @@ export default function IntegracoesPage() {
                         disabled={regenerating}
                         className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-lg transition-colors flex items-center gap-2"
                       >
-                        <RefreshCw className={`size-4 text-white ${regenerating ? 'animate-spin' : ''}`} />
+                        {regenerating ? (
+                          <MorphingInfinity className="size-4 text-white" aria-hidden="true" />
+                        ) : (
+                          <RefreshCw className="size-4 text-white" aria-hidden="true" />
+                        )}
                         <span className="text-white text-sm hidden sm:inline">
                           {status?.webhook.token ? 'Regenerar' : 'Gerar Token'}
                         </span>
