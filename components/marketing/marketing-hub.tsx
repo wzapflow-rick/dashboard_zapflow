@@ -80,7 +80,7 @@ export function MarketingHub({ initialTab }: MarketingHubProps) {
 
       <div
         aria-label="Áreas de marketing"
-        className="grid w-full grid-cols-2 gap-1 rounded-2xl border border-border bg-muted p-1.5 sm:w-fit"
+        className="grid w-full grid-cols-2 gap-1 rounded-xl border border-border-dark bg-surface-dark p-1 shadow-inner sm:w-fit"
         role="tablist"
       >
         {TAB_OPTIONS.map(({ value, label, icon: Icon }) => {
@@ -91,10 +91,10 @@ export function MarketingHub({ initialTab }: MarketingHubProps) {
               aria-controls={`marketing-panel-${value}`}
               aria-selected={isActive}
               className={cn(
-                'flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                'group flex min-h-11 items-center justify-center gap-2 rounded-lg border border-transparent px-4 py-2 text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background-dark active:scale-95',
                 isActive
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:bg-background/60 hover:text-foreground',
+                  ? 'border-primary/30 bg-primary/15 text-primary shadow-sm shadow-primary/10'
+                  : 'text-text-secondary hover:bg-surface-elevated hover:text-text-primary',
               )}
               id={`marketing-tab-${value}`}
               key={value}
@@ -107,7 +107,13 @@ export function MarketingHub({ initialTab }: MarketingHubProps) {
               tabIndex={isActive ? 0 : -1}
               type="button"
             >
-              <Icon aria-hidden="true" className="size-4" />
+              <Icon
+                aria-hidden="true"
+                className={cn(
+                  'size-4 transition-colors',
+                  isActive ? 'text-primary' : 'text-text-secondary group-hover:text-text-primary',
+                )}
+              />
               {label}
             </button>
           );

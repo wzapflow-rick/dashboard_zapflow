@@ -346,20 +346,20 @@ export default function CampaignsPanel() {
                             <button
                                 onClick={handleDispararManual}
                                 disabled={disparando || campanhas.filter(c => c.ativo).length === 0}
-                                className="flex items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white transition-all hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                                className="flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-border-dark bg-surface-dark px-4 py-2.5 text-sm font-semibold text-text-secondary shadow-sm transition-all hover:border-primary/40 hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background-dark active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-border-dark disabled:hover:bg-surface-dark disabled:hover:text-text-secondary"
                             >
                                 {disparando ? (
-                                    <Loader2 className="size-4 animate-spin" />
+                                    <Loader2 aria-hidden="true" className="size-4 animate-spin text-primary" />
                                 ) : (
-                                    <Send className="size-4" />
+                                    <Send aria-hidden="true" className="size-4 text-primary" />
                                 )}
                                 {disparando ? 'Disparando...' : 'Disparar agora'}
                             </button>
                             <button
                                 onClick={() => openModal()}
-                                className="flex items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-bold text-white transition-all hover:bg-violet-700"
+                                className="flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-background-dark shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover hover:shadow-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background-dark active:scale-95"
                             >
-                                <Plus className="size-4" />
+                                <Plus aria-hidden="true" className="size-4" />
                                 Nova campanha
                             </button>
                         </div>
