@@ -1,6 +1,6 @@
 'use client';
 
-import { AnimatePresence, LayoutGroup, motion, useReducedMotion, type Variants } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion, type Variants } from 'motion/react';
 import { Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -75,7 +75,6 @@ export function DashboardDock({ user }: DashboardDockProps) {
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
   const [isMoreOpen, setIsMoreOpen] = useState(false);
-  const [pulseKey, setPulseKey] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
   const moreButtonRef = useRef<HTMLDivElement>(null);
   const panelId = useId();
@@ -93,10 +92,6 @@ export function DashboardDock({ user }: DashboardDockProps) {
   const moreManagementItems = management.filter((item) => !primaryRoutes.has(item.href));
   const moreItems = [...moreMainItems, ...moreManagementItems];
   const isMoreActive = moreItems.some((item) => isDashboardRouteActive(pathname, item.href));
-
-  const triggerDockPulse = () => {
-    if (!reduceMotion) setPulseKey((key) => key + 1);
-  };
 
   useEffect(() => {
     if (!isMoreOpen) return;
@@ -161,7 +156,6 @@ export function DashboardDock({ user }: DashboardDockProps) {
                 aria-label="Fechar navegação"
                 className="grid size-10 shrink-0 place-items-center rounded-xl text-text-secondary outline-none transition-colors hover:bg-surface-elevated hover:text-text-primary focus-visible:ring-2 focus-visible:ring-primary"
                 whileHover={reduceMotion ? undefined : { rotate: 4, scale: 1.04 }}
-                whileTap={reduceMotion ? undefined : { rotate: -9, scale: 0.86 }}
                 transition={{ type: 'spring', stiffness: 480, damping: 18 }}
               >
                 <X className="size-5" />
@@ -179,7 +173,6 @@ export function DashboardDock({ user }: DashboardDockProps) {
                 items={moreMainItems}
                 pathname={pathname}
                 reduceMotion={Boolean(reduceMotion)}
-                onActivate={triggerDockPulse}
                 onNavigate={() => setIsMoreOpen(false)}
               />
               <NavigationGroup
@@ -187,7 +180,6 @@ export function DashboardDock({ user }: DashboardDockProps) {
                 items={moreManagementItems}
                 pathname={pathname}
                 reduceMotion={Boolean(reduceMotion)}
-                onActivate={triggerDockPulse}
                 onNavigate={() => setIsMoreOpen(false)}
               />
             </motion.div>
@@ -196,35 +188,31 @@ export function DashboardDock({ user }: DashboardDockProps) {
       </AnimatePresence>
 
       <nav aria-label="Navegação principal do painel" className="pointer-events-auto">
-        <LayoutGroup id="dashboard-dock-navigation">
-          <Dock pulseKey={pulseKey}>
-            {primaryItems.map((item) => (
+        <Dock>
+          {primaryItems.map((item) => (
+            <DockItem
+              key={item.href}
+              href={item.href}
+              icon={item.icon}
+              label={item.name}
+              active={isDashboardRouteActive(pathname, item.href)}
+              onLinkClick={() => setIsMoreOpen(false)}
+            />
+          ))}
+          {moreItems.length > 0 && (
+            <div ref={moreButtonRef}>
               <DockItem
-                key={item.href}
-                href={item.href}
-                icon={item.icon}
-                label={item.name}
-                active={isDashboardRouteActive(pathname, item.href)}
-                onActivate={triggerDockPulse}
-                onLinkClick={() => setIsMoreOpen(false)}
+                icon={Menu}
+                expandedIcon={X}
+                label="Mais"
+                active={isMoreActive}
+                expanded={isMoreOpen}
+                controls={panelId}
+                onClick={() => setIsMoreOpen((open) => !open)}
               />
-            ))}
-            {moreItems.length > 0 && (
-              <div ref={moreButtonRef}>
-                <DockItem
-                  icon={Menu}
-                  expandedIcon={X}
-                  label="Mais"
-                  active={isMoreActive}
-                  expanded={isMoreOpen}
-                  controls={panelId}
-                  onActivate={triggerDockPulse}
-                  onClick={() => setIsMoreOpen((open) => !open)}
-                />
-              </div>
-            )}
-          </Dock>
-        </LayoutGroup>
+            </div>
+          )}
+        </Dock>
       </nav>
     </div>
   );
@@ -235,14 +223,12 @@ function NavigationGroup({
   items,
   pathname,
   reduceMotion,
-  onActivate,
   onNavigate,
 }: {
   title: string;
   items: DashboardNavigationItem[];
   pathname: string;
   reduceMotion: boolean;
-  onActivate: () => void;
   onNavigate: () => void;
 }) {
   if (items.length === 0) return null;
@@ -257,21 +243,17 @@ function NavigationGroup({
             <MotionLink
               key={item.href}
               href={item.href}
-              onClick={() => {
-                onActivate();
-                onNavigate();
-              }}
+              onClick={onNavigate}
               aria-current={active ? 'page' : undefined}
               variants={reduceMotion ? undefined : navigationItemVariants}
               whileHover={reduceMotion ? undefined : { x: 3 }}
-              whileTap={reduceMotion ? undefined : { x: 5, scale: 0.975 }}
               className={cn(
                 'group/nav relative flex items-center gap-3 overflow-hidden rounded-2xl px-3 py-2.5 text-sm font-medium text-text-secondary outline-none transition-colors hover:bg-surface-elevated hover:text-text-primary focus-visible:bg-surface-elevated focus-visible:text-text-primary focus-visible:ring-2 focus-visible:ring-primary',
                 active && 'bg-primary/15 text-primary',
               )}
             >
               <span
-                className="pointer-events-none absolute inset-y-1 left-1 w-20 -translate-x-7 rounded-xl bg-primary/20 opacity-0 blur-lg transition-[opacity,transform] duration-200 group-hover/nav:translate-x-0 group-hover/nav:opacity-40 group-active/nav:translate-x-12 group-active/nav:opacity-70 group-focus-visible/nav:translate-x-0 group-focus-visible/nav:opacity-40 motion-reduce:transition-none"
+                className="pointer-events-none absolute inset-y-1 left-1 w-20 -translate-x-7 rounded-xl bg-primary/20 opacity-0 blur-lg transition-[opacity,transform] duration-200 group-hover/nav:translate-x-0 group-hover/nav:opacity-40 group-focus-visible/nav:translate-x-0 group-focus-visible/nav:opacity-40 motion-reduce:transition-none"
                 aria-hidden="true"
               />
               <span className="relative grid size-9 shrink-0 place-items-center rounded-xl bg-surface-elevated transition-colors group-hover/nav:bg-primary/10 group-focus-visible/nav:bg-primary/10">
