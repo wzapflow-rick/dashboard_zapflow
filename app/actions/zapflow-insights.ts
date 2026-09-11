@@ -37,6 +37,34 @@ export interface MetricaComparativa {
   variacao: number; // %
 }
 
+export type ComparativoPeriodo = 'hoje' | '7dias' | '30dias';
+
+export interface ComparativoSeriePonto {
+  label: string;
+  value: number;
+  detail: string;
+}
+
+export interface ComparativoIndicador extends MetricaComparativa {
+  serie: ComparativoSeriePonto[];
+}
+
+export interface ComparativosData {
+  periodo: ComparativoPeriodo;
+  periodoLabel: string;
+  atualLabel: string;
+  anteriorLabel: string;
+  faturamento: ComparativoIndicador;
+  ticketMedio: ComparativoIndicador;
+  pedidos: ComparativoIndicador;
+}
+
+export interface ZapflowComparativosResult {
+  success: boolean;
+  data?: ComparativosData;
+  error?: string;
+}
+
 export interface InsightMetrics {
   faturamentoHoje: number;
   faturamentoOntem: number;
@@ -80,6 +108,7 @@ export interface ZapflowInsightsResult {
   nome: string;
   score: NegocioScore;
   metrics: InsightMetrics;
+  comparativos: ComparativosData;
   ai: AnaliseIA | null;
   aiError?: string;
   geradoEm: string;
@@ -114,6 +143,214 @@ function round2(n: number): number {
 function variacao(atual: number, anterior: number): number {
   if (anterior <= 0) return atual > 0 ? 100 : 0;
   return Math.round(((atual - anterior) / anterior) * 100);
+}
+
+const DIA_MS = 24 * 60 * 60 * 1000;
+const comparativoPeriodoSchema = z.enum(['hoje', '7dias', '30dias']);
+const COMPARATIVO_CONFIG: Record<
+  ComparativoPeriodo,
+  { dias: number; periodoLabel: string; atualLabel: string; anteriorLabel: string }
+> = {
+  hoje: { dias: 1, periodoLabel: 'Hoje', atualLabel: 'Hoje', anteriorLabel: 'Ontem' },
+  '7dias': {
+    dias: 7,
+    periodoLabel: '7 dias',
+    atualLabel: 'Últimos 7 dias',
+    anteriorLabel: '7 dias anteriores',
+  },
+  '30dias': {
+    dias: 30,
+    periodoLabel: '30 dias',
+    atualLabel: 'Últimos 30 dias',
+    anteriorLabel: '30 dias anteriores',
+  },
+};
+
+interface PedidoComparativoRow {
+  criado_em: string | Date;
+  status: string | null;
+  valor_total: string | number | null;
+}
+
+interface ComparativoBucket {
+  label: string;
+  pedidos: number;
+  finalizados: number;
+  valorPedidos: number;
+  faturamento: number;
+}
+
+function inicioDiaBrasiliaUtc(date: Date): Date {
+  const brasilia = toBrasilia(date);
+  return new Date(
+    Date.UTC(
+      brasilia.getUTCFullYear(),
+      brasilia.getUTCMonth(),
+      brasilia.getUTCDate(),
+      3,
+      0,
+      0,
+      0,
+    ),
+  );
+}
+
+function valorDoPedido(pedido: PedidoComparativoRow): number {
+  const valor = Number(pedido.valor_total ?? 0);
+  return Number.isFinite(valor) ? valor : 0;
+}
+
+function pedidoValido(pedido: PedidoComparativoRow): boolean {
+  return pedido.status !== 'cancelado';
+}
+
+function resumirPedidos(pedidos: PedidoComparativoRow[]) {
+  const validos = pedidos.filter(pedidoValido);
+  const faturamento = pedidos
+    .filter((pedido) => pedido.status === 'finalizado')
+    .reduce((total, pedido) => total + valorDoPedido(pedido), 0);
+  const valorPedidos = validos.reduce((total, pedido) => total + valorDoPedido(pedido), 0);
+
+  return {
+    faturamento,
+    pedidos: validos.length,
+    ticketMedio: validos.length > 0 ? valorPedidos / validos.length : 0,
+  };
+}
+
+function criarBuckets(
+  periodo: ComparativoPeriodo,
+  inicioAtual: Date,
+  agora: Date,
+): ComparativoBucket[] {
+  const config = COMPARATIVO_CONFIG[periodo];
+  const agoraBrasilia = toBrasilia(agora);
+  const quantidade = periodo === 'hoje' ? agoraBrasilia.getUTCHours() + 1 : config.dias;
+
+  return Array.from({ length: quantidade }, (_, index) => {
+    const dataBucket = toBrasilia(new Date(inicioAtual.getTime() + index * DIA_MS));
+    const dia = String(dataBucket.getUTCDate()).padStart(2, '0');
+    const mes = String(dataBucket.getUTCMonth() + 1).padStart(2, '0');
+
+    return {
+      label: periodo === 'hoje' ? `${index}h` : `${dia}/${mes}`,
+      pedidos: 0,
+      finalizados: 0,
+      valorPedidos: 0,
+      faturamento: 0,
+    };
+  });
+}
+
+function montarComparativos(
+  pedidos: PedidoComparativoRow[],
+  periodo: ComparativoPeriodo,
+  agora = new Date(),
+): ComparativosData {
+  const config = COMPARATIVO_CONFIG[periodo];
+  const inicioHoje = inicioDiaBrasiliaUtc(agora);
+  const inicioAtual = new Date(inicioHoje.getTime() - (config.dias - 1) * DIA_MS);
+  const inicioAnterior = new Date(inicioAtual.getTime() - config.dias * DIA_MS);
+  const buckets = criarBuckets(periodo, inicioAtual, agora);
+
+  const pedidosAtuais: PedidoComparativoRow[] = [];
+  const pedidosAnteriores: PedidoComparativoRow[] = [];
+
+  for (const pedido of pedidos) {
+    const criadoEm = new Date(pedido.criado_em);
+    if (Number.isNaN(criadoEm.getTime())) continue;
+
+    if (criadoEm >= inicioAnterior && criadoEm < inicioAtual) {
+      pedidosAnteriores.push(pedido);
+      continue;
+    }
+
+    if (criadoEm < inicioAtual || criadoEm > agora) continue;
+    pedidosAtuais.push(pedido);
+
+    const bucketIndex =
+      periodo === 'hoje'
+        ? toBrasilia(criadoEm).getUTCHours()
+        : Math.floor((criadoEm.getTime() - inicioAtual.getTime()) / DIA_MS);
+    const bucket = buckets[bucketIndex];
+    if (!bucket) continue;
+
+    if (pedidoValido(pedido)) {
+      bucket.pedidos += 1;
+      bucket.valorPedidos += valorDoPedido(pedido);
+    }
+    if (pedido.status === 'finalizado') {
+      bucket.finalizados += 1;
+      bucket.faturamento += valorDoPedido(pedido);
+    }
+  }
+
+  const atual = resumirPedidos(pedidosAtuais);
+  const anterior = resumirPedidos(pedidosAnteriores);
+  const detalhePedidos = (quantidade: number) =>
+    `${quantidade.toLocaleString('pt-BR')} ${quantidade === 1 ? 'pedido válido' : 'pedidos válidos'}`;
+  const detalheFinalizados = (quantidade: number) =>
+    `${quantidade.toLocaleString('pt-BR')} ${quantidade === 1 ? 'pedido finalizado' : 'pedidos finalizados'}`;
+
+  return {
+    periodo,
+    periodoLabel: config.periodoLabel,
+    atualLabel: config.atualLabel,
+    anteriorLabel: config.anteriorLabel,
+    faturamento: {
+      atual: round2(atual.faturamento),
+      anterior: round2(anterior.faturamento),
+      variacao: variacao(atual.faturamento, anterior.faturamento),
+      serie: buckets.map((bucket) => ({
+        label: bucket.label,
+        value: round2(bucket.faturamento),
+        detail: detalheFinalizados(bucket.finalizados),
+      })),
+    },
+    ticketMedio: {
+      atual: round2(atual.ticketMedio),
+      anterior: round2(anterior.ticketMedio),
+      variacao: variacao(atual.ticketMedio, anterior.ticketMedio),
+      serie: buckets.map((bucket) => ({
+        label: bucket.label,
+        value: round2(bucket.pedidos > 0 ? bucket.valorPedidos / bucket.pedidos : 0),
+        detail: detalhePedidos(bucket.pedidos),
+      })),
+    },
+    pedidos: {
+      atual: atual.pedidos,
+      anterior: anterior.pedidos,
+      variacao: variacao(atual.pedidos, anterior.pedidos),
+      serie: buckets.map((bucket) => ({
+        label: bucket.label,
+        value: bucket.pedidos,
+        detail: detalhePedidos(bucket.pedidos),
+      })),
+    },
+  };
+}
+
+async function coletarComparativos(
+  empresaId: number,
+  periodo: ComparativoPeriodo,
+): Promise<ComparativosData> {
+  const agora = new Date();
+  const config = COMPARATIVO_CONFIG[periodo];
+  const inicioHoje = inicioDiaBrasiliaUtc(agora);
+  const inicioAtual = new Date(inicioHoje.getTime() - (config.dias - 1) * DIA_MS);
+  const inicioAnterior = new Date(inicioAtual.getTime() - config.dias * DIA_MS);
+
+  const pedidos = await pg.raw<PedidoComparativoRow>(
+    `SELECT criado_em, status, valor_total
+       FROM "${PEDIDOS_TABLE}"
+      WHERE empresa_id = $1
+        AND criado_em >= $2
+        AND criado_em <= $3
+      ORDER BY criado_em ASC`,
+    [empresaId, inicioAnterior.toISOString(), agora.toISOString()],
+  );
+
+  return montarComparativos(pedidos, periodo, agora);
 }
 
 // ---------------------------------------------------------------------------
@@ -495,14 +732,40 @@ async function gravarCache(empresaId: number, dataRef: string, analise: AnaliseI
 }
 
 // ---------------------------------------------------------------------------
-// Action principal
+// Actions
 // ---------------------------------------------------------------------------
+export async function getZapflowComparativos(
+  periodo: ComparativoPeriodo,
+): Promise<ZapflowComparativosResult> {
+  try {
+    const periodoValidado = comparativoPeriodoSchema.safeParse(periodo);
+    if (!periodoValidado.success) {
+      return { success: false, error: 'Período inválido.' };
+    }
+
+    const user = await getMe();
+    if (!user?.empresaId) throw new Error('Não autorizado');
+
+    const data = await coletarComparativos(user.empresaId, periodoValidado.data);
+    return { success: true, data };
+  } catch (error: any) {
+    console.error('[ZapflowInsights] Erro nos comparativos:', error);
+    return {
+      success: false,
+      error: error?.message ?? 'Falha ao carregar comparativos.',
+    };
+  }
+}
+
 export async function getZapflowInsights(forceRefresh = false): Promise<ZapflowInsightsResult> {
   try {
     const user = await getMe();
     if (!user?.empresaId) throw new Error('Nao autorizado');
 
-    const metrics = await coletarMetricas(user.empresaId);
+    const [metrics, comparativos] = await Promise.all([
+      coletarMetricas(user.empresaId),
+      coletarComparativos(user.empresaId, 'hoje'),
+    ]);
     const score = calcularScore(metrics);
 
     let ai: AnaliseIA | null = null;
@@ -538,6 +801,7 @@ export async function getZapflowInsights(forceRefresh = false): Promise<ZapflowI
       nome: user.nome,
       score,
       metrics,
+      comparativos,
       ai,
       aiError,
       geradoEm: new Date().toISOString(),
@@ -550,6 +814,7 @@ export async function getZapflowInsights(forceRefresh = false): Promise<ZapflowI
       nome: '',
       score: { valor: 0, nivel: 'critico', resumo: '', fatores: [] },
       metrics: {} as InsightMetrics,
+      comparativos: montarComparativos([], 'hoje'),
       ai: null,
       geradoEm: new Date().toISOString(),
       doCache: false,

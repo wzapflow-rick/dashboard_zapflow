@@ -1,6 +1,9 @@
 'use client';
 
-import { ZapflowLineChart } from '@/components/charts/zapflow-line-chart';
+import {
+  ZapflowLineChart,
+  type ZapflowLineChartPoint,
+} from '@/components/charts/zapflow-line-chart';
 import { cn } from '@/lib/utils';
 
 interface CompareBarsProps {
@@ -10,6 +13,7 @@ interface CompareBarsProps {
   atual: number;
   anterior: number;
   variacao: number;
+  serie?: ZapflowLineChartPoint[];
   formato?: 'moeda' | 'numero';
 }
 
@@ -25,13 +29,16 @@ export function CompareBars({
   atual,
   anterior,
   variacao,
+  serie,
   formato = 'moeda',
 }: CompareBarsProps) {
   const positivo = variacao >= 0;
-  const chartData = [
-    { label: anteriorLabel, value: anterior },
-    { label: atualLabel, value: atual },
-  ];
+  const chartData = serie?.length
+    ? serie
+    : [
+        { label: anteriorLabel, value: anterior },
+        { label: atualLabel, value: atual },
+      ];
 
   return (
     <article className="rounded-2xl border border-slate-200/70 bg-white/75 p-5 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/50">

@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
+import { useSWRConfig } from 'swr';
 import { toast } from 'sonner';
 import {
   AlertTriangle,
@@ -32,7 +33,7 @@ import {
 } from '@/app/actions/zapflow-insights';
 import { cn } from '@/lib/utils';
 import { ScoreRing } from './score-ring';
-import { CompareBars } from './compare-bars';
+import { ComparativosSection } from './comparativos-section';
 import { ZapflowChat } from './zapflow-chat';
 
 const fmtMoeda = (value: number) => `R$ ${(value ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
@@ -172,6 +173,7 @@ interface ZapflowInsightsClientProps {
 
 export function ZapflowInsightsClient({ initialData, operationContent }: ZapflowInsightsClientProps) {
   const router = useRouter();
+  const { mutate: mutateComparativosCache } = useSWRConfig();
   const [data, setData] = useState<ZapflowInsightsResult | null>(initialData ?? null);
   const [carregando, setCarregando] = useState(!initialData);
   const [atualizando, setAtualizando] = useState(false);
@@ -183,7 +185,14 @@ export function ZapflowInsightsClient({ initialData, operationContent }: Zapflow
     try {
       const result = await getZapflowInsights(force);
       setData(result);
-      if (force) toast.success('Análise atualizada!');
+      if (force && result.success) {
+        await mutateComparativosCache(
+          (key) => Array.isArray(key) && key[0] === 'zapflow-comparativos',
+          undefined,
+          { revalidate: false },
+        );
+        toast.success('Análise atualizada!');
+      }
     } catch {
       toast.error('Não foi possível carregar os insights.');
     } finally {
@@ -499,41 +508,7 @@ export function ZapflowInsightsClient({ initialData, operationContent }: Zapflow
           </article>
         </div>
 
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="size-5 text-primary" aria-hidden="true" />
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Comparativos</h3>
-          </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            <CompareBars
-              titulo="Faturamento (semana)"
-              atualLabel="Esta semana"
-              anteriorLabel="Semana anterior"
-              atual={metrics.faturamentoSemana}
-              anterior={metrics.faturamentoSemanaAnterior}
-              variacao={metrics.variacaoSemana}
-              formato="moeda"
-            />
-            <CompareBars
-              titulo="Ticket médio"
-              atualLabel="Hoje"
-              anteriorLabel="Ontem"
-              atual={metrics.ticketHoje}
-              anterior={metrics.ticketOntem}
-              variacao={metrics.variacaoTicket}
-              formato="moeda"
-            />
-            <CompareBars
-              titulo="Pedidos"
-              atualLabel="Hoje"
-              anteriorLabel="Ontem"
-              atual={metrics.pedidosHoje}
-              anterior={metrics.pedidosOntem}
-              variacao={metrics.pedidosOntem > 0 ? Math.round(((metrics.pedidosHoje - metrics.pedidosOntem) / metrics.pedidosOntem) * 100) : 0}
-              formato="numero"
-            />
-          </div>
-        </div>
+        <ComparativosSection initialData={data.comparativos} cacheScope={data.geradoEm} />
 
         {score.fatores.length > 0 && (
           <article className="rounded-3xl border border-slate-200/70 bg-white/75 p-6 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/50">
