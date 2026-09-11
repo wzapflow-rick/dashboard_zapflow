@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'motion/react';
+import { ZapflowLineChart } from '@/components/charts/zapflow-line-chart';
 import { cn } from '@/lib/utils';
 
 interface CompareBarsProps {
@@ -27,10 +27,11 @@ export function CompareBars({
   variacao,
   formato = 'moeda',
 }: CompareBarsProps) {
-  const max = Math.max(atual, anterior, 1);
-  const pctAtual = (atual / max) * 100;
-  const pctAnterior = (anterior / max) * 100;
   const positivo = variacao >= 0;
+  const chartData = [
+    { label: anteriorLabel, value: anterior },
+    { label: atualLabel, value: atual },
+  ];
 
   return (
     <article className="rounded-2xl border border-slate-200/70 bg-white/75 p-5 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/50">
@@ -47,36 +48,24 @@ export function CompareBars({
         </span>
       </div>
 
-      <div className="flex flex-col gap-3">
+      <div className="mb-2 flex items-end justify-between gap-3">
         <div>
-          <div className="mb-1 flex items-center justify-between gap-3 text-xs">
-            <span className="text-slate-500 dark:text-slate-400">{atualLabel}</span>
-            <span className="font-semibold text-slate-800 dark:text-slate-100">{fmt(atual, formato)}</span>
-          </div>
-          <div className="h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-            <motion.div
-              className="h-full rounded-full bg-primary"
-              initial={{ width: 0 }}
-              animate={{ width: `${pctAtual}%` }}
-              transition={{ duration: 0.7, ease: 'easeOut' }}
-            />
-          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400">{atualLabel}</p>
+          <p className="mt-1 font-bold tabular-nums text-slate-900 dark:text-slate-100">{fmt(atual, formato)}</p>
         </div>
-        <div>
-          <div className="mb-1 flex items-center justify-between gap-3 text-xs">
-            <span className="text-slate-400 dark:text-slate-500">{anteriorLabel}</span>
-            <span className="font-medium text-slate-500 dark:text-slate-400">{fmt(anterior, formato)}</span>
-          </div>
-          <div className="h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-            <motion.div
-              className="h-full rounded-full bg-slate-400 dark:bg-slate-500"
-              initial={{ width: 0 }}
-              animate={{ width: `${pctAnterior}%` }}
-              transition={{ duration: 0.7, ease: 'easeOut', delay: 0.1 }}
-            />
-          </div>
+        <div className="text-right">
+          <p className="text-xs text-slate-400 dark:text-slate-500">{anteriorLabel}</p>
+          <p className="mt-1 text-sm font-medium tabular-nums text-slate-500 dark:text-slate-400">{fmt(anterior, formato)}</p>
         </div>
       </div>
+
+      <ZapflowLineChart
+        data={chartData}
+        valueLabel={titulo}
+        formatValue={(value) => fmt(value, formato)}
+        compact
+        showYAxis={false}
+      />
     </article>
   );
 }

@@ -26,6 +26,7 @@ import { getDashboardBundle } from '@/app/actions/dashboard';
 import { type OnboardingStatus } from '@/app/actions/onboarding-status';
 import { SetupChecklist } from '@/components/onboarding/setup-checklist';
 import { useLowPowerMode } from '@/hooks/use-low-power-mode';
+import { ZapflowLineChart } from '@/components/charts/zapflow-line-chart';
 
 const OrderDetailsModal = dynamic(() => import('@/components/modals/order-details-modal'), {
   ssr: false,
@@ -112,7 +113,11 @@ function OperationSection({
   onOpenModal: (order: any) => void;
 }) {
   const chartData: number[] = dashboardData?.chartData || [];
-  const maxValue = Math.max(...chartData, 1);
+  const hourlyChartData = chartData.map((value, hour) => ({
+    label: `${hour}h`,
+    value,
+    detail: `${value} ${value === 1 ? 'pedido registrado' : 'pedidos registrados'} neste horário`,
+  }));
 
   return (
     <section id="operacao" className="scroll-mt-32 flex flex-col gap-6" aria-labelledby="operacao-title">
@@ -156,31 +161,13 @@ function OperationSection({
             </span>
           </div>
 
-          <div className="custom-scrollbar -mx-2 overflow-x-auto px-2">
-            <div className="flex h-60 min-w-[600px] items-end justify-between gap-1 rounded-xl border border-slate-200/50 bg-gradient-to-b from-slate-50/60 to-slate-100/40 p-4 dark:border-slate-700/40 dark:from-slate-800/40 dark:to-slate-900/30 sm:min-w-0">
-              {chartData.length > 0 ? (
-                chartData.map((value, index) => {
-                  const height = value === 0 ? 4 : Math.max(8, Math.round((value / maxValue) * 180));
-
-                  return (
-                    <div key={index} className="group relative flex h-full flex-1 flex-col items-center justify-end">
-                      <motion.div
-                        initial={lowPower ? false : { height: 0, opacity: 0 }}
-                        animate={{ height: `${height}px`, opacity: 1 }}
-                        transition={lowPower ? { duration: 0 } : { delay: index * 0.03, type: 'spring', stiffness: 100 }}
-                        className="w-full rounded-t-md bg-gradient-to-t from-primary to-primary/70 shadow-lg shadow-primary/20 transition-all duration-300 group-hover:from-primary/90 group-hover:to-primary/60 group-hover:shadow-primary/40"
-                        title={`${value} pedidos às ${index}h`}
-                      />
-                      <span className="mt-2 text-[10px] font-bold text-slate-400 dark:text-slate-500">{index}h</span>
-                      <div className="pointer-events-none absolute -top-12 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white opacity-0 shadow-xl transition-opacity group-hover:opacity-100 dark:bg-slate-700">
-                        <span className="font-bold text-primary">{value}</span> pedidos às {index}h
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="flex w-full items-center justify-center text-sm text-slate-400">Nenhum dado disponível</div>
-              )}
+          <div className="-mx-2 px-2">
+            <div className="rounded-xl border border-slate-200/50 bg-slate-50/60 p-2 dark:border-slate-700/40 dark:bg-slate-800/30">
+              <ZapflowLineChart
+                data={hourlyChartData}
+                valueLabel="Pedidos"
+                emptyMessage="Nenhuma venda registrada neste período"
+              />
             </div>
           </div>
         </motion.div>
