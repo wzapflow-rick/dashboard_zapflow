@@ -3,8 +3,6 @@
 import type { ComponentProps } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 
-import { useLowPowerMode } from '@/hooks/use-low-power-mode';
-
 const circleA =
   'M 12 8 C 14.21 8 16 9.79 16 12 C 16 14.21 14.21 16 12 16 C 9.79 16 8 14.21 8 12 C 8 9.79 9.79 8 12 8 Z';
 
@@ -26,9 +24,7 @@ function MorphingInfinity({
   ...props
 }: MorphingInfinityProps) {
   const reduceMotion = useReducedMotion();
-  const lowPower = useLowPowerMode();
   const decorative = ariaHidden === true || ariaHidden === 'true';
-  const showStaticPath = reduceMotion || lowPower;
 
   return (
     <svg
@@ -45,7 +41,7 @@ function MorphingInfinity({
       data-slot="morphing-infinity"
       {...props}
     >
-      {showStaticPath ? (
+      {reduceMotion ? (
         <path d={infinity} />
       ) : (
         <motion.path
