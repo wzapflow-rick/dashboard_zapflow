@@ -15,6 +15,7 @@ import {
     BarChart3
 } from 'lucide-react';
 import { getSalesReport, getMonthlyComparison } from '@/app/actions/reports';
+import { ZapflowLineChart } from '@/components/charts/zapflow-line-chart';
 
 interface ReportData {
     periodo: { inicio: string; fim: string };
@@ -118,6 +119,12 @@ function ReportsContent() {
         link.download = `relatorio_vendas_${report.periodo.inicio}_ate_${report.periodo.fim}.csv`;
         link.click();
     };
+
+    const monthlyChartData = monthlyData.map((month) => ({
+        label: month.mes,
+        value: Number(month.total ?? 0),
+        detail: `${Number(month.qtd ?? 0).toLocaleString('pt-BR')} pedidos finalizados`,
+    }));
 
     return (
         <div className="p-6 space-y-6">
@@ -309,22 +316,14 @@ function ReportsContent() {
                             <Calendar className="size-5 text-primary" />
                             Evolução Mensal (Últimos 6 meses)
                         </h3>
-                        <div className="flex items-end gap-2 h-40">
-                            {monthlyData.map((mes, idx) => {
-                                const max = Math.max(...monthlyData.map(m => m.total), 1);
-                                const height = (mes.total / max) * 100;
-                                return (
-                                    <div key={idx} className="flex-1 flex flex-col items-center gap-2">
-                                        <div
-                                            className="w-full bg-violet-500 rounded-t-lg transition-all hover:bg-violet-600"
-                                            style={{ height: `${height}%`, minHeight: mes.total > 0 ? '4px' : '0' }}
-                                        />
-                                        <span className="text-xs text-slate-500 dark:text-slate-400 uppercase">{mes.mes}</span>
-                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{formatCurrency(mes.total)}</span>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                        <ZapflowLineChart
+                            data={monthlyChartData}
+                            valueLabel="Faturamento"
+                            formatValue={formatCurrency}
+                            formatYAxis={(value) => value >= 1000 ? `R$ ${(value / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} mil` : `R$ ${value.toLocaleString('pt-BR')}`}
+                            className="h-56"
+                            emptyMessage="Nenhum faturamento nos últimos seis meses"
+                        />
                     </div>
                 </>
             ) : (
