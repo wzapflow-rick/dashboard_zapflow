@@ -19,13 +19,15 @@ export default function LoginPage() {
         e.preventDefault();
         setLoading(true);
 
-        const formData = new FormData(e.currentTarget);
-        const result = await login(formData);
+        try {
+            const formData = new FormData(e.currentTarget);
+            const result = await login(formData);
 
-        if (result?.error) {
-            toast.error(result.error);
-            setLoading(false);
-        } else {
+            if (result?.error) {
+                toast.error(result.error);
+                return;
+            }
+
             toast.success('Login realizado com sucesso!');
             const role = result?.role || 'admin';
             if (role === 'atendente' || role === 'cozinheiro') {
@@ -34,6 +36,10 @@ export default function LoginPage() {
                 router.push('/dashboard');
             }
             router.refresh();
+        } catch {
+            toast.error('Não foi possível entrar. Tente novamente.');
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -249,6 +255,7 @@ export default function LoginPage() {
                         <button
                             type="submit"
                             disabled={loading}
+                            aria-busy={loading}
                             className="w-full font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-60 mt-6 group"
                             style={{ 
                                 background: 'linear-gradient(135deg, #7CFF6B 0%, #22D15A 100%)',
