@@ -177,9 +177,24 @@ export function Header() {
                             aria-label="Ir para a visão geral"
                             className="flex items-center gap-2 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         >
-                            <span className="relative size-9 overflow-hidden rounded-xl bg-primary/10 ring-1 ring-primary/20">
-                                <Image src="/logo-zapflow.png" alt="" fill sizes="36px" className="object-contain p-1" />
-                            </span>
+                            <motion.span
+                                className="relative size-10 shrink-0 overflow-hidden rounded-xl bg-background shadow-lg shadow-primary/20 ring-1 ring-primary/40"
+                                whileHover={{ scale: 1.07, rotate: -3 }}
+                                whileTap={{ scale: 0.92, rotate: 3 }}
+                                transition={{ type: 'spring', stiffness: 420, damping: 18 }}
+                            >
+                                <Image
+                                    src="/logo-zapflow.png"
+                                    alt=""
+                                    fill
+                                    sizes="40px"
+                                    className="scale-125 object-cover"
+                                />
+                                <span
+                                    aria-hidden="true"
+                                    className="pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-br from-primary/10 via-transparent to-primary/20 ring-1 ring-inset ring-primary/20"
+                                />
+                            </motion.span>
                             <span className="hidden text-sm font-bold tracking-tight text-slate-900 sm:block dark:text-white">
                                 ZapFlow
                             </span>
