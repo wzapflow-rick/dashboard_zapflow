@@ -22,7 +22,10 @@ module.exports = {
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', {
-      tsconfig: 'tsconfig.json',
+      tsconfig: {
+        ...require('./tsconfig.json').compilerOptions,
+        jsx: 'react-jsx',
+      },
       useESM: false,
     }],
   },

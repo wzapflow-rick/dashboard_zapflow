@@ -32,6 +32,9 @@ export const PRODUTOS_TABLE = 'produtos';
 /** Tabela de categorias do cardápio */
 export const CATEGORIAS_TABLE = 'categorias';
 
+/** Acervo de imagens reutilizáveis dos produtos, isolado por empresa */
+export const PRODUCT_MEDIA_ASSETS_TABLE = 'product_media_assets';
+
 /** Tabela de grupos de complementos (ex: "Borda", "Adicionais") */
 export const GRUPOS_COMPLEMENTOS_TABLE = 'grupos_complementos';
 

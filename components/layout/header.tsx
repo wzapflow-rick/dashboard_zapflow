@@ -16,7 +16,8 @@ import {
     Sun,
     LogOut,
     Sparkles,
-    Settings
+    Settings,
+    Images
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
@@ -512,6 +513,18 @@ export function Header() {
                                         
                                         {/* Menu items */}
                                         <div className="p-2">
+                                            {user?.role === 'admin' && (
+                                                <motion.a
+                                                    href="/dashboard/media-library"
+                                                    onClick={() => setIsProfileOpen(false)}
+                                                    className="flex items-center gap-3 px-3 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100/50 dark:hover:bg-white/5 rounded-xl transition-colors"
+                                                    whileHover={{ x: 4 }}
+                                                >
+                                                    <Images className="size-4" />
+                                                    <span>Acervo de mídias</span>
+                                                </motion.a>
+                                            )}
+
                                             <motion.a
                                                 href="/dashboard/settings"
                                                 className="flex items-center gap-3 px-3 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100/50 dark:hover:bg-white/5 rounded-xl transition-colors"

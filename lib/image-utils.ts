@@ -34,6 +34,7 @@ export async function processImage(
 
     reader.onload = (e) => {
       const img = new Image();
+      img.crossOrigin = 'anonymous';
 
       img.onload = () => {
         try {
