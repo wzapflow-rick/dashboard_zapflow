@@ -49,6 +49,13 @@ describe('media library interactions', () => {
     });
   });
 
+  it('disables uploads while the database migration is pending', () => {
+    render(<MediaUploader remainingSlots={10} onUploaded={jest.fn()} disabled />);
+
+    expect(screen.getByLabelText(/acervo aguardando configuração/i)).toBeDisabled();
+    expect(screen.getByText('Acervo aguardando configuração')).toBeInTheDocument();
+  });
+
   it('shows upload progress and completes a valid image', async () => {
     let finishUpload: (value: MediaAsset) => void = () => undefined;
     mockProcessImage.mockImplementation(async (file: File) => file);

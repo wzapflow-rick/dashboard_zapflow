@@ -35,7 +35,7 @@ describe('media library actions', () => {
     jest.clearAllMocks();
     (requireAdmin as jest.Mock).mockResolvedValue({ empresaId: 77, role: 'admin' });
     mockPg.raw.mockImplementation(async (query: string) => {
-      if (query.includes('CREATE TABLE')) return [];
+      if (query.includes('information_schema.tables')) return [{ exists: true }];
       if (query.includes('COUNT(*)')) return [{ total: 0 }];
       return [];
     });
@@ -43,7 +43,7 @@ describe('media library actions', () => {
 
   it('lists only assets belonging to the signed-in company', async () => {
     mockPg.raw.mockImplementation(async (query: string, params: unknown[]) => {
-      if (query.includes('CREATE TABLE')) return [];
+      if (query.includes('information_schema.tables')) return [{ exists: true }];
       if (query.includes('SELECT *')) {
         expect(query).toContain('WHERE empresa_id = $1');
         expect(params[0]).toBe(77);
@@ -59,10 +59,23 @@ describe('media library actions', () => {
     });
   });
 
+  it('keeps the page available while the database migration is pending', async () => {
+    mockPg.raw.mockImplementation(async (query: string) => {
+      if (query.includes('information_schema.tables')) return [{ exists: false }];
+      throw new Error(`Unexpected query: ${query}`);
+    });
+
+    await expect(getMediaLibrary()).resolves.toEqual({
+      assets: [],
+      total: 0,
+      setupRequired: true,
+    });
+  });
+
   it('uploads with an atomic quota lock and persists optimized metadata', async () => {
     mockUploadImageAction.mockResolvedValue(databaseRow.url);
     mockPg.raw.mockImplementation(async (query: string, params: unknown[]) => {
-      if (query.includes('CREATE TABLE')) return [];
+      if (query.includes('information_schema.tables')) return [{ exists: true }];
       if (query.includes('quota_lock')) {
         expect(query).toContain('pg_advisory_xact_lock');
         expect(params).toEqual([
@@ -95,7 +108,7 @@ describe('media library actions', () => {
 
   it('blocks uploads before storage when the plan quota is full', async () => {
     mockPg.raw.mockImplementation(async (query: string) => {
-      if (query.includes('CREATE TABLE')) return [];
+      if (query.includes('information_schema.tables')) return [{ exists: true }];
       if (query.includes('COUNT(*)')) return [{ total: 250 }];
       return [];
     });
@@ -109,7 +122,7 @@ describe('media library actions', () => {
 
   it('scopes rename and delete mutations by both asset and company id', async () => {
     mockPg.raw.mockImplementation(async (query: string, params: unknown[]) => {
-      if (query.includes('CREATE TABLE')) return [];
+      if (query.includes('information_schema.tables')) return [{ exists: true }];
       if (query.includes('UPDATE')) {
         expect(query).toContain('WHERE id = $1 AND empresa_id = $2');
         expect(params.slice(0, 2)).toEqual([12, 77]);

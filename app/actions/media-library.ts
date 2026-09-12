@@ -16,39 +16,31 @@ import {
 const ACCEPTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 
-let schemaPromise: Promise<void> | null = null;
+const MEDIA_LIBRARY_SETUP_ERROR =
+  'O acervo de mídias ainda não foi configurado. Aplique a migração do banco e tente novamente.';
 
-async function ensureMediaLibrarySchema() {
-  if (!schemaPromise) {
-    schemaPromise = pg.raw(`
-      CREATE TABLE IF NOT EXISTS "${PRODUCT_MEDIA_ASSETS_TABLE}" (
-        id BIGSERIAL PRIMARY KEY,
-        empresa_id BIGINT NOT NULL,
-        nome VARCHAR(120) NOT NULL,
-        url TEXT NOT NULL,
-        categoria VARCHAR(24) NOT NULL DEFAULT 'products'
-          CHECK (categoria IN ('products', 'combos', 'drinks', 'other')),
-        mime_type VARCHAR(100) NOT NULL,
-        tamanho_bytes BIGINT NOT NULL DEFAULT 0 CHECK (tamanho_bytes >= 0),
-        largura INTEGER,
-        altura INTEGER,
-        criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        UNIQUE (empresa_id, url)
-      );
+async function isMediaLibrarySchemaReady(): Promise<boolean> {
+  try {
+    const rows = await pg.raw<{ exists: boolean }>(
+      `SELECT EXISTS (
+         SELECT 1
+         FROM information_schema.tables
+         WHERE table_schema = 'public' AND table_name = $1
+       ) AS "exists"`,
+      [PRODUCT_MEDIA_ASSETS_TABLE],
+    );
 
-      CREATE INDEX IF NOT EXISTS product_media_assets_empresa_criado_idx
-        ON "${PRODUCT_MEDIA_ASSETS_TABLE}" (empresa_id, criado_em DESC);
-
-      CREATE INDEX IF NOT EXISTS product_media_assets_empresa_categoria_idx
-        ON "${PRODUCT_MEDIA_ASSETS_TABLE}" (empresa_id, categoria);
-    `).then(() => undefined).catch((error) => {
-      schemaPromise = null;
-      throw error;
-    });
+    return rows[0]?.exists === true;
+  } catch (error) {
+    console.error('[MEDIA_LIBRARY] Não foi possível verificar o schema:', error);
+    return false;
   }
+}
 
-  return schemaPromise;
+async function requireMediaLibrarySchema(): Promise<void> {
+  if (!(await isMediaLibrarySchemaReady())) {
+    throw new Error(MEDIA_LIBRARY_SETUP_ERROR);
+  }
 }
 
 function serializeMediaAsset(row: Record<string, unknown>): MediaAsset {
@@ -72,9 +64,17 @@ function parseOptionalDimension(value: FormDataEntryValue | null): number | null
   return Number.isInteger(parsed) && parsed > 0 && parsed <= 12000 ? parsed : null;
 }
 
-export async function getMediaLibrary(): Promise<{ assets: MediaAsset[]; total: number }> {
+export async function getMediaLibrary(): Promise<{
+  assets: MediaAsset[];
+  total: number;
+  setupRequired: boolean;
+}> {
   const user = await requireAdmin();
-  await ensureMediaLibrarySchema();
+  const schemaReady = await isMediaLibrarySchemaReady();
+
+  if (!schemaReady) {
+    return { assets: [], total: 0, setupRequired: true };
+  }
 
   const [rows, totals] = await Promise.all([
     pg.raw(
@@ -94,12 +94,13 @@ export async function getMediaLibrary(): Promise<{ assets: MediaAsset[]; total: 
   return {
     assets: rows.map(serializeMediaAsset),
     total: Number(totals[0]?.total ?? 0),
+    setupRequired: false,
   };
 }
 
 export async function uploadMediaAsset(formData: FormData): Promise<MediaAsset> {
   const user = await requireAdmin();
-  await ensureMediaLibrarySchema();
+  await requireMediaLibrarySchema();
 
   const file = formData.get('image');
   if (!(file instanceof File) || file.size === 0) {
@@ -173,7 +174,7 @@ export async function updateMediaAsset(input: {
   category?: MediaCategory;
 }): Promise<MediaAsset> {
   const user = await requireAdmin();
-  await ensureMediaLibrarySchema();
+  await requireMediaLibrarySchema();
 
   if (!Number.isInteger(input.id) || input.id <= 0) throw new Error('Imagem inválida.');
 
@@ -212,7 +213,7 @@ export async function updateMediaAsset(input: {
 
 export async function deleteMediaAsset(id: number): Promise<{ id: number }> {
   const user = await requireAdmin();
-  await ensureMediaLibrarySchema();
+  await requireMediaLibrarySchema();
 
   if (!Number.isInteger(id) || id <= 0) throw new Error('Imagem inválida.');
 

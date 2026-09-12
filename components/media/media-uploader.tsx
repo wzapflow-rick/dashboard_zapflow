@@ -30,6 +30,7 @@ interface UploadItem {
 interface MediaUploaderProps {
   remainingSlots: number;
   onUploaded: (asset: MediaAsset) => void;
+  disabled?: boolean;
 }
 
 function getOutputFormat(file: File): 'jpeg' | 'png' | 'webp' {
@@ -75,7 +76,7 @@ function getStatusProgress(status: UploadStatus) {
   return 100;
 }
 
-export function MediaUploader({ remainingSlots, onUploaded }: MediaUploaderProps) {
+export function MediaUploader({ remainingSlots, onUploaded, disabled = false }: MediaUploaderProps) {
   const [category, setCategory] = useState<MediaCategory>('products');
   const [isDragging, setIsDragging] = useState(false);
   const [items, setItems] = useState<UploadItem[]>([]);
@@ -84,7 +85,7 @@ export function MediaUploader({ remainingSlots, onUploaded }: MediaUploaderProps
     () => items.filter((item) => item.status === 'optimizing' || item.status === 'uploading').length,
     [items],
   );
-  const availableSlots = Math.max(0, remainingSlots - activeUploads);
+  const availableSlots = disabled ? 0 : Math.max(0, remainingSlots - activeUploads);
   const completedCount = items.filter((item) => item.status === 'done').length;
 
   function updateItem(id: string, patch: Partial<UploadItem>) {
@@ -120,6 +121,11 @@ export function MediaUploader({ remainingSlots, onUploaded }: MediaUploaderProps
   }
 
   async function addFiles(fileList: FileList | File[]) {
+    if (disabled) {
+      toast.error('O acervo ainda está aguardando a configuração do banco.');
+      return;
+    }
+
     const candidates = Array.from(fileList).slice(0, MAX_FILES_PER_SELECTION);
     const validFiles = candidates.filter((file) => ACCEPTED_TYPES.has(file.type) && file.size <= MAX_FILE_SIZE);
     const invalidCount = candidates.length - validFiles.length;
@@ -189,6 +195,7 @@ export function MediaUploader({ remainingSlots, onUploaded }: MediaUploaderProps
           Categoria
           <select
             value={category}
+            disabled={disabled}
             onChange={(event) => setCategory(event.target.value as MediaCategory)}
             className="h-9 rounded-lg border border-border bg-background px-3 text-sm font-semibold text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
             aria-label="Categoria das novas imagens"
@@ -202,6 +209,7 @@ export function MediaUploader({ remainingSlots, onUploaded }: MediaUploaderProps
 
       <label
         htmlFor={MEDIA_LIBRARY_INPUT_ID}
+        aria-disabled={disabled || availableSlots === 0}
         onDragEnter={(event) => {
           event.preventDefault();
           setIsDragging(true);
@@ -230,10 +238,16 @@ export function MediaUploader({ remainingSlots, onUploaded }: MediaUploaderProps
           <UploadCloud className="size-7" aria-hidden="true" />
         </div>
         <p className="mt-4 text-sm font-bold text-foreground">
-          {availableSlots === 0 ? 'Limite do acervo atingido' : 'Arraste as imagens ou clique para escolher'}
+          {disabled
+            ? 'Acervo aguardando configuração'
+            : availableSlots === 0
+              ? 'Limite do acervo atingido'
+              : 'Arraste as imagens ou clique para escolher'}
         </p>
         <p className="mt-1 text-sm leading-6 text-muted-foreground">
-          PNG, JPG ou WebP, até 10 MB por arquivo. Selecione até 20 de uma vez.
+          {disabled
+            ? 'O envio será liberado automaticamente depois que a migração do banco for aplicada.'
+            : 'PNG, JPG ou WebP, até 10 MB por arquivo. Selecione até 20 de uma vez.'}
         </p>
         {availableSlots > 0 && (
           <span className="mt-4 inline-flex h-10 items-center rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground shadow-sm shadow-primary/20">

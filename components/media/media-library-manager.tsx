@@ -5,10 +5,12 @@ import { useCallback, useMemo, useState } from 'react';
 import {
   ArrowUpRight,
   ChevronRight,
+  CircleAlert,
   ImageIcon,
   Images,
   Lightbulb,
   Plus,
+  RefreshCw,
   Search,
   Sparkles,
 } from 'lucide-react';
@@ -31,9 +33,14 @@ import { cn } from '@/lib/utils';
 interface MediaLibraryManagerProps {
   initialAssets: MediaAsset[];
   initialTotal: number;
+  initialSetupRequired?: boolean;
 }
 
-export function MediaLibraryManager({ initialAssets, initialTotal }: MediaLibraryManagerProps) {
+export function MediaLibraryManager({
+  initialAssets,
+  initialTotal,
+  initialSetupRequired = false,
+}: MediaLibraryManagerProps) {
   const [assets, setAssets] = useState(initialAssets);
   const [total, setTotal] = useState(initialTotal);
   const [query, setQuery] = useState('');
@@ -120,7 +127,7 @@ export function MediaLibraryManager({ initialAssets, initialTotal }: MediaLibrar
         <button
           type="button"
           onClick={openFilePicker}
-          disabled={total >= MEDIA_LIBRARY_LIMIT}
+          disabled={initialSetupRequired || total >= MEDIA_LIBRARY_LIMIT}
           className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground shadow-sm shadow-primary/20 transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Plus className="size-4" aria-hidden="true" />
@@ -128,10 +135,38 @@ export function MediaLibraryManager({ initialAssets, initialTotal }: MediaLibrar
         </button>
       </header>
 
+      {initialSetupRequired && (
+        <section
+          role="status"
+          className="flex flex-col gap-4 rounded-2xl border border-destructive/25 bg-destructive/[0.06] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5"
+        >
+          <div className="flex items-start gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+              <CircleAlert className="size-5" aria-hidden="true" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-foreground">Configuração do acervo pendente</h2>
+              <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
+                A página já está disponível, mas o banco ainda precisa receber a migração do acervo antes do primeiro envio.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-bold text-foreground transition hover:bg-muted"
+          >
+            <RefreshCw className="size-4" aria-hidden="true" />
+            Verificar novamente
+          </button>
+        </section>
+      )}
+
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <MediaUploader
           remainingSlots={Math.max(0, MEDIA_LIBRARY_LIMIT - total)}
           onUploaded={handleUploaded}
+          disabled={initialSetupRequired}
         />
 
         <aside className="flex flex-col gap-4" aria-label="Resumo do acervo">
@@ -296,14 +331,20 @@ export function MediaLibraryManager({ initialAssets, initialTotal }: MediaLibrar
               <ImageIcon className="size-6" aria-hidden="true" />
             </div>
             <h3 className="mt-4 text-base font-bold text-foreground">
-              {assets.length === 0 ? 'Seu acervo ainda está vazio' : 'Nenhuma imagem encontrada'}
+              {initialSetupRequired
+                ? 'Acervo aguardando configuração'
+                : assets.length === 0
+                  ? 'Seu acervo ainda está vazio'
+                  : 'Nenhuma imagem encontrada'}
             </h3>
             <p className="mt-1 max-w-sm text-sm leading-6 text-muted-foreground">
-              {assets.length === 0
-                ? 'Envie as primeiras imagens para criar uma biblioteca organizada para seus produtos.'
-                : 'Tente outro termo de busca ou selecione uma categoria diferente.'}
+              {initialSetupRequired
+                ? 'Assim que a migração do banco for concluída, você poderá enviar e organizar suas imagens normalmente.'
+                : assets.length === 0
+                  ? 'Envie as primeiras imagens para criar uma biblioteca organizada para seus produtos.'
+                  : 'Tente outro termo de busca ou selecione uma categoria diferente.'}
             </p>
-            {assets.length === 0 && total < MEDIA_LIBRARY_LIMIT && (
+            {!initialSetupRequired && assets.length === 0 && total < MEDIA_LIBRARY_LIMIT && (
               <button
                 type="button"
                 onClick={openFilePicker}
