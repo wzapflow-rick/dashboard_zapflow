@@ -16,13 +16,14 @@ export default async function MediaLibraryPage() {
   if (!user?.empresaId) redirect('/login');
   if (user.role !== 'admin') redirect('/dashboard');
 
-  const { assets, total, setupRequired } = await getMediaLibrary();
+  const { assets, total, setupRequired, uploadConfigured } = await getMediaLibrary();
 
   return (
     <MediaLibraryManager
       initialAssets={assets}
       initialTotal={total}
       initialSetupRequired={setupRequired}
+      initialUploadConfigured={uploadConfigured}
     />
   );
 }

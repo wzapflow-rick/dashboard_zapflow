@@ -1,338 +1,444 @@
 'use client';
 
-import { useMemo, useState, type ChangeEvent, type DragEvent } from 'react';
-import { Check, CircleAlert, ImagePlus, LoaderCircle, RefreshCw, UploadCloud, X } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Check,
+  FileImage,
+  Film,
+  LoaderCircle,
+  RefreshCw,
+  Upload,
+  X,
+} from 'lucide-react';
 import { toast } from 'sonner';
-import { uploadMediaAsset } from '@/app/actions/media-library';
 import { formatFileSize, processImage } from '@/lib/image-utils';
 import {
   MEDIA_CATEGORY_OPTIONS,
+  MEDIA_MAX_FILES_PER_SELECTION,
+  validateMediaUploadDescriptor,
   type MediaAsset,
   type MediaCategory,
+  type MediaKind,
 } from '@/lib/media-library';
-import { cn } from '@/lib/utils';
 
-export const MEDIA_LIBRARY_INPUT_ID = 'media-library-files';
+type UploadStatus = 'queued' | 'optimizing' | 'uploading' | 'saving' | 'done' | 'error' | 'cancelled';
 
-const ACCEPTED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
-const MAX_FILES_PER_SELECTION = 20;
+interface CloudinaryUploadResult {
+  public_id: string;
+  resource_type: 'image' | 'video';
+  signature: string;
+  version: number;
+}
 
-type UploadStatus = 'optimizing' | 'uploading' | 'done' | 'error';
+interface SignedUpload {
+  uploadUrl: string;
+  resourceType: 'image' | 'video';
+  fields: Record<string, string>;
+}
 
 interface UploadItem {
   id: string;
+  key: string;
   file: File;
+  preparedFile?: File;
+  name: string;
+  category: MediaCategory;
+  kind: MediaKind;
   status: UploadStatus;
+  progress: number;
   error?: string;
+  uploadedResource?: CloudinaryUploadResult;
 }
 
 interface MediaUploaderProps {
   remainingSlots: number;
   onUploaded: (asset: MediaAsset) => void;
+  onActiveChange?: (active: boolean) => void;
   disabled?: boolean;
 }
 
-function getOutputFormat(file: File): 'jpeg' | 'png' | 'webp' {
-  if (file.type === 'image/png') return 'png';
-  if (file.type === 'image/webp') return 'webp';
-  return 'jpeg';
+const ACTIVE_STATUSES = new Set<UploadStatus>(['queued', 'optimizing', 'uploading', 'saving']);
+const MAX_PARALLEL_UPLOADS = 3;
+
+async function readJsonResponse<T>(response: Response): Promise<T> {
+  const body = await response.json().catch(() => ({})) as T & { error?: string };
+  if (!response.ok) throw new Error(body.error || 'Não foi possível concluir o envio.');
+  return body;
 }
 
-async function readImageDimensions(file: File): Promise<{ width: number; height: number }> {
-  if ('createImageBitmap' in window) {
-    const bitmap = await createImageBitmap(file);
-    const dimensions = { width: bitmap.width, height: bitmap.height };
-    bitmap.close();
-    return dimensions;
-  }
-
+function uploadDirectly(
+  signed: SignedUpload,
+  file: File,
+  onProgress: (progress: number) => void,
+  onRequest: (request: XMLHttpRequest) => void,
+): Promise<CloudinaryUploadResult> {
   return new Promise((resolve, reject) => {
-    const objectUrl = URL.createObjectURL(file);
-    const image = new Image();
-    image.crossOrigin = 'anonymous';
-    image.onload = () => {
-      resolve({ width: image.naturalWidth, height: image.naturalHeight });
-      URL.revokeObjectURL(objectUrl);
-    };
-    image.onerror = () => {
-      reject(new Error('Não foi possível ler as dimensões da imagem.'));
-      URL.revokeObjectURL(objectUrl);
-    };
-    image.src = objectUrl;
+    const request = new XMLHttpRequest();
+    onRequest(request);
+    request.open('POST', signed.uploadUrl);
+    request.responseType = 'json';
+
+    request.upload.addEventListener('progress', (event) => {
+      if (!event.lengthComputable) return;
+      onProgress(Math.min(90, 10 + Math.round((event.loaded / event.total) * 80)));
+    });
+    request.addEventListener('load', () => {
+      const body = request.response || (() => {
+        try {
+          return JSON.parse(request.responseText);
+        } catch {
+          return {};
+        }
+      })();
+
+      if (request.status < 200 || request.status >= 300) {
+        reject(new Error(body?.error?.message || 'O Cloudinary recusou este arquivo.'));
+        return;
+      }
+      if (!body.public_id || !body.signature || !body.version) {
+        reject(new Error('O serviço de mídia retornou uma resposta incompleta.'));
+        return;
+      }
+      resolve(body as CloudinaryUploadResult);
+    });
+    request.addEventListener('error', () => reject(new Error('A conexão caiu durante o envio.')));
+    request.addEventListener('abort', () => reject(new DOMException('Envio cancelado.', 'AbortError')));
+
+    const payload = new FormData();
+    Object.entries(signed.fields).forEach(([key, value]) => payload.set(key, value));
+    payload.set('file', file);
+    request.send(payload);
   });
 }
 
-function getStatusLabel(status: UploadStatus) {
-  if (status === 'optimizing') return 'Otimizando';
-  if (status === 'uploading') return 'Enviando';
-  if (status === 'done') return 'Concluído';
-  return 'Falhou';
+function getFileKey(file: File): string {
+  return [file.name, file.size, file.lastModified, file.type].join(':');
 }
 
-function getStatusProgress(status: UploadStatus) {
-  if (status === 'optimizing') return 30;
-  if (status === 'uploading') return 68;
-  return 100;
+function getStatusLabel(status: UploadStatus): string {
+  const labels: Record<UploadStatus, string> = {
+    queued: 'Na fila',
+    optimizing: 'Otimizando',
+    uploading: 'Enviando',
+    saving: 'Salvando',
+    done: 'Concluído',
+    error: 'Falhou',
+    cancelled: 'Cancelado',
+  };
+  return labels[status];
 }
 
-export function MediaUploader({ remainingSlots, onUploaded, disabled = false }: MediaUploaderProps) {
+export function MediaUploader({
+  remainingSlots,
+  onUploaded,
+  onActiveChange,
+  disabled = false,
+}: MediaUploaderProps) {
   const [category, setCategory] = useState<MediaCategory>('products');
-  const [isDragging, setIsDragging] = useState(false);
   const [items, setItems] = useState<UploadItem[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const itemsRef = useRef(items);
+  const requestsRef = useRef(new Map<string, XMLHttpRequest>());
+  const knownFilesRef = useRef(new Set<string>());
 
-  const activeUploads = useMemo(
-    () => items.filter((item) => item.status === 'optimizing' || item.status === 'uploading').length,
-    [items],
-  );
-  const availableSlots = disabled ? 0 : Math.max(0, remainingSlots - activeUploads);
-  const completedCount = items.filter((item) => item.status === 'done').length;
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
-  function updateItem(id: string, patch: Partial<UploadItem>) {
-    setItems((current) => current.map((item) => (item.id === id ? { ...item, ...patch } : item)));
-  }
+  const updateItem = useCallback((id: string, update: Partial<UploadItem>) => {
+    setItems((current) => current.map((item) => (item.id === id ? { ...item, ...update } : item)));
+  }, []);
 
-  async function runUpload(item: UploadItem) {
+  const runUpload = useCallback(async (id: string) => {
+    const item = itemsRef.current.find((candidate) => candidate.id === id);
+    if (!item || item.status !== 'queued') return;
+
     try {
-      updateItem(item.id, { status: 'optimizing', error: undefined });
-      const optimizedFile = await processImage(item.file, {
-        maxWidth: 1600,
-        maxHeight: 1600,
-        quality: 0.88,
-        format: getOutputFormat(item.file),
-      });
-      const dimensions = await readImageDimensions(optimizedFile);
+      let preparedFile = item.preparedFile;
+      let uploadedResource = item.uploadedResource;
 
-      updateItem(item.id, { status: 'uploading' });
-      const formData = new FormData();
-      formData.set('image', optimizedFile);
-      formData.set('name', item.file.name);
-      formData.set('category', category);
-      formData.set('width', String(dimensions.width));
-      formData.set('height', String(dimensions.height));
+      if (!uploadedResource) {
+        if (!preparedFile) {
+          updateItem(id, { status: item.kind === 'image' ? 'optimizing' : 'uploading', progress: 5, error: undefined });
+          preparedFile = item.kind === 'image'
+            ? await processImage(item.file, {
+                maxWidth: 1600,
+                maxHeight: 1600,
+                quality: 0.84,
+                format: 'webp',
+              })
+            : item.file;
+          updateItem(id, { preparedFile });
+        }
 
-      const asset = await uploadMediaAsset(formData);
-      onUploaded(asset);
-      updateItem(item.id, { status: 'done' });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Falha ao enviar a imagem.';
-      updateItem(item.id, { status: 'error', error: message });
-    }
-  }
+        const preparedValidation = validateMediaUploadDescriptor({
+          name: item.name,
+          category: item.category,
+          mimeType: preparedFile.type,
+          sizeBytes: preparedFile.size,
+        });
+        if (!preparedValidation.valid) throw new Error(preparedValidation.error);
 
-  async function addFiles(fileList: FileList | File[]) {
-    if (disabled) {
-      toast.error('O acervo ainda está aguardando a configuração do banco.');
-      return;
-    }
-
-    const candidates = Array.from(fileList).slice(0, MAX_FILES_PER_SELECTION);
-    const validFiles = candidates.filter((file) => ACCEPTED_TYPES.has(file.type) && file.size <= MAX_FILE_SIZE);
-    const invalidCount = candidates.length - validFiles.length;
-
-    if (invalidCount > 0) {
-      toast.error(`${invalidCount} arquivo(s) ignorado(s). Use PNG, JPG ou WebP de até 10 MB.`);
-    }
-    if (validFiles.length === 0) return;
-    if (availableSlots === 0) {
-      toast.error('Seu acervo já atingiu o limite de imagens.');
-      return;
-    }
-
-    const acceptedFiles = validFiles.slice(0, availableSlots);
-    if (acceptedFiles.length < validFiles.length) {
-      toast.error(`Somente ${availableSlots} imagem(ns) cabem no plano atual.`);
-    }
-
-    const queuedItems = acceptedFiles.map<UploadItem>((file, index) => ({
-      id: `${file.name}-${file.lastModified}-${index}-${crypto.randomUUID()}`,
-      file,
-      status: 'optimizing',
-    }));
-    setItems((current) => [...queuedItems, ...current]);
-
-    let cursor = 0;
-    async function worker() {
-      while (cursor < queuedItems.length) {
-        const nextItem = queuedItems[cursor];
-        cursor += 1;
-        await runUpload(nextItem);
+        updateItem(id, { status: 'uploading', progress: 10 });
+        const signedResponse = await fetch('/api/media-library/upload/sign', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: item.name,
+            category: item.category,
+            mimeType: preparedFile.type,
+            sizeBytes: preparedFile.size,
+          }),
+        });
+        const signed = await readJsonResponse<SignedUpload>(signedResponse);
+        uploadedResource = await uploadDirectly(
+          signed,
+          preparedFile,
+          (progress) => updateItem(id, { progress }),
+          (request) => requestsRef.current.set(id, request),
+        );
+        requestsRef.current.delete(id);
+        updateItem(id, { uploadedResource });
       }
+
+      updateItem(id, { status: 'saving', progress: 94 });
+      const finalizeResponse = await fetch('/api/media-library/upload/finalize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: item.name,
+          category: item.category,
+          publicId: uploadedResource.public_id,
+          resourceType: uploadedResource.resource_type,
+          signature: uploadedResource.signature,
+          version: uploadedResource.version,
+        }),
+      });
+      const finalized = await readJsonResponse<{ asset: MediaAsset }>(finalizeResponse);
+      updateItem(id, { status: 'done', progress: 100, error: undefined });
+      onUploaded(finalized.asset);
+    } catch (error) {
+      requestsRef.current.delete(id);
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      updateItem(id, {
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Falha inesperada no envio.',
+      });
+    }
+  }, [onUploaded, updateItem]);
+
+  useEffect(() => {
+    const activeCount = items.filter((item) =>
+      item.status === 'optimizing' || item.status === 'uploading' || item.status === 'saving').length;
+    const slots = Math.max(0, MAX_PARALLEL_UPLOADS - activeCount);
+    items.filter((item) => item.status === 'queued').slice(0, slots).forEach((item) => {
+      void runUpload(item.id);
+    });
+  }, [items, runUpload]);
+
+  useEffect(() => {
+    onActiveChange?.(items.some((item) => ACTIVE_STATUSES.has(item.status)));
+  }, [items, onActiveChange]);
+
+  useEffect(() => () => {
+    requestsRef.current.forEach((request) => request.abort());
+    requestsRef.current.clear();
+  }, []);
+
+  const addFiles = (fileList: FileList | File[]) => {
+    if (disabled) return;
+    const selected = Array.from(fileList);
+    if (selected.length > MEDIA_MAX_FILES_PER_SELECTION) {
+      toast.error(`Selecione no máximo ${MEDIA_MAX_FILES_PER_SELECTION} arquivos por vez.`);
     }
 
-    await Promise.all(Array.from({ length: Math.min(3, queuedItems.length) }, () => worker()));
-  }
+    const reservedSlots = itemsRef.current.filter((item) =>
+      item.status !== 'error' && item.status !== 'cancelled' && item.status !== 'done').length;
+    let availableSlots = Math.max(0, remainingSlots - reservedSlots);
+    const nextItems: UploadItem[] = [];
+    let duplicateCount = 0;
+    let invalidCount = 0;
 
-  function handleInputChange(event: ChangeEvent<HTMLInputElement>) {
-    if (event.target.files) void addFiles(event.target.files);
-    event.target.value = '';
-  }
+    for (const file of selected.slice(0, MEDIA_MAX_FILES_PER_SELECTION)) {
+      if (availableSlots <= 0) break;
+      const key = getFileKey(file);
+      if (knownFilesRef.current.has(key)) {
+        duplicateCount += 1;
+        continue;
+      }
 
-  function handleDrop(event: DragEvent<HTMLLabelElement>) {
-    event.preventDefault();
-    setIsDragging(false);
-    if (event.dataTransfer.files.length > 0) void addFiles(event.dataTransfer.files);
-  }
+      const validation = validateMediaUploadDescriptor({
+        name: file.name,
+        category,
+        mimeType: file.type,
+        sizeBytes: file.size,
+      });
+      if (!validation.valid) {
+        invalidCount += 1;
+        toast.error(`${file.name}: ${validation.error}`);
+        continue;
+      }
+
+      knownFilesRef.current.add(key);
+      nextItems.push({
+        id: globalThis.crypto.randomUUID(),
+        key,
+        file,
+        name: validation.name,
+        category,
+        kind: validation.kind,
+        status: 'queued',
+        progress: 0,
+      });
+      availableSlots -= 1;
+    }
+
+    if (duplicateCount > 0) toast.error(`${duplicateCount} arquivo(s) duplicado(s) foram ignorados.`);
+    if (selected.length > 0 && nextItems.length === 0 && invalidCount === 0 && duplicateCount === 0) {
+      toast.error('Seu acervo não possui espaço para mais mídias.');
+    }
+    if (nextItems.length > 0) setItems((current) => [...current, ...nextItems]);
+  };
+
+  const cancelUpload = (item: UploadItem) => {
+    requestsRef.current.get(item.id)?.abort();
+    updateItem(item.id, { status: 'cancelled', error: undefined });
+  };
+
+  const retryUpload = (item: UploadItem) => {
+    updateItem(item.id, { status: 'queued', progress: item.uploadedResource ? 92 : 0, error: undefined });
+  };
+
+  const completedCount = items.filter((item) => item.status === 'done').length;
+  const activeCount = items.filter((item) => ACTIVE_STATUSES.has(item.status)).length;
 
   return (
-    <section className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6" aria-labelledby="media-upload-title">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <ImagePlus className="size-5" aria-hidden="true" />
-          </div>
-          <div>
-            <h2 id="media-upload-title" className="font-sans text-base font-bold text-foreground">
-              Adicionar imagens
-            </h2>
-            <p className="mt-1 max-w-xl text-sm leading-6 text-muted-foreground">
-              Imagens nítidas e quadradas valorizam os produtos e aumentam a confiança no cardápio.
-            </p>
-          </div>
-        </div>
-
-        <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-          Categoria
-          <select
-            value={category}
-            disabled={disabled}
-            onChange={(event) => setCategory(event.target.value as MediaCategory)}
-            className="h-9 rounded-lg border border-border bg-background px-3 text-sm font-semibold text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-            aria-label="Categoria das novas imagens"
-          >
-            {MEDIA_CATEGORY_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
-          </select>
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-2">
+        <label htmlFor="media-upload-category" className="text-sm font-semibold text-text-primary">
+          Categoria destes arquivos
         </label>
+        <select
+          id="media-upload-category"
+          value={category}
+          onChange={(event) => setCategory(event.target.value as MediaCategory)}
+          className="h-11 rounded-lg border border-border-dark bg-surface-dark px-3 text-sm text-text-primary outline-none transition-colors focus:border-primary"
+        >
+          {MEDIA_CATEGORY_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
+        </select>
       </div>
 
       <label
-        htmlFor={MEDIA_LIBRARY_INPUT_ID}
-        aria-disabled={disabled || availableSlots === 0}
-        onDragEnter={(event) => {
+        className={`flex min-h-44 cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border border-dashed px-5 py-8 text-center transition-colors ${
+          disabled
+            ? 'cursor-not-allowed border-border-dark bg-surface-dark/60 opacity-60'
+            : isDragging
+              ? 'border-primary bg-primary/10'
+              : 'border-border-dark bg-surface-dark hover:border-primary/70 hover:bg-surface-elevated'
+        }`}
+        onDragOver={(event) => {
           event.preventDefault();
-          setIsDragging(true);
+          if (!disabled) setIsDragging(true);
         }}
-        onDragOver={(event) => event.preventDefault()}
         onDragLeave={() => setIsDragging(false)}
-        onDrop={handleDrop}
-        className={cn(
-          'mt-5 flex min-h-48 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed px-6 py-8 text-center transition',
-          isDragging
-            ? 'border-primary bg-primary/10 shadow-[inset_0_0_0_1px_hsl(var(--primary))]'
-            : 'border-border bg-background/50 hover:border-primary/70 hover:bg-primary/[0.04]',
-          availableSlots === 0 && 'cursor-not-allowed opacity-60',
-        )}
+        onDrop={(event) => {
+          event.preventDefault();
+          setIsDragging(false);
+          addFiles(event.dataTransfer.files);
+        }}
       >
         <input
-          id={MEDIA_LIBRARY_INPUT_ID}
           type="file"
-          accept="image/png,image/jpeg,image/webp"
           multiple
-          disabled={availableSlots === 0}
-          onChange={handleInputChange}
+          accept="image/jpeg,image/png,image/webp,video/mp4"
+          disabled={disabled}
+          onChange={(event) => {
+            if (event.target.files) addFiles(event.target.files);
+            event.target.value = '';
+          }}
           className="sr-only"
+          aria-label={disabled ? 'Acervo aguardando configuração' : 'Arraste as imagens ou vídeos ou selecione arquivos'}
         />
-        <div className="flex size-14 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
-          <UploadCloud className="size-7" aria-hidden="true" />
-        </div>
-        <p className="mt-4 text-sm font-bold text-foreground">
-          {disabled
-            ? 'Acervo aguardando configuração'
-            : availableSlots === 0
-              ? 'Limite do acervo atingido'
-              : 'Arraste as imagens ou clique para escolher'}
-        </p>
-        <p className="mt-1 text-sm leading-6 text-muted-foreground">
-          {disabled
-            ? 'O envio será liberado automaticamente depois que a migração do banco for aplicada.'
-            : 'PNG, JPG ou WebP, até 10 MB por arquivo. Selecione até 20 de uma vez.'}
-        </p>
-        {availableSlots > 0 && (
-          <span className="mt-4 inline-flex h-10 items-center rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground shadow-sm shadow-primary/20">
-            Selecionar imagens
+        <span className="flex size-11 items-center justify-center rounded-lg border border-border-dark bg-surface-elevated text-primary">
+          <Upload className="size-5" aria-hidden="true" />
+        </span>
+        <span className="flex flex-col gap-1">
+          <span className="font-semibold text-text-primary">
+            {disabled ? 'Envio indisponível' : 'Solte arquivos aqui ou clique para selecionar'}
           </span>
-        )}
+          <span className="text-sm leading-relaxed text-text-secondary">
+            JPG, PNG ou WebP até 10 MB · MP4 até 50 MB · máximo de 20 por seleção
+          </span>
+        </span>
       </label>
 
       {items.length > 0 && (
-        <div className="mt-5 border-t border-border pt-5" aria-live="polite">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-bold text-foreground">
-              {activeUploads > 0 ? `${activeUploads} envio(s) em andamento` : `${completedCount} envio(s) concluído(s)`}
-            </p>
-            {activeUploads === 0 && completedCount > 0 && (
-              <button
-                type="button"
-                onClick={() => setItems((current) => current.filter((item) => item.status === 'error'))}
-                className="text-xs font-semibold text-muted-foreground transition hover:text-foreground"
-              >
-                Limpar concluídos
-              </button>
-            )}
+        <section className="flex flex-col gap-3" aria-label="Fila de envios" aria-live="polite">
+          <div className="flex items-center justify-between gap-3 text-sm">
+            <span className="font-semibold text-text-primary">Fila de envios</span>
+            <span className="text-text-secondary">
+              {activeCount > 0 ? `${activeCount} em andamento` : `${completedCount} concluído(s)`}
+            </span>
           </div>
 
-          <div className="mt-3 flex max-h-56 flex-col gap-2 overflow-y-auto pr-1">
-            {items.map((item) => (
-              <div key={item.id} className="rounded-xl border border-border bg-background/70 p-3">
-                <div className="flex items-center gap-3">
-                  <div className={cn(
-                    'flex size-8 shrink-0 items-center justify-center rounded-lg',
-                    item.status === 'done' && 'bg-primary/10 text-primary',
-                    item.status === 'error' && 'bg-destructive/10 text-destructive',
-                    (item.status === 'optimizing' || item.status === 'uploading') && 'bg-muted text-muted-foreground',
-                  )}>
-                    {item.status === 'done' ? <Check className="size-4" aria-hidden="true" /> : null}
-                    {item.status === 'error' ? <CircleAlert className="size-4" aria-hidden="true" /> : null}
-                    {item.status === 'optimizing' || item.status === 'uploading'
-                      ? <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
-                      : null}
-                  </div>
-
+          <div className="flex max-h-72 flex-col gap-2 overflow-y-auto pr-1">
+            {items.map((item) => {
+              const isActive = ACTIVE_STATUSES.has(item.status);
+              return (
+                <article key={item.id} className="flex items-center gap-3 rounded-lg border border-border-dark bg-surface-dark p-3">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-surface-elevated text-text-secondary">
+                    {item.kind === 'video'
+                      ? <Film className="size-4" aria-hidden="true" />
+                      : <FileImage className="size-4" aria-hidden="true" />}
+                  </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="truncate text-sm font-semibold text-foreground" title={item.file.name}>{item.file.name}</p>
-                      <span className="shrink-0 text-xs text-muted-foreground">{getStatusLabel(item.status)}</span>
+                      <p className="truncate text-sm font-medium text-text-primary">{item.name}</p>
+                      <span className={`shrink-0 text-xs font-semibold ${item.status === 'error' ? 'text-accent-promo' : item.status === 'done' ? 'text-primary' : 'text-text-secondary'}`}>
+                        {getStatusLabel(item.status)}
+                      </span>
                     </div>
-                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                    <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-surface-elevated">
                       <div
-                        className={cn('h-full rounded-full transition-all', item.status === 'error' ? 'bg-destructive' : 'bg-primary')}
-                        style={{ width: `${getStatusProgress(item.status)}%` }}
+                        className={`h-full rounded-full transition-[width] ${item.status === 'error' ? 'bg-accent-promo' : 'bg-primary'}`}
+                        style={{ width: `${item.progress}%` }}
                       />
                     </div>
-                    {item.error && <p className="mt-2 text-xs leading-5 text-destructive">{item.error}</p>}
+                    <p className={`mt-1 truncate text-xs ${item.error ? 'text-accent-promo' : 'text-text-secondary'}`}>
+                      {item.error || `${formatFileSize(item.file.size)} · ${MEDIA_CATEGORY_OPTIONS.find((option) => option.value === item.category)?.label}`}
+                    </p>
                   </div>
-
-                  {item.status === 'error' && (
+                  {isActive && (
                     <button
                       type="button"
-                      onClick={() => void runUpload(item)}
-                      className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
-                      aria-label={`Tentar novamente o envio de ${item.file.name}`}
-                      title="Tentar novamente"
+                      onClick={() => cancelUpload(item)}
+                      className="flex size-8 shrink-0 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-surface-elevated hover:text-text-primary"
+                      aria-label={`Cancelar envio de ${item.name}`}
+                    >
+                      {item.status === 'queued'
+                        ? <X className="size-4" aria-hidden="true" />
+                        : <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />}
+                    </button>
+                  )}
+                  {(item.status === 'error' || item.status === 'cancelled') && (
+                    <button
+                      type="button"
+                      onClick={() => retryUpload(item)}
+                      className="flex size-8 shrink-0 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-surface-elevated hover:text-primary"
+                      aria-label={`Tentar novamente ${item.name}`}
                     >
                       <RefreshCw className="size-4" aria-hidden="true" />
                     </button>
                   )}
-                  {(item.status === 'done' || item.status === 'error') && (
-                    <button
-                      type="button"
-                      onClick={() => setItems((current) => current.filter((currentItem) => currentItem.id !== item.id))}
-                      className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
-                      aria-label={`Remover ${item.file.name} da lista de envios`}
-                      title="Remover da lista"
-                    >
-                      <X className="size-4" aria-hidden="true" />
-                    </button>
-                  )}
-                </div>
-                <p className="mt-2 pl-11 text-xs text-muted-foreground">{formatFileSize(item.file.size)}</p>
-              </div>
-            ))}
+                  {item.status === 'done' && <Check className="size-4 shrink-0 text-primary" aria-hidden="true" />}
+                </article>
+              );
+            })}
           </div>
-        </div>
+        </section>
       )}
-    </section>
+    </div>
   );
 }
