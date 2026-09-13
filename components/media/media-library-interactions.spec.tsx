@@ -243,9 +243,31 @@ describe('media library interactions', () => {
     );
 
     await user.click(screen.getByRole('button', { name: /escolher mídia/i }));
-    await user.click(await screen.findByRole('button', { name: /usar burger em movimento/i }));
+    const videoChoice = await screen.findByRole('button', { name: /usar burger em movimento/i });
+    expect(videoChoice.querySelector('video')).toHaveClass('pointer-events-none');
+    await user.click(videoChoice);
 
     expect(onChange).toHaveBeenCalledWith(videoAsset.url);
+  });
+
+  it('renders a selected banner video on autoplay without native controls', () => {
+    const { container } = render(
+      <MediaImageField
+        value={videoAsset.url}
+        onChange={jest.fn()}
+        title="Banner público"
+        description="Escolha uma mídia"
+        allowVideo
+        aspect="banner"
+      />,
+    );
+
+    const video = container.querySelector('video');
+    expect(video).not.toBeNull();
+    expect(video).toHaveProperty('autoplay', true);
+    expect(video).toHaveProperty('muted', true);
+    expect(video).toHaveProperty('loop', true);
+    expect(video).not.toHaveAttribute('controls');
   });
 
   it('requires confirmation before permanent deletion', async () => {

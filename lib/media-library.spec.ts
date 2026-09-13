@@ -108,6 +108,10 @@ describe('media library helpers', () => {
     expect(isMediaVideoUrl('https://res.cloudinary.com/demo/video/upload/v1/banner')).toBe(true);
     expect(isMediaVideoUrl('https://cdn.example.com/banner.MP4?version=2')).toBe(true);
     expect(isMediaVideoUrl('https://res.cloudinary.com/demo/image/upload/banner.webp')).toBe(false);
+    expect(getMediaAssetKind({
+      mimeType: 'application/octet-stream',
+      url: 'https://res.cloudinary.com/demo/video/upload/v1/banner',
+    })).toBe('video');
   });
 
   it('filters images and videos independently', () => {

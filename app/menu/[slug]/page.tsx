@@ -203,11 +203,14 @@ export default async function PublicMenuPage({
                                     {empresaBannerIsVideo ? (
                                         <video
                                             src={empresaBanner}
-                                            controls
+                                            autoPlay
+                                            muted
+                                            loop
                                             playsInline
-                                            preload="metadata"
-                                            aria-label={`Banner em vídeo de ${empresaNome}`}
-                                            className="size-full object-cover"
+                                            preload="auto"
+                                            disablePictureInPicture
+                                            aria-hidden="true"
+                                            className="pointer-events-none size-full object-cover"
                                         />
                                     ) : (
                                         <Image

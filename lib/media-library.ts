@@ -89,8 +89,10 @@ export function getMediaKindFromMimeType(mimeType: unknown): MediaKind | null {
   return null;
 }
 
-export function getMediaAssetKind(asset: Pick<MediaAsset, 'mimeType'>): MediaKind {
-  return getMediaKindFromMimeType(asset.mimeType) ?? 'image';
+export function getMediaAssetKind(asset: Pick<MediaAsset, 'mimeType' | 'url'>): MediaKind {
+  const mimeKind = getMediaKindFromMimeType(asset.mimeType);
+  if (mimeKind) return mimeKind;
+  return isMediaVideoUrl(asset.url) ? 'video' : 'image';
 }
 
 export function isMediaVideoUrl(value: unknown): value is string {

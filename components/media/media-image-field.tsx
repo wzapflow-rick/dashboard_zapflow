@@ -21,6 +21,7 @@ import { MobileDrawer } from '@/components/ui/mobile-drawer';
 import {
   MEDIA_CATEGORY_OPTIONS,
   MEDIA_LIBRARY_LIMIT,
+  getMediaAssetKind,
   isMediaVideoUrl,
   type MediaAsset,
   type MediaCategory,
@@ -75,8 +76,9 @@ export function MediaImageField({
   const selectableAssets = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase('pt-BR');
     return (data?.assets ?? []).filter((asset) => {
-      const isSupportedImage = asset.mimeType.startsWith('image/');
-      const isSupportedVideo = allowVideo && asset.mimeType === 'video/mp4';
+      const assetKind = getMediaAssetKind(asset);
+      const isSupportedImage = assetKind === 'image' && asset.mimeType.startsWith('image/');
+      const isSupportedVideo = allowVideo && assetKind === 'video';
       if (!isSupportedImage && !isSupportedVideo) return false;
       if (category !== 'all' && asset.category !== category) return false;
       return !normalizedQuery || asset.name.toLocaleLowerCase('pt-BR').includes(normalizedQuery);
@@ -201,7 +203,7 @@ export function MediaImageField({
               <div className="grid max-h-[55vh] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3" aria-label={allowVideo ? 'Mídias do acervo' : 'Imagens do acervo'}>
                 {selectableAssets.map((asset) => {
                   const selected = value === asset.url;
-                  const isVideo = asset.mimeType === 'video/mp4';
+                  const isVideo = getMediaAssetKind(asset) === 'video';
                   const categoryLabel = MEDIA_CATEGORY_OPTIONS.find((option) => option.value === asset.category)?.label;
                   return (
                     <button
@@ -222,7 +224,7 @@ export function MediaImageField({
                             muted
                             playsInline
                             preload="metadata"
-                            className="size-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+                            className="pointer-events-none size-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
                             aria-hidden="true"
                           />
                         ) : (
@@ -308,11 +310,14 @@ export function MediaImageField({
             selectedValueIsVideo ? (
               <video
                 src={value}
-                controls
+                autoPlay
+                muted
+                loop
                 playsInline
-                preload="metadata"
-                aria-label={title}
-                className="size-full object-cover"
+                preload="auto"
+                disablePictureInPicture
+                aria-hidden="true"
+                className="pointer-events-none size-full object-cover"
               />
             ) : (
               <Image src={value} alt={title} fill sizes={isBanner ? '208px' : '96px'} className="object-cover" />
