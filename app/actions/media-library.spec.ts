@@ -49,10 +49,17 @@ describe('media library actions', () => {
   it('lists only assets belonging to the signed-in company', async () => {
     mockPg.raw.mockImplementation(async (query: string, params: unknown[]) => {
       if (query.includes('information_schema.tables')) return [{ exists: true }];
-      if (query.includes('SELECT *')) {
-        expect(query).toContain('WHERE empresa_id = $1');
+      if (query.includes('SELECT media.*')) {
+        expect(query).toContain('WHERE media.empresa_id = $1');
+        expect(query).toContain('catalog_product.imagem = media.url');
+        expect(query).toContain('store_config.banner = media.url');
         expect(params[0]).toBe(77);
-        return [databaseRow];
+        return [{
+          ...databaseRow,
+          product_usage_count: 2,
+          used_as_logo: false,
+          used_as_banner: true,
+        }];
       }
       if (query.includes('COUNT(*)')) return [{ total: 1 }];
       return [];
@@ -61,7 +68,12 @@ describe('media library actions', () => {
     await expect(getMediaLibrary()).resolves.toMatchObject({
       total: 1,
       uploadConfigured: true,
-      assets: [{ id: 12, empresaId: 77, name: 'Burger principal.jpg' }],
+      assets: [{
+        id: 12,
+        empresaId: 77,
+        name: 'Burger principal.jpg',
+        usage: { productCount: 2, usedAsLogo: false, usedAsBanner: true },
+      }],
     });
   });
 
@@ -83,7 +95,7 @@ describe('media library actions', () => {
     mockIsCloudinaryMediaConfigured.mockReturnValue(false);
     mockPg.raw.mockImplementation(async (query: string) => {
       if (query.includes('information_schema.tables')) return [{ exists: true }];
-      if (query.includes('SELECT *')) return [databaseRow];
+      if (query.includes('SELECT media.*')) return [databaseRow];
       if (query.includes('COUNT(*)')) return [{ total: 1 }];
       return [];
     });
@@ -103,9 +115,16 @@ describe('media library actions', () => {
         expect(params.slice(0, 2)).toEqual([12, 77]);
         return [{ ...databaseRow, nome: 'Burger noite.jpg' }];
       }
-      if (query.includes('SELECT id, url, mime_type')) {
+      if (query.includes('SELECT media.id, media.url, media.mime_type')) {
         expect(params).toEqual([12, 77]);
-        return [{ id: 12, url: databaseRow.url, mime_type: databaseRow.mime_type }];
+        return [{
+          id: 12,
+          url: databaseRow.url,
+          mime_type: databaseRow.mime_type,
+          product_usage_count: 0,
+          used_as_logo: false,
+          used_as_banner: false,
+        }];
       }
       if (query.includes('DELETE')) {
         expect(query).toContain('WHERE id = $1 AND empresa_id = $2');
@@ -125,12 +144,43 @@ describe('media library actions', () => {
     });
   });
 
+  it('preserves media that is already linked to products or store branding', async () => {
+    mockPg.raw.mockImplementation(async (query: string) => {
+      if (query.includes('information_schema.tables')) return [{ exists: true }];
+      if (query.includes('SELECT media.id, media.url, media.mime_type')) {
+        return [{
+          id: 12,
+          url: databaseRow.url,
+          mime_type: databaseRow.mime_type,
+          product_usage_count: 2,
+          used_as_logo: false,
+          used_as_banner: true,
+        }];
+      }
+      if (query.includes('DELETE')) throw new Error('DELETE não deveria ser executado');
+      return [];
+    });
+
+    await expect(deleteMediaAsset(12)).rejects.toThrow(
+      'Esta mídia possui vínculos ativos: 2 produtos e banner da loja.',
+    );
+    expect(mockDeleteStoredCloudinaryMedia).not.toHaveBeenCalled();
+    expect(mockPg.raw.mock.calls.some(([query]) => String(query).includes('DELETE'))).toBe(false);
+  });
+
   it('does not remove the database row when Cloudinary deletion fails', async () => {
     mockDeleteStoredCloudinaryMedia.mockRejectedValue(new Error('Cloudinary indisponível'));
     mockPg.raw.mockImplementation(async (query: string) => {
       if (query.includes('information_schema.tables')) return [{ exists: true }];
-      if (query.includes('SELECT id, url, mime_type')) {
-        return [{ id: 12, url: databaseRow.url, mime_type: databaseRow.mime_type }];
+      if (query.includes('SELECT media.id, media.url, media.mime_type')) {
+        return [{
+          id: 12,
+          url: databaseRow.url,
+          mime_type: databaseRow.mime_type,
+          product_usage_count: 0,
+          used_as_logo: false,
+          used_as_banner: false,
+        }];
       }
       if (query.includes('DELETE')) throw new Error('DELETE não deveria ser executado');
       return [];

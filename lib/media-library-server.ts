@@ -5,6 +5,7 @@ import {
   MEDIA_LIBRARY_LIMIT,
   isMediaCategory,
   type MediaAsset,
+  type MediaAssetUsage,
   type MediaCategory,
 } from '@/lib/media-library';
 
@@ -22,6 +23,14 @@ export interface NewMediaAsset {
   height: number | null;
 }
 
+export function serializeMediaAssetUsage(row: Record<string, unknown>): MediaAssetUsage {
+  return {
+    productCount: Number(row.product_usage_count ?? 0),
+    usedAsLogo: row.used_as_logo === true,
+    usedAsBanner: row.used_as_banner === true,
+  };
+}
+
 export function serializeMediaAsset(row: Record<string, unknown>): MediaAsset {
   return {
     id: Number(row.id),
@@ -35,6 +44,7 @@ export function serializeMediaAsset(row: Record<string, unknown>): MediaAsset {
     height: row.altura == null ? null : Number(row.altura),
     createdAt: new Date(String(row.criado_em)).toISOString(),
     updatedAt: new Date(String(row.atualizado_em ?? row.criado_em)).toISOString(),
+    usage: serializeMediaAssetUsage(row),
   };
 }
 

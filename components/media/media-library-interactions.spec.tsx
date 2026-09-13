@@ -272,4 +272,27 @@ describe('media library interactions', () => {
 
     confirmSpy.mockRestore();
   });
+
+  it('disables permanent deletion while the media has active links', async () => {
+    const user = userEvent.setup();
+    const onDelete = jest.fn().mockResolvedValue(undefined);
+    const protectedAsset: MediaAsset = {
+      ...imageAsset,
+      usage: { productCount: 2, usedAsLogo: false, usedAsBanner: true },
+    };
+
+    render(
+      <MediaAssetCard
+        asset={protectedAsset}
+        onRename={jest.fn().mockResolvedValue(undefined)}
+        onCategoryChange={jest.fn().mockResolvedValue(undefined)}
+        onDelete={onDelete}
+      />,
+    );
+
+    expect(screen.getByText('Em uso: 2 produtos e banner da loja')).toBeInTheDocument();
+    await user.click(screen.getByLabelText(/ações de burger principal/i));
+    expect(screen.getByRole('button', { name: 'Excluir' })).toBeDisabled();
+    expect(onDelete).not.toHaveBeenCalled();
+  });
 });

@@ -8,6 +8,7 @@ import {
   Download,
   ExternalLink,
   Film,
+  Link2,
   MoreHorizontal,
   Pencil,
   Play,
@@ -18,6 +19,7 @@ import { toast } from 'sonner';
 import { formatFileSize } from '@/lib/image-utils';
 import {
   MEDIA_CATEGORY_OPTIONS,
+  formatMediaAssetUsage,
   getMediaAssetKind,
   getMediaCategoryLabel,
   type MediaAsset,
@@ -44,6 +46,8 @@ export function MediaAssetCard({
   const [previewOpen, setPreviewOpen] = useState(false);
   const menuRef = useRef<HTMLDetailsElement>(null);
   const kind = getMediaAssetKind(asset);
+  const usageSummary = formatMediaAssetUsage(asset);
+  const usageDescriptionId = `media-usage-${asset.id}`;
 
   useEffect(() => {
     if (!previewOpen) return;
@@ -76,6 +80,10 @@ export function MediaAssetCard({
 
   const handleDelete = async () => {
     menuRef.current?.removeAttribute('open');
+    if (usageSummary) {
+      toast.error(`Mídia em uso: ${usageSummary}.`);
+      return;
+    }
     if (!window.confirm(`Excluir “${asset.name}” permanentemente do acervo e do armazenamento?`)) return;
     setBusy(true);
     try {
@@ -146,6 +154,16 @@ export function MediaAssetCard({
             <div className="min-w-0">
               <h2 className="truncate text-sm font-semibold text-text-primary" title={asset.name}>{asset.name}</h2>
               <p className="mt-0.5 text-xs text-text-secondary">{formatFileSize(asset.sizeBytes)}</p>
+              {usageSummary && (
+                <p
+                  id={usageDescriptionId}
+                  className="mt-1 flex min-w-0 items-center gap-1 text-[11px] font-semibold text-primary"
+                  title={`Em uso: ${usageSummary}`}
+                >
+                  <Link2 className="size-3 shrink-0" aria-hidden="true" />
+                  <span className="truncate">Em uso: {usageSummary}</span>
+                </p>
+              )}
             </div>
 
             <details ref={menuRef} className="relative shrink-0">
@@ -166,7 +184,13 @@ export function MediaAssetCard({
                   <ExternalLink className="size-4" aria-hidden="true" /> Abrir original
                 </a>
                 <div className="my-1 border-t border-border-dark" />
-                <button type="button" onClick={handleDelete} disabled={busy || disabled} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-accent-promo hover:bg-surface-dark disabled:opacity-50">
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={busy || disabled || Boolean(usageSummary)}
+                  aria-describedby={usageSummary ? usageDescriptionId : undefined}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-accent-promo hover:bg-surface-dark disabled:cursor-not-allowed disabled:opacity-50"
+                >
                   <Trash2 className="size-4" aria-hidden="true" /> Excluir
                 </button>
               </div>

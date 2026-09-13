@@ -3,8 +3,13 @@
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/session-server';
 import { pg } from '@/lib/postgres';
-import { PRODUCT_MEDIA_ASSETS_TABLE } from '@/lib/tables';
 import {
+  CONFIGURACOES_LOJA_TABLE,
+  PRODUCT_MEDIA_ASSETS_TABLE,
+  PRODUTOS_TABLE,
+} from '@/lib/tables';
+import {
+  formatMediaAssetUsage,
   isMediaCategory,
   sanitizeMediaName,
   type MediaAsset,
@@ -14,11 +19,29 @@ import {
   isMediaLibrarySchemaReady,
   requireMediaLibrarySchema,
   serializeMediaAsset,
+  serializeMediaAssetUsage,
 } from '@/lib/media-library-server';
 import {
   deleteStoredCloudinaryMedia,
   isCloudinaryMediaConfigured,
 } from '@/lib/cloudinary-media';
+
+const MEDIA_USAGE_SELECT = `
+  (SELECT COUNT(*)::int
+   FROM "${PRODUTOS_TABLE}" AS catalog_product
+   WHERE catalog_product.empresa_id = media.empresa_id
+     AND (catalog_product.imagem = media.url OR catalog_product.imagem_url = media.url)
+  ) AS product_usage_count,
+  EXISTS (
+    SELECT 1
+    FROM "${CONFIGURACOES_LOJA_TABLE}" AS store_config
+    WHERE store_config.empresa_id = media.empresa_id AND store_config.logo = media.url
+  ) AS used_as_logo,
+  EXISTS (
+    SELECT 1
+    FROM "${CONFIGURACOES_LOJA_TABLE}" AS store_config
+    WHERE store_config.empresa_id = media.empresa_id AND store_config.banner = media.url
+  ) AS used_as_banner`;
 
 export async function getMediaLibrary(): Promise<{
   assets: MediaAsset[];
@@ -37,9 +60,10 @@ export async function getMediaLibrary(): Promise<{
   try {
     const [rows, totals] = await Promise.all([
       pg.raw(
-        `SELECT * FROM "${PRODUCT_MEDIA_ASSETS_TABLE}"
-         WHERE empresa_id = $1
-         ORDER BY criado_em DESC, id DESC
+        `SELECT media.*, ${MEDIA_USAGE_SELECT}
+         FROM "${PRODUCT_MEDIA_ASSETS_TABLE}" AS media
+         WHERE media.empresa_id = $1
+         ORDER BY media.criado_em DESC, media.id DESC
          LIMIT $2`,
         [user.empresaId, 250],
       ),
@@ -111,28 +135,37 @@ export async function deleteMediaAsset(id: number): Promise<{ id: number }> {
 
   if (!Number.isInteger(id) || id <= 0) throw new Error('Mídia inválida.');
 
-  const stored = await pg.raw<{ id: number; url: string; mime_type: string }>(
-    `SELECT id, url, mime_type FROM "${PRODUCT_MEDIA_ASSETS_TABLE}"
-     WHERE id = $1 AND empresa_id = $2
+  const stored = await pg.raw<Record<string, unknown>>(
+    `SELECT media.id, media.url, media.mime_type, ${MEDIA_USAGE_SELECT}
+     FROM "${PRODUCT_MEDIA_ASSETS_TABLE}" AS media
+     WHERE media.id = $1 AND media.empresa_id = $2
      LIMIT 1`,
     [id, user.empresaId],
   );
   if (!stored[0]) throw new Error('Mídia não encontrada.');
+
+  const usageSummary = formatMediaAssetUsage({
+    usage: serializeMediaAssetUsage(stored[0]),
+  });
+  if (usageSummary) {
+    throw new Error(
+      `Esta mídia possui vínculos ativos: ${usageSummary}. Substitua-a nesses locais antes de excluir.`,
+    );
+  }
 
   await deleteStoredCloudinaryMedia({
     url: String(stored[0].url),
     mimeType: String(stored[0].mime_type),
   });
 
-  const rows = await pg.raw<{ id: number }>(
+  const deleted = await pg.raw<{ id: number }>(
     `DELETE FROM "${PRODUCT_MEDIA_ASSETS_TABLE}"
      WHERE id = $1 AND empresa_id = $2
      RETURNING id`,
     [id, user.empresaId],
   );
+  if (!deleted[0]) throw new Error('Mídia não encontrada.');
 
-  if (!rows[0]) throw new Error('Mídia não encontrada.');
-
-  revalidatePath('/dashboard/media-library');
-  return { id: Number(rows[0].id) };
+  revalidatePath('/dashboard/media');
+  return { id: Number(deleted[0].id) };
 }

@@ -19,6 +19,12 @@ export type MediaSort = 'recent' | 'oldest' | 'name';
 export type MediaKind = 'image' | 'video';
 export type MediaTypeFilter = MediaKind | 'all';
 
+export interface MediaAssetUsage {
+  productCount: number;
+  usedAsLogo: boolean;
+  usedAsBanner: boolean;
+}
+
 export interface MediaAsset {
   id: number;
   empresaId: number | string;
@@ -31,6 +37,23 @@ export interface MediaAsset {
   height: number | null;
   createdAt: string;
   updatedAt: string;
+  usage?: MediaAssetUsage;
+}
+
+export function formatMediaAssetUsage(asset: Pick<MediaAsset, 'usage'>): string | null {
+  const locations: string[] = [];
+  const rawProductCount = Number(asset.usage?.productCount ?? 0);
+  const productCount = Number.isFinite(rawProductCount)
+    ? Math.max(0, Math.trunc(rawProductCount))
+    : 0;
+
+  if (productCount > 0) locations.push(`${productCount} ${productCount === 1 ? 'produto' : 'produtos'}`);
+  if (asset.usage?.usedAsLogo) locations.push('logo da loja');
+  if (asset.usage?.usedAsBanner) locations.push('banner da loja');
+
+  if (locations.length === 0) return null;
+  if (locations.length === 1) return locations[0];
+  return `${locations.slice(0, -1).join(', ')} e ${locations.at(-1)}`;
 }
 
 export interface MediaUploadDescriptor {

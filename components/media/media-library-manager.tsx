@@ -102,12 +102,16 @@ export function MediaLibraryManager({
 
   const handleRename = async (id: number, name: string) => {
     const updated = await updateMediaAsset({ id, name });
-    setAssets((current) => current.map((asset) => (asset.id === id ? updated : asset)));
+    setAssets((current) => current.map((asset) => (
+      asset.id === id ? { ...updated, usage: asset.usage ?? updated.usage } : asset
+    )));
   };
 
   const handleCategoryChange = async (id: number, nextCategory: MediaCategory) => {
     const updated = await updateMediaAsset({ id, category: nextCategory });
-    setAssets((current) => current.map((asset) => (asset.id === id ? updated : asset)));
+    setAssets((current) => current.map((asset) => (
+      asset.id === id ? { ...updated, usage: asset.usage ?? updated.usage } : asset
+    )));
   };
 
   const handleDelete = async (id: number) => {

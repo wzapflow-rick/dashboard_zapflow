@@ -1,5 +1,6 @@
 import {
   filterAndSortMediaAssets,
+  formatMediaAssetUsage,
   getMediaCategoryCounts,
   getMediaAssetKind,
   isMediaCategory,
@@ -71,6 +72,15 @@ describe('media library helpers', () => {
     expect(sanitizeMediaName('  promo\\setembro / principal.jpg  ')).toBe('promo-setembro - principal.jpg');
     expect(isMediaCategory('drinks')).toBe(true);
     expect(isMediaCategory('private')).toBe(false);
+  });
+
+  it('summarizes active usage links for protected media', () => {
+    expect(formatMediaAssetUsage({
+      usage: { productCount: 2, usedAsLogo: true, usedAsBanner: true },
+    })).toBe('2 produtos, logo da loja e banner da loja');
+    expect(formatMediaAssetUsage({
+      usage: { productCount: 0, usedAsLogo: false, usedAsBanner: false },
+    })).toBeNull();
   });
 
   it('accepts supported image and MP4 descriptors with distinct limits', () => {
