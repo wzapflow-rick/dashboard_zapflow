@@ -4,10 +4,10 @@
 import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Image as ImageIcon, Plus, Check, PackageOpen, Trash2, Ruler, Sparkles } from 'lucide-react';
-import Image from 'next/image';
+import { X, Plus, Check, PackageOpen, Trash2, Ruler, Sparkles } from 'lucide-react';
 import { type Category } from '@/app/actions/products';
 import { type Insumo } from '@/app/actions/insumos';
+import { MediaImageField } from '@/components/media/media-image-field';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { MobileDrawer } from '@/components/ui/mobile-drawer';
 import { toast } from 'sonner';
@@ -241,42 +241,17 @@ export default function ProductFormModal({
             size="lg"
         >
             <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="flex justify-center">
-                            <label className="relative group cursor-pointer">
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    name="imagem_file"
-                                    className="hidden"
-                                    onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) {
-                                            const reader = new FileReader();
-                                            reader.onloadend = () => setImagePreview(reader.result as string);
-                                            reader.readAsDataURL(file);
-                                        }
-                                    }}
-                                />
-                                <div className="size-20 sm:size-24 rounded-xl sm:rounded-2xl bg-slate-100 dark:bg-slate-700 border-2 border-dashed border-slate-300 dark:border-slate-600 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 group-hover:border-primary group-hover:text-primary transition-all overflow-hidden relative">
-                                    {imagePreview ? (
-                                        <Image
-                                            src={imagePreview}
-                                            fill
-                                            className="object-cover"
-                                            alt="Preview"
-                                            referrerPolicy="no-referrer"
-                                        />
-                                    ) : (
-                                        <>
-                                            <ImageIcon className="size-6 sm:size-8 mb-1" />
-                                            <span className="text-[8px] sm:text-[10px] font-bold uppercase">Foto</span>
-                                        </>
-                                    )}
-                                </div>
-                                <div className="absolute -bottom-1 -right-1 sm:-bottom-2 sm:-right-2 size-6 sm:size-8 bg-primary text-white rounded-lg flex items-center justify-center shadow-lg group-hover:bg-primary/90 transition-colors">
-                                    <Plus className="size-3 sm:size-4" />
-                                </div>
-                            </label>
+                        <div>
+                            <input type="hidden" name="imagem" value={imagePreview || ''} />
+                            <MediaImageField
+                                value={imagePreview}
+                                onChange={setImagePreview}
+                                title="Imagem do produto"
+                                description="Escolha uma imagem já salva ou envie uma nova para o acervo."
+                                recommendedSize="JPG, PNG ou WebP · enquadramento quadrado recomendado"
+                                initialCategory="products"
+                                removeLabel="Remover do produto"
+                            />
                         </div>
 
                         <div className="grid grid-cols-1 gap-4">

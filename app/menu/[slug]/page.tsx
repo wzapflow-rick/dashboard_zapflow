@@ -2,6 +2,7 @@ import { getPublicMenu } from '@/app/actions/public-menu';
 import { UtensilsCrossed, MapPin, AlertCircle, Clock } from 'lucide-react';
 import MenuClientWrapper from '@/components/menu/menu-client-wrapper';
 import MenuFilter from '@/components/menu/menu-filter';
+import { isMediaVideoUrl } from '@/lib/media-library';
 import type { Metadata } from 'next';
 import Image from 'next/image';
 
@@ -130,6 +131,7 @@ export default async function PublicMenuPage({
 
     const empresaNome = String(empresa.nome || 'ZapFlow');
     const empresaBanner = typeof empresa.banner === 'string' ? empresa.banner : null;
+    const empresaBannerIsVideo = isMediaVideoUrl(empresaBanner);
     const empresaLogo = typeof empresa.logo === 'string' ? empresa.logo : null;
     const empresaNincho = typeof empresa.nincho === 'string' ? empresa.nincho : null;
     const empresaCidade = typeof empresa.cidade === 'string' ? empresa.cidade : null;
@@ -198,14 +200,25 @@ export default async function PublicMenuPage({
                         <div className="h-44 sm:h-56 bg-[#1a1a1a] relative overflow-hidden">
                             {empresaBanner ? (
                                 <>
-                                    <Image 
-                                        src={empresaBanner} 
-                                        alt={`Banner de ${empresaNome}`} 
-                                        fill 
-                                        className="object-cover" 
-                                        priority 
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/50 to-transparent" />
+                                    {empresaBannerIsVideo ? (
+                                        <video
+                                            src={empresaBanner}
+                                            controls
+                                            playsInline
+                                            preload="metadata"
+                                            aria-label={`Banner em vídeo de ${empresaNome}`}
+                                            className="size-full object-cover"
+                                        />
+                                    ) : (
+                                        <Image
+                                            src={empresaBanner}
+                                            alt={`Banner de ${empresaNome}`}
+                                            fill
+                                            className="object-cover"
+                                            priority
+                                        />
+                                    )}
+                                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/50 to-transparent" />
                                 </>
                             ) : (
                                 <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a]" />

@@ -3,8 +3,9 @@
 
 import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React from 'react';
-import { Settings as SettingsIcon, Store, Clock, MapPin, Bell, Shield, Save, ChevronRight, Plus, Trash2, Package, ShoppingBag, Info, Bot, Ticket, Award, Truck, Sparkles, Upload, QrCode, Wifi, WifiOff, RefreshCw, CheckCircle2, Smartphone, Zap } from 'lucide-react';
-import { cn } from '@/lib/utils';
+  import { Settings as SettingsIcon, Store, Clock, MapPin, Bell, Shield, Save, ChevronRight, Plus, Trash2, Package, ShoppingBag, Info, Bot, Ticket, Award, Truck, Upload, QrCode, Wifi, WifiOff, RefreshCw, CheckCircle2, Smartphone, Zap } from 'lucide-react';
+  import { MediaImageField } from '@/components/media/media-image-field';
+  import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import Image from 'next/image';
 import { CurrencyInput } from '@/components/ui/currency-input';
@@ -70,7 +71,6 @@ export default function SettingsPage() {
   const [logoUrl, setLogoUrl] = React.useState<string | null>(null);
   const [bannerUrl, setBannerUrl] = React.useState<string | null>(null);
   const [uploadingLogo, setUploadingLogo] = React.useState(false);
-  const [uploadingBanner, setUploadingBanner] = React.useState(false);
   const [isGeocoding, setIsGeocoding] = React.useState(false);
   const [isTestingWhatsApp, setIsTestingWhatsApp] = React.useState(false);
   const [isChangingPassword, setIsChangingPassword] = React.useState(false);
@@ -284,44 +284,6 @@ export default function SettingsPage() {
       toast.error(error.message || 'Erro ao carregar logo. Tente novamente.');
     } finally {
       setUploadingLogo(false);
-    }
-  };
-
-  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      setUploadingBanner(true);
-      
-      const { processImage, isValidImageFile, formatFileSize } = await import('@/lib/image-utils');
-      
-      if (!isValidImageFile(file)) {
-        toast.error('Arquivo inválido. Use PNG, JPG, WebP ou GIF com até 10MB.');
-        setUploadingBanner(false);
-        return;
-      }
-      
-      const processedFile = await processImage(file, {
-        maxWidth: 1200,
-        maxHeight: 600,
-        quality: 0.8,
-        format: 'jpeg'
-      });
-      
-      const formData = new FormData();
-      formData.append('image', processedFile);
-      const url = await uploadImageAction(formData);
-      
-      if (url) {
-        setBannerUrl(url);
-        toast.success(`Banner carregado com sucesso! (${formatFileSize(processedFile.size)})`);
-      }
-    } catch (error: any) {
-      console.error('Erro ao processar banner:', error);
-      toast.error(error.message || 'Erro ao carregar banner. Tente novamente.');
-    } finally {
-      setUploadingBanner(false);
     }
   };
 
@@ -591,32 +553,19 @@ export default function SettingsPage() {
 	                  </div>
 
 	                  {/* Banner do Cardápio */}
-	                  <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-slate-100 dark:border-slate-700">
-	                    <div className="relative group w-full sm:w-48 h-24 sm:h-28 rounded-2xl bg-slate-100 dark:bg-slate-700 border-2 border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center overflow-hidden relative">
-	                      {bannerUrl ? (
-	                        <Image src={bannerUrl} alt="Banner" fill className="object-cover" />
-	                      ) : (
-	                        <Sparkles className="size-8 text-slate-400" />
-	                      )}
-	                      {uploadingBanner && (
-	                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-	                          <MorphingInfinity className="size-6 text-white" />
-	                        </div>
-	                      )}
-	                      <label className="absolute bottom-2 right-2 size-8 bg-primary text-white rounded-lg shadow-lg flex items-center justify-center cursor-pointer hover:scale-110 transition-transform">
-	                        <Upload className="size-4" />
-	                        <input type="file" className="hidden" accept="image/*" onChange={handleBannerUpload} disabled={uploadingBanner} />
-	                      </label>
-	                    </div>
-	                    <div className="text-center sm:text-left">
-	                      <h4 className="font-bold text-slate-900 dark:text-white">Banner do Cardápio</h4>
-	                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Ideal para fotos da loja ou produtos em destaque</p>
-	                      <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Recomendado: 1200x600px (Paisagem)</p>
-	                      {bannerUrl && (
-	                        <button onClick={() => setBannerUrl(null)} className="text-xs text-red-500 font-bold mt-2 hover:underline">Remover Banner</button>
-	                      )}
-	                    </div>
-	                  </div>
+  <div className="pb-6 border-b border-slate-100 dark:border-slate-700">
+  <MediaImageField
+  value={bannerUrl}
+  onChange={setBannerUrl}
+  title="Banner do cardápio público"
+  description="Escolha uma imagem ou vídeo MP4 do acervo para destacar sua loja."
+  recommendedSize="Imagens: 1200 × 600 px · vídeos MP4: até 50 MB"
+  initialCategory="other"
+  aspect="banner"
+  allowVideo
+  removeLabel="Remover banner"
+  />
+  </div>
 
                   <form id="company-form" className="space-y-6">
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white">Informações da Loja</h3>

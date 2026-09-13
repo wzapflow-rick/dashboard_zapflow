@@ -1,7 +1,9 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MediaAssetCard } from './media-asset-card';
+import { MediaImageField } from './media-image-field';
 import { MediaUploader } from './media-uploader';
+import { getMediaLibrary } from '@/app/actions/media-library';
 import type { MediaAsset } from '@/lib/media-library';
 
 const mockProcessImage = jest.fn();
@@ -61,6 +63,9 @@ class MockXMLHttpRequest {
   }
 }
 
+jest.mock('@/app/actions/media-library', () => ({
+  getMediaLibrary: jest.fn(),
+}));
 jest.mock('@/lib/image-utils', () => ({
   processImage: (...args: unknown[]) => mockProcessImage(...args),
   formatFileSize: () => '2 KB',
@@ -122,6 +127,12 @@ describe('media library interactions', () => {
     jest.clearAllMocks();
     MockXMLHttpRequest.instances = [];
     mockProcessImage.mockImplementation(async (file: File) => file);
+    (getMediaLibrary as jest.Mock).mockResolvedValue({
+      assets: [imageAsset, videoAsset],
+      total: 2,
+      setupRequired: false,
+      uploadConfigured: true,
+    });
     installFetch();
     Object.defineProperty(window, 'XMLHttpRequest', {
       configurable: true,
@@ -194,6 +205,47 @@ describe('media library interactions', () => {
     await waitFor(() => expect(MockXMLHttpRequest.instances).toHaveLength(2));
     act(() => MockXMLHttpRequest.instances[1].succeed());
     expect(await screen.findByText('Concluído')).toBeInTheDocument();
+  });
+
+  it('selects a saved image from the reusable image field', async () => {
+    const user = userEvent.setup();
+    const onChange = jest.fn();
+
+    render(
+      <MediaImageField
+        value={null}
+        onChange={onChange}
+        title="Imagem do produto"
+        description="Escolha uma imagem"
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /escolher do acervo/i }));
+    await user.click(await screen.findByRole('button', { name: /usar burger principal/i }));
+
+    expect(onChange).toHaveBeenCalledWith(imageAsset.url);
+    expect(screen.queryByRole('button', { name: /usar burger em movimento/i })).not.toBeInTheDocument();
+  });
+
+  it('allows an MP4 from the library when video selection is enabled', async () => {
+    const user = userEvent.setup();
+    const onChange = jest.fn();
+
+    render(
+      <MediaImageField
+        value={null}
+        onChange={onChange}
+        title="Banner público"
+        description="Escolha uma mídia"
+        allowVideo
+        aspect="banner"
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /escolher mídia/i }));
+    await user.click(await screen.findByRole('button', { name: /usar burger em movimento/i }));
+
+    expect(onChange).toHaveBeenCalledWith(videoAsset.url);
   });
 
   it('requires confirmation before permanent deletion', async () => {

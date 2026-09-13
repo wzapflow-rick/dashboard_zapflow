@@ -55,6 +55,9 @@ interface MediaUploaderProps {
   onUploaded: (asset: MediaAsset) => void;
   onActiveChange?: (active: boolean) => void;
   disabled?: boolean;
+  imagesOnly?: boolean;
+  initialCategory?: MediaCategory;
+  maxFiles?: number;
 }
 
 const ACTIVE_STATUSES = new Set<UploadStatus>(['queued', 'optimizing', 'uploading', 'saving']);
@@ -133,8 +136,11 @@ export function MediaUploader({
   onUploaded,
   onActiveChange,
   disabled = false,
+  imagesOnly = false,
+  initialCategory = 'products',
+  maxFiles = MEDIA_MAX_FILES_PER_SELECTION,
 }: MediaUploaderProps) {
-  const [category, setCategory] = useState<MediaCategory>('products');
+  const [category, setCategory] = useState<MediaCategory>(initialCategory);
   const [items, setItems] = useState<UploadItem[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const itemsRef = useRef(items);
@@ -248,8 +254,9 @@ export function MediaUploader({
   const addFiles = (fileList: FileList | File[]) => {
     if (disabled) return;
     const selected = Array.from(fileList);
-    if (selected.length > MEDIA_MAX_FILES_PER_SELECTION) {
-      toast.error(`Selecione no máximo ${MEDIA_MAX_FILES_PER_SELECTION} arquivos por vez.`);
+    const selectionLimit = Math.max(1, Math.min(maxFiles, MEDIA_MAX_FILES_PER_SELECTION));
+    if (selected.length > selectionLimit) {
+      toast.error(`Selecione no máximo ${selectionLimit} arquivo(s) por vez.`);
     }
 
     const reservedSlots = itemsRef.current.filter((item) =>
@@ -259,11 +266,17 @@ export function MediaUploader({
     let duplicateCount = 0;
     let invalidCount = 0;
 
-    for (const file of selected.slice(0, MEDIA_MAX_FILES_PER_SELECTION)) {
+    for (const file of selected.slice(0, selectionLimit)) {
       if (availableSlots <= 0) break;
       const key = getFileKey(file);
       if (knownFilesRef.current.has(key)) {
         duplicateCount += 1;
+        continue;
+      }
+
+      if (imagesOnly && !file.type.startsWith('image/')) {
+        invalidCount += 1;
+        toast.error(`${file.name}: selecione uma imagem JPG, PNG ou WebP.`);
         continue;
       }
 
@@ -351,15 +364,21 @@ export function MediaUploader({
       >
         <input
           type="file"
-          multiple
-          accept="image/jpeg,image/png,image/webp,video/mp4"
+          multiple={maxFiles > 1}
+          accept={imagesOnly ? 'image/jpeg,image/png,image/webp' : 'image/jpeg,image/png,image/webp,video/mp4'}
           disabled={disabled}
           onChange={(event) => {
             if (event.target.files) addFiles(event.target.files);
             event.target.value = '';
           }}
           className="sr-only"
-          aria-label={disabled ? 'Acervo aguardando configuração' : 'Arraste as imagens ou vídeos ou selecione arquivos'}
+          aria-label={
+            disabled
+              ? 'Acervo aguardando configuração'
+              : imagesOnly
+                ? 'Arraste uma imagem ou selecione um arquivo'
+                : 'Arraste as imagens ou vídeos ou selecione arquivos'
+          }
         />
         <span className="flex size-11 items-center justify-center rounded-lg border border-border-dark bg-surface-elevated text-primary">
           <Upload className="size-5" aria-hidden="true" />
@@ -369,7 +388,9 @@ export function MediaUploader({
             {disabled ? 'Envio indisponível' : 'Solte arquivos aqui ou clique para selecionar'}
           </span>
           <span className="text-sm leading-relaxed text-text-secondary">
-            JPG, PNG ou WebP até 10 MB · MP4 até 50 MB · máximo de 20 por seleção
+            {imagesOnly
+              ? 'JPG, PNG ou WebP até 10 MB'
+              : `JPG, PNG ou WebP até 10 MB · MP4 até 50 MB · máximo de ${Math.min(maxFiles, MEDIA_MAX_FILES_PER_SELECTION)} por seleção`}
           </span>
         </span>
       </label>

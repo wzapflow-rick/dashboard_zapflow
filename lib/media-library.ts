@@ -70,6 +70,12 @@ export function getMediaAssetKind(asset: Pick<MediaAsset, 'mimeType'>): MediaKin
   return getMediaKindFromMimeType(asset.mimeType) ?? 'image';
 }
 
+export function isMediaVideoUrl(value: unknown): value is string {
+  if (typeof value !== 'string' || value.trim() === '') return false;
+  const normalizedUrl = value.split(/[?#]/, 1)[0].toLocaleLowerCase('en-US');
+  return normalizedUrl.includes('/video/upload/') || normalizedUrl.endsWith('.mp4');
+}
+
 export function validateMediaUploadDescriptor(
   descriptor: MediaUploadDescriptor,
 ): MediaUploadValidation {

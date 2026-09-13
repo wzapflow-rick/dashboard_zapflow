@@ -3,6 +3,7 @@ import {
   getMediaCategoryCounts,
   getMediaAssetKind,
   isMediaCategory,
+  isMediaVideoUrl,
   sanitizeMediaName,
   validateMediaUploadDescriptor,
   type MediaAsset,
@@ -91,6 +92,12 @@ describe('media library helpers', () => {
       mimeType: 'video/quicktime',
       sizeBytes: 1024,
     })).toEqual({ valid: false, error: 'Formato inválido. Use JPG, PNG, WebP ou MP4.' });
+  });
+
+  it('detects Cloudinary and direct MP4 video URLs', () => {
+    expect(isMediaVideoUrl('https://res.cloudinary.com/demo/video/upload/v1/banner')).toBe(true);
+    expect(isMediaVideoUrl('https://cdn.example.com/banner.MP4?version=2')).toBe(true);
+    expect(isMediaVideoUrl('https://res.cloudinary.com/demo/image/upload/banner.webp')).toBe(false);
   });
 
   it('filters images and videos independently', () => {
