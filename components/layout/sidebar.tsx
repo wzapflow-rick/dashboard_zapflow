@@ -94,7 +94,7 @@ function NavItem({
             className={cn(
                 "group relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300",
                 isActive
-                    ? "bg-gradient-to-r from-primary/20 to-primary/5 text-primary"
+                    ? "bg-brand/[0.08] text-white"
                     : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
             )}
         >
@@ -107,7 +107,7 @@ function NavItem({
                         animate={{ opacity: 1, scaleY: 1 }}
                         exit={{ opacity: 0, scaleY: 0 }}
                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                        className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-full"
+                        className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-brand rounded-full"
                     />
                 )}
             </AnimatePresence>
@@ -116,12 +116,12 @@ function NavItem({
             <div className={cn(
                 "relative flex items-center justify-center size-9 rounded-lg transition-all duration-300",
                 isActive 
-                    ? "bg-primary/20 shadow-[0_0_20px_rgba(34,197,94,0.3)]" 
+                    ? "bg-brand/15 shadow-[0_0_16px_rgba(255,157,36,0.25)]" 
                     : "bg-white/5 group-hover:bg-white/10"
             )}>
                 <item.icon className={cn(
                     "size-[18px] transition-all duration-300",
-                    isActive ? "text-primary" : "text-slate-400 group-hover:text-slate-200"
+                    isActive ? "text-brand" : "text-slate-400 group-hover:text-slate-200"
                 )} />
             </div>
 
@@ -133,7 +133,7 @@ function NavItem({
                     exit={{ opacity: 0, width: 0 }}
                     className={cn(
                         "text-sm font-medium whitespace-nowrap transition-colors duration-300",
-                        isActive ? "text-primary font-semibold" : "text-slate-300 group-hover:text-white"
+                        isActive ? "text-white font-semibold" : "text-slate-300 group-hover:text-white"
                     )}
                 >
                     {item.name}
@@ -172,7 +172,7 @@ function MobileBottomNav({
                     const itemClassName = cn(
                         "flex flex-col items-center justify-center py-2 px-3 rounded-xl transition-all duration-200 min-w-[60px]",
                         isActive
-                            ? "text-primary"
+                            ? "text-brand"
                             : "text-slate-500 active:text-slate-300"
                     );
 
@@ -180,22 +180,22 @@ function MobileBottomNav({
                         <>
                             <div className={cn(
                                 "relative flex items-center justify-center size-10 rounded-xl transition-all duration-200",
-                                isActive && "bg-primary/20"
+                                isActive && "bg-brand/15"
                             )}>
                                 <item.icon className={cn(
                                     "size-5 transition-all",
-                                    isActive && "text-primary"
+                                    isActive && "text-brand"
                                 )} />
                                 {isActive && (
                                     <motion.div
                                         layoutId="mobileActiveIndicator"
-                                        className="absolute -bottom-1 w-1 h-1 bg-primary rounded-full"
+                                        className="absolute -bottom-1 w-1 h-1 bg-brand rounded-full"
                                     />
                                 )}
                             </div>
                             <span className={cn(
                                 "text-[10px] font-medium mt-0.5 transition-colors",
-                                isActive ? "text-primary" : "text-slate-500"
+                                isActive ? "text-brand" : "text-slate-500"
                             )}>
                                 {item.name}
                             </span>
