@@ -271,7 +271,7 @@ export default function LoginPage() {
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="group relative z-10 w-full font-semibold min-h-[54px] px-4 flex items-center justify-center gap-2 rounded-[13px] transition-[filter,opacity] duration-200 hover:brightness-[1.06] disabled:opacity-60"
+                                    className="group relative z-10 w-full font-semibold min-h-[54px] px-4 flex items-center justify-center gap-2 rounded-[12px] transition-[filter,opacity] duration-200 hover:brightness-[1.06] disabled:opacity-60"
                                     style={{
                                         background: `linear-gradient(135deg, ${AMBER} 0%, ${AMBER_SOFT} 100%)`,
                                         color: '#1a1206',
@@ -288,11 +288,11 @@ export default function LoginPage() {
                                 </button>
                                 <div className="absolute inset-0 z-20 pointer-events-none" aria-hidden="true">
                                 <NeonBorder
-                                    color="#CC9149"
-                                    rounded={13}
-                                    thickness={3}
-                                    borderSize={38}
-                                    glow={90}
+                color="#CC9149"
+                rounded={48}
+                thickness={4}
+                borderSize={38}
+                glow={85}
                                     movement="continuous"
                                     speed={8}
                                 />
