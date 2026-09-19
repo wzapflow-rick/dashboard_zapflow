@@ -19,6 +19,7 @@ import Image from 'next/image';
 import { login } from '@/app/actions/auth';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { NeonBorder } from '@/components/ui/neon-border';
 
 const BG = '#080706';
 const CARD = 'rgba(10, 8, 7, 0.72)';
@@ -103,11 +104,13 @@ export default function LoginPage() {
                     className="hidden lg:flex flex-col flex-1 max-w-xl"
                 >
                     <Image
-                        src="/logo-zapflow.png"
+                        src="/images/zapflow-pizza-rocket.png"
                         alt="ZapFlow"
-                        width={180}
-                        height={50}
-                        className="h-12 w-auto"
+                        width={150}
+                        height={140}
+                        priority
+                        className="h-auto w-[140px] select-none"
+                        style={{ filter: 'drop-shadow(0 10px 26px rgba(204,145,73,0.35))' }}
                     />
 
                     <p
@@ -168,11 +171,12 @@ export default function LoginPage() {
                         {/* Mobile logo */}
                         <div className="lg:hidden mb-8 flex justify-center">
                             <Image
-                                src="/logo-zapflow.png"
+                                src="/images/zapflow-pizza-rocket.png"
                                 alt="ZapFlow"
-                                width={150}
-                                height={40}
-                                className="h-10 w-auto"
+                                width={100}
+                                height={94}
+                                className="h-auto w-[92px] select-none"
+                                style={{ filter: 'drop-shadow(0 8px 20px rgba(204,145,73,0.32))' }}
                             />
                         </div>
 
@@ -263,25 +267,34 @@ export default function LoginPage() {
                                 </Link>
                             </div>
 
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="group w-full font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-60"
-                                style={{
-                                    background: `linear-gradient(135deg, ${AMBER} 0%, ${AMBER_SOFT} 100%)`,
-                                    color: '#1a1206',
-                                    boxShadow: '0 10px 30px -8px rgba(245,165,36,0.45)',
-                                }}
+                            <NeonBorder
+                                color="#CC9149"
+                                accent={AMBER}
+                                thickness={5}
+                                radius={13}
+                                arc={46}
+                                speed={4.5}
+                                className="mt-1"
                             >
-                                {loading ? (
-                                    <Loader2 className="size-5 animate-spin" />
-                                ) : (
-                                    <>
-                                        Entrar no ZapFlow
-                                        <ArrowRight className="size-[18px] transition-transform group-hover:translate-x-1" />
-                                    </>
-                                )}
-                            </button>
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="group w-full font-semibold min-h-[54px] px-4 flex items-center justify-center gap-2 transition-[filter,opacity] duration-200 hover:brightness-[1.06] disabled:opacity-60"
+                                    style={{
+                                        background: `linear-gradient(135deg, ${AMBER} 0%, ${AMBER_SOFT} 100%)`,
+                                        color: '#1a1206',
+                                    }}
+                                >
+                                    {loading ? (
+                                        <Loader2 className="size-5 animate-spin" />
+                                    ) : (
+                                        <>
+                                            Entrar no ZapFlow
+                                            <ArrowRight className="size-[18px] transition-transform group-hover:translate-x-1" />
+                                        </>
+                                    )}
+                                </button>
+                            </NeonBorder>
                         </form>
 
                         <p className="mt-7 text-center text-sm" style={{ color: MUTED }}>
