@@ -9,6 +9,7 @@ import {
   Menu,
   PackageOpen,
   Settings,
+  Sparkles,
   Star,
   Truck,
   Users,
@@ -32,6 +33,7 @@ export const dashboardNavigationItems: DashboardNavigationItem[] = [
   { name: 'Cardápio', href: '/dashboard/menu', icon: UtensilsCrossed, roles: ['admin'] },
   { name: 'Expedição', href: '/dashboard/expedition', icon: Truck, roles: ['admin', 'gerente', 'atendente', 'cozinheiro'] },
   { name: 'Mesas', href: '/dashboard/mesas', icon: LayoutGrid, roles: ['admin', 'gerente', 'atendente'] },
+  { name: 'Inteligência', href: '/dashboard/insights', icon: Sparkles, roles: ['admin', 'gerente'] },
   { name: 'Clientes', href: '/dashboard/customers', icon: Users, roles: ['admin', 'gerente', 'atendente'] },
   { name: 'Marketing', href: '/dashboard/marketing?tab=divulgacao', icon: Megaphone, roles: ['admin'] },
   { name: 'Insumos', href: '/dashboard/insumos', icon: PackageOpen, roles: ['admin'] },
@@ -50,7 +52,7 @@ export const dashboardMobileNavigationItems = [
   { name: 'Início', href: '/dashboard', icon: Home },
   { name: 'Cardápio', href: '/dashboard/menu', icon: UtensilsCrossed },
   { name: 'Expedição', href: '/dashboard/expedition', icon: Truck },
-  { name: 'Mesas', href: '/dashboard/mesas', icon: LayoutGrid },
+  { name: 'Inteligência', href: '/dashboard/insights', icon: Sparkles },
   { name: 'Mais', href: '#menu', icon: Menu },
 ];
 
