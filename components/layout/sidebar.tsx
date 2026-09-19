@@ -19,6 +19,7 @@ import {
     Home,
     Menu,
     Link2,
+    Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from 'motion/react';
@@ -31,6 +32,7 @@ const MotionLink = motion.create(Link);
 
 const navItems = [
     { name: 'Visão Geral', href: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'gerente'] },
+    { name: 'Inteligência', href: '/dashboard/insights', icon: Sparkles, roles: ['admin', 'gerente'] },
     { name: 'Cardápio', href: '/dashboard/menu', icon: UtensilsCrossed, roles: ['admin'] },
     { name: 'Expedição', href: '/dashboard/expedition', icon: Truck, roles: ['admin', 'gerente', 'atendente', 'cozinheiro'] },
     { name: 'Mesas', href: '/dashboard/mesas', icon: LayoutGrid, roles: ['admin', 'gerente', 'atendente'] },
@@ -55,7 +57,7 @@ const mobileNavItems = [
     { name: 'Início', href: '/dashboard', icon: Home },
     { name: 'Cardápio', href: '/dashboard/menu', icon: UtensilsCrossed },
     { name: 'Expedição', href: '/dashboard/expedition', icon: Truck },
-    { name: 'Mesas', href: '/dashboard/mesas', icon: LayoutGrid },
+    { name: 'Inteligência', href: '/dashboard/insights', icon: Sparkles },
     { name: 'Mais', href: '#menu', icon: Menu },
 ];
 

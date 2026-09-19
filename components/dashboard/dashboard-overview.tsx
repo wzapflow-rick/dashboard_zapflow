@@ -1,195 +1,62 @@
 'use client';
 
-import React, { useEffect, useState, type ReactNode } from 'react';
-import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'motion/react';
-import {
-  Activity,
-  BarChart3,
-  BrainCircuit,
-  DollarSign,
-  FileBarChart,
-  LayoutDashboard,
-  RefreshCw,
-  ShoppingBag,
-  Sparkles,
-  TrendingUp,
-  Zap,
-} from 'lucide-react';
-import { StatCard } from './stat-card';
-import { TopProductsList } from './top-products';
-import { RecentOrdersTable } from './recent-orders-table';
-import { ZapflowInsightsClient } from '@/components/insights/zapflow-insights-client';
+import { RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getDashboardBundle } from '@/app/actions/dashboard';
 import { type OnboardingStatus } from '@/app/actions/onboarding-status';
 import { SetupChecklist } from '@/components/onboarding/setup-checklist';
 import { useLowPowerMode } from '@/hooks/use-low-power-mode';
+import { MetricStrip } from './home/metric-strip';
+import { AIConsultant } from './home/ai-consultant';
+import { QuickActions } from './home/quick-actions';
+import { SectionHeader } from './home/section-header';
+import { OperationsOverview } from './home/operations-overview';
+import { RecentOrders } from './home/recent-orders';
 
 const OrderDetailsModal = dynamic(() => import('@/components/modals/order-details-modal'), {
   ssr: false,
 });
 
 const DEFAULT_STATS = [
-  { label: 'Faturamento Bruto', value: 'R$ 0,00', change: '...', trend: 'neutral', icon: DollarSign, color: 'blue' },
-  { label: 'Total de Pedidos', value: '0', change: '...', trend: 'neutral', icon: ShoppingBag, color: 'indigo' },
-  { label: 'Ticket Médio', value: 'R$ 0,00', change: '...', trend: 'neutral', icon: TrendingUp, color: 'slate' },
-  { label: 'Pedidos Pendentes', value: '0', change: '...', trend: 'neutral', icon: Zap, color: 'primary' },
+  { label: 'Faturamento Bruto', value: 'R$ 0,00', change: '...', trend: 'neutral', color: 'blue' },
+  { label: 'Total de Pedidos', value: '0', change: '...', trend: 'neutral', color: 'indigo' },
+  { label: 'Ticket Médio', value: 'R$ 0,00', change: '...', trend: 'neutral', color: 'slate' },
+  { label: 'Pedidos Pendentes', value: '0', change: '...', trend: 'neutral', color: 'primary' },
 ];
 
-const SECTION_LINKS = [
-  { label: 'Resumo', href: '#resumo', icon: LayoutDashboard },
-  { label: 'Inteligência IA', href: '#inteligencia', icon: Sparkles },
-  { label: 'Operação', href: '#operacao', icon: Activity },
-  { label: 'Desempenho', href: '#desempenho', icon: BarChart3 },
-];
+const PERIOD_LABELS: Record<string, string> = {
+  Hoje: 'Hoje',
+  'Ultimos 7 dias': 'Últimos 7 dias',
+  'Este Mes': 'Este mês',
+  Tudo: 'Todo o período',
+};
+
+function todayLabel() {
+  return new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+}
 
 function DashboardSkeleton() {
   return (
-    <div className="flex animate-pulse flex-col gap-8" aria-busy="true" aria-label="Carregando visão geral">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div className="flex flex-col gap-2">
-          <div className="h-8 w-48 rounded-lg bg-slate-200/60 dark:bg-slate-800/60" />
-          <div className="h-4 w-72 max-w-full rounded-lg bg-slate-200/60 dark:bg-slate-800/60" />
-        </div>
-        <div className="h-10 w-full rounded-xl bg-slate-200/60 dark:bg-slate-800/60 sm:w-80" />
+    <div className="mx-auto flex w-full max-w-[1200px] animate-pulse flex-col gap-8" aria-busy="true" aria-label="Carregando início">
+      <div className="flex flex-col gap-3">
+        <div className="h-8 w-56 rounded-lg bg-slate-200/60 dark:bg-white/[0.06]" />
+        <div className="h-4 w-72 max-w-full rounded-lg bg-slate-200/60 dark:bg-white/[0.06]" />
       </div>
-      <div className="h-14 rounded-2xl bg-slate-200/40 dark:bg-slate-800/40" />
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {[0, 1, 2, 3].map((item) => (
-          <div key={item} className="h-36 rounded-2xl bg-slate-200/40 dark:bg-slate-800/40" />
+          <div key={item} className="h-28 rounded-2xl bg-slate-200/40 dark:bg-white/[0.03]" />
         ))}
       </div>
-      <div className="h-72 rounded-3xl bg-slate-200/40 dark:bg-slate-800/40" />
+      <div className="h-56 rounded-3xl bg-slate-200/40 dark:bg-white/[0.03]" />
+      <div className="grid gap-3 sm:grid-cols-3">
+        {[0, 1, 2].map((item) => (
+          <div key={item} className="h-20 rounded-2xl bg-slate-200/40 dark:bg-white/[0.03]" />
+        ))}
+      </div>
     </div>
-  );
-}
-
-function SectionHeading({
-  id,
-  eyebrow,
-  title,
-  description,
-  icon: Icon,
-  aside,
-}: {
-  id?: string;
-  eyebrow: string;
-  title: string;
-  description: string;
-  icon: React.ElementType;
-  aside?: ReactNode;
-}) {
-  return (
-    <header className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
-          <Icon className="size-5" aria-hidden="true" />
-        </div>
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-primary">{eyebrow}</p>
-          <h2 id={id} className="mt-1 text-xl font-bold text-slate-900 dark:text-white sm:text-2xl">{title}</h2>
-          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-500 dark:text-slate-400">{description}</p>
-        </div>
-      </div>
-      {aside}
-    </header>
-  );
-}
-
-function OperationSection({
-  dashboardData,
-  orders,
-  selectedPeriod,
-  lowPower,
-  onOpenModal,
-}: {
-  dashboardData: any;
-  orders: any[];
-  selectedPeriod: string;
-  lowPower: boolean;
-  onOpenModal: (order: any) => void;
-}) {
-  const chartData: number[] = dashboardData?.chartData || [];
-  const maxValue = Math.max(...chartData, 1);
-
-  return (
-    <section id="operacao" className="scroll-mt-32 flex flex-col gap-6" aria-labelledby="operacao-title">
-      <SectionHeading
-        id="operacao-title"
-        eyebrow="Operação"
-        title="Ritmo da loja"
-        description="Acompanhe o movimento por hora, os produtos mais vendidos e os pedidos mais recentes."
-        icon={Activity}
-        aside={(
-          <span className="w-fit rounded-full border border-slate-200/70 bg-white/70 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/50 dark:text-slate-300">
-            Período: {selectedPeriod}
-          </span>
-        )}
-      />
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <motion.div
-          initial={lowPower ? false : { opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={lowPower ? { duration: 0 } : { delay: 0.1 }}
-          className="relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white/75 p-5 shadow-lg shadow-slate-200/40 backdrop-blur-xl dark:border-slate-700/50 dark:bg-slate-900/50 dark:shadow-black/20 sm:p-6 lg:col-span-2"
-        >
-          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary/30 via-primary to-primary/30" />
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <Activity className="size-4" aria-hidden="true" />
-              </div>
-              <div>
-                <h3 className="font-bold text-slate-800 dark:text-white">Vendas por hora</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Distribuição dos pedidos ao longo do dia</p>
-              </div>
-            </div>
-            <span className="flex items-center gap-2 rounded-full bg-slate-100/80 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:bg-slate-800/70 dark:text-slate-400">
-              <span className="relative flex size-2" aria-hidden="true">
-                <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-75" />
-                <span className="relative inline-flex size-2 rounded-full bg-primary" />
-              </span>
-              Tempo real
-            </span>
-          </div>
-
-          <div className="custom-scrollbar -mx-2 overflow-x-auto px-2">
-            <div className="flex h-60 min-w-[600px] items-end justify-between gap-1 rounded-xl border border-slate-200/50 bg-gradient-to-b from-slate-50/60 to-slate-100/40 p-4 dark:border-slate-700/40 dark:from-slate-800/40 dark:to-slate-900/30 sm:min-w-0">
-              {chartData.length > 0 ? (
-                chartData.map((value, index) => {
-                  const height = value === 0 ? 4 : Math.max(8, Math.round((value / maxValue) * 180));
-
-                  return (
-                    <div key={index} className="group relative flex h-full flex-1 flex-col items-center justify-end">
-                      <motion.div
-                        initial={lowPower ? false : { height: 0, opacity: 0 }}
-                        animate={{ height: `${height}px`, opacity: 1 }}
-                        transition={lowPower ? { duration: 0 } : { delay: index * 0.03, type: 'spring', stiffness: 100 }}
-                        className="w-full rounded-t-md bg-gradient-to-t from-primary to-primary/70 shadow-lg shadow-primary/20 transition-all duration-300 group-hover:from-primary/90 group-hover:to-primary/60 group-hover:shadow-primary/40"
-                        title={`${value} pedidos às ${index}h`}
-                      />
-                      <span className="mt-2 text-[10px] font-bold text-slate-400 dark:text-slate-500">{index}h</span>
-                      <div className="pointer-events-none absolute -top-12 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white opacity-0 shadow-xl transition-opacity group-hover:opacity-100 dark:bg-slate-700">
-                        <span className="font-bold text-primary">{value}</span> pedidos às {index}h
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="flex w-full items-center justify-center text-sm text-slate-400">Nenhum dado disponível</div>
-              )}
-            </div>
-          </div>
-        </motion.div>
-
-        <TopProductsList products={dashboardData?.topProducts || []} />
-      </div>
-
-      <RecentOrdersTable orders={orders} onOpenModal={onOpenModal} />
-    </section>
   );
 }
 
@@ -269,61 +136,42 @@ export default function DashboardOverview() {
 
   if (loading) return <DashboardSkeleton />;
 
-  const statsWithIcons = (dashboardData?.stats || DEFAULT_STATS).map((stat: any, index: number) => ({
-    ...stat,
-    icon: index === 0 ? DollarSign : index === 1 ? ShoppingBag : index === 2 ? TrendingUp : Zap,
-  }));
-
-  const operationContent = (
-    <OperationSection
-      dashboardData={dashboardData}
-      orders={orders}
-      selectedPeriod={selectedPeriod}
-      lowPower={lowPower}
-      onOpenModal={handleOpenModal}
-    />
-  );
+  const stats = dashboardData?.stats || DEFAULT_STATS;
+  const pedidosCount = stats[1]?.value ?? '0';
+  const firstName = (user?.nome || 'Usuário').split(' ')[0];
 
   return (
-    <div className="flex flex-col gap-10 pb-8">
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 pb-8">
       <motion.header
-        initial={lowPower ? false : { opacity: 0, y: -16 }}
+        initial={lowPower ? false : { opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col justify-between gap-5 xl:flex-row xl:items-end"
+        className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start"
       >
-        <div>
-          <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary">
-            <BrainCircuit className="size-4" aria-hidden="true" />
-            Painel operacional + IA
-          </div>
-          <h1 className="text-balance text-2xl font-bold text-slate-900 dark:text-white sm:text-3xl">
-            Olá, {user?.nome || 'Usuário'}
+        <div className="min-w-0">
+          <h1 className="text-balance text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+            Olá, {firstName}
           </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-            Uma visão completa da sua loja: resultados, operação e recomendações inteligentes no mesmo lugar.
+          <p className="mt-1 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+            Aqui está o resumo da sua loja &middot; {todayLabel()}
           </p>
         </div>
 
-        <div className="flex w-full flex-wrap items-center gap-2 xl:w-auto xl:justify-end">
+        <div className="flex items-center gap-2">
+          <label htmlFor="dashboard-period" className="sr-only">
+            Período do resumo
+          </label>
           <select
+            id="dashboard-period"
             value={selectedPeriod}
             onChange={(event) => setSelectedPeriod(event.target.value)}
-            aria-label="Período da visão geral"
-            className="min-w-40 flex-1 cursor-pointer rounded-xl border border-slate-200/70 bg-white/80 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-lg shadow-slate-200/40 outline-none transition-all focus:ring-2 focus:ring-primary/30 dark:border-slate-700/50 dark:bg-slate-900/60 dark:text-slate-300 dark:shadow-black/20 sm:flex-none"
+            className="cursor-pointer rounded-xl border border-slate-200/70 bg-white/80 px-4 py-2.5 text-sm font-semibold text-slate-700 outline-none transition-all focus:ring-2 focus:ring-primary/30 dark:border-white/[0.07] dark:bg-white/[0.03] dark:text-slate-200"
           >
-            <option value="Hoje">Hoje</option>
-            <option value="Ultimos 7 dias">Últimos 7 dias</option>
-            <option value="Este Mes">Este mês</option>
-            <option value="Tudo">Tudo</option>
+            {Object.keys(PERIOD_LABELS).map((value) => (
+              <option key={value} value={value}>
+                {PERIOD_LABELS[value]}
+              </option>
+            ))}
           </select>
-
-          <Link
-            href="/dashboard/reports"
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200/70 bg-white/80 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-lg shadow-slate-200/40 transition-colors hover:border-primary/30 hover:text-primary dark:border-slate-700/50 dark:bg-slate-900/60 dark:text-slate-300 dark:shadow-black/20 dark:hover:text-primary"
-          >
-            <FileBarChart className="size-4" aria-hidden="true" />
-            Abrir relatórios
-          </Link>
 
           <motion.button
             type="button"
@@ -332,7 +180,7 @@ export default function DashboardOverview() {
             onClick={() => loadData(true)}
             disabled={isRefreshing}
             className={cn(
-              'flex size-10 items-center justify-center rounded-xl border border-slate-200/70 bg-white/80 text-slate-600 shadow-lg shadow-slate-200/40 transition-all dark:border-slate-700/50 dark:bg-slate-900/60 dark:text-slate-400 dark:shadow-black/20',
+              'flex size-10 shrink-0 items-center justify-center rounded-xl border border-slate-200/70 bg-white/80 text-slate-600 transition-all dark:border-white/[0.07] dark:bg-white/[0.03] dark:text-slate-400',
               isRefreshing ? 'opacity-50' : 'hover:border-primary/30 hover:text-primary',
             )}
             aria-label="Atualizar dados do período"
@@ -354,59 +202,35 @@ export default function DashboardOverview() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="rounded-2xl border border-red-200/60 bg-red-50/80 p-4 text-sm text-red-700 backdrop-blur-xl dark:border-red-800/50 dark:bg-red-900/20 dark:text-red-400"
+            className="rounded-2xl border border-red-200/60 bg-red-50/80 p-4 text-sm text-red-700 dark:border-red-800/50 dark:bg-red-900/20 dark:text-red-400"
           >
             {error}
           </motion.div>
         )}
       </AnimatePresence>
 
-      <nav
-        aria-label="Atalhos da visão geral"
-        className="custom-scrollbar sticky top-20 z-30 -mx-1 overflow-x-auto rounded-2xl border border-slate-200/70 bg-white/85 p-1.5 shadow-lg shadow-slate-200/30 backdrop-blur-xl dark:border-slate-700/50 dark:bg-slate-900/85 dark:shadow-black/20"
-      >
-        <div className="flex min-w-max items-center gap-1">
-          {SECTION_LINKS.map(({ label, href, icon: Icon }) => (
-            <a
-              key={href}
-              href={href}
-              className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 dark:text-slate-300"
-            >
-              <Icon className="size-4" aria-hidden="true" />
-              {label}
-            </a>
-          ))}
-        </div>
-      </nav>
+      <MetricStrip stats={stats} lowPower={lowPower} />
 
-      <section id="resumo" className="scroll-mt-32 flex flex-col gap-6" aria-labelledby="resumo-title">
-        <SectionHeading
-          id="resumo-title"
-          eyebrow="Resumo"
-          title="Números do período"
-          description="Indicadores consolidados conforme o período selecionado no topo da página."
-          icon={LayoutDashboard}
-          aside={(
-            <span className="w-fit rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">
-              {selectedPeriod}
-            </span>
-          )}
+      <AIConsultant />
+
+      <section className="flex flex-col gap-4" aria-label="Ações rápidas">
+        <SectionHeader
+          title="O que você pode fazer agora"
+          description="Ações rápidas para crescer o seu negócio."
         />
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {statsWithIcons.map((stat: any, index: number) => (
-            <StatCard key={stat.label} stat={stat} index={index} />
-          ))}
-        </div>
+        <QuickActions lowPower={lowPower} />
       </section>
 
-      <ZapflowInsightsClient operationContent={operationContent} />
+      <OperationsOverview
+        chartData={dashboardData?.chartData || []}
+        topProducts={dashboardData?.topProducts || []}
+        pedidosCount={pedidosCount}
+      />
+
+      <RecentOrders orders={orders} onOpenModal={handleOpenModal} />
 
       {isModalOpen && (
-        <OrderDetailsModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          order={selectedOrder}
-        />
+        <OrderDetailsModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} order={selectedOrder} />
       )}
     </div>
   );
