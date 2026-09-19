@@ -19,6 +19,7 @@ import Image from 'next/image';
 import { login } from '@/app/actions/auth';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import NeonBorder from '@/components/ui/neon-border';
 
 const BG = '#080706';
 const CARD = 'rgba(10, 8, 7, 0.72)';
@@ -93,31 +94,34 @@ export default function LoginPage() {
             />
 
             {/* Composition */}
-            <div className="relative z-10 min-h-screen w-full flex items-center justify-center lg:justify-between px-6 py-10 sm:px-10 lg:px-16 xl:px-24">
+            <div className="relative z-10 min-h-screen w-full flex items-center justify-center px-6 py-10 sm:px-10">
+              <div className="w-full max-w-[1240px] mx-auto flex flex-col items-center justify-center lg:flex-row lg:items-center lg:justify-between gap-14 xl:gap-24">
                 {/* Branding — desktop only */}
                 <motion.div
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.7, ease: 'easeOut' }}
-                    className="hidden lg:flex flex-col max-w-md xl:max-w-lg"
+                    className="hidden lg:flex flex-col flex-1 max-w-xl"
                 >
                     <Image
-                        src="/logo-zapflow.png"
+                        src="/images/zapflow-pizza-rocket.png"
                         alt="ZapFlow"
-                        width={160}
-                        height={44}
-                        className="h-11 w-auto"
+                        width={150}
+                        height={140}
+                        priority
+                        className="h-auto w-[140px] select-none"
+                        style={{ filter: 'drop-shadow(0 10px 26px rgba(204,145,73,0.35))' }}
                     />
 
                     <p
-                        className="mt-12 text-xs font-semibold tracking-[0.28em] uppercase"
+                        className="mt-14 text-xs font-semibold tracking-[0.28em] uppercase"
                         style={{ color: MUTED }}
                     >
                         Delivery, cardápio e operação
                     </p>
 
                     <h1
-                        className="mt-4 text-5xl xl:text-6xl font-bold leading-[1.05] tracking-tight text-balance"
+                        className="mt-4 text-6xl xl:text-7xl font-extrabold leading-[0.98] tracking-tight text-balance"
                         style={{ color: TEXT }}
                     >
                         Seu negócio
@@ -125,21 +129,21 @@ export default function LoginPage() {
                         em <span style={{ color: AMBER }}>fluxo.</span>
                     </h1>
 
-                    <p className="mt-5 text-lg leading-relaxed" style={{ color: MUTED }}>
+                    <p className="mt-6 max-w-[460px] text-lg xl:text-xl leading-relaxed" style={{ color: MUTED }}>
                         Pedidos, cardápio e operação em um só lugar.
                     </p>
 
-                    <ul className="mt-10 space-y-4">
+                    <ul className="mt-12 space-y-5">
                         {benefits.map((b, i) => (
                             <motion.li
                                 key={b.label}
                                 initial={{ opacity: 0, x: -12 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ delay: 0.35 + i * 0.1, duration: 0.5 }}
-                                className="flex items-center gap-3"
+                                className="flex items-center gap-3.5"
                             >
-                                <b.icon className="size-[18px]" style={{ color: AMBER }} strokeWidth={1.75} />
-                                <span className="text-[15px]" style={{ color: TEXT }}>
+                                <b.icon className="size-5" style={{ color: AMBER }} strokeWidth={1.75} />
+                                <span className="text-base" style={{ color: TEXT }}>
                                     {b.label}
                                 </span>
                             </motion.li>
@@ -152,33 +156,34 @@ export default function LoginPage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, ease: 'easeOut' }}
-                    className="w-full max-w-[440px]"
+                    className="w-full max-w-[460px] lg:flex-none"
                 >
                     <div
-                        className="rounded-2xl p-7 sm:p-9"
+                        className="rounded-2xl p-7 sm:p-10"
                         style={{
                             backgroundColor: CARD,
                             border: `1px solid ${BORDER}`,
-                            backdropFilter: 'blur(16px)',
-                            WebkitBackdropFilter: 'blur(16px)',
-                            boxShadow: '0 24px 70px -20px rgba(0,0,0,0.75)',
+                            backdropFilter: 'blur(20px)',
+                            WebkitBackdropFilter: 'blur(20px)',
+                            boxShadow: '0 30px 80px -24px rgba(0,0,0,0.8)',
                         }}
                     >
                         {/* Mobile logo */}
                         <div className="lg:hidden mb-8 flex justify-center">
                             <Image
-                                src="/logo-zapflow.png"
+                                src="/images/zapflow-pizza-rocket.png"
                                 alt="ZapFlow"
-                                width={150}
-                                height={40}
-                                className="h-10 w-auto"
+                                width={100}
+                                height={94}
+                                className="h-auto w-[92px] select-none"
+                                style={{ filter: 'drop-shadow(0 8px 20px rgba(204,145,73,0.32))' }}
                             />
                         </div>
 
-                        <h2 className="text-2xl font-bold tracking-tight" style={{ color: TEXT }}>
+                        <h2 className="text-3xl font-bold tracking-tight" style={{ color: TEXT }}>
                             Bem-vindo de volta!
                         </h2>
-                        <p className="mt-2 text-sm" style={{ color: MUTED }}>
+                        <p className="mt-2 text-[15px]" style={{ color: MUTED }}>
                             Entre para continuar no ZapFlow.
                         </p>
 
@@ -262,40 +267,41 @@ export default function LoginPage() {
                                 </Link>
                             </div>
 
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="group w-full font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-60"
-                                style={{
-                                    background: `linear-gradient(135deg, ${AMBER} 0%, ${AMBER_SOFT} 100%)`,
-                                    color: '#1a1206',
-                                    boxShadow: '0 10px 30px -8px rgba(245,165,36,0.45)',
-                                }}
-                            >
-                                {loading ? (
-                                    <Loader2 className="size-5 animate-spin" />
-                                ) : (
-                                    <>
-                                        Entrar no ZapFlow
-                                        <ArrowRight className="size-[18px] transition-transform group-hover:translate-x-1" />
-                                    </>
-                                )}
-                            </button>
+                            <div className="relative mt-1">
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="group relative z-10 w-full font-semibold min-h-[54px] px-4 flex items-center justify-center gap-2 rounded-[12px] transition-[filter,opacity] duration-200 hover:brightness-[1.06] disabled:opacity-60"
+                                    style={{
+                                        background: `linear-gradient(135deg, ${AMBER} 0%, ${AMBER_SOFT} 100%)`,
+                                        color: '#1a1206',
+                                    }}
+                                >
+                                    {loading ? (
+                                        <Loader2 className="size-5 animate-spin" />
+                                    ) : (
+                                        <>
+                                            Entrar no ZapFlow
+                                            <ArrowRight className="size-[18px] transition-transform group-hover:translate-x-1" />
+                                        </>
+                                    )}
+                                </button>
+                                <div className="absolute inset-0 z-20 pointer-events-none" aria-hidden="true">
+                                <NeonBorder
+                color="#CC9149"
+                rounded={48}
+                thickness={4}
+                borderSize={38}
+                glow={85}
+                                    movement="continuous"
+                                    speed={8}
+                                />
+                                </div>
+                            </div>
                         </form>
 
-                        <p className="mt-7 text-center text-sm" style={{ color: MUTED }}>
-                            Ainda não tem uma conta?{' '}
-                            <Link
-                                href="/signup"
-                                className="font-semibold transition-colors hover:underline"
-                                style={{ color: AMBER }}
-                            >
-                                Comece grátis por 7 dias →
-                            </Link>
-                        </p>
-
                         <div
-                            className="mt-7 pt-5 flex items-center justify-center gap-2"
+                            className="mt-8 pt-5 flex items-center justify-center gap-2"
                             style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
                         >
                             <ShieldCheck className="size-[14px]" style={{ color: '#4ea36a' }} />
@@ -305,6 +311,7 @@ export default function LoginPage() {
                         </div>
                     </div>
                 </motion.div>
+              </div>
             </div>
 
             <style jsx>{`
