@@ -19,7 +19,7 @@ import Image from 'next/image';
 import { login } from '@/app/actions/auth';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
-import { NeonBorder } from '@/components/ui/neon-border';
+import NeonBorder from '@/components/ui/neon-border';
 
 const BG = '#080706';
 const CARD = 'rgba(10, 8, 7, 0.72)';
@@ -267,19 +267,11 @@ export default function LoginPage() {
                                 </Link>
                             </div>
 
-                            <NeonBorder
-                                color="#CC9149"
-                                accent={AMBER}
-                                thickness={5}
-                                radius={13}
-                                arc={46}
-                                speed={4.5}
-                                className="mt-1"
-                            >
+                            <div className="relative mt-1">
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="group w-full font-semibold min-h-[54px] px-4 flex items-center justify-center gap-2 transition-[filter,opacity] duration-200 hover:brightness-[1.06] disabled:opacity-60"
+                                    className="group relative z-10 w-full font-semibold min-h-[54px] px-4 flex items-center justify-center gap-2 rounded-[13px] transition-[filter,opacity] duration-200 hover:brightness-[1.06] disabled:opacity-60"
                                     style={{
                                         background: `linear-gradient(135deg, ${AMBER} 0%, ${AMBER_SOFT} 100%)`,
                                         color: '#1a1206',
@@ -294,22 +286,22 @@ export default function LoginPage() {
                                         </>
                                     )}
                                 </button>
-                            </NeonBorder>
+                                <div className="absolute inset-0 z-20 pointer-events-none" aria-hidden="true">
+                                    <NeonBorder
+                                        color="#CC9149"
+                                        rounded={48}
+                                        thickness={4}
+                                        borderSize={44}
+                                        glow={100}
+                                        movement="continuous"
+                                        speed={8}
+                                    />
+                                </div>
+                            </div>
                         </form>
 
-                        <p className="mt-7 text-center text-sm" style={{ color: MUTED }}>
-                            Ainda não tem uma conta?{' '}
-                            <Link
-                                href="/signup"
-                                className="font-semibold transition-colors hover:underline"
-                                style={{ color: AMBER }}
-                            >
-                                Comece grátis por 7 dias →
-                            </Link>
-                        </p>
-
                         <div
-                            className="mt-7 pt-5 flex items-center justify-center gap-2"
+                            className="mt-8 pt-5 flex items-center justify-center gap-2"
                             style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
                         >
                             <ShieldCheck className="size-[14px]" style={{ color: '#4ea36a' }} />
