@@ -40,7 +40,7 @@ function todayLabel() {
 
 function DashboardSkeleton() {
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] animate-pulse flex-col gap-8" aria-busy="true" aria-label="Carregando início">
+    <div className="mx-auto flex w-full max-w-[1280px] animate-pulse flex-col gap-8" aria-busy="true" aria-label="Carregando início">
       <div className="flex flex-col gap-3">
         <div className="h-8 w-56 rounded-lg bg-slate-200/60 dark:bg-white/[0.06]" />
         <div className="h-4 w-72 max-w-full rounded-lg bg-slate-200/60 dark:bg-white/[0.06]" />
@@ -141,22 +141,25 @@ export default function DashboardOverview() {
   const firstName = (user?.nome || 'Usuário').split(' ')[0];
 
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 pb-8">
+    <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-8 pb-8">
       <motion.header
         initial={lowPower ? false : { opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start"
       >
         <div className="min-w-0">
-          <h1 className="text-balance text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+          <h1 className="text-balance text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-[2.5rem] sm:leading-[1.1]">
             Olá, {firstName}
           </h1>
-          <p className="mt-1 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-            Aqui está o resumo da sua loja &middot; {todayLabel()}
+          <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400 sm:text-base">
+            Aqui está o resumo da sua operação.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
+          <span className="mr-1 hidden text-xs font-medium capitalize text-slate-400 dark:text-slate-500 sm:block">
+            {todayLabel()}
+          </span>
           <label htmlFor="dashboard-period" className="sr-only">
             Período do resumo
           </label>

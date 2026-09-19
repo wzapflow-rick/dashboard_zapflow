@@ -57,8 +57,12 @@ function ConsultantShell({ children }: { children: React.ReactNode }) {
   return (
     <section
       aria-label="Consultor ZapFlow"
-      className="relative overflow-hidden rounded-3xl border border-brand/25 bg-gradient-to-br from-brand/[0.06] via-white/70 to-white/70 p-5 shadow-sm dark:from-brand/[0.07] dark:via-white/[0.02] dark:to-transparent sm:p-6"
+      className="relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white/70 p-5 dark:border-white/[0.07] dark:bg-white/[0.02] sm:p-6"
     >
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-0 left-0 w-[3px] bg-gradient-to-b from-brand via-brand/40 to-transparent"
+      />
       {children}
     </section>
   );
@@ -156,7 +160,7 @@ export function AIConsultant() {
             <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-600 dark:text-slate-300">{ai.resumoDia}</p>
           )}
 
-          <div className="mt-5 rounded-2xl border border-slate-200/70 bg-white/60 p-4 dark:border-white/[0.07] dark:bg-white/[0.02]">
+          <div className="mt-5 border-t border-slate-200/70 pt-5 dark:border-white/[0.07]">
             <p className="text-[11px] font-bold uppercase tracking-widest text-brand">Recomendação</p>
             <p className="mt-1.5 font-semibold text-slate-900 dark:text-white">{sugestao.titulo}</p>
             <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{sugestao.descricao}</p>

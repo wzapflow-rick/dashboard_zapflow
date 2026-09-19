@@ -21,6 +21,7 @@ interface OperationsOverviewProps {
 export function OperationsOverview({ chartData, topProducts, pedidosCount }: OperationsOverviewProps) {
   const hasChartData = Array.isArray(chartData) && chartData.some((value) => value > 0);
   const hasProducts = topProducts.length > 0;
+  const maxSales = hasProducts ? Math.max(...topProducts.map((product) => product.sales), 1) : 1;
 
   return (
     <div className="flex flex-col gap-4">
@@ -32,9 +33,9 @@ export function OperationsOverview({ chartData, topProducts, pedidosCount }: Ope
       />
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-5 dark:border-white/[0.07] dark:bg-white/[0.02] lg:col-span-2">
+        <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-5 dark:border-white/[0.06] dark:bg-white/[0.02] lg:col-span-2">
           <div className="mb-5 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 <Activity className="size-4" aria-hidden="true" />
               </span>
@@ -63,33 +64,41 @@ export function OperationsOverview({ chartData, topProducts, pedidosCount }: Ope
           )}
         </div>
 
-        <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-5 dark:border-white/[0.07] dark:bg-white/[0.02]">
-          <div className="mb-4 flex items-center gap-2">
-            <span className="flex size-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500 dark:text-amber-400">
+        <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-5 dark:border-white/[0.06] dark:bg-white/[0.02]">
+          <div className="mb-4 flex items-center gap-2.5">
+            <span className="flex size-8 items-center justify-center rounded-lg bg-brand/10 text-brand">
               <Trophy className="size-4" aria-hidden="true" />
             </span>
             <h3 className="font-semibold text-slate-900 dark:text-white">Mais vendidos</h3>
           </div>
 
           {hasProducts ? (
-            <ul className="flex flex-col gap-2.5">
+            <ul className="flex flex-col gap-3.5">
               {topProducts.slice(0, 5).map((product, index) => (
-                <li key={`${product.name}-${index}`} className="flex items-center gap-3">
-                  <span
-                    className={`flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                      index === 0
-                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-400/20 dark:text-amber-400'
-                        : 'bg-slate-100 text-slate-500 dark:bg-white/[0.06] dark:text-slate-400'
-                    }`}
-                  >
-                    {index + 1}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-sm text-slate-700 dark:text-slate-200">
-                    {product.name}
-                  </span>
-                  <span className="shrink-0 text-sm font-semibold text-slate-500 dark:text-slate-400">
-                    {product.sales} un
-                  </span>
+                <li key={`${product.name}-${index}`} className="flex flex-col gap-1.5">
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                        index === 0
+                          ? 'bg-brand/15 text-brand'
+                          : 'bg-slate-100 text-slate-500 dark:bg-white/[0.06] dark:text-slate-400'
+                      }`}
+                    >
+                      {index + 1}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-sm text-slate-700 dark:text-slate-200">
+                      {product.name}
+                    </span>
+                    <span className="shrink-0 text-sm font-semibold tabular-nums text-slate-500 dark:text-slate-400">
+                      {product.sales} un
+                    </span>
+                  </div>
+                  <div className="ml-9 h-1 overflow-hidden rounded-full bg-slate-100 dark:bg-white/[0.05]">
+                    <div
+                      className={`h-full rounded-full ${index === 0 ? 'bg-brand' : 'bg-primary/50'}`}
+                      style={{ width: `${Math.max(6, Math.round((product.sales / maxSales) * 100))}%` }}
+                    />
+                  </div>
                 </li>
               ))}
             </ul>
