@@ -287,15 +287,15 @@ export default function LoginPage() {
                                     )}
                                 </button>
                                 <div className="absolute inset-0 z-20 pointer-events-none" aria-hidden="true">
-                                    <NeonBorder
-                                        color="#CC9149"
-                                        rounded={48}
-                                        thickness={4}
-                                        borderSize={44}
-                                        glow={100}
-                                        movement="continuous"
-                                        speed={8}
-                                    />
+                                <NeonBorder
+                                    color="#CC9149"
+                                    rounded={13}
+                                    thickness={3}
+                                    borderSize={38}
+                                    glow={90}
+                                    movement="continuous"
+                                    speed={8}
+                                />
                                 </div>
                             </div>
                         </form>
