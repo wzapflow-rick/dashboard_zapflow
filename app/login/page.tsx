@@ -6,12 +6,12 @@ import {
     Loader2,
     Lock,
     Mail,
-    TrendingUp,
-    CheckCircle2,
-    Zap,
-    BarChart3,
-    Users,
-    Clock
+    Eye,
+    EyeOff,
+    ClipboardList,
+    Workflow,
+    Clock,
+    ShieldCheck,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
@@ -20,8 +20,23 @@ import { login } from '@/app/actions/auth';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
+const BG = '#080706';
+const CARD = 'rgba(10, 8, 7, 0.72)';
+const AMBER = '#F5A524';
+const AMBER_SOFT = '#E8912D';
+const TEXT = '#F4EFE7';
+const MUTED = '#A79B8C';
+const BORDER = 'rgba(245, 165, 36, 0.14)';
+
+const benefits = [
+    { icon: ClipboardList, label: 'Pedidos organizados' },
+    { icon: Workflow, label: 'Operação simplificada' },
+    { icon: Clock, label: 'Mais tempo para o que importa' },
+];
+
 export default function LoginPage() {
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const router = useRouter();
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -47,248 +62,257 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen flex flex-col lg:flex-row" style={{ backgroundColor: '#0A0F14' }}>
-            {/* Left Side: Decorative */}
-            <div className="hidden lg:flex flex-1 relative overflow-hidden items-center justify-center p-16" style={{ backgroundColor: '#081D10' }}>
-                {/* Background Pattern - Flow Lines */}
-                <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                    {/* Gradient orbs */}
-                    <div 
-                        className="absolute -top-32 -left-32 w-96 h-96 rounded-full blur-3xl opacity-30"
-                        style={{ background: 'radial-gradient(circle, #7CFF6B 0%, transparent 70%)' }}
-                    />
-                    <div 
-                        className="absolute top-1/2 -right-32 w-80 h-80 rounded-full blur-3xl opacity-20"
-                        style={{ background: 'radial-gradient(circle, #22D15A 0%, transparent 70%)' }}
-                    />
-                    <div 
-                        className="absolute -bottom-32 left-1/4 w-64 h-64 rounded-full blur-3xl opacity-25"
-                        style={{ background: 'radial-gradient(circle, #7CFF6B 0%, transparent 70%)' }}
-                    />
-                    
-                    {/* Flow lines SVG */}
-                    <svg className="absolute inset-0 w-full h-full opacity-10" viewBox="0 0 800 800" preserveAspectRatio="xMidYMid slice">
-                        <defs>
-                            <linearGradient id="flowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="#7CFF6B" />
-                                <stop offset="100%" stopColor="#22D15A" />
-                            </linearGradient>
-                        </defs>
-                        <path d="M0,400 Q200,300 400,400 T800,400" stroke="url(#flowGradient)" strokeWidth="2" fill="none" />
-                        <path d="M0,500 Q200,400 400,500 T800,500" stroke="url(#flowGradient)" strokeWidth="1.5" fill="none" />
-                        <path d="M0,300 Q200,200 400,300 T800,300" stroke="url(#flowGradient)" strokeWidth="1" fill="none" />
-                    </svg>
-                </div>
+        <div className="relative min-h-screen w-full overflow-hidden" style={{ backgroundColor: BG }}>
+            {/* Background image — atmosphere only */}
+            <Image
+                src="/images/login-ambiance.jpg"
+                alt=""
+                aria-hidden="true"
+                fill
+                priority
+                sizes="100vw"
+                className="object-cover object-center"
+            />
 
-                <div className="relative z-10 max-w-lg">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6 }}
-                        className="space-y-8"
+            {/* Cinematic overlay */}
+            <div
+                aria-hidden="true"
+                className="absolute inset-0"
+                style={{
+                    background:
+                        'linear-gradient(105deg, rgba(8,7,6,0.96) 0%, rgba(13,11,9,0.86) 42%, rgba(21,16,12,0.6) 72%, rgba(21,16,12,0.4) 100%)',
+                }}
+            />
+            <div
+                aria-hidden="true"
+                className="absolute inset-0"
+                style={{
+                    background:
+                        'radial-gradient(120% 90% at 100% 0%, rgba(245,165,36,0.10) 0%, transparent 55%), radial-gradient(80% 60% at 50% 120%, rgba(8,7,6,0.9) 0%, transparent 60%)',
+                }}
+            />
+
+            {/* Composition */}
+            <div className="relative z-10 min-h-screen w-full flex items-center justify-center lg:justify-between px-6 py-10 sm:px-10 lg:px-16 xl:px-24">
+                {/* Branding — desktop only */}
+                <motion.div
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.7, ease: 'easeOut' }}
+                    className="hidden lg:flex flex-col max-w-md xl:max-w-lg"
+                >
+                    <Image
+                        src="/logo-zapflow.png"
+                        alt="ZapFlow"
+                        width={160}
+                        height={44}
+                        className="h-11 w-auto"
+                    />
+
+                    <p
+                        className="mt-12 text-xs font-semibold tracking-[0.28em] uppercase"
+                        style={{ color: MUTED }}
                     >
-                        {/* Logo */}
-                        <div className="mb-8">
-                            <Image 
-                                src="/logo-zapflow.png" 
-                                alt="ZapFlow" 
-                                width={80} 
-                                height={80}
-                                className="h-16 w-auto"
-                            />
-                            <p className="mt-3 text-sm font-medium tracking-widest uppercase" style={{ color: '#A1A7B3' }}>
-                                O fluxo que <span style={{ color: '#7CFF6B' }}>impulsiona</span> seu negocio
-                            </p>
-                        </div>
+                        Delivery, cardápio e operação
+                    </p>
 
-                        <h2 className="text-4xl font-bold leading-tight" style={{ color: '#F5F7FA' }}>
-                            Transforme seu atendimento em{' '}
-                            <span style={{ color: '#7CFF6B' }}>resultados reais</span>
-                        </h2>
+                    <h1
+                        className="mt-4 text-5xl xl:text-6xl font-bold leading-[1.05] tracking-tight text-balance"
+                        style={{ color: TEXT }}
+                    >
+                        Seu negócio
+                        <br />
+                        em <span style={{ color: AMBER }}>fluxo.</span>
+                    </h1>
 
-                        <p className="text-lg leading-relaxed" style={{ color: '#A1A7B3' }}>
-                            Conecte, automatize e impulsione seu negocio com a plataforma mais completa para delivery e gestao de pedidos.
-                        </p>
+                    <p className="mt-5 text-lg leading-relaxed" style={{ color: MUTED }}>
+                        Pedidos, cardápio e operação em um só lugar.
+                    </p>
 
-                        {/* Stats Cards */}
-                        <div className="grid grid-cols-2 gap-4 pt-6">
-                            {[
-                                { icon: BarChart3, value: '+127%', label: 'Aumento em vendas' },
-                                { icon: Clock, value: '-45%', label: 'Tempo de atendimento' },
-                                { icon: Users, value: '+500', label: 'Empresas ativas' },
-                                { icon: Zap, value: '99.9%', label: 'Uptime garantido' }
-                            ].map((stat, i) => (
-                                <motion.div
-                                    key={i}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.2 + i * 0.1 }}
-                                    className="p-4 rounded-xl border"
-                                    style={{ 
-                                        backgroundColor: 'rgba(124, 255, 107, 0.05)',
-                                        borderColor: 'rgba(124, 255, 107, 0.15)'
-                                    }}
-                                >
-                                    <stat.icon className="size-5 mb-2" style={{ color: '#7CFF6B' }} />
-                                    <p className="text-2xl font-bold" style={{ color: '#F5F7FA' }}>{stat.value}</p>
-                                    <p className="text-xs" style={{ color: '#A1A7B3' }}>{stat.label}</p>
-                                </motion.div>
-                            ))}
-                        </div>
+                    <ul className="mt-10 space-y-4">
+                        {benefits.map((b, i) => (
+                            <motion.li
+                                key={b.label}
+                                initial={{ opacity: 0, x: -12 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.35 + i * 0.1, duration: 0.5 }}
+                                className="flex items-center gap-3"
+                            >
+                                <b.icon className="size-[18px]" style={{ color: AMBER }} strokeWidth={1.75} />
+                                <span className="text-[15px]" style={{ color: TEXT }}>
+                                    {b.label}
+                                </span>
+                            </motion.li>
+                        ))}
+                    </ul>
+                </motion.div>
 
-                        {/* Features */}
-                        <div className="space-y-4 pt-6">
-                            {[
-                                'Integracao completa com WhatsApp',
-                                'Painel Kanban para expedicao',
-                                'Relatorios e insights em tempo real'
-                            ].map((feature, i) => (
-                                <motion.div
-                                    key={i}
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: 0.5 + i * 0.1 }}
-                                    className="flex items-center gap-3"
-                                >
-                                    <div 
-                                        className="size-6 rounded-full flex items-center justify-center"
-                                        style={{ backgroundColor: 'rgba(124, 255, 107, 0.2)' }}
-                                    >
-                                        <CheckCircle2 className="size-4" style={{ color: '#7CFF6B' }} />
-                                    </div>
-                                    <span className="text-sm font-medium" style={{ color: '#F5F7FA' }}>{feature}</span>
-                                </motion.div>
-                            ))}
-                        </div>
-                    </motion.div>
-                </div>
-            </div>
-
-            {/* Right Side: Form */}
-            <div className="flex-1 flex flex-col justify-center px-8 lg:px-16 py-12" style={{ backgroundColor: '#0A0F14' }}>
-                <motion.div 
+                {/* Login card */}
+                <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                    className="max-w-md w-full mx-auto"
+                    transition={{ duration: 0.6, ease: 'easeOut' }}
+                    className="w-full max-w-[440px]"
                 >
-                    {/* Mobile Logo */}
-                    <div className="lg:hidden flex items-center justify-center mb-12">
-                        <Image 
-                            src="/logo-zapflow.png" 
-                            alt="ZapFlow" 
-                            width={150} 
-                            height={40}
-                            className="h-10 w-auto"
-                        />
-                    </div>
+                    <div
+                        className="rounded-2xl p-7 sm:p-9"
+                        style={{
+                            backgroundColor: CARD,
+                            border: `1px solid ${BORDER}`,
+                            backdropFilter: 'blur(16px)',
+                            WebkitBackdropFilter: 'blur(16px)',
+                            boxShadow: '0 24px 70px -20px rgba(0,0,0,0.75)',
+                        }}
+                    >
+                        {/* Mobile logo */}
+                        <div className="lg:hidden mb-8 flex justify-center">
+                            <Image
+                                src="/logo-zapflow.png"
+                                alt="ZapFlow"
+                                width={150}
+                                height={40}
+                                className="h-10 w-auto"
+                            />
+                        </div>
 
-                    <div className="mb-8">
-                        <h1 className="text-3xl font-bold tracking-tight" style={{ color: '#F5F7FA' }}>
+                        <h2 className="text-2xl font-bold tracking-tight" style={{ color: TEXT }}>
                             Bem-vindo de volta!
-                        </h1>
-                        <p className="mt-2" style={{ color: '#A1A7B3' }}>
-                            Entre com suas credenciais para acessar o painel.
+                        </h2>
+                        <p className="mt-2 text-sm" style={{ color: MUTED }}>
+                            Entre para continuar no ZapFlow.
                         </p>
-                    </div>
 
-                    <form className="space-y-5" onSubmit={handleSubmit}>
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold" style={{ color: '#F5F7FA' }}>
-                                E-mail
-                            </label>
-                            <div className="relative">
-                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 size-5" style={{ color: '#A1A7B3' }} />
-                                <input
-                                    name="email"
-                                    type="email"
-                                    placeholder="seu@email.com"
-                                    className="w-full pl-12 pr-4 py-3.5 rounded-xl outline-none transition-all text-white placeholder:text-slate-500"
-                                    style={{ 
-                                        backgroundColor: '#081D10',
-                                        border: '1px solid rgba(124, 255, 107, 0.2)'
-                                    }}
-                                    onFocus={(e) => e.target.style.borderColor = '#7CFF6B'}
-                                    onBlur={(e) => e.target.style.borderColor = 'rgba(124, 255, 107, 0.2)'}
-                                    required
-                                />
+                        <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
+                            <div className="space-y-2">
+                                <label htmlFor="email" className="text-sm font-medium" style={{ color: TEXT }}>
+                                    E-mail
+                                </label>
+                                <div className="relative">
+                                    <Mail
+                                        className="absolute left-4 top-1/2 -translate-y-1/2 size-[18px] pointer-events-none"
+                                        style={{ color: MUTED }}
+                                    />
+                                    <input
+                                        id="email"
+                                        name="email"
+                                        type="email"
+                                        autoComplete="email"
+                                        placeholder="seu@email.com"
+                                        className="login-input w-full pl-11 pr-4 py-3 rounded-xl text-sm outline-none transition-colors placeholder:text-[#6b6255]"
+                                        style={{
+                                            backgroundColor: 'rgba(0,0,0,0.35)',
+                                            border: '1px solid rgba(255,255,255,0.08)',
+                                            color: TEXT,
+                                        }}
+                                        required
+                                    />
+                                </div>
                             </div>
-                        </div>
 
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold" style={{ color: '#F5F7FA' }}>
-                                Senha
-                            </label>
-                            <div className="relative">
-                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-5" style={{ color: '#A1A7B3' }} />
-                                <input
-                                    name="password"
-                                    type="password"
-                                    placeholder="••••••••"
-                                    className="w-full pl-12 pr-4 py-3.5 rounded-xl outline-none transition-all text-white placeholder:text-slate-500"
-                                    style={{ 
-                                        backgroundColor: '#081D10',
-                                        border: '1px solid rgba(124, 255, 107, 0.2)'
-                                    }}
-                                    onFocus={(e) => e.target.style.borderColor = '#7CFF6B'}
-                                    onBlur={(e) => e.target.style.borderColor = 'rgba(124, 255, 107, 0.2)'}
-                                    required
-                                />
+                            <div className="space-y-2">
+                                <label htmlFor="password" className="text-sm font-medium" style={{ color: TEXT }}>
+                                    Senha
+                                </label>
+                                <div className="relative">
+                                    <Lock
+                                        className="absolute left-4 top-1/2 -translate-y-1/2 size-[18px] pointer-events-none"
+                                        style={{ color: MUTED }}
+                                    />
+                                    <input
+                                        id="password"
+                                        name="password"
+                                        type={showPassword ? 'text' : 'password'}
+                                        autoComplete="current-password"
+                                        placeholder="••••••••"
+                                        className="login-input w-full pl-11 pr-11 py-3 rounded-xl text-sm outline-none transition-colors placeholder:text-[#6b6255]"
+                                        style={{
+                                            backgroundColor: 'rgba(0,0,0,0.35)',
+                                            border: '1px solid rgba(255,255,255,0.08)',
+                                            color: TEXT,
+                                        }}
+                                        required
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword((v) => !v)}
+                                        aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md transition-colors hover:text-white"
+                                        style={{ color: MUTED }}
+                                    >
+                                        {showPassword ? <EyeOff className="size-[18px]" /> : <Eye className="size-[18px]" />}
+                                    </button>
+                                </div>
                             </div>
-                        </div>
 
-                        <div className="flex items-center justify-between text-sm pt-1">
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input 
-                                    type="checkbox" 
-                                    className="size-4 rounded border-slate-600 accent-emerald-500"
-                                    style={{ accentColor: '#22D15A' }}
-                                />
-                                <span style={{ color: '#A1A7B3' }}>Lembrar de mim</span>
-                            </label>
-                            <Link 
-                                href="/forgot-password" 
-                                className="font-medium hover:underline transition-colors"
-                                style={{ color: '#7CFF6B' }}
+                            <div className="flex items-center justify-between text-sm">
+                                <label className="flex items-center gap-2 cursor-pointer select-none">
+                                    <input
+                                        type="checkbox"
+                                        className="size-4 rounded"
+                                        style={{ accentColor: AMBER }}
+                                    />
+                                    <span style={{ color: MUTED }}>Lembrar de mim</span>
+                                </label>
+                                <Link
+                                    href="/forgot-password"
+                                    className="font-medium transition-colors hover:underline"
+                                    style={{ color: AMBER }}
+                                >
+                                    Esqueci minha senha?
+                                </Link>
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="group w-full font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-60"
+                                style={{
+                                    background: `linear-gradient(135deg, ${AMBER} 0%, ${AMBER_SOFT} 100%)`,
+                                    color: '#1a1206',
+                                    boxShadow: '0 10px 30px -8px rgba(245,165,36,0.45)',
+                                }}
                             >
-                                Esqueceu a senha?
+                                {loading ? (
+                                    <Loader2 className="size-5 animate-spin" />
+                                ) : (
+                                    <>
+                                        Entrar no ZapFlow
+                                        <ArrowRight className="size-[18px] transition-transform group-hover:translate-x-1" />
+                                    </>
+                                )}
+                            </button>
+                        </form>
+
+                        <p className="mt-7 text-center text-sm" style={{ color: MUTED }}>
+                            Ainda não tem uma conta?{' '}
+                            <Link
+                                href="/signup"
+                                className="font-semibold transition-colors hover:underline"
+                                style={{ color: AMBER }}
+                            >
+                                Comece grátis por 7 dias →
                             </Link>
-                        </div>
+                        </p>
 
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-60 mt-6 group"
-                            style={{ 
-                                background: 'linear-gradient(135deg, #7CFF6B 0%, #22D15A 100%)',
-                                color: '#081D10',
-                                boxShadow: '0 8px 32px rgba(124, 255, 107, 0.25)'
-                            }}
+                        <div
+                            className="mt-7 pt-5 flex items-center justify-center gap-2"
+                            style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
                         >
-                            {loading ? (
-                                <Loader2 className="size-5 animate-spin" />
-                            ) : (
-                                <>
-                                    Entrar no Painel
-                                    <ArrowRight className="size-5 group-hover:translate-x-1 transition-transform" />
-                                </>
-                            )}
-                        </button>
-                    </form>
-
-                    {/* Indicators */}
-                    <div className="mt-12 flex items-center justify-center gap-6">
-                        <div className="flex items-center gap-2">
-                            <div className="size-2 rounded-full" style={{ backgroundColor: '#7CFF6B' }} />
-                            <span className="text-xs" style={{ color: '#A1A7B3' }}>Sistema Online</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="size-2 rounded-full" style={{ backgroundColor: '#22D15A' }} />
-                            <span className="text-xs" style={{ color: '#A1A7B3' }}>SSL Ativo</span>
+                            <ShieldCheck className="size-[14px]" style={{ color: '#4ea36a' }} />
+                            <span className="text-xs" style={{ color: MUTED }}>
+                                Conexão segura e dados protegidos.
+                            </span>
                         </div>
                     </div>
                 </motion.div>
             </div>
+
+            <style jsx>{`
+                .login-input:focus {
+                    border-color: ${AMBER} !important;
+                    box-shadow: 0 0 0 3px rgba(245, 165, 36, 0.12);
+                }
+            `}</style>
         </div>
     );
 }
