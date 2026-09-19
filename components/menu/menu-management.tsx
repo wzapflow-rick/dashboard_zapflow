@@ -162,7 +162,7 @@ export default function MenuManagement({ hideCategoryButton }: { hideCategoryBut
           <button
             id="btn-novo-produto"
             onClick={() => { setEditingProduct(null); setEditingProductInsumos([]); setIsModalOpen(true); }}
-            className="bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-lg shadow-primary/20 flex items-center gap-2 transition-all active:scale-95"
+            className="bg-brand hover:bg-brand-hover text-slate-950 px-5 py-2.5 rounded-lg text-sm font-semibold shadow-lg shadow-brand/20 flex items-center gap-2 transition-all active:scale-95"
           >
             <Plus className="size-4" />
             Novo Produto

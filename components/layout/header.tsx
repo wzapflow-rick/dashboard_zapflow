@@ -183,8 +183,8 @@ export function Header() {
             {/* Glassmorphism background */}
             <div className="absolute inset-0 bg-white/70 dark:bg-[#0a1628]/80 backdrop-blur-xl border-b border-white/20 dark:border-white/5" />
             
-            {/* Gradient accent line */}
-            <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+            {/* Gradient accent line - acento de marca (âmbar) */}
+            <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-brand/40 to-transparent" />
 
             <div className="relative h-full px-4 lg:px-8 flex items-center justify-between">
                 <div className="flex items-center gap-4">

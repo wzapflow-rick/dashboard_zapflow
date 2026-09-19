@@ -22,6 +22,8 @@ export function MetricStrip({ stats, lowPower }: { stats: Stat[]; lowPower?: boo
         const Icon = ICONS[index] ?? DollarSign;
         const isPending = index === 3;
         const pendingActive = isPending && stat.value !== '0';
+        // Faturamento é o indicador principal: recebe o acento de marca (âmbar).
+        const isPrincipal = index === 0;
 
         return (
           <motion.div
@@ -33,7 +35,9 @@ export function MetricStrip({ stats, lowPower }: { stats: Stat[]; lowPower?: boo
               'rounded-2xl border p-4 transition-colors sm:p-5',
               pendingActive
                 ? 'border-amber-300/60 bg-amber-50/70 dark:border-amber-500/30 dark:bg-amber-500/[0.07]'
-                : 'border-slate-200/70 bg-white/70 dark:border-white/[0.07] dark:bg-white/[0.02]',
+                : isPrincipal
+                  ? 'border-brand/25 bg-white/80 dark:border-brand/20 dark:bg-white/[0.035]'
+                  : 'border-slate-200/70 bg-white/70 dark:border-white/[0.07] dark:bg-white/[0.02]',
             )}
           >
             <div className="flex items-center justify-between gap-2">
@@ -43,7 +47,11 @@ export function MetricStrip({ stats, lowPower }: { stats: Stat[]; lowPower?: boo
               <Icon
                 className={cn(
                   'size-4 shrink-0',
-                  pendingActive ? 'text-amber-500 dark:text-amber-400' : 'text-slate-400 dark:text-slate-500',
+                  pendingActive
+                    ? 'text-amber-500 dark:text-amber-400'
+                    : isPrincipal
+                      ? 'text-brand'
+                      : 'text-slate-400 dark:text-slate-500',
                 )}
                 aria-hidden="true"
               />

@@ -57,7 +57,7 @@ function ConsultantShell({ children }: { children: React.ReactNode }) {
   return (
     <section
       aria-label="Consultor ZapFlow"
-      className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/[0.07] via-white/70 to-white/70 p-5 shadow-sm dark:from-primary/[0.08] dark:via-white/[0.02] dark:to-transparent sm:p-6"
+      className="relative overflow-hidden rounded-3xl border border-brand/25 bg-gradient-to-br from-brand/[0.06] via-white/70 to-white/70 p-5 shadow-sm dark:from-brand/[0.07] dark:via-white/[0.02] dark:to-transparent sm:p-6"
     >
       {children}
     </section>
@@ -67,10 +67,10 @@ function ConsultantShell({ children }: { children: React.ReactNode }) {
 function Eyebrow() {
   return (
     <div className="flex items-center gap-2">
-      <span className="flex size-6 items-center justify-center rounded-lg bg-primary/15 text-primary">
+      <span className="flex size-6 items-center justify-center rounded-lg bg-brand/15 text-brand">
         <Sparkles className="size-3.5" aria-hidden="true" />
       </span>
-      <span className="text-xs font-bold uppercase tracking-widest text-primary">Consultor ZapFlow</span>
+      <span className="text-xs font-bold uppercase tracking-widest text-brand">Consultor ZapFlow</span>
     </div>
   );
 }
@@ -129,7 +129,7 @@ export function AIConsultant() {
         </p>
         <Link
           href="/dashboard/growth"
-          className="group mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-slate-950 transition-transform hover:scale-[1.01] active:scale-[0.99]"
+          className="group mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-5 py-3 text-sm font-semibold text-slate-950 transition-transform hover:scale-[1.01] active:scale-[0.99]"
         >
           <Share2 className="size-4" aria-hidden="true" />
           Divulgar cardápio
@@ -157,7 +157,7 @@ export function AIConsultant() {
           )}
 
           <div className="mt-5 rounded-2xl border border-slate-200/70 bg-white/60 p-4 dark:border-white/[0.07] dark:bg-white/[0.02]">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-primary">Recomendação</p>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-brand">Recomendação</p>
             <p className="mt-1.5 font-semibold text-slate-900 dark:text-white">{sugestao.titulo}</p>
             <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{sugestao.descricao}</p>
 
@@ -165,7 +165,7 @@ export function AIConsultant() {
               type="button"
               onClick={() => executarAcao(router, sugestao.tipoAcao, sugestao.acaoSugerida)}
               whileTap={{ scale: 0.98 }}
-              className="group mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-slate-950 transition-transform hover:scale-[1.01] active:scale-[0.99] sm:w-auto"
+              className="group mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-5 py-3 text-sm font-semibold text-slate-950 transition-transform hover:scale-[1.01] active:scale-[0.99] sm:w-auto"
             >
               <AcaoIcon className="size-4" aria-hidden="true" />
               {sugestao.acaoSugerida}
