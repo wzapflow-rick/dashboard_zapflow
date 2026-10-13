@@ -1,36 +1,45 @@
 'use server';
 
 import { cookies } from 'next/headers';
+import { timingSafeEqual } from 'crypto';
+import {
+  ADMIN_SESSION_COOKIE,
+  createAdminSessionToken,
+  readAdminSession,
+} from '@/lib/admin-session';
 
-// Credenciais admin (em producao, usar env vars)
-const ADMIN_USERS = [
-  { username: 'Rick', password: '006677' },
-];
+// Defina ADMIN_USERNAME e ADMIN_PASSWORD nas variaveis de ambiente da Vercel.
+// Os valores abaixo sao mantidos apenas como fallback para nao bloquear o acesso atual.
+function getAdminCredentials() {
+  return {
+    username: process.env.ADMIN_USERNAME || 'Rick',
+    password: process.env.ADMIN_PASSWORD || '006677',
+  };
+}
 
-const ADMIN_SESSION_COOKIE = 'admin_session';
-const ADMIN_SESSION_SECRET = 'zapflow_admin_secret_2026';
+function safeEqual(a: string, b: string) {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
+}
 
 export async function loginAdmin(username: string, password: string) {
-  const admin = ADMIN_USERS.find(
-    (u) => u.username.toLowerCase() === username.toLowerCase() && u.password === password
-  );
+  const admin = getAdminCredentials();
+  const userOk = safeEqual(String(username || '').toLowerCase(), admin.username.toLowerCase());
+  const passOk = safeEqual(String(password || ''), admin.password);
 
-  if (!admin) {
+  if (!userOk || !passOk) {
     return { success: false, error: 'Credenciais invalidas' };
   }
 
-  // Criar sessao simples
-  const sessionData = {
-    username: admin.username,
-    loginAt: new Date().toISOString(),
-  };
-
+  const token = await createAdminSessionToken(admin.username);
   const cookieStore = await cookies();
-  cookieStore.set(ADMIN_SESSION_COOKIE, Buffer.from(JSON.stringify(sessionData)).toString('base64'), {
+  cookieStore.set(ADMIN_SESSION_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: 60 * 60 * 24, // 24 horas
+    maxAge: 60 * 60 * 24,
     path: '/',
   });
 
@@ -44,22 +53,10 @@ export async function logoutAdmin() {
 }
 
 export async function getAdminSession() {
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get(ADMIN_SESSION_COOKIE);
-
-  if (!sessionCookie) {
-    return null;
-  }
-
-  try {
-    const sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
-    return sessionData;
-  } catch {
-    return null;
-  }
+  return readAdminSession();
 }
 
 export async function isAdminAuthenticated() {
-  const session = await getAdminSession();
+  const session = await readAdminSession();
   return !!session;
 }

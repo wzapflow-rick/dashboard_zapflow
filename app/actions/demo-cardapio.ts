@@ -1,5 +1,7 @@
 'use server';
 
+import { requireAdminSession } from '@/lib/admin-session';
+
 import db from '@/lib/db';
 import { pg } from '@/lib/postgres';
 import { generateText, Output } from 'ai';
@@ -47,6 +49,7 @@ export async function estruturarCardapio(input: {
     texto?: string;
     imagemBase64?: string; // data URL: "data:image/png;base64,...."
 }): Promise<{ success: boolean; cardapio?: CardapioEstruturado; error?: string }> {
+  await requireAdminSession();
     try {
         if (!process.env.OPENAI_API_KEY) {
             return {
@@ -138,6 +141,7 @@ export async function criarDemoCardapio(input: {
     nomeLoja: string;
     telefone?: string;
 }): Promise<{ success: boolean; slug?: string; empresaId?: number; totalItens?: number; error?: string }> {
+  await requireAdminSession();
     const nomeLoja = (input.nomeLoja || input.cardapio.nome_loja || 'Loja Demo').trim();
 
     try {

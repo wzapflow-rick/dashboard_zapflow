@@ -1,11 +1,14 @@
 'use server';
 
+import { requireAdminSession } from '@/lib/admin-session';
+
 import db from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 
 // ==================== DASHBOARD ====================
 
 export async function getAdminStats() {
+  await requireAdminSession();
   try {
     console.log('[Admin] Buscando stats...');
     
@@ -98,6 +101,7 @@ export async function getAdminStats() {
 // ==================== EMPRESAS ====================
 
 export async function getEmpresas(page = 1, limit = 20, search = '') {
+  await requireAdminSession();
   try {
     const offset = (page - 1) * limit;
     
@@ -148,6 +152,7 @@ export async function getEmpresas(page = 1, limit = 20, search = '') {
 }
 
 export async function getEmpresaById(id: number) {
+  await requireAdminSession();
   try {
     const result = await db.query(`
       SELECT e.*, a.id as assinatura_id, a.plano, a.status as assinatura_status, 
@@ -178,6 +183,7 @@ export async function createEmpresa(data: {
   senha?: string;
   enviar_link_ativacao?: boolean;
 }) {
+  await requireAdminSession();
   try {
     // Verificar se email ja existe (se fornecido)
     if (data.email) {
@@ -284,6 +290,7 @@ export async function updateEmpresa(id: number, data: {
   ativo?: boolean;
   planos?: string;
 }) {
+  await requireAdminSession();
   try {
 
     const updates: string[] = [];
@@ -328,6 +335,7 @@ export async function updateEmpresa(id: number, data: {
 }
 
 export async function deleteEmpresa(id: number) {
+  await requireAdminSession();
   try {
     console.log('[Admin] Deletando empresa:', id);
     
@@ -352,6 +360,7 @@ export async function deleteEmpresa(id: number) {
 // ==================== ASSINATURAS ====================
 
 export async function getAssinaturas(page = 1, limit = 20, search = '') {
+  await requireAdminSession();
   try {
     console.log('[Admin] Buscando assinaturas...');
     const offset = (page - 1) * limit;
@@ -414,6 +423,7 @@ export async function updateAssinatura(empresaId: number, data: {
   data_proxima_cobranca?: string;
   valor?: number;
 }) {
+  await requireAdminSession();
   try {
     // Verificar se existe assinatura
     const existing = await db.query(
@@ -516,6 +526,7 @@ export async function updateAssinatura(empresaId: number, data: {
 }
 
 export async function concederTrialGratuito(empresaId: number, dias: number, plano: string) {
+  await requireAdminSession();
   try {
     const dataProxima = new Date();
     dataProxima.setDate(dataProxima.getDate() + dias);

@@ -1,5 +1,7 @@
 'use server';
 
+import { requireAdminSession } from '@/lib/admin-session';
+
 import { pg } from '@/lib/postgres';
 import { resolverJidWhatsApp, avaliarRespostaEvolution } from '@/lib/whatsapp-jid';
 import {
@@ -160,6 +162,7 @@ export interface RemarketingHistorico {
 // ============================================================
 
 export async function getConfig(): Promise<{ success: boolean; config?: RemarketingConfig; error?: string }> {
+  await requireAdminSession();
   try {
     const config = await pg.findOne<RemarketingConfig>(REMARKETING_CONFIG_TABLE);
     return { success: true, config: config || undefined };
@@ -170,6 +173,7 @@ export async function getConfig(): Promise<{ success: boolean; config?: Remarket
 }
 
 export async function saveConfig(data: Partial<RemarketingConfig>): Promise<{ success: boolean; config?: RemarketingConfig; error?: string }> {
+  await requireAdminSession();
   try {
     const existing = await pg.findOne<RemarketingConfig>(REMARKETING_CONFIG_TABLE);
     
@@ -205,6 +209,7 @@ export async function saveConfig(data: Partial<RemarketingConfig>): Promise<{ su
 // ============================================================
 
 export async function getCategorias(): Promise<{ success: boolean; categorias?: RemarketingCategoria[]; error?: string }> {
+  await requireAdminSession();
   try {
     const result = await pg.list<RemarketingCategoria>(REMARKETING_CATEGORIAS_TABLE, {
       sort: 'ordem,id',
@@ -218,6 +223,7 @@ export async function getCategorias(): Promise<{ success: boolean; categorias?: 
 }
 
 export async function createCategoria(data: Partial<RemarketingCategoria>): Promise<{ success: boolean; categoria?: RemarketingCategoria; error?: string }> {
+  await requireAdminSession();
   try {
     const categoria = await pg.create<RemarketingCategoria>(REMARKETING_CATEGORIAS_TABLE, {
       nome: data.nome,
@@ -241,6 +247,7 @@ export async function createCategoria(data: Partial<RemarketingCategoria>): Prom
 }
 
 export async function updateCategoria(id: number, data: Partial<RemarketingCategoria>): Promise<{ success: boolean; categoria?: RemarketingCategoria; error?: string }> {
+  await requireAdminSession();
   try {
     const categoria = await pg.update<RemarketingCategoria>(REMARKETING_CATEGORIAS_TABLE, id, data);
     return { success: true, categoria };
@@ -251,6 +258,7 @@ export async function updateCategoria(id: number, data: Partial<RemarketingCateg
 }
 
 export async function deleteCategoria(id: number): Promise<{ success: boolean; error?: string }> {
+  await requireAdminSession();
   try {
     await pg.delete(REMARKETING_CATEGORIAS_TABLE, id);
     return { success: true };
@@ -265,6 +273,7 @@ export async function deleteCategoria(id: number): Promise<{ success: boolean; e
 // ============================================================
 
 export async function getTiposDor(): Promise<{ success: boolean; tipos?: RemarketingTipoDor[]; error?: string }> {
+  await requireAdminSession();
   try {
     const result = await pg.list<RemarketingTipoDor>(REMARKETING_TIPOS_DOR_TABLE, {
       sort: 'ordem,id',
@@ -278,6 +287,7 @@ export async function getTiposDor(): Promise<{ success: boolean; tipos?: Remarke
 }
 
 export async function createTipoDor(data: Partial<RemarketingTipoDor>): Promise<{ success: boolean; tipo?: RemarketingTipoDor; error?: string }> {
+  await requireAdminSession();
   try {
     const tipo = await pg.create<RemarketingTipoDor>(REMARKETING_TIPOS_DOR_TABLE, {
       nome: data.nome,
@@ -294,6 +304,7 @@ export async function createTipoDor(data: Partial<RemarketingTipoDor>): Promise<
 }
 
 export async function updateTipoDor(id: number, data: Partial<RemarketingTipoDor>): Promise<{ success: boolean; tipo?: RemarketingTipoDor; error?: string }> {
+  await requireAdminSession();
   try {
     const tipo = await pg.update<RemarketingTipoDor>(REMARKETING_TIPOS_DOR_TABLE, id, data);
     return { success: true, tipo };
@@ -304,6 +315,7 @@ export async function updateTipoDor(id: number, data: Partial<RemarketingTipoDor
 }
 
 export async function deleteTipoDor(id: number): Promise<{ success: boolean; error?: string }> {
+  await requireAdminSession();
   try {
     await pg.delete(REMARKETING_TIPOS_DOR_TABLE, id);
     return { success: true };
@@ -318,6 +330,7 @@ export async function deleteTipoDor(id: number): Promise<{ success: boolean; err
 // ============================================================
 
 export async function getEtiquetas(): Promise<{ success: boolean; etiquetas?: RemarketingEtiqueta[]; error?: string }> {
+  await requireAdminSession();
   try {
     const result = await pg.list<RemarketingEtiqueta>(REMARKETING_ETIQUETAS_TABLE, {
       sort: 'ordem,id',
@@ -331,6 +344,7 @@ export async function getEtiquetas(): Promise<{ success: boolean; etiquetas?: Re
 }
 
 export async function createEtiqueta(data: Partial<RemarketingEtiqueta>): Promise<{ success: boolean; etiqueta?: RemarketingEtiqueta; error?: string }> {
+  await requireAdminSession();
   try {
     const etiqueta = await pg.create<RemarketingEtiqueta>(REMARKETING_ETIQUETAS_TABLE, {
       nome: data.nome,
@@ -347,6 +361,7 @@ export async function createEtiqueta(data: Partial<RemarketingEtiqueta>): Promis
 }
 
 export async function updateEtiqueta(id: number, data: Partial<RemarketingEtiqueta>): Promise<{ success: boolean; etiqueta?: RemarketingEtiqueta; error?: string }> {
+  await requireAdminSession();
   try {
     const etiqueta = await pg.update<RemarketingEtiqueta>(REMARKETING_ETIQUETAS_TABLE, id, data);
     return { success: true, etiqueta };
@@ -357,6 +372,7 @@ export async function updateEtiqueta(id: number, data: Partial<RemarketingEtique
 }
 
 export async function deleteEtiqueta(id: number): Promise<{ success: boolean; error?: string }> {
+  await requireAdminSession();
   try {
     await pg.delete(REMARKETING_ETIQUETAS_TABLE, id);
     return { success: true };
@@ -371,6 +387,7 @@ export async function deleteEtiqueta(id: number): Promise<{ success: boolean; er
 // ============================================================
 
 export async function getMensagens(): Promise<{ success: boolean; mensagens?: RemarketingMensagem[]; error?: string }> {
+  await requireAdminSession();
   try {
     const result = await pg.raw<RemarketingMensagem>(`
       SELECT m.*, t.nome as tipo_dor_nome
@@ -386,6 +403,7 @@ export async function getMensagens(): Promise<{ success: boolean; mensagens?: Re
 }
 
 export async function createMensagem(data: Partial<RemarketingMensagem>): Promise<{ success: boolean; mensagem?: RemarketingMensagem; error?: string }> {
+  await requireAdminSession();
   try {
     const mensagem = await pg.create<RemarketingMensagem>(REMARKETING_MENSAGENS_TABLE, {
       nome: data.nome,
@@ -406,6 +424,7 @@ export async function createMensagem(data: Partial<RemarketingMensagem>): Promis
 }
 
 export async function updateMensagem(id: number, data: Partial<RemarketingMensagem>): Promise<{ success: boolean; mensagem?: RemarketingMensagem; error?: string }> {
+  await requireAdminSession();
   try {
     const updateData: Record<string, unknown> = { ...data };
     if (data.variaveis_disponiveis) {
@@ -420,6 +439,7 @@ export async function updateMensagem(id: number, data: Partial<RemarketingMensag
 }
 
 export async function deleteMensagem(id: number): Promise<{ success: boolean; error?: string }> {
+  await requireAdminSession();
   try {
     await pg.delete(REMARKETING_MENSAGENS_TABLE, id);
     return { success: true };
@@ -434,6 +454,7 @@ export async function deleteMensagem(id: number): Promise<{ success: boolean; er
 // ============================================================
 
 export async function getCombinacoes(): Promise<{ success: boolean; combinacoes?: RemarketingCombinacao[]; error?: string }> {
+  await requireAdminSession();
   try {
     const result = await pg.raw<RemarketingCombinacao>(`
       SELECT c.*, 
@@ -454,6 +475,7 @@ export async function getCombinacoes(): Promise<{ success: boolean; combinacoes?
 }
 
 export async function createCombinacao(data: Partial<RemarketingCombinacao>): Promise<{ success: boolean; combinacao?: RemarketingCombinacao; error?: string }> {
+  await requireAdminSession();
   try {
     const combinacao = await pg.create<RemarketingCombinacao>(REMARKETING_COMBINACOES_TABLE, {
       categoria_id: data.categoria_id,
@@ -470,6 +492,7 @@ export async function createCombinacao(data: Partial<RemarketingCombinacao>): Pr
 }
 
 export async function updateCombinacao(id: number, data: Partial<RemarketingCombinacao>): Promise<{ success: boolean; combinacao?: RemarketingCombinacao; error?: string }> {
+  await requireAdminSession();
   try {
     const combinacao = await pg.update<RemarketingCombinacao>(REMARKETING_COMBINACOES_TABLE, id, data);
     return { success: true, combinacao };
@@ -480,6 +503,7 @@ export async function updateCombinacao(id: number, data: Partial<RemarketingComb
 }
 
 export async function deleteCombinacao(id: number): Promise<{ success: boolean; error?: string }> {
+  await requireAdminSession();
   try {
     await pg.delete(REMARKETING_COMBINACOES_TABLE, id);
     return { success: true };
@@ -499,6 +523,7 @@ export async function getContatos(page = 1, limit = 50, search = ''): Promise<{
   pagination?: { page: number; limit: number; total: number; totalPages: number };
   error?: string 
 }> {
+  await requireAdminSession();
   try {
     const offset = (page - 1) * limit;
     
@@ -564,6 +589,7 @@ export async function importarContato(data: {
   foto_url?: string;
   origem?: string;
 }): Promise<{ success: boolean; contato?: RemarketingContato; error?: string }> {
+  await requireAdminSession();
   try {
     // Extract phone number from remote_jid or telefone (remove @s.whatsapp.net, @lid, etc)
     let telefone = data.telefone || data.remote_jid;
@@ -611,6 +637,7 @@ export async function importarContato(data: {
 }
 
 export async function updateContato(id: number, data: Partial<RemarketingContato>): Promise<{ success: boolean; contato?: RemarketingContato; error?: string }> {
+  await requireAdminSession();
   try {
     const contato = await pg.update<RemarketingContato>(REMARKETING_CONTATOS_TABLE, id, {
       ...data,
@@ -624,6 +651,7 @@ export async function updateContato(id: number, data: Partial<RemarketingContato
 }
 
 export async function deleteContato(id: number): Promise<{ success: boolean; error?: string }> {
+  await requireAdminSession();
   try {
     // Delete relations first
     await pg.raw(`DELETE FROM "${REMARKETING_CONTATOS_ETIQUETAS_TABLE}" WHERE contato_id = $1`, [id]);
@@ -637,6 +665,7 @@ export async function deleteContato(id: number): Promise<{ success: boolean; err
 }
 
 export async function addEtiquetaToContato(contatoId: number, etiquetaId: number): Promise<{ success: boolean; error?: string }> {
+  await requireAdminSession();
   try {
     await pg.raw(`
       INSERT INTO "${REMARKETING_CONTATOS_ETIQUETAS_TABLE}" (contato_id, etiqueta_id, adicionado_em, origem)
@@ -651,6 +680,7 @@ export async function addEtiquetaToContato(contatoId: number, etiquetaId: number
 }
 
 export async function removeEtiquetaFromContato(contatoId: number, etiquetaId: number): Promise<{ success: boolean; error?: string }> {
+  await requireAdminSession();
   try {
     await pg.raw(`
       DELETE FROM "${REMARKETING_CONTATOS_ETIQUETAS_TABLE}" 
@@ -664,6 +694,7 @@ export async function removeEtiquetaFromContato(contatoId: number, etiquetaId: n
 }
 
 export async function addCategoriaToContato(contatoId: number, categoriaId: number, origem = 'manual'): Promise<{ success: boolean; error?: string }> {
+  await requireAdminSession();
   try {
     await pg.raw(`
       INSERT INTO "${REMARKETING_CONTATOS_CATEGORIAS_TABLE}" (contato_id, categoria_id, adicionado_em, origem)
@@ -678,6 +709,7 @@ export async function addCategoriaToContato(contatoId: number, categoriaId: numb
 }
 
 export async function removeCategoriaFromContato(contatoId: number, categoriaId: number): Promise<{ success: boolean; error?: string }> {
+  await requireAdminSession();
   try {
     await pg.raw(`
       DELETE FROM "${REMARKETING_CONTATOS_CATEGORIAS_TABLE}" 
@@ -700,6 +732,7 @@ export async function getFila(page = 1, limit = 50, status?: string): Promise<{
   pagination?: { page: number; limit: number; total: number; totalPages: number };
   error?: string 
 }> {
+  await requireAdminSession();
   try {
     const offset = (page - 1) * limit;
     
@@ -758,6 +791,7 @@ export async function addToFila(data: {
   prioridade?: number;
   agendado_para?: string;
 }): Promise<{ success: boolean; item?: RemarketingFilaItem; error?: string }> {
+  await requireAdminSession();
   try {
     const item = await pg.create<RemarketingFilaItem>(REMARKETING_FILA_TABLE, {
       contato_id: data.contato_id,
@@ -782,6 +816,7 @@ export async function addToFila(data: {
 }
 
 export async function updateFilaItem(id: number, data: Partial<RemarketingFilaItem>): Promise<{ success: boolean; error?: string }> {
+  await requireAdminSession();
   try {
     await pg.update(REMARKETING_FILA_TABLE, id, data);
     return { success: true };
@@ -792,6 +827,7 @@ export async function updateFilaItem(id: number, data: Partial<RemarketingFilaIt
 }
 
 export async function cancelarFilaItem(id: number): Promise<{ success: boolean; error?: string }> {
+  await requireAdminSession();
   try {
     await pg.update(REMARKETING_FILA_TABLE, id, { status: 'cancelado' });
     return { success: true };
@@ -802,6 +838,7 @@ export async function cancelarFilaItem(id: number): Promise<{ success: boolean; 
 }
 
 export async function processarFilaItem(id: number): Promise<{ success: boolean; error?: string }> {
+  await requireAdminSession();
   try {
     // Tipo para resultado do JOIN
     interface FilaItemComContato extends RemarketingFilaItem {
@@ -945,6 +982,7 @@ export async function getHistorico(page = 1, limit = 50, contatoId?: number): Pr
   pagination?: { page: number; limit: number; total: number; totalPages: number };
   error?: string 
 }> {
+  await requireAdminSession();
   try {
     const offset = (page - 1) * limit;
     
@@ -996,6 +1034,7 @@ export async function addHistorico(data: {
   descricao?: string;
   dados?: Record<string, unknown>;
 }): Promise<{ success: boolean; error?: string }> {
+  await requireAdminSession();
   try {
     await pg.create(REMARKETING_HISTORICO_TABLE, {
       contato_id: data.contato_id || null,
@@ -1029,6 +1068,7 @@ export async function getDashboardStats(): Promise<{
   };
   error?: string 
 }> {
+  await requireAdminSession();
   try {
     const [
       totalContatos,
@@ -1095,6 +1135,7 @@ export async function fetchEvolutionContacts(instanceName: string): Promise<{
   }>;
   error?: string 
 }> {
+  await requireAdminSession();
   try {
     const EVO_URL = process.env.EVOLUTION_URL || 'https://evo.wzapflow.com.br';
     const EVO_KEY = process.env.EVOLUTION_API_KEY || '';
@@ -1148,6 +1189,7 @@ export async function fetchEvolutionChats(instanceName: string): Promise<{
   }>;
   error?: string 
 }> {
+  await requireAdminSession();
   try {
     const EVO_URL = process.env.EVOLUTION_URL || 'https://evo.wzapflow.com.br';
     const EVO_KEY = process.env.EVOLUTION_API_KEY || '';

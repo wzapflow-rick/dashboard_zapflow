@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import db from '@/lib/db';
 
-const SETUP_SECRET = process.env.CRON_SECRET || 'setup-secret-key';
+// Sem CRON_SECRET configurado, a rota fica bloqueada (string aleatoria impossivel de adivinhar).
+const SETUP_SECRET = process.env.CRON_SECRET || crypto.randomUUID();
 
 export async function POST(req: NextRequest) {
   try {

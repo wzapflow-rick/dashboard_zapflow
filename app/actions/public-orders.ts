@@ -5,6 +5,7 @@ import { incrementCouponUsage } from './coupons';
 import { deductPointsForOrder } from './loyalty';
 import { sendOrderCreatedMessage, sendOwnerNewOrderMessage } from './whatsapp';
 import { pg } from '@/lib/postgres';
+import { getMe } from '@/lib/session-server';
 
 interface OrderItem {
     id: number;
@@ -142,12 +143,31 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
         const clienteBairroEfetivo = tipoEntregaEfetivo === 'delivery'
             ? data.clienteBairro
             : undefined;
+        for (const item of data.itens) {
+            const qtd = Number(item.quantidade);
+            const preco = Number(item.preco);
+            if (!Number.isInteger(qtd) || qtd <= 0 || qtd > 999) {
+                throw new Error('Quantidade invalida no pedido');
+            }
+            if (!Number.isFinite(preco) || preco < 0) {
+                throw new Error('Preco invalido no pedido');
+            }
+        }
+        const subtotalEfetivo = Math.round(
+            data.itens.reduce((sum, item) => sum + Number(item.preco) * Number(item.quantidade), 0) * 100
+        ) / 100;
+        const descontoEfetivo = Math.min(
+            subtotalEfetivo,
+            Math.max(0, Number(data.desconto) || 0)
+        );
         const totalEfetivo = Math.max(
             0,
-            Number(data.subtotal) - Number(data.desconto || 0) + taxaEntregaEfetiva
+            subtotalEfetivo - descontoEfetivo + taxaEntregaEfetiva
         );
         const dadosEfetivos: CreatePublicOrderData = {
             ...data,
+            subtotal: subtotalEfetivo,
+            desconto: descontoEfetivo,
             tipoEntrega: tipoEntregaEfetivo,
             taxaEntrega: taxaEntregaEfetiva,
             clienteEndereco: clienteEnderecoEfetivo,
@@ -350,7 +370,15 @@ export async function getOrderStatus(orderId: number) {
 }
 
 export async function updateOrderStatusPublic(orderId: number, status: string) {
+    const user = await getMe();
+    if (!user?.empresaId) {
+        throw new Error('Nao autorizado');
+    }
     try {
+        const order = await pg.findById('pedidos', orderId) as any;
+        if (!order || Number(order.empresa_id) !== Number(user.empresaId)) {
+            throw new Error('Pedido nao encontrado');
+        }
         await pg.update('pedidos', orderId, { status });
         revalidatePath('/dashboard/expedition');
         return { success: true };
