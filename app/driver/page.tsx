@@ -361,7 +361,7 @@ export default function DriverDashboard() {
 
       {/* Footer */}
       <footer className="text-center py-4 text-xs text-slate-400">
-        ZapFlow Entregador v1.0
+        ZapFlash Entregador v1.0
       </footer>
     </div>
   );

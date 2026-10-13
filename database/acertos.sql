@@ -1,6 +1,6 @@
 -- =====================================================
 -- TABELA DE ACERTOS DE ENTREGADORES
--- ZapFlow - Sistema de Delivery
+-- ZapFlash - Sistema de Delivery
 -- PostgreSQL (usado com NocoDB)
 -- =====================================================
 

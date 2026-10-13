@@ -1,5 +1,5 @@
 -- =====================================================
--- ZAPFLOW - TABELA DE USUÁRIOS (MULTI-USUÁRIO COM NÍVEIS DE ACESSO)
+-- ZAPFLASH - TABELA DE USUÁRIOS (MULTI-USUÁRIO COM NÍVEIS DE ACESSO)
 -- PostgreSQL
 -- =====================================================
 

@@ -397,7 +397,7 @@ export default function IntegracoesPage() {
                       Precisa de outra integracao?
                     </p>
                     <a 
-                      href="https://wa.me/5579998049790?text=Olá! Preciso de ajuda com integração no ZapFlow"
+                      href="https://wa.me/5579998049790?text=Olá! Preciso de ajuda com integração no ZapFlash"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-xs text-emerald-400 hover:text-emerald-300 mt-1"

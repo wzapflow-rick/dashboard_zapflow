@@ -56,7 +56,7 @@ function executarAcao(router: ReturnType<typeof useRouter>, tipo: TipoAcao, desc
 function ConsultantShell({ children }: { children: React.ReactNode }) {
   return (
     <section
-      aria-label="Consultor ZapFlow"
+      aria-label="Consultor ZapFlash"
       className="relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white/70 p-5 dark:border-white/[0.07] dark:bg-white/[0.02] sm:p-6"
     >
       <span
@@ -74,7 +74,7 @@ function Eyebrow() {
       <span className="flex size-6 items-center justify-center rounded-lg bg-brand/15 text-brand">
         <Sparkles className="size-3.5" aria-hidden="true" />
       </span>
-      <span className="text-xs font-bold uppercase tracking-widest text-brand">Consultor ZapFlow</span>
+      <span className="text-xs font-bold uppercase tracking-widest text-brand">Consultor ZapFlash</span>
     </div>
   );
 }

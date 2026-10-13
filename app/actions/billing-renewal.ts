@@ -50,7 +50,7 @@ export async function criarLinkPagamentoRenovacao(
   // Identificadores para o external_reference/titulo (o webhook usa empresaId e
   // plano para renovar). Mantem o id do plano quando conhecido.
   const planIdRef = planData?.id ?? normalizePlanName(plano);
-  const planNameRef = planData?.name ?? (plano || 'ZapFlow');
+  const planNameRef = planData?.name ?? (plano || 'ZapFlash');
 
   // Sem token do MP ou valor invalido/gratuito -> manda para a pagina.
   if (!MP_ACCESS_TOKEN || precoEfetivo <= 0) {
@@ -63,7 +63,7 @@ export async function criarLinkPagamentoRenovacao(
     const preference = {
       items: [
         {
-          title: `ZapFlow - Renovacao Plano ${planNameRef}`,
+          title: `ZapFlash - Renovacao Plano ${planNameRef}`,
           quantity: 1,
           unit_price: precoEfetivo,
           currency_id: 'BRL',

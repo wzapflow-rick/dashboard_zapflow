@@ -288,7 +288,7 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen, user }:
                                         <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent" />
                                         <Image
                                             src="/logo-zapflow.png"
-                                            alt="ZapFlow"
+                                            alt="ZapFlash"
                                             width={40}
                                             height={40}
                                             className="object-cover relative z-10"
@@ -297,11 +297,11 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen, user }:
                                     
                                     <div className="flex flex-col">
                                         <h1 className="font-bold text-white leading-none truncate text-sm">
-                                            {user?.nome || 'ZapFlow'}
+                                            {user?.nome || 'ZapFlash'}
                                         </h1>
                                         <p className="text-[9px] text-primary/80 mt-1 uppercase tracking-widest font-bold flex items-center gap-1">
                                             <span className="size-1.5 rounded-full bg-primary animate-pulse" />
-                                            Made by ZapFlow
+                                            Made by ZapFlash
                                         </p>
                                     </div>
                                 </div>
@@ -406,7 +406,7 @@ export function Sidebar({ isOpen, isMobileMenuOpen, setIsMobileMenuOpen, user }:
                         <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent" />
                         <Image
                             src="/logo-zapflow.png"
-                            alt="ZapFlow"
+                            alt="ZapFlash"
                             width={40}
                             height={40}
                             className="object-cover relative z-10"

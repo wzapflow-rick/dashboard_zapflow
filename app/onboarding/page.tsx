@@ -220,7 +220,7 @@ function OnboardingContent() {
           <div className="size-8 bg-primary rounded-lg flex items-center justify-center text-white">
             <Zap className="size-5 fill-current" />
           </div>
-          <span className="text-xl font-black tracking-tighter text-slate-900 dark:text-white">ZapFlow</span>
+          <span className="text-xl font-black tracking-tighter text-slate-900 dark:text-white">ZapFlash</span>
         </div>
 
         <div className="hidden md:flex items-center gap-6">
@@ -435,7 +435,7 @@ function OnboardingContent() {
                 </div>
                 <div>
                   <h2 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">Tudo pronto, {companyName}!</h2>
-                  <p className="text-slate-500 dark:text-slate-400 mt-4 text-lg max-w-md mx-auto">Sua loja já está configurada e pronta no ZapFlow.</p>
+                  <p className="text-slate-500 dark:text-slate-400 mt-4 text-lg max-w-md mx-auto">Sua loja já está configurada e pronta no ZapFlash.</p>
                 </div>
                 <button onClick={() => { router.push('/dashboard'); router.refresh(); }}
                   className="w-full md:w-64 bg-primary hover:bg-primary/90 text-white font-bold py-5 rounded-2xl shadow-xl shadow-primary/30 flex items-center justify-center gap-2 mx-auto transition-all active:scale-95">

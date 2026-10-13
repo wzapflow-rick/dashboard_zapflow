@@ -15,7 +15,7 @@ const CAPTACAO_TABLE = 'captacao_places';
 const NOMINATIM_ENDPOINT = 'https://nominatim.openstreetmap.org/search';
 const OVERPASS_ENDPOINT = 'https://overpass-api.de/api/interpreter';
 // User-Agent obrigatorio pela politica de uso do Nominatim/Overpass
-const HTTP_UA = 'ZapFlow-Captacao/1.0 (contato@zapflow.app)';
+const HTTP_UA = 'ZapFlash-Captacao/1.0 (contato@zapflow.app)';
 
 export interface LeadCaptado {
     place_id: string;

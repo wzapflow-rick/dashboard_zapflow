@@ -60,7 +60,7 @@ function formatPhoneForEvolution(phone: string): string {
 }
 
 /**
- * Enviar mensagem via Evolution API (instancia central da ZapFlow).
+ * Enviar mensagem via Evolution API (instancia central da ZapFlash).
  * Retorna detalhes do resultado para que o chamador possa registrar o motivo da falha.
  */
 export async function sendWhatsAppMessageDetailed(
@@ -214,7 +214,7 @@ export async function sendOwnerNewOrderMessage(params: {
         observacoes: params.observacoes,
     });
 
-    // Sempre pela instancia central (numero da ZapFlow)
+    // Sempre pela instancia central (numero da ZapFlash)
     return sendWhatsAppMessage(params.ownerPhone, message);
 }
 
@@ -356,7 +356,7 @@ export async function sendWelcomeSignupMessage(
     
     const message = `🎉 Pagamento confirmado, ${nome}!
 
-Agora sua jornada para vender mais com o ZapFlow começou 🚀
+Agora sua jornada para vender mais com o ZapFlash começou 🚀
 Para liberar seu acesso, finalize seu cadastro clicando no link abaixo:
 👉 ${activationUrl}
 
@@ -365,7 +365,7 @@ Para liberar seu acesso, finalize seu cadastro clicando no link abaixo:
 Assim que concluir, você já poderá acessar seu painel e começar a receber pedidos automaticamente no WhatsApp.
 
 Se precisar de ajuda em qualquer etapa, é só chamar — estamos aqui com você 🤝
-— Equipe ZapFlow`;
+— Equipe ZapFlash`;
 
     return sendWhatsAppMessage(phone, message);
 }
@@ -391,7 +391,7 @@ export async function sendWelcomeMessage(
     
     const senhaInfo = senha ? `\n🔑 Senha: ${senha}` : '';
     
-    const message = `🎉 Bem-vindo ao ZapFlow, ${nome}!
+    const message = `🎉 Bem-vindo ao ZapFlash, ${nome}!
 
 Sua conta foi ativada com sucesso — agora é hora de começar a vender mais 🚀
 
@@ -407,7 +407,7 @@ Agora é só configurar seu cardápio e começar a receber pedidos direto no Wha
 
 Qualquer dúvida, estamos por aqui para te ajudar 🤝
 Boas vendas!
-— Equipe ZapFlow`;
+— Equipe ZapFlash`;
 
     return sendWhatsAppMessage(phone, message);
 }
@@ -423,7 +423,7 @@ export async function sendTrialWelcomeMessage(
 ): Promise<boolean> {
     const senhaInfo = senha ? `\n🔑 Senha: ${senha}` : '';
     
-    const message = `🎉 Bem-vindo ao ZapFlow, ${nome}!
+    const message = `🎉 Bem-vindo ao ZapFlash, ${nome}!
 
 Sua conta TRIAL foi criada com sucesso — você tem 7 dias GRÁTIS para testar tudo! 🚀
 
@@ -442,7 +442,7 @@ Após os 7 dias, você pode assinar o plano Start por apenas R$ 29,90/mês para 
 
 Qualquer dúvida, estamos por aqui para te ajudar 🤝
 Boas vendas!
-— Equipe ZapFlow`;
+— Equipe ZapFlash`;
 
     return sendWhatsAppMessage(phone, message);
 }
@@ -452,20 +452,20 @@ Boas vendas!
 // ============================================================
 
 const PAYMENT_MESSAGES: Record<number, (nome: string, link: string) => string> = {
-    1: (nome, link) => `Ola ${nome}! Sua assinatura ZapFlow vence hoje.
+    1: (nome, link) => `Ola ${nome}! Sua assinatura ZapFlash vence hoje.
 
 Pague via PIX para continuar usando o sistema sem interrupcoes:
 ${link}
 
 Qualquer duvida, estamos aqui!
-Equipe ZapFlow`,
+Equipe ZapFlash`,
 
-    2: (nome, link) => `Ola ${nome}, sua assinatura ZapFlow esta 1 dia atrasada.
+    2: (nome, link) => `Ola ${nome}, sua assinatura ZapFlash esta 1 dia atrasada.
 
 Regularize o pagamento para evitar o bloqueio do seu sistema:
 ${link}
 
-Equipe ZapFlow`,
+Equipe ZapFlash`,
 
     3: (nome, link) => `Atencao ${nome}!
 
@@ -474,25 +474,25 @@ Sua assinatura esta 2 dias atrasada. Faltam apenas 2 dias para o bloqueio do seu
 Pague agora e evite a interrupcao:
 ${link}
 
-Equipe ZapFlow`,
+Equipe ZapFlash`,
 
     4: (nome, link) => `URGENTE ${nome}!
 
-Amanha seu sistema ZapFlow sera bloqueado por inadimplencia.
+Amanha seu sistema ZapFlash sera bloqueado por inadimplencia.
 
 Regularize AGORA para continuar recebendo pedidos:
 ${link}
 
-Equipe ZapFlow`,
+Equipe ZapFlash`,
 
-    5: (nome, link) => `${nome}, seu sistema ZapFlow foi BLOQUEADO.
+    5: (nome, link) => `${nome}, seu sistema ZapFlash foi BLOQUEADO.
 
 Sua assinatura esta 5 dias atrasada e seu cardapio foi desativado.
 
 Para reativar imediatamente, pague aqui:
 ${link}
 
-Equipe ZapFlow`,
+Equipe ZapFlash`,
 };
 
 /**
@@ -500,14 +500,14 @@ Equipe ZapFlow`,
  * dias em atraso (nao um valor fixo), servindo para qualquer atraso (2, 7, 110...).
  */
 const PAYMENT_BLOCKED_MESSAGE = (nome: string, link: string, dias: number) =>
-    `${nome}, seu sistema ZapFlow foi BLOQUEADO.
+    `${nome}, seu sistema ZapFlash foi BLOQUEADO.
 
 Sua assinatura esta ${dias} ${dias === 1 ? 'dia' : 'dias'} em atraso e seu cardapio foi desativado.
 
 Para reativar imediatamente, pague aqui:
 ${link}
 
-Equipe ZapFlow`;
+Equipe ZapFlash`;
 
 /**
  * Enviar lembrete de pagamento (cobranca).
@@ -585,8 +585,8 @@ export async function sendRenewalReminder(
     if (ehTeste) {
         // ----- CONTA DE TESTE (fim do periodo gratuito) -----
         const encerra = diasRestantes <= 0
-            ? 'Seu período de teste do ZapFlow encerra hoje.'
-            : `Seu período de teste do ZapFlow encerra ${prazoTexto}.`;
+            ? 'Seu período de teste do ZapFlash encerra hoje.'
+            : `Seu período de teste do ZapFlash encerra ${prazoTexto}.`;
 
         message = `Olá ${nome}! 👋
 
@@ -596,25 +596,25 @@ Para não perder o acesso ao seu cardápio e aos pedidos, escolha um plano e con
 ${linkPagamento}
 
 Leva menos de 2 minutos. Qualquer dúvida, é só chamar! 🚀
-Equipe ZapFlow`;
+Equipe ZapFlash`;
     } else {
         // ----- CLIENTE PAGANTE (renovacao) -----
         if (diasRestantes <= 0) {
-            message = `Olá ${nome}! Passando para avisar: sua assinatura ZapFlow${valorFmt ? ` (${valorFmt})` : ''} vence hoje${cartaoInfo}.
+            message = `Olá ${nome}! Passando para avisar: sua assinatura ZapFlash${valorFmt ? ` (${valorFmt})` : ''} vence hoje${cartaoInfo}.
 
 Para manter seu sistema funcionando sem interrupções, garanta o pagamento:
 ${linkPagamento}
 
-Equipe ZapFlow`;
+Equipe ZapFlash`;
         } else {
             message = `Olá ${nome}! 👋
 
-Sua assinatura ZapFlow${valorFmt ? ` (${valorFmt})` : ''} renova ${prazoTexto}${cartaoInfo}.
+Sua assinatura ZapFlash${valorFmt ? ` (${valorFmt})` : ''} renova ${prazoTexto}${cartaoInfo}.
 
 Para continuar sem interrupções, você pode pagar por aqui a qualquer momento:
 ${linkPagamento}
 
-Equipe ZapFlow`;
+Equipe ZapFlash`;
         }
     }
 

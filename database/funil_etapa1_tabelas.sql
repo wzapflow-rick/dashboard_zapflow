@@ -1,5 +1,5 @@
 -- =====================================================================
--- FUNIL DE FOLLOW-UP (CRM ZapFlow) - ETAPA 1: COLUNAS + TABELAS
+-- FUNIL DE FOLLOW-UP (CRM ZapFlash) - ETAPA 1: COLUNAS + TABELAS
 -- Rodar PRIMEIRO no pgAdmin. Apenas ALTER/CREATE TABLE.
 -- (Sem CREATE INDEX / COMMENT / FK de tabela nova - isso vai na Etapa 2)
 -- =====================================================================

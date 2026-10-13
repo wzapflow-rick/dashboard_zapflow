@@ -1,4 +1,4 @@
-# 📋 Checklist de Testes - ZapFlow Dashboard
+# 📋 Checklist de Testes - ZapFlash Dashboard
 
 > Guia completo para testar todas as funcionalidades e gravar o vídeo de demonstração.
 

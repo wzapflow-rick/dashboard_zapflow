@@ -93,7 +93,7 @@ export async function createCheckoutSession(data: CheckoutData) {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://cardapio.wzapflow.com.br';
     
     const preference = {
-      reason: `ZapFlow - Plano ${planData.name}`,
+      reason: `ZapFlash - Plano ${planData.name}`,
       auto_recurring: {
         frequency: 1,
         frequency_type: 'months',
@@ -188,7 +188,7 @@ export async function createPixCheckoutSession(data: CheckoutData) {
     const preference = {
       items: [
         {
-          title: `ZapFlow - Plano ${planData.name}`,
+          title: `ZapFlash - Plano ${planData.name}`,
           quantity: 1,
           unit_price: planData.price,
           currency_id: 'BRL',

@@ -104,7 +104,7 @@ export default function AdminSidebar({ username }: AdminSidebarProps) {
             <Bolt className="size-6" />
           </div>
           <div>
-            <h1 className="font-bold text-white">ZapFlow</h1>
+            <h1 className="font-bold text-white">ZapFlash</h1>
             <div className="flex items-center gap-1 text-xs text-orange-400">
               <Shield className="size-3" />
               <span>Admin</span>
@@ -140,7 +140,7 @@ export default function AdminSidebar({ username }: AdminSidebarProps) {
               <Bolt className="size-6" />
             </div>
             <div>
-              <h1 className="font-bold text-white">ZapFlow</h1>
+              <h1 className="font-bold text-white">ZapFlash</h1>
               <div className="flex items-center gap-1 text-xs text-orange-400">
                 <Shield className="size-3" />
                 <span>Admin</span>

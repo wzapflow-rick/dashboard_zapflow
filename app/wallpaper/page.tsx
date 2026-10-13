@@ -6,7 +6,7 @@ export default function WallpaperPage() {
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4">
       <div className="text-center">
-        <h1 className="text-white text-xl mb-4 font-medium">Wallpaper ZapFlow - iPhone 15</h1>
+        <h1 className="text-white text-xl mb-4 font-medium">Wallpaper ZapFlash - iPhone 15</h1>
         <p className="text-gray-400 text-sm mb-6">Clique com botao direito na imagem e salve, ou tire screenshot</p>
         
         {/* Container do wallpaper - proporcao iPhone 15 */}
@@ -57,7 +57,7 @@ export default function WallpaperPage() {
           <div className="absolute inset-0 flex items-center justify-center">
             <Image
               src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Logo%204.0-RwXQ9EjpkWR2Pw5nJkUfKxreW3lq7q.png"
-              alt="ZapFlow Logo"
+              alt="ZapFlash Logo"
               width={280}
               height={100}
               className="drop-shadow-[0_0_30px_rgba(124,255,107,0.4)]"

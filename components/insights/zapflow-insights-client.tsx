@@ -158,7 +158,7 @@ function MetricCard({
 function InsightsSkeleton() {
   return (
     <div className="flex flex-col gap-6 text-slate-900 dark:text-white" role="status" aria-busy="true">
-      <span className="sr-only">Carregando inteligência ZapFlow...</span>
+      <span className="sr-only">Carregando inteligência ZapFlash...</span>
 
       <div className="flex min-h-64 flex-col justify-between gap-6 rounded-3xl border border-current/10 p-6 sm:p-8">
         <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
@@ -255,7 +255,7 @@ export function ZapflowInsightsClient({ initialData, operationContent }: Zapflow
           <InsightsHeading
             id="inteligencia-title"
             eyebrow="Inteligência IA"
-            title="Consultor ZapFlow"
+            title="Consultor ZapFlash"
             description="Uma leitura diária do que merece atenção e das melhores próximas ações para sua loja."
             icon={Sparkles}
             scope="Hoje + últimos 7 dias"
@@ -287,7 +287,7 @@ export function ZapflowInsightsClient({ initialData, operationContent }: Zapflow
           <InsightsHeading
             id="inteligencia-title"
             eyebrow="Inteligência IA"
-            title="Consultor ZapFlow"
+            title="Consultor ZapFlash"
             description="Uma leitura diária do que merece atenção e das melhores próximas ações para sua loja."
             icon={Sparkles}
             scope="Hoje + últimos 7 dias"
@@ -324,7 +324,7 @@ export function ZapflowInsightsClient({ initialData, operationContent }: Zapflow
         <InsightsHeading
           id="inteligencia-title"
           eyebrow="Inteligência IA"
-          title="Consultor ZapFlow"
+          title="Consultor ZapFlash"
           description="Uma leitura diária do que merece atenção e das melhores próximas ações para sua loja."
           icon={Sparkles}
           scope="Hoje + últimos 7 dias"

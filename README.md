@@ -1,4 +1,4 @@
-# 🚀 ZapFlow — Dashboard de Delivery via WhatsApp
+# 🚀 ZapFlash — Dashboard de Delivery via WhatsApp
 
 > A solução definitiva para gestão de delivery, integrada nativamente ao WhatsApp via **Evolution API**. Transforme sua operação com controle total de pedidos, estoque e clientes em uma interface moderna e ultra-veloz.
 
@@ -30,7 +30,7 @@ Roteiro completo de testes funcionais e checklist de qualidade.
 
 ## 💡 Visão Geral
 
-O **ZapFlow** é um Micro-SaaS de delivery estilo iFood que permite:
+O **ZapFlash** é um Micro-SaaS de delivery estilo iFood que permite:
 
 - 🏪 **Gestão de Restaurantes** — Múltiplos lojistas com autenticação isolada
 - 📦 **Cardápios Digitais** — Produtos, categorias, complementos e produtos compostos
@@ -87,6 +87,6 @@ MIT License - Feel free to use!
 ---
 
 <p align="center">
-  <b>ZapFlow — Elevando o nível do seu Delivery</b><br>
+  <b>ZapFlash — Elevando o nível do seu Delivery</b><br>
   Feito com ❤️ para empreendedores que buscam excelência.
 </p>

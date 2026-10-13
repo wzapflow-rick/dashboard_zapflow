@@ -1,6 +1,6 @@
 {
-  "name": "ZapFlow - Gestao de Pedidos",
-  "short_name": "ZapFlow",
+  "name": "ZapFlash - Gestao de Pedidos",
+  "short_name": "ZapFlash",
   "description": "Sistema de gestao de pedidos delivery com suporte offline",
   "start_url": "/dashboard",
   "display": "standalone",

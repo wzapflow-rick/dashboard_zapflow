@@ -102,7 +102,7 @@ export async function getPublicMenu(slug: string) {
         }
 
         const empresaId = empresa.id;
-        empresa.nome = empresa.nome_fantasia || empresa.nome || 'ZapFlow';
+        empresa.nome = empresa.nome_fantasia || empresa.nome || 'ZapFlash';
         
         console.log(`[MENU_DEBUG] Empresa: ${empresa.nome} (ID: ${empresaId})`);
         

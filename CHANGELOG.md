@@ -1,4 +1,4 @@
-# Changelog - ZapFlow Dashboard
+# Changelog - ZapFlash Dashboard
 
 ## [2.3.0] - 2026-04-01
 

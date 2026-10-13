@@ -18,7 +18,7 @@ export async function generateMetadata({
         if (!data) return { title: 'Cardápio não encontrado' };
         const { empresa } = data;
         const logoUrl = typeof empresa.logo === 'string' ? empresa.logo : undefined;
-        const nomeEmpresa = typeof empresa.nome === 'string' ? empresa.nome : 'ZapFlow';
+        const nomeEmpresa = typeof empresa.nome === 'string' ? empresa.nome : 'ZapFlash';
         return {
             title: `Cardápio — ${nomeEmpresa}`,
             description: `Veja o cardápio completo de ${nomeEmpresa}. Peça agora pelo WhatsApp!`,
@@ -116,7 +116,7 @@ export default async function PublicMenuPage({
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-2 bg-primary text-white font-semibold px-6 py-3 rounded-xl hover:bg-primary/90 transition-colors"
                         >
-                            Conheca o ZapFlow
+                            Conheca o ZapFlash
                         </a>
                     </div>
                 </div>
@@ -128,7 +128,7 @@ export default async function PublicMenuPage({
     const lojaAberta = 'lojaAberta' in data ? (data.lojaAberta as boolean) : true;
     const proximaAbertura = 'proximaAbertura' in data ? (data.proximaAbertura as { iso: string; label: string; hora: string } | null) : null;
 
-    const empresaNome = String(empresa.nome || 'ZapFlow');
+    const empresaNome = String(empresa.nome || 'ZapFlash');
     const empresaBanner = typeof empresa.banner === 'string' ? empresa.banner : null;
     const empresaLogo = typeof empresa.logo === 'string' ? empresa.logo : null;
     const empresaNincho = typeof empresa.nincho === 'string' ? empresa.nincho : null;
@@ -285,7 +285,7 @@ export default async function PublicMenuPage({
                     
                     <footer className="text-center pt-12 pb-6 mt-8 border-t border-[#1a1a1a]">
                         <p className="text-xs text-gray-600">
-                            Cardápio digital por <span className="font-bold text-[#22c55e]">ZapFlow</span>
+                            Cardápio digital por <span className="font-bold text-[#22c55e]">ZapFlash</span>
                         </p>
                     </footer>
                 </main>

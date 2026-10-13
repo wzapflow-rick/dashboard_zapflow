@@ -1,5 +1,5 @@
 /**
- * ZapFlow Sync Manager
+ * ZapFlash Sync Manager
  * Gerencia sincronizacao de dados offline com o servidor
  */
 

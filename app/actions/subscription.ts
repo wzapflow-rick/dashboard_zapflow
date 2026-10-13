@@ -139,7 +139,7 @@ export async function createSubscription(planId: SubscriptionPlanId, cardToken?:
     
     // Cria a assinatura no Mercado Pago
     const preapprovalPayload: Record<string, any> = {
-      reason: `Assinatura ZapFlow - Plano ${plan.name}`,
+      reason: `Assinatura ZapFlash - Plano ${plan.name}`,
       auto_recurring: {
         frequency: 1,
         frequency_type: 'months',
@@ -245,7 +245,7 @@ export async function changePlan(newPlanId: SubscriptionPlanId): Promise<{
         auto_recurring: {
           transaction_amount: plan.price,
         },
-        reason: `Assinatura ZapFlow - Plano ${plan.name}`,
+        reason: `Assinatura ZapFlash - Plano ${plan.name}`,
       }),
     });
 
@@ -402,7 +402,7 @@ export async function generatePixPayment(planId: SubscriptionPlanId): Promise<{
 
     const paymentPayload = {
       transaction_amount: valorCobranca,
-      description: `Assinatura ZapFlow - Plano ${plan.name}`,
+      description: `Assinatura ZapFlash - Plano ${plan.name}`,
       payment_method_id: 'pix',
       payer: {
         email: empresa?.email || `empresa${me.empresaId}@zapflow.com.br`,

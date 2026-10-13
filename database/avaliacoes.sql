@@ -1,6 +1,6 @@
 -- =====================================================
 -- TABELA DE AVALIAÇÕES DE PEDIDOS (RATINGS)
--- ZapFlow - Sistema de Delivery
+-- ZapFlash - Sistema de Delivery
 -- PostgreSQL (usado com NocoDB)
 -- =====================================================
 

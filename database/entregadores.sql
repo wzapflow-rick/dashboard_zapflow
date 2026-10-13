@@ -1,5 +1,5 @@
 -- =====================================================
--- ZAPFLOW - Tabelas para Sistema de Entregadores
+-- ZAPFLASH - Tabelas para Sistema de Entregadores
 -- Compatível com MySQL/MariaDB (usado pelo NocoDB)
 -- =====================================================
 

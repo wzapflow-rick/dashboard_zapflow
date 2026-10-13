@@ -48,7 +48,7 @@ export default function DriverLoginPage() {
           <div className="size-20 bg-white rounded-2xl shadow-xl mx-auto mb-4 flex items-center justify-center">
             <Truck className="size-10 text-purple-500" />
           </div>
-          <h1 className="text-3xl font-bold text-white">ZapFlow Entregador</h1>
+          <h1 className="text-3xl font-bold text-white">ZapFlash Entregador</h1>
           <p className="text-white/80 mt-2">Acesse seu painel de entregas</p>
         </div>
 

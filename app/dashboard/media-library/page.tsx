@@ -5,7 +5,7 @@ import { MediaLibraryManager } from '@/components/media/media-library-manager';
 import { getMe } from '@/lib/session-server';
 
 export const metadata: Metadata = {
-  title: 'Acervo de mídias | Zapflow',
+  title: 'Acervo de mídias | ZapFlash',
   description: 'Organize e gerencie as imagens dos produtos da sua loja.',
 };
 

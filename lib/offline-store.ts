@@ -1,5 +1,5 @@
 /**
- * ZapFlow Offline Store
+ * ZapFlash Offline Store
  * Gerencia cache local usando IndexedDB para funcionamento offline
  */
 

@@ -1,4 +1,4 @@
-# 🔧 PROMPT DE CORREÇÃO - ZapFlow Bugs Críticos
+# 🔧 PROMPT DE CORREÇÃO - ZapFlash Bugs Críticos
 
 ## Contexto
 Foram identificados **8 bugs críticos** durante testes mobile/desktop que afetam UX e funcionalidades principais. Este prompt detalha cada problema e sua solução esperada.

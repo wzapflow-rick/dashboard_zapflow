@@ -1,5 +1,5 @@
 -- =====================================================
--- ZAPFLOW - BANCO DE DADOS COMPLETO (NOCODB)
+-- ZAPFLASH - BANCO DE DADOS COMPLETO (NOCODB)
 -- PostgreSQL - Criar todas as tabelas do zero
 -- =====================================================
 

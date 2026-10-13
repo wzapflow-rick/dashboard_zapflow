@@ -244,7 +244,7 @@ export default function SubscriptionPage() {
               <div>
                 <h3 className="font-bold text-amber-800 dark:text-amber-200">Você não possui uma assinatura ativa</h3>
                 <p className="text-amber-700 dark:text-amber-300 text-sm mt-1">
-                  Escolha um dos planos abaixo para começar a usar todos os recursos do ZapFlow.
+                  Escolha um dos planos abaixo para começar a usar todos os recursos do ZapFlash.
                 </p>
               </div>
             </div>

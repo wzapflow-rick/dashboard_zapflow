@@ -1,4 +1,4 @@
-# 📋 Contextualização e Roadmap do Sistema de Menu - ZapFlow
+# 📋 Contextualização e Roadmap do Sistema de Menu - ZapFlash
 
 Este documento detalha as mudanças implementadas no sistema de pedidos (cardápio público) e as próximas etapas sugeridas para atingir a experiência ideal de "onboarding" solicitada.
 
@@ -48,4 +48,4 @@ Ainda existem pontos que podem ser refinados para tornar a experiência perfeita
 3. Observe a barra de progresso no topo do modal e navegue entre as etapas usando os botões "Continuar".
 
 ---
-*Documento gerado para auxiliar na continuidade do desenvolvimento do ZapFlow.*
+*Documento gerado para auxiliar na continuidade do desenvolvimento do ZapFlash.*

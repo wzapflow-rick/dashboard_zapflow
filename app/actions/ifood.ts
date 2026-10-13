@@ -213,7 +213,7 @@ export async function syncIFoodOrders(): Promise<{
         const orderDetails = await getIFoodOrderDetails(accessToken, event.orderId);
         
         if (orderDetails) {
-          // Converter para formato ZapFlow
+          // Converter para formato ZapFlash
           const zapflowOrder = convertIFoodOrderToZapFlow(orderDetails, user.empresaId);
 
           // Verificar se pedido ja existe

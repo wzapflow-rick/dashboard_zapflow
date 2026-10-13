@@ -70,7 +70,7 @@ export function ZapflowChat() {
         whileTap={{ scale: 0.95 }}
         className="fixed bottom-24 right-4 z-40 flex size-14 items-center justify-center rounded-full bg-primary text-slate-950 shadow-lg shadow-primary/30 lg:bottom-6 lg:right-6"
         style={{ boxShadow: '0 0 24px rgba(34,197,94,0.35)' }}
-        aria-label={aberto ? 'Fechar chat com o ZapFlow' : 'Abrir chat com o ZapFlow'}
+        aria-label={aberto ? 'Fechar chat com o ZapFlash' : 'Abrir chat com o ZapFlash'}
         aria-expanded={aberto}
         aria-controls="zapflow-chat-panel"
       >
@@ -82,7 +82,7 @@ export function ZapflowChat() {
           <motion.aside
             id="zapflow-chat-panel"
             role="dialog"
-            aria-label="Pergunte ao ZapFlow"
+            aria-label="Pergunte ao ZapFlash"
             initial={{ opacity: 0, y: 20, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.96 }}
@@ -94,7 +94,7 @@ export function ZapflowChat() {
                 <Sparkles className="size-5 text-primary" aria-hidden="true" />
               </div>
               <div>
-                <p className="text-sm font-bold text-slate-900 dark:text-white">Pergunte ao ZapFlow</p>
+                <p className="text-sm font-bold text-slate-900 dark:text-white">Pergunte ao ZapFlash</p>
                 <p className="text-xs text-slate-500 dark:text-slate-400">Seu consultor de delivery</p>
               </div>
             </header>
@@ -137,7 +137,7 @@ export function ZapflowChat() {
               ))}
 
               {carregando && (
-                <div className="flex justify-start" role="status" aria-label="ZapFlow está respondendo">
+                <div className="flex justify-start" role="status" aria-label="ZapFlash está respondendo">
                   <div className="flex items-center gap-2 rounded-2xl rounded-bl-md bg-slate-100 px-4 py-3 text-slate-500 dark:bg-white/[0.06] dark:text-slate-300">
                     <MorphingInfinity className="size-5 text-primary" aria-hidden="true" />
                     <span className="text-xs font-medium">Pensando...</span>
@@ -154,7 +154,7 @@ export function ZapflowChat() {
                   onChange={(event) => setInput(event.target.value)}
                   onKeyDown={onKeyDown}
                   placeholder="Digite sua pergunta..."
-                  aria-label="Pergunta para o ZapFlow"
+                  aria-label="Pergunta para o ZapFlash"
                   className="min-w-0 flex-1 bg-transparent text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none dark:text-slate-100 dark:placeholder:text-slate-500"
                 />
                 <button

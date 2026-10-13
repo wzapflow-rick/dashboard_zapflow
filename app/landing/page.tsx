@@ -314,7 +314,7 @@ export default function LandingPage() {
               >
                 <Image
                   src="/images/pizza-logo.png"
-                  alt="Pizza ZapFlow"
+                  alt="Pizza ZapFlash"
                   width={320}
                   height={320}
                   className="drop-shadow-2xl"
@@ -329,7 +329,7 @@ export default function LandingPage() {
               >
                 <Image
                   src="/images/menu-screenshot.png"
-                  alt="Cardapio ZapFlow"
+                  alt="Cardapio ZapFlash"
                   width={380}
                   height={700}
                   className="w-full"
@@ -540,7 +540,7 @@ export default function LandingPage() {
               <span className="text-amber-400">aprovou</span>
             </h2>
             <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              Veja o que nossos clientes falam sobre o ZapFlow
+              Veja o que nossos clientes falam sobre o ZapFlash
             </p>
           </motion.div>
           
@@ -610,7 +610,7 @@ export default function LandingPage() {
               <span className="text-amber-400">bombar</span>?
             </h2>
             <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto">
-              Junte-se a mais de 500 restaurantes que ja estao vendendo mais com o ZapFlow
+              Junte-se a mais de 500 restaurantes que ja estao vendendo mais com o ZapFlash
             </p>
             
             <div className="relative inline-block">
@@ -657,7 +657,7 @@ export default function LandingPage() {
             </div>
             
             <p className="text-sm text-gray-500">
-              &copy; {new Date().getFullYear()} ZapFlow. Todos os direitos reservados.
+              &copy; {new Date().getFullYear()} ZapFlash. Todos os direitos reservados.
             </p>
             
             <div className="flex items-center gap-6">

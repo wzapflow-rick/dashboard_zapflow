@@ -105,7 +105,7 @@ export default function LoginPage() {
                 >
                     <Image
                         src="/images/zapflow-pizza-rocket.png"
-                        alt="ZapFlow"
+                        alt="ZapFlash"
                         width={150}
                         height={140}
                         priority
@@ -172,7 +172,7 @@ export default function LoginPage() {
                         <div className="lg:hidden mb-8 flex justify-center">
                             <Image
                                 src="/images/zapflow-pizza-rocket.png"
-                                alt="ZapFlow"
+                                alt="ZapFlash"
                                 width={100}
                                 height={94}
                                 className="h-auto w-[92px] select-none"
@@ -184,7 +184,7 @@ export default function LoginPage() {
                             Bem-vindo de volta!
                         </h2>
                         <p className="mt-2 text-[15px]" style={{ color: MUTED }}>
-                            Entre para continuar no ZapFlow.
+                            Entre para continuar no ZapFlash.
                         </p>
 
                         <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
@@ -281,7 +281,7 @@ export default function LoginPage() {
                                         <Loader2 className="size-5 animate-spin" />
                                     ) : (
                                         <>
-                                            Entrar no ZapFlow
+                                            Entrar no ZapFlash
                                             <ArrowRight className="size-[18px] transition-transform group-hover:translate-x-1" />
                                         </>
                                     )}

@@ -1,4 +1,4 @@
-// ZapFlow Service Worker - Offline First Strategy
+// ZapFlash Service Worker - Offline First Strategy
 // IMPORTANTE: sempre incremente a versao ao mudar o comportamento de cache/impressao.
 // Isso forca o SW a limpar caches antigos e os aparelhos a rodarem o codigo novo.
 const CACHE_NAME = 'zapflow-v5';

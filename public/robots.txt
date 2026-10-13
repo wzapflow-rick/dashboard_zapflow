@@ -1,4 +1,4 @@
-# ZapFlow - Robots.txt
+# ZapFlash - Robots.txt
 # Bloqueia crawlers de acessar areas sensiveis
 
 User-agent: *

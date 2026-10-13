@@ -281,7 +281,7 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
         sendOrderCreatedMessage(dadosEfetivos.clienteTelefone, order.id, dadosEfetivos.total, dadosEfetivos.dataAgendamento, itensFormatados, dadosEfetivos.empresaId)
             .catch(err => console.error('Erro ao enviar mensagem WhatsApp:', err));
 
-        // Avisar o DONO da loja sobre o novo pedido (opt-in), pelo numero central da ZapFlow.
+        // Avisar o DONO da loja sobre o novo pedido (opt-in), pelo numero central da ZapFlash.
         // Best-effort: nunca bloqueia ou derruba a criacao do pedido.
         notifyOwnerNewOrder(dadosEfetivos, order.id, itensFormatados, enderecoCompleto)
             .catch(err => console.error('Erro ao notificar dono sobre novo pedido:', err));
@@ -303,7 +303,7 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
  * Notifica o dono da loja sobre um novo pedido do cardapio online.
  * - Opt-in: so envia se empresa.notificar_pedido_whatsapp = true
  * - Destino: telefone_loja da empresa
- * - Remetente: numero central da ZapFlow (zapflow_ativacao)
+ * - Remetente: numero central da ZapFlash (zapflow_ativacao)
  */
 async function notifyOwnerNewOrder(
     data: CreatePublicOrderData,

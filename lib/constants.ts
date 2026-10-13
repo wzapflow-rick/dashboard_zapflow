@@ -1,6 +1,6 @@
 /**
  * @file lib/constants.ts
- * @description Constantes globais do sistema ZapFlow.
+ * @description Constantes globais do sistema ZapFlash.
  *
  * NOTA: Os nomes de tabelas PostgreSQL estão centralizados em lib/tables.ts
  */

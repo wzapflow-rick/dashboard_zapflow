@@ -1,5 +1,5 @@
 -- ============================================
--- ZAPFLOW - TABELAS DE CUPONS E FIDELIDADE
+-- ZAPFLASH - TABELAS DE CUPONS E FIDELIDADE
 -- ============================================
 
 -- 1. TABELA DE CUPONS

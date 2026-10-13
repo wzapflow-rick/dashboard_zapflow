@@ -43,7 +43,7 @@ export default function AdminDashboardPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-white">Dashboard Admin</h1>
-        <p className="text-slate-400 mt-1">Visao geral do sistema ZapFlow</p>
+        <p className="text-slate-400 mt-1">Visao geral do sistema ZapFlash</p>
       </div>
 
       {/* Cards de Stats */}

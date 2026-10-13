@@ -98,7 +98,7 @@ export default function DisclosurePanel() {
       doc.text(menuUrl, centerX, 145, { align: 'center' });
 
       doc.setFontSize(8);
-      doc.text('Powered by ZapFlow', centerX, 155, { align: 'center' });
+      doc.text('Powered by ZapFlash', centerX, 155, { align: 'center' });
 
       doc.save(`${empresaNome.replace(/\s+/g, '-')}-cardapio-qr.pdf`);
       toast.success('PDF baixado com sucesso!');

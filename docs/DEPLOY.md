@@ -1,6 +1,6 @@
 # 🚀 Instalação e Deployment
 
-> Guia completo para configurar e executar o ZapFlow em produção.
+> Guia completo para configurar e executar o ZapFlash em produção.
 
 ---
 
@@ -77,7 +77,7 @@ GOOGLE_MAPS_API_KEY=sua-chave-google-maps
 
 ### Tabelas Necessárias
 
-O ZapFlow utiliza as seguintes tabelas no NocoDB:
+O ZapFlash utiliza as seguintes tabelas no NocoDB:
 
 | Nome | ID | Descrição |
 |------|-----|-----------|

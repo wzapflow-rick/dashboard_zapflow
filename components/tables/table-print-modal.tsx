@@ -250,7 +250,7 @@ export default function TablePrintModal({ isOpen, onClose, mesa, comanda, tipo }
                 <div className="zf-thanks">Obrigado pela preferência!</div>
               </div>
               <div className="zf-cut">- - - - - - - - - - - -</div>
-              <div className="zf-sign">powered by zapflow</div>
+              <div className="zf-sign">powered by zapflash</div>
             </div>
           </div>
 
