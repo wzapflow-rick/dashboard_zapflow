@@ -1,6 +1,6 @@
 # 🏗️ Arquitetura Técnica
 
-> Este documento descreve a arquitetura, estrutura de código e decisões técnicas do ZapFlow.
+> Este documento descreve a arquitetura, estrutura de código e decisões técnicas do ZapFlash.
 
 ---
 
@@ -161,7 +161,7 @@ async function nocoFetch(endpoint: string, options: RequestInit = {}) {
 
 ## 🎣 Server Actions
 
-O ZapFlow usa **Next.js Server Actions** para comunicação segura com o banco:
+O ZapFlash usa **Next.js Server Actions** para comunicação segura com o banco:
 
 ```typescript
 // app/actions/orders.ts

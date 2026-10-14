@@ -1,4 +1,4 @@
-# 🚀 ZapFlow — Roadmap de Funcionalidades
+# 🚀 ZapFlash — Roadmap de Funcionalidades
 
 ## ✅ Implementado
 - Kanban de pedidos com controle de status

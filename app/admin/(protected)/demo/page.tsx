@@ -1,7 +1,7 @@
 import DemoCardapioClient from './demo-client';
 
 export const metadata = {
-    title: 'Demo de Cardápio | ZapFlow Admin',
+    title: 'Demo de Cardápio | ZapFlash Admin',
     description: 'Monte um cardápio-demo para um prospect e gere o link pronto para enviar no WhatsApp.',
 };
 

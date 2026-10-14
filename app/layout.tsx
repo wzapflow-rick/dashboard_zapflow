@@ -10,7 +10,7 @@ import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "ZapFlow - WhatsApp Delivery Automation",
+  title: "ZapFlash - WhatsApp Delivery Automation",
   description: "Transforme seu WhatsApp em uma máquina de vendas.",
   manifest: "/manifest.json",
   icons: {
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "ZapFlow",
+    title: "ZapFlash",
   },
 };
 

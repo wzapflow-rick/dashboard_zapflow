@@ -32,7 +32,7 @@ interface MPPaymentResponse {
 
 /**
  * Busca as credenciais do Mercado Pago para uma empresa específica.
- * Se não encontrar, retorna as credenciais de fallback do ZapFlow.
+ * Se não encontrar, retorna as credenciais de fallback do ZapFlash.
  */
 async function getCompanyMPCredentials(empresaId: number) {
     try {
@@ -90,7 +90,7 @@ export async function checkPixAvailability(): Promise<{ available: boolean; reas
             },
             body: JSON.stringify({
                 transaction_amount: 1,
-                description: 'Verificacao de chave PIX (ZapFlow)',
+                description: 'Verificacao de chave PIX (ZapFlash)',
                 payment_method_id: 'pix',
                 payer: { email: 'verificacao-pix@zapflow.com.br' }
             })

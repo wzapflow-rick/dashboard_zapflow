@@ -1,4 +1,4 @@
-# Exportacao da Landing Page ZapFlow
+# Exportacao da Landing Page ZapFlash
 
 ## Passo a passo para o novo projeto:
 
@@ -33,7 +33,7 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'ZapFlow - Seu delivery com sabor de sucesso',
+  title: 'ZapFlash - Seu delivery com sabor de sucesso',
   description: 'Cardapio digital irresistivel, pedidos que chegam quentinhos e gestao que faz seu caixa transbordar.',
   keywords: 'delivery, cardapio digital, restaurante, pizzaria, hamburgueria, pedidos online',
 };

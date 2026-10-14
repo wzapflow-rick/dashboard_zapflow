@@ -1,6 +1,6 @@
-# Test Suite for ZapFlow SaaS Dashboard
+# Test Suite for ZapFlash SaaS Dashboard
 
-This document outlines the testing strategy, test cases, and coverage for the ZapFlow SaaS Dashboard project.
+This document outlines the testing strategy, test cases, and coverage for the ZapFlash SaaS Dashboard project.
 
 ## Testing Strategy
 

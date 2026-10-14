@@ -186,7 +186,7 @@ export default function MercadoPagoConnection() {
                         <div className="max-w-md mx-auto space-y-2">
                             <p className="font-bold text-slate-900 dark:text-white text-xl">Conecte seu Mercado Pago</p>
                             <p className="text-sm text-slate-500 dark:text-slate-400">
-                                Para começar a vender e receber na hora, você precisa autorizar o ZapFlow a gerar cobranças em seu nome.
+                                Para começar a vender e receber na hora, você precisa autorizar o ZapFlash a gerar cobranças em seu nome.
                             </p>
                         </div>
 
@@ -199,7 +199,7 @@ export default function MercadoPagoConnection() {
                         </button>
 
                         <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-                            Seguro • Rápido • Sem taxas extras do ZapFlow
+                            Seguro • Rápido • Sem taxas extras do ZapFlash
                         </p>
                     </div>
                 )}

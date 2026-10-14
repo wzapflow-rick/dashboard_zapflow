@@ -620,7 +620,7 @@ function construirPrompt(nome: string, m: InsightMetrics): string {
 async function gerarAnaliseIA(nome: string, m: InsightMetrics): Promise<AnaliseIA> {
   const primeiroNome = nome?.split(' ')[0] || 'lojista';
   const system =
-    'Voce e o ZapFlow, um consultor de delivery especialista e direto, que ajuda donos de restaurantes/hamburguerias a venderem mais. ' +
+    'Voce e o ZapFlash, um consultor de delivery especialista e direto, que ajuda donos de restaurantes/hamburguerias a venderem mais. ' +
     'Fale em portugues do Brasil, tom proximo e pratico, como um socio que entende do negocio. ' +
     'Baseie-se APENAS nos numeros fornecidos, nao invente dados. Se houver poucos dados, seja honesto e foque no que da pra fazer. ' +
     'Seja especifico e acionavel: prefira acoes como criar cupom, campanha de WhatsApp, combo no cardapio, recuperar clientes. ' +
@@ -824,7 +824,7 @@ export async function getZapflowInsights(forceRefresh = false): Promise<ZapflowI
 }
 
 // ---------------------------------------------------------------------------
-// Chat: "Pergunte ao ZapFlow" (restrito ao negocio)
+// Chat: "Pergunte ao ZapFlash" (restrito ao negocio)
 // ---------------------------------------------------------------------------
 export async function perguntarAoZapflow(
   pergunta: string,
@@ -845,7 +845,7 @@ export async function perguntarAoZapflow(
 
     const metrics = await coletarMetricas(user.empresaId);
     const system =
-      'Voce e o ZapFlow, consultor de delivery do dono deste restaurante. ' +
+      'Voce e o ZapFlash, consultor de delivery do dono deste restaurante. ' +
       'Responda SOMENTE sobre o negocio de delivery/restaurante, vendas, cardapio, clientes, marketing e operacao. ' +
       'Se perguntarem algo fora desse contexto, redirecione gentilmente para o negocio. ' +
       'Use os numeros abaixo como base e seja pratico, curto e direto. Portugues do Brasil.\n\n' +

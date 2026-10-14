@@ -1,6 +1,6 @@
 # 🔐 Segurança - Auditoria OWASP Top 10
 
-> Este documento detalha a auditoria de segurança realizada no ZapFlow seguindo as diretrizes do OWASP Top 10 (2021).
+> Este documento detalha a auditoria de segurança realizada no ZapFlash seguindo as diretrizes do OWASP Top 10 (2021).
 
 ---
 

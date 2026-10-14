@@ -311,7 +311,7 @@ export async function cancelIFoodOrder(
 }
 
 /**
- * Converter pedido iFood para formato ZapFlow
+ * Converter pedido iFood para formato ZapFlash
  */
 export function convertIFoodOrderToZapFlow(ifoodOrder: IFoodOrder, empresaId: number | string) {
   return {

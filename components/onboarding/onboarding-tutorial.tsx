@@ -36,7 +36,7 @@ interface TutorialStep {
 const tutorialSteps: TutorialStep[] = [
   {
     id: 'welcome',
-    title: 'Bem-vindo ao ZapFlow!',
+    title: 'Bem-vindo ao ZapFlash!',
     description: 'Seu sistema completo para gerenciar seu restaurante ou delivery.',
     icon: Sparkles,
     color: 'from-purple-500 to-pink-500',

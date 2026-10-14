@@ -143,7 +143,7 @@ export function BlockScreen({ empresaId, nome, initialStatus = null }: BlockScre
             <span className="flex size-8 items-center justify-center rounded-lg bg-primary">
               <Zap className="size-5 text-background-dark" aria-hidden="true" fill="currentColor" />
             </span>
-            <span className="text-lg font-bold tracking-tight text-white">ZapFlow</span>
+            <span className="text-lg font-bold tracking-tight text-white">ZapFlash</span>
           </div>
 
           {/* Status */}
@@ -165,7 +165,7 @@ export function BlockScreen({ empresaId, nome, initialStatus = null }: BlockScre
           </h1>
 
           <p className="mt-3 text-center text-sm leading-relaxed text-text-secondary text-pretty">
-            Seu ZapFlow está pausado. Regularize sua assinatura e volte a receber
+            Seu ZapFlash está pausado. Regularize sua assinatura e volte a receber
             pedidos normalmente — seu cardápio continua aqui, seus dados também.
           </p>
 

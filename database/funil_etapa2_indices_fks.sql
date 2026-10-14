@@ -1,5 +1,5 @@
 -- =====================================================================
--- FUNIL DE FOLLOW-UP (CRM ZapFlow) - ETAPA 2: FKs + INDICES + COMMENTS
+-- FUNIL DE FOLLOW-UP (CRM ZapFlash) - ETAPA 2: FKs + INDICES + COMMENTS
 -- Rodar DEPOIS da Etapa 1 (quando as tabelas ja existem).
 -- =====================================================================
 

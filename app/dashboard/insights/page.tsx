@@ -1,8 +1,8 @@
 import { ZapflowInsightsClient } from '@/components/insights/zapflow-insights-client';
 
 export const metadata = {
-  title: 'Inteligência | ZapFlow',
-  description: 'Análise completa do seu negócio com o Consultor ZapFlow.',
+  title: 'Inteligência | ZapFlash',
+  description: 'Análise completa do seu negócio com o Consultor ZapFlash.',
 };
 
 export default function InsightsPage() {

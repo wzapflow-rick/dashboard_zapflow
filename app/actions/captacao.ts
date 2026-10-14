@@ -1,5 +1,7 @@
 'use server';
 
+import { requireAdminSession } from '@/lib/admin-session';
+
 import { pg } from '@/lib/postgres';
 import { importarContato } from '@/app/actions/remarketing';
 
@@ -13,7 +15,7 @@ const CAPTACAO_TABLE = 'captacao_places';
 const NOMINATIM_ENDPOINT = 'https://nominatim.openstreetmap.org/search';
 const OVERPASS_ENDPOINT = 'https://overpass-api.de/api/interpreter';
 // User-Agent obrigatorio pela politica de uso do Nominatim/Overpass
-const HTTP_UA = 'ZapFlow-Captacao/1.0 (contato@zapflow.app)';
+const HTTP_UA = 'ZapFlash-Captacao/1.0 (contato@zapflow.app)';
 
 export interface LeadCaptado {
     place_id: string;
@@ -149,6 +151,7 @@ export async function buscarLeads(input: {
     soComTelefone?: boolean;
     minAvaliacoes?: number;
 }): Promise<{ success: boolean; leads?: LeadCaptado[]; total?: number; error?: string }> {
+  await requireAdminSession();
     try {
         if (!input.cidade.trim() || !input.tipoComida.trim()) {
             return { success: false, error: 'Informe a cidade e o tipo de comida.' };
@@ -325,6 +328,7 @@ export async function importarLeads(input: {
     tipoComida: string;
     leads: LeadCaptado[];
 }): Promise<{ success: boolean; importados?: number; pulados?: number; error?: string }> {
+  await requireAdminSession();
     try {
         if (!input.leads?.length) {
             return { success: false, error: 'Selecione ao menos um lead.' };

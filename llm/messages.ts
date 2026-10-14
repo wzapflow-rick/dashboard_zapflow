@@ -1,4 +1,4 @@
-// Mensagens do WhatsApp - ZapFlow
+// Mensagens do WhatsApp - ZapFlash
 // Edite as mensagens abaixo conforme necessário
 
 export const WhatsAppMessages = {
@@ -114,7 +114,7 @@ _Qualquer dúvida, é só chamar! 😊_
   // =======================================
 
   testMessage: `
-🧪 *Mensagem de Teste — ZapFlow*
+🧪 *Mensagem de Teste — ZapFlash*
 
 Tudo certo! Se você recebeu esta mensagem, o sistema está funcionando perfeitamente. 🎉
 

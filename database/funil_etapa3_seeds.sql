@@ -1,5 +1,5 @@
 -- =====================================================================
--- FUNIL DE FOLLOW-UP (CRM ZapFlow) - ETAPA 3: SEEDS (mensagens + cadencias)
+-- FUNIL DE FOLLOW-UP (CRM ZapFlash) - ETAPA 3: SEEDS (mensagens + cadencias)
 -- Rodar DEPOIS das Etapas 1 e 2. Idempotente (nao duplica se rodar 2x).
 -- =====================================================================
 
@@ -10,13 +10,13 @@ INSERT INTO remarketing_mensagens (nome, conteudo, tipo_midia, variaveis_disponi
 SELECT v.nome, v.conteudo, 'texto', '["nome","telefone"]'::json, true, v.ordem, now()
 FROM (VALUES
   ('Funil - Trial 48h',     'Opa, {{nome}}, tudo bem? Como tem se saido com o app? Posso tirar alguma duvida?', 1),
-  ('Funil - Trial dia 4',   'Oi {{nome}}! Quero te mostrar um recurso que costuma encantar quem usa o ZapFlow. Posso te mandar um exemplo rapido?', 2),
-  ('Funil - Trial dia 6',   '{{nome}}, seu teste do ZapFlow acaba amanha! Pra nao perder seus dados, deixei uma oferta especial de R$ 29,90 no primeiro mes. Quer que eu te mande o link?', 3),
-  ('Funil - Cliente 15d',   'Oi {{nome}}! Como esta se saindo o ZapFlow ai? Esta tranquilo de usar no dia a dia?', 4),
+  ('Funil - Trial dia 4',   'Oi {{nome}}! Quero te mostrar um recurso que costuma encantar quem usa o ZapFlash. Posso te mandar um exemplo rapido?', 2),
+  ('Funil - Trial dia 6',   '{{nome}}, seu teste do ZapFlash acaba amanha! Pra nao perder seus dados, deixei uma oferta especial de R$ 29,90 no primeiro mes. Quer que eu te mande o link?', 3),
+  ('Funil - Cliente 15d',   'Oi {{nome}}! Como esta se saindo o ZapFlash ai? Esta tranquilo de usar no dia a dia?', 4),
   ('Funil - Cliente 25d',   '{{nome}}, passando pra fazer um check-in antes da renovacao. Ta tudo certo? Qualquer ajuste eu te ajudo por aqui.', 5),
-  ('Funil - Lead Quente 2h','Oi {{nome}}! Vi seu interesse no ZapFlow. Posso te explicar rapidinho como funciona e tirar suas duvidas?', 6),
-  ('Funil - Lead Morno 24h','Oi {{nome}}, tudo bem? Ainda da tempo de organizar seu delivery com o ZapFlow. Quer que eu te mande uma demonstracao?', 7),
-  ('Funil - Lead Frio',     'Oi {{nome}}! Faz um tempo que a gente nao se fala. O ZapFlow evoluiu bastante - quer dar uma olhada no que mudou?', 8)
+  ('Funil - Lead Quente 2h','Oi {{nome}}! Vi seu interesse no ZapFlash. Posso te explicar rapidinho como funciona e tirar suas duvidas?', 6),
+  ('Funil - Lead Morno 24h','Oi {{nome}}, tudo bem? Ainda da tempo de organizar seu delivery com o ZapFlash. Quer que eu te mande uma demonstracao?', 7),
+  ('Funil - Lead Frio',     'Oi {{nome}}! Faz um tempo que a gente nao se fala. O ZapFlash evoluiu bastante - quer dar uma olhada no que mudou?', 8)
 ) AS v(nome, conteudo, ordem)
 WHERE NOT EXISTS (
   SELECT 1 FROM remarketing_mensagens m WHERE m.nome = v.nome

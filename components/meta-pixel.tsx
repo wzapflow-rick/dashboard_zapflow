@@ -60,7 +60,7 @@ export function trackEvent(eventName: string, params?: Record<string, any>) {
   }
 }
 
-// Common events for ZapFlow
+// Common events for ZapFlash
 export const MetaEvents = {
   // When someone clicks to start free trial
   startTrial: () => trackEvent('StartTrial', { value: 0, currency: 'BRL' }),

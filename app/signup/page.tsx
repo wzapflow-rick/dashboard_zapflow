@@ -164,7 +164,7 @@ function SignupContent() {
             <Link href="/" className="flex items-center gap-2">
               <Image 
                 src="/logo-zapflow.png" 
-                alt="ZapFlow" 
+                alt="ZapFlash" 
                 width={56} 
                 height={56}
                 className="h-10 w-auto"
@@ -398,7 +398,7 @@ function SignupContent() {
                 >
                   <Image 
                     src="/logo-zapflow.png" 
-                    alt="ZapFlow" 
+                    alt="ZapFlash" 
                     width={32} 
                     height={32}
                     className="size-7"

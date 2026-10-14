@@ -1,6 +1,6 @@
 # 💎 Funcionalidades Completas
 
-> Este documento descreve todas as funcionalidades operacionais do ZapFlow.
+> Este documento descreve todas as funcionalidades operacionais do ZapFlash.
 
 ---
 

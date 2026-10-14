@@ -1,4 +1,4 @@
-# Prompt — Feature: Campanhas Automáticas de WhatsApp (ZapFlow)
+# Prompt — Feature: Campanhas Automáticas de WhatsApp (ZapFlash)
 
 Cole este prompt inteiro no Qwen antes de começar a implementação.
 
@@ -6,7 +6,7 @@ Cole este prompt inteiro no Qwen antes de começar a implementação.
 
 ## CONTEXTO DO PROJETO
 
-Você está trabalhando no **ZapFlow**, um Micro-SaaS de delivery (Next.js 15, TypeScript, TailwindCSS, NocoDB via REST API, Evolution API para WhatsApp). O sistema já tem: autenticação JWT, multi-tenant (por `empresa_id`), Kanban de pedidos, clientes, cupons, fidelidade e integração com WhatsApp.
+Você está trabalhando no **ZapFlash**, um Micro-SaaS de delivery (Next.js 15, TypeScript, TailwindCSS, NocoDB via REST API, Evolution API para WhatsApp). O sistema já tem: autenticação JWT, multi-tenant (por `empresa_id`), Kanban de pedidos, clientes, cupons, fidelidade e integração com WhatsApp.
 
 ### Stack
 - **Framework**: Next.js 15 App Router + TypeScript

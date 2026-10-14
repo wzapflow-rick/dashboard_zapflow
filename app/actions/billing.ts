@@ -111,7 +111,7 @@ export async function generatePixPayment(empresaId: number, plano: SubscriptionP
     const preference = {
       items: [
         {
-          title: `ZapFlow - Plano ${plan.name}`,
+          title: `ZapFlash - Plano ${plan.name}`,
           quantity: 1,
           unit_price: valorCobranca,
           currency_id: 'BRL',
@@ -208,7 +208,7 @@ export async function generateCheckoutLink(empresaId: number) {
     const preference = {
       items: [
         {
-          title: `ZapFlow - Plano ${plan?.name || planoId}`,
+          title: `ZapFlash - Plano ${plan?.name || planoId}`,
           quantity: 1,
           unit_price: valorCobranca,
           currency_id: 'BRL',

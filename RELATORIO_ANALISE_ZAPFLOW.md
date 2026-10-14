@@ -1,6 +1,6 @@
-# Relatório de Análise Técnica: ZapFlow Dashboard
+# Relatório de Análise Técnica: ZapFlash Dashboard
 
-O ZapFlow é um sistema robusto e completo focado na automação de vendas e gestão de delivery via WhatsApp. Após uma análise profunda do repositório `wzapflow-rick/dashboard_zapflow`, apresento a seguir a arquitetura, stack tecnológica, funcionalidades e os próximos passos mapeados.
+O ZapFlash é um sistema robusto e completo focado na automação de vendas e gestão de delivery via WhatsApp. Após uma análise profunda do repositório `wzapflow-rick/dashboard_zapflow`, apresento a seguir a arquitetura, stack tecnológica, funcionalidades e os próximos passos mapeados.
 
 ## 1. Visão Geral da Arquitetura e Stack Tecnológica
 
@@ -19,7 +19,7 @@ A estrutura do projeto é bem organizada, separando claramente componentes de UI
 
 ## 2. Funcionalidades Core Implementadas
 
-O ZapFlow já possui um conjunto extenso de funcionalidades operacionais, cobrindo desde a captação do pedido até a entrega.
+O ZapFlash já possui um conjunto extenso de funcionalidades operacionais, cobrindo desde a captação do pedido até a entrega.
 
 ### Gestão de Pedidos e Expedição
 O coração da operação é o Kanban de expedição, que gerencia o ciclo de vida do pedido. Ele inclui colunas para agendados, pagamento pendente, novos pedidos, preparando, saiu para entrega e concluídos. O sistema emite alertas sonoros para novos pedidos e permite a atualização de status com notificação automática via WhatsApp para o cliente.
@@ -31,7 +31,7 @@ O sistema gera um link de cardápio online (`/menu/[slug]`) onde o cliente pode 
 O lojista possui um painel completo para gerenciar produtos, categorias, grupos de complementos (únicos ou múltiplos) e insumos. O controle de estoque (insumos) verifica a disponibilidade antes de aceitar um pedido e deduz automaticamente as quantidades.
 
 ### Marketing e Fidelização
-O ZapFlow integra ferramentas de retenção de clientes, incluindo:
+O ZapFlash integra ferramentas de retenção de clientes, incluindo:
 - **Programa de Fidelidade:** Acúmulo de pontos por valor gasto, com resgate automático no checkout.
 - **Cupons de Desconto:** Percentuais ou valores fixos, com limites de uso e validade.
 - **Campanhas Automáticas:** Integração com N8N para disparos em massa via WhatsApp (ex: reengajamento de clientes inativos).
@@ -60,6 +60,6 @@ A documentação do projeto (`opencode.md` e `CONTEXTO_MENU_E_ROADMAP.md`) detal
 
 ## Conclusão
 
-O projeto ZapFlow está em um estágio avançado de maturidade, com uma base de código bem estruturada e documentada. Estou totalmente contextualizado com a arquitetura, as integrações (NocoDB, Evolution API, Mercado Pago) e o fluxo de dados. 
+O projeto ZapFlash está em um estágio avançado de maturidade, com uma base de código bem estruturada e documentada. Estou totalmente contextualizado com a arquitetura, as integrações (NocoDB, Evolution API, Mercado Pago) e o fluxo de dados. 
 
 Estou preparado para atuar na correção de bugs, implementação das novas features do roadmap ou refatoração de componentes existentes. Como posso ajudar a melhorar o projeto agora?

@@ -3,11 +3,15 @@ import { pg } from '@/lib/postgres';
 
 // APENAS PARA TESTE - Remover em producao
 export async function POST(req: NextRequest) {
-  // Verificar se estamos em ambiente de desenvolvimento ou se tem a chave secreta
+  if (process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production') {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
   const { searchParams } = new URL(req.url);
   const secret = searchParams.get('secret');
-  
-  if (secret !== 'zapflow_test_2026') {
+  const expectedSecret = process.env.CRON_SECRET;
+
+  if (!expectedSecret || secret !== expectedSecret) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   

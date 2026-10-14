@@ -6,7 +6,7 @@ import { getStatusLoja, type Horario } from '@/lib/horarios';
 const EVO_API_URL = process.env.EVOLUTION_API_URL || 'https://evo.wzapflow.com.br';
 const EVO_API_KEY = process.env.EVOLUTION_API_KEY || '';
 
-// Numero(s) central(is) da ZapFlow que enviam notificacoes internas (ex.: resumo
+// Numero(s) central(is) da ZapFlash que enviam notificacoes internas (ex.: resumo
 // de novos pedidos) para o WhatsApp do dono da loja. Mensagens vindas destes
 // numeros NUNCA devem disparar o bot de saudacao, senao toda notificacao de
 // pedido acaba ativando a mensagem automatica de boas-vindas.
@@ -20,7 +20,7 @@ const ZAPFLOW_CENTRAL_PHONES = [
 ];
 
 /**
- * Verifica se o telefone e um numero central da ZapFlow (origem de notificacoes
+ * Verifica se o telefone e um numero central da ZapFlash (origem de notificacoes
  * internas). Compara apenas digitos e tolera pequenas variacoes de DDI/formatacao.
  */
 function isZapflowCentralPhone(phone: string): boolean {
@@ -45,6 +45,9 @@ const COOLDOWN_HOURS = 6;
  * Formatar numero de telefone para Evolution API
  */
 function formatPhoneForEvolution(phone: string): string {
+  // JID completo (ex.: "123@lid") deve ser repassado intacto: remover os nao-digitos
+  // transformaria o ID oculto do WhatsApp em um numero de telefone inexistente.
+  if (phone.includes('@')) return phone;
   let cleaned = phone.replace(/\D/g, '');
   if (cleaned.length === 11) {
     cleaned = '55' + cleaned;
@@ -57,6 +60,22 @@ function formatPhoneForEvolution(phone: string): string {
  */
 function extractPhoneFromJid(jid: string): string {
   return jid.replace('@s.whatsapp.net', '').replace('@c.us', '');
+}
+
+/**
+ * Resolve o contato do remetente. Em contas com privacidade do WhatsApp o
+ * remoteJid chega como "<id>@lid" (sem o numero real); a Evolution envia o
+ * numero verdadeiro em campos alternativos. Sem um deles, mantemos o JID @lid
+ * completo para que a resposta seja entregue ao contato correto.
+ */
+function resolveSenderPhone(key: any): string {
+  const remoteJid: string = key?.remoteJid || '';
+  if (!remoteJid.endsWith('@lid')) return extractPhoneFromJid(remoteJid);
+
+  const alt: string | undefined = [key?.senderPn, key?.remoteJidAlt, key?.participantPn, key?.participantAlt]
+    .find((v) => typeof v === 'string' && /@(s\.whatsapp\.net|c\.us)$/.test(v));
+
+  return alt ? extractPhoneFromJid(alt) : remoteJid;
 }
 
 /**
@@ -575,7 +594,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ received: true, ignored: 'group' });
     }
     
-    const phone = extractPhoneFromJid(data.key?.remoteJid || '');
+    const phone = resolveSenderPhone(data.key);
+    if (!phone) {
+      return NextResponse.json({ received: true, ignored: 'no_sender' });
+    }
     const messageText = data.message?.conversation || 
                         data.message?.extendedTextMessage?.text || 
                         '';
@@ -583,11 +605,11 @@ export async function POST(req: NextRequest) {
     console.log(`[BOT] Mensagem de ${phone}: "${messageText.substring(0, 50)}..."`);
     console.log(`[BOT] Instancia: ${instanceName}`);
     
-    // Ignora mensagens vindas do numero central da ZapFlow (notificacoes internas,
+    // Ignora mensagens vindas do numero central da ZapFlash (notificacoes internas,
     // como o resumo de novos pedidos enviado ao dono). Sem isso, cada notificacao
     // de pedido dispararia indevidamente o bot de saudacao.
     if (isZapflowCentralPhone(phone)) {
-      console.log(`[BOT] Mensagem do numero central da ZapFlow (${phone}) — ignorando para nao disparar saudacao`);
+      console.log(`[BOT] Mensagem do numero central da ZapFlash (${phone}) — ignorando para nao disparar saudacao`);
       return NextResponse.json({ received: true, ignored: 'zapflow_central' });
     }
     

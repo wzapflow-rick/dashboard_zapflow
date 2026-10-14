@@ -149,7 +149,7 @@ export default function AtivarContaPage() {
           </div>
           <h1 className="text-2xl font-bold text-white mb-3">Conta Criada!</h1>
           <p className="text-gray-400 mb-6">
-            Bem-vindo ao ZapFlow, {signupData?.nome}!<br />
+            Bem-vindo ao ZapFlash, {signupData?.nome}!<br />
             Redirecionando para configuracao inicial...
           </p>
           <MorphingInfinity className="size-6 text-primary mx-auto" />
@@ -166,13 +166,13 @@ export default function AtivarContaPage() {
         <div className="text-center mb-8">
           <Image
             src="/images/pizza-logo.png"
-            alt="ZapFlow"
+            alt="ZapFlash"
             width={80}
             height={80}
             className="mx-auto mb-4"
           />
           <h1 className="text-2xl font-bold text-white mb-2">
-            Bem-vindo ao ZapFlow!
+            Bem-vindo ao ZapFlash!
           </h1>
           <p className="text-gray-400 text-sm">
             Falta pouco! Defina sua senha para acessar o painel.

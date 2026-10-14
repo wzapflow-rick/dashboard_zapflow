@@ -33,7 +33,7 @@ const COLORS = {
   warning: 0xf59e0b,  // Amarelo
   error: 0xef4444,    // Vermelho
   info: 0x3b82f6,     // Azul
-  primary: 0x7CFF6B,  // Verde ZapFlow
+  primary: 0x7CFF6B,  // Verde ZapFlash
   security: 0x9333ea, // Roxo - Seguranca
 };
 
@@ -53,7 +53,7 @@ async function sendToDiscord(message: DiscordMessage): Promise<boolean> {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        username: 'ZapFlow Bot',
+        username: 'ZapFlash Bot',
         ...message,
       }),
     });
@@ -94,7 +94,7 @@ export async function notifyNewCompany(data: {
         { name: 'Telefone', value: data.telefone || 'N/A', inline: true },
         { name: 'Local', value: data.cidade && data.estado ? `${data.cidade}/${data.estado}` : 'N/A', inline: true },
       ],
-      footer: { text: 'ZapFlow - Sistema de Gestao' },
+      footer: { text: 'ZapFlash - Sistema de Gestao' },
       timestamp: new Date().toISOString(),
     }],
   });
@@ -172,7 +172,7 @@ export async function notifyError(data: {
         ...(data.empresaId ? [{ name: 'Empresa ID', value: String(data.empresaId), inline: true }] : []),
         ...(data.detalhes ? [{ name: 'Detalhes', value: data.detalhes, inline: false }] : []),
       ],
-      footer: { text: 'ZapFlow - Alerta de Erro' },
+      footer: { text: 'ZapFlash - Alerta de Erro' },
       timestamp: new Date().toISOString(),
     }],
   });
@@ -198,7 +198,7 @@ export async function notifyNewOrder(data: {
         { name: 'Cliente', value: data.cliente, inline: true },
         { name: 'Valor', value: `R$ ${data.valor.toFixed(2)}`, inline: true },
       ],
-      footer: { text: 'ZapFlow - Pedidos' },
+      footer: { text: 'ZapFlash - Pedidos' },
       timestamp: new Date().toISOString(),
     }],
   });
@@ -289,7 +289,7 @@ export async function notifyBillingReminder(data: {
         ...(data.telefone ? [{ name: 'WhatsApp', value: data.telefone, inline: true }] : []),
         { name: 'Envio', value: data.enviado ? '✅ Enviado' : '❌ Falhou', inline: true },
       ],
-      footer: { text: 'ZapFlow - Cobranca' },
+      footer: { text: 'ZapFlash - Cobranca' },
       timestamp: new Date().toISOString(),
     }],
   });
@@ -308,7 +308,7 @@ export async function notifyCustom(
       title,
       description,
       color: COLORS[color],
-      footer: { text: 'ZapFlow' },
+      footer: { text: 'ZapFlash' },
       timestamp: new Date().toISOString(),
     }],
   });
@@ -345,7 +345,7 @@ export async function notifySecurityRateLimitBlocked(data: {
         { name: 'Tentativas', value: String(data.tentativas), inline: true },
         { name: 'Bloqueado por', value: data.blockedBy.toUpperCase(), inline: true },
       ],
-      footer: { text: 'ZapFlow - Seguranca' },
+      footer: { text: 'ZapFlash - Seguranca' },
       timestamp: new Date().toISOString(),
     }],
   });
@@ -375,7 +375,7 @@ export async function notifySecurityLoginAttempts(data: {
         { name: 'IP', value: data.ip, inline: true },
         { name: 'Tentativas', value: `${data.tentativas}/${data.maxTentativas}`, inline: true },
       ],
-      footer: { text: 'ZapFlow - Seguranca' },
+      footer: { text: 'ZapFlash - Seguranca' },
       timestamp: new Date().toISOString(),
     }],
   });
@@ -402,7 +402,7 @@ export async function notifySecurityNewIpLogin(data: {
         ...(data.nomeEmpresa ? [{ name: 'Empresa', value: data.nomeEmpresa, inline: true }] : []),
         ...(data.userAgent ? [{ name: 'Dispositivo', value: data.userAgent.slice(0, 50), inline: false }] : []),
       ],
-      footer: { text: 'ZapFlow - Seguranca' },
+      footer: { text: 'ZapFlash - Seguranca' },
       timestamp: new Date().toISOString(),
     }],
   });
@@ -430,7 +430,7 @@ export async function notifySecurityAdminAccess(data: {
         ...(data.email ? [{ name: 'Email', value: data.email, inline: true }] : []),
         { name: 'Status', value: data.sucesso ? 'Autorizado' : 'Bloqueado', inline: true },
       ],
-      footer: { text: 'ZapFlow - Seguranca Admin' },
+      footer: { text: 'ZapFlash - Seguranca Admin' },
       timestamp: new Date().toISOString(),
     }],
   });

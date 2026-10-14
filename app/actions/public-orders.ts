@@ -5,6 +5,7 @@ import { incrementCouponUsage } from './coupons';
 import { deductPointsForOrder } from './loyalty';
 import { sendOrderCreatedMessage, sendOwnerNewOrderMessage } from './whatsapp';
 import { pg } from '@/lib/postgres';
+import { getMe } from '@/lib/session-server';
 
 interface OrderItem {
     id: number;
@@ -142,12 +143,31 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
         const clienteBairroEfetivo = tipoEntregaEfetivo === 'delivery'
             ? data.clienteBairro
             : undefined;
+        for (const item of data.itens) {
+            const qtd = Number(item.quantidade);
+            const preco = Number(item.preco);
+            if (!Number.isInteger(qtd) || qtd <= 0 || qtd > 999) {
+                throw new Error('Quantidade invalida no pedido');
+            }
+            if (!Number.isFinite(preco) || preco < 0) {
+                throw new Error('Preco invalido no pedido');
+            }
+        }
+        const subtotalEfetivo = Math.round(
+            data.itens.reduce((sum, item) => sum + Number(item.preco) * Number(item.quantidade), 0) * 100
+        ) / 100;
+        const descontoEfetivo = Math.min(
+            subtotalEfetivo,
+            Math.max(0, Number(data.desconto) || 0)
+        );
         const totalEfetivo = Math.max(
             0,
-            Number(data.subtotal) - Number(data.desconto || 0) + taxaEntregaEfetiva
+            subtotalEfetivo - descontoEfetivo + taxaEntregaEfetiva
         );
         const dadosEfetivos: CreatePublicOrderData = {
             ...data,
+            subtotal: subtotalEfetivo,
+            desconto: descontoEfetivo,
             tipoEntrega: tipoEntregaEfetivo,
             taxaEntrega: taxaEntregaEfetiva,
             clienteEndereco: clienteEnderecoEfetivo,
@@ -261,7 +281,7 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
         sendOrderCreatedMessage(dadosEfetivos.clienteTelefone, order.id, dadosEfetivos.total, dadosEfetivos.dataAgendamento, itensFormatados, dadosEfetivos.empresaId)
             .catch(err => console.error('Erro ao enviar mensagem WhatsApp:', err));
 
-        // Avisar o DONO da loja sobre o novo pedido (opt-in), pelo numero central da ZapFlow.
+        // Avisar o DONO da loja sobre o novo pedido (opt-in), pelo numero central da ZapFlash.
         // Best-effort: nunca bloqueia ou derruba a criacao do pedido.
         notifyOwnerNewOrder(dadosEfetivos, order.id, itensFormatados, enderecoCompleto)
             .catch(err => console.error('Erro ao notificar dono sobre novo pedido:', err));
@@ -283,7 +303,7 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
  * Notifica o dono da loja sobre um novo pedido do cardapio online.
  * - Opt-in: so envia se empresa.notificar_pedido_whatsapp = true
  * - Destino: telefone_loja da empresa
- * - Remetente: numero central da ZapFlow (zapflow_ativacao)
+ * - Remetente: numero central da ZapFlash (zapflow_ativacao)
  */
 async function notifyOwnerNewOrder(
     data: CreatePublicOrderData,
@@ -350,7 +370,15 @@ export async function getOrderStatus(orderId: number) {
 }
 
 export async function updateOrderStatusPublic(orderId: number, status: string) {
+    const user = await getMe();
+    if (!user?.empresaId) {
+        throw new Error('Nao autorizado');
+    }
     try {
+        const order = await pg.findById('pedidos', orderId) as any;
+        if (!order || Number(order.empresa_id) !== Number(user.empresaId)) {
+            throw new Error('Pedido nao encontrado');
+        }
         await pg.update('pedidos', orderId, { status });
         revalidatePath('/dashboard/expedition');
         return { success: true };

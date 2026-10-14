@@ -179,7 +179,7 @@ export function buildReceiptText(dados: ReciboDados, largura: LarguraPapel): str
   out.push('');
   out.push(centro('Obrigado pela preferencia!', W));
   out.push('');
-  out.push(centro('powered by zapflow', W));
+  out.push(centro('powered by zapflash', W));
   // Avanço de papel para facilitar o corte.
   out.push('\n\n\n');
 
@@ -293,7 +293,7 @@ export function buildTableReceiptText(dados: ReciboMesa, largura: LarguraPapel):
   out.push('');
   out.push(ESC.center + normaliza('Obrigado pela preferencia!'));
   out.push('');
-  out.push(normaliza('powered by zapflow') + ESC.left);
+  out.push(normaliza('powered by zapflash') + ESC.left);
   out.push('\n\n\n');
 
   return out.join('\n');

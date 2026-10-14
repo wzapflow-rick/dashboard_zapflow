@@ -1,5 +1,5 @@
 -- ============================================
--- ZapFlow - Campanhas Automáticas
+-- ZapFlash - Campanhas Automáticas
 -- Script PostgreSQL para NocoDB
 -- ============================================
 
