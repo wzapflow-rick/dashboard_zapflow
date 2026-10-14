@@ -45,6 +45,9 @@ const COOLDOWN_HOURS = 6;
  * Formatar numero de telefone para Evolution API
  */
 function formatPhoneForEvolution(phone: string): string {
+  // JID completo (ex.: "123@lid") deve ser repassado intacto: remover os nao-digitos
+  // transformaria o ID oculto do WhatsApp em um numero de telefone inexistente.
+  if (phone.includes('@')) return phone;
   let cleaned = phone.replace(/\D/g, '');
   if (cleaned.length === 11) {
     cleaned = '55' + cleaned;
@@ -57,6 +60,22 @@ function formatPhoneForEvolution(phone: string): string {
  */
 function extractPhoneFromJid(jid: string): string {
   return jid.replace('@s.whatsapp.net', '').replace('@c.us', '');
+}
+
+/**
+ * Resolve o contato do remetente. Em contas com privacidade do WhatsApp o
+ * remoteJid chega como "<id>@lid" (sem o numero real); a Evolution envia o
+ * numero verdadeiro em campos alternativos. Sem um deles, mantemos o JID @lid
+ * completo para que a resposta seja entregue ao contato correto.
+ */
+function resolveSenderPhone(key: any): string {
+  const remoteJid: string = key?.remoteJid || '';
+  if (!remoteJid.endsWith('@lid')) return extractPhoneFromJid(remoteJid);
+
+  const alt: string | undefined = [key?.senderPn, key?.remoteJidAlt, key?.participantPn, key?.participantAlt]
+    .find((v) => typeof v === 'string' && /@(s\.whatsapp\.net|c\.us)$/.test(v));
+
+  return alt ? extractPhoneFromJid(alt) : remoteJid;
 }
 
 /**
@@ -575,7 +594,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ received: true, ignored: 'group' });
     }
     
-    const phone = extractPhoneFromJid(data.key?.remoteJid || '');
+    const phone = resolveSenderPhone(data.key);
+    if (!phone) {
+      return NextResponse.json({ received: true, ignored: 'no_sender' });
+    }
     const messageText = data.message?.conversation || 
                         data.message?.extendedTextMessage?.text || 
                         '';
