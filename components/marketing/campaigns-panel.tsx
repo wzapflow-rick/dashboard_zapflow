@@ -328,8 +328,11 @@ export default function CampaignsPanel() {
                         </div>
                         <div className="grid w-full grid-cols-2 gap-3 sm:flex sm:w-auto sm:items-center">
                             <button
+                                type="button"
                                 onClick={handleDispararManual}
                                 disabled={disparando || campanhas.filter(c => c.ativo).length === 0}
+                                aria-busy={disparando}
+                                data-testid="campaign-dispatch-manual"
                                 className="flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-border-dark bg-surface-dark px-4 py-2.5 text-sm font-semibold text-text-secondary shadow-sm transition-all hover:border-primary/40 hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background-dark active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-border-dark disabled:hover:bg-surface-dark disabled:hover:text-text-secondary"
                             >
                                 {disparando ? (
@@ -883,8 +886,11 @@ export default function CampaignsPanel() {
                                         Cancelar
                                     </button>
                                     <button
+                                        type="button"
                                         onClick={handleSave}
                                         disabled={saving}
+                                        aria-busy={saving}
+                                        data-testid="campaign-save"
                                         className="px-6 py-2.5 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {saving ? (

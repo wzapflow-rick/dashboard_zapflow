@@ -83,6 +83,7 @@ export function ControlCenter() {
             role="switch"
             aria-checked={botActive}
             aria-label="Ativar bot de saudação"
+            data-testid="toggle-greeting-bot"
             disabled={saving || !botConfig}
             onClick={() => handleBotToggle(!botActive)}
             className={cn(
