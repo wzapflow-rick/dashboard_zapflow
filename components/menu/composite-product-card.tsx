@@ -148,7 +148,7 @@ export default function CompositeProductCard({ product, whatsappNumber, empresaN
     return (
         <>
             <button onClick={() => setIsOpen(true)} className="w-full text-left">
-                <div className="bg-white dark:bg-slate-800 rounded-2xl border border-amber-100 dark:border-amber-700 shadow-sm p-4 flex gap-4 hover:shadow-md hover:border-amber-200 dark:hover:border-amber-600 transition-all cursor-pointer">
+                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-amber-100 dark:border-amber-700 shadow-sm p-4 flex gap-4 hover:shadow-md hover:border-amber-200 dark:hover:border-amber-600 transition-all cursor-pointer">
                     <div className="relative size-20 rounded-xl overflow-hidden bg-amber-50 dark:bg-amber-900/30 shrink-0 flex items-center justify-center">
                         {product.imagem ? (
                             <Image
@@ -191,10 +191,10 @@ export default function CompositeProductCard({ product, whatsappNumber, empresaN
                         <motion.div
                             initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                            className="relative w-full max-w-lg bg-white dark:bg-slate-800 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-slate-200 dark:border-slate-700"
+                            className="relative w-full max-w-lg bg-white dark:bg-zinc-900 rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-slate-200 dark:border-zinc-800/60"
                         >
                             {/* Header */}
-                            <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-start justify-between gap-4 bg-gradient-to-r from-amber-50 dark:from-amber-900/30 to-orange-50 dark:to-orange-900/30 shrink-0">
+                            <div className="p-6 border-b border-slate-100 dark:border-zinc-800/60 flex items-start justify-between gap-4 bg-gradient-to-r from-amber-50 dark:from-amber-900/30 to-orange-50 dark:to-orange-900/30 shrink-0">
                                 <div>
                                     <div className="text-3xl mb-1">🍕</div>
                                     <h2 className="text-xl font-bold text-slate-900 dark:text-white">{product.nome}</h2>
@@ -208,7 +208,7 @@ export default function CompositeProductCard({ product, whatsappNumber, empresaN
                                 </div>
                                 <button
                                     onClick={() => { setIsOpen(false); setSelected([]); }}
-                                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors shrink-0"
+                                    className="p-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full transition-colors shrink-0"
                                 >
                                     <X className="size-5 text-slate-500 dark:text-slate-400" />
                                 </button>
@@ -226,7 +226,7 @@ export default function CompositeProductCard({ product, whatsappNumber, empresaN
                                                 key={idx}
                                                 className={`size-3 rounded-full border-2 transition-all ${idx < selected.length
                                                     ? 'bg-violet-500 border-violet-500'
-                                                    : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700'
+                                                    : 'border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800'
                                                     }`}
                                             />
                                         ))}
@@ -251,12 +251,12 @@ export default function CompositeProductCard({ product, whatsappNumber, empresaN
                                                 className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${isSelected
                                                     ? 'border-violet-400 dark:border-violet-600 bg-violet-50 dark:bg-violet-900/30 ring-1 ring-violet-200 dark:ring-violet-700'
                                                     : canAdd
-                                                        ? 'border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-700 hover:border-violet-200 dark:hover:border-violet-600 hover:bg-violet-50/40 dark:hover:bg-violet-900/20'
-                                                        : 'border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-700 opacity-40 cursor-not-allowed'
+                                                        ? 'border-slate-100 dark:border-zinc-800/60 bg-slate-50 dark:bg-zinc-800 hover:border-violet-200 dark:hover:border-violet-600 hover:bg-violet-50/40 dark:hover:bg-violet-900/20'
+                                                        : 'border-slate-100 dark:border-zinc-800/60 bg-slate-50 dark:bg-zinc-800 opacity-40 cursor-not-allowed'
                                                     }`}
                                             >
                                                 {/* Flavor image or emoji */}
-                                                <div className="size-12 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-600 shrink-0 flex items-center justify-center">
+                                                <div className="size-12 rounded-xl overflow-hidden bg-slate-100 dark:bg-zinc-700 shrink-0 flex items-center justify-center">
                                                     {item.imagem ? (
                                                         <Image src={item.imagem} alt={item.nome} width={48} height={48} className="object-cover w-full h-full" referrerPolicy="no-referrer" />
                                                     ) : (
@@ -274,7 +274,7 @@ export default function CompositeProductCard({ product, whatsappNumber, empresaN
                                                 </div>
                                                 <div className={`size-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${isSelected
                                                     ? 'bg-violet-500 border-violet-500'
-                                                    : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700'
+                                                    : 'border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800'
                                                     }`}>
                                                     {isSelected && <Check className="size-3.5 text-white stroke-[3]" />}
                                                 </div>
@@ -285,7 +285,7 @@ export default function CompositeProductCard({ product, whatsappNumber, empresaN
                             </div>
 
                             {/* Footer */}
-                            <div className="p-6 bg-slate-50 dark:bg-slate-700 border-t border-slate-100 dark:border-slate-600 shrink-0">
+                            <div className="p-6 bg-slate-50 dark:bg-zinc-800 border-t border-slate-100 dark:border-zinc-700 shrink-0">
                                 <div className="flex items-center justify-between mb-4">
                                     <span className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total</span>
                                     <span className="text-2xl font-black text-slate-900 dark:text-white">
@@ -305,7 +305,7 @@ export default function CompositeProductCard({ product, whatsappNumber, empresaN
                                 <button
                                     disabled={!isValid}
                                     onClick={handleAddToCart}
-                                    className="w-full bg-green-500 hover:bg-green-600 disabled:bg-slate-200 dark:bg-slate-600 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl shadow-lg shadow-green-500/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+                                    className="w-full bg-green-500 hover:bg-green-600 disabled:bg-slate-200 dark:bg-zinc-700 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl shadow-lg shadow-green-500/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
                                 >
                                     <ShoppingCart className="size-5" />
                                     {isValid ? 'Adicionar ao Carrinho' : `Escolha ${min - selected.length} sabore${(min - selected.length) !== 1 ? 's' : ''} ainda`}

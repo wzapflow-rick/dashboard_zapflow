@@ -18,7 +18,7 @@ interface KanbanColumnProps {
 export function KanbanColumn({ col, columnOrders, onOpenPrintModal, onMoveOrder, onRegisterCustomer, onOpenDetails, onCancelOrder, onEditOrder, selectedOrderId, onSelectOrder }: KanbanColumnProps) {
     return (
         <section
-            className="flex h-full min-h-0 w-80 min-w-80 shrink-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-slate-100/50 dark:border-slate-700 dark:bg-slate-700/50"
+            className="flex h-full min-h-0 w-80 min-w-80 shrink-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-slate-100/50 dark:border-zinc-800/60 dark:bg-zinc-800/50"
             aria-labelledby={`kanban-column-${col.id}`}
         >
             <div className={cn(

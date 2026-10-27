@@ -111,14 +111,14 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved, availab
             {isOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <motion.div
-                        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm dark:bg-slate-900/50"
+                        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm dark:bg-zinc-950/50"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
                     />
                     <motion.div
-                        className="relative bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-xl overflow-y-auto max-h-[90vh] border border-slate-200 dark:border-slate-700"
+                        className="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-lg p-6 shadow-xl overflow-y-auto max-h-[90vh] border border-slate-200 dark:border-zinc-800/60"
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -130,7 +130,7 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved, availab
                             </h2>
                             <button
                                 onClick={onClose}
-                                className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50 text-slate-400 dark:text-zinc-200 hover:text-slate-600 transition-colors dark:bg-slate-800 dark:border-slate-700 dark:hover:text-slate-100"
+                                className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800/50 text-slate-400 dark:text-zinc-200 hover:text-slate-600 transition-colors dark:bg-zinc-900 dark:border-zinc-800/60 dark:hover:text-slate-100"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -145,7 +145,7 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved, availab
                                     value={nome}
                                     onChange={e => setNome(e.target.value)}
                                     placeholder="Ex: Sabores, Bordas, Adicionais..."
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors dark:bg-zinc-950/75 dark:text-zinc-200 dark:border-zinc-800/60"
                                 />
                             </div>
 
@@ -162,7 +162,7 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved, availab
                                                 const finalVal = (val !== '' && !isNaN(Number(val))) ? Number(val) : (val === '' ? null : val);
                                                 setCategoriaId(finalVal);
                                             }}
-                                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700 appearance-none"
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors dark:bg-zinc-950/75 dark:text-zinc-200 dark:border-zinc-800/60 appearance-none"
                                         >
                                             <option value="">Nenhuma (Ficará em &quot;Monte seu Pedido&quot;)</option>
                                             {categories.map(cat => (
@@ -182,7 +182,7 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved, availab
                                     value={descricao}
                                     onChange={e => setDescricao(e.target.value)}
                                     placeholder="Ex: Escolha os sabores da sua pizza"
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors dark:bg-zinc-950/75 dark:text-zinc-200 dark:border-zinc-800/60"
                                 />
                             </div>
 
@@ -198,7 +198,7 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved, availab
                                                 'py-3 px-4 rounded-xl border text-sm font-medium transition-all',
                                                 tipo === t
                                                     ? 'border-primary bg-primary/10 text-primary dark:bg-primary/10 dark:text-blue-400'
-                                                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 dark:hover:border-slate-800 dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700'
+                                                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 dark:hover:border-zinc-800/60 dark:bg-zinc-950/75 dark:text-zinc-200 dark:border-zinc-800/60'
                                             )}
                                         >
                                             {t === 'fracionado' ? '🍕 Fracionado' : '➕ Adicional'}
@@ -223,7 +223,7 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved, availab
                                                     'py-3 rounded-xl border text-center transition-all',
                                                     qtdSlots === n
                                                         ? 'border-primary bg-primary/10 text-primary dark:bg-primary/10 dark:text-blue-400'
-                                                        : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 dark:hover:border-slate-800 dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700'
+                                                        : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 dark:hover:border-zinc-800/60 dark:bg-zinc-950/75 dark:text-zinc-200 dark:border-zinc-800/60'
                                                 )}
                                             >
                                                 <div className="text-lg font-bold">{n}</div>
@@ -251,13 +251,13 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved, availab
                                                 'w-full flex items-start gap-3 p-3 rounded-xl border text-left transition-all',
                                                 regraPreco === r.value
                                                     ? 'border-primary bg-primary/10 text-primary dark:bg-primary/10 dark:text-blue-400'
-                                                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 dark:hover:border-slate-800 dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700',
+                                                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 dark:hover:border-zinc-800/60 dark:bg-zinc-950/75 dark:text-zinc-200 dark:border-zinc-800/60',
                                                 modoPreco === 'fixo' && 'opacity-50 cursor-not-allowed'
                                             )}
                                         >
                                             <div className={cn(
                                                 'mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0',
-                                                regraPreco === r.value ? 'border-primary bg-primary dark:border-blue-400 dark:bg-blue-400' : 'border-slate-300 dark:border-slate-700'
+                                                regraPreco === r.value ? 'border-primary bg-primary dark:border-blue-400 dark:bg-blue-400' : 'border-slate-300 dark:border-zinc-800/60'
                                             )} />
                                             <div>
                                                 <div className="text-sm font-medium text-slate-900 dark:text-zinc-200">{r.label}</div>
@@ -283,7 +283,7 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved, availab
                                                 'py-3 px-4 rounded-xl border text-sm font-medium transition-all text-left',
                                                 modoPreco === m.value
                                                     ? 'border-primary bg-primary/10 text-primary dark:bg-primary/10 dark:text-blue-400'
-                                                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 dark:hover:border-slate-800 dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700'
+                                                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 dark:hover:border-zinc-800/60 dark:bg-zinc-950/75 dark:text-zinc-200 dark:border-zinc-800/60'
                                             )}
                                         >
                                             <div className="font-medium">{m.label}</div>
@@ -305,7 +305,7 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved, availab
                                             step={0.01}
                                             value={precoFixo}
                                             onChange={e => setPrecoFixo(Number(e.target.value) || 0)}
-                                            className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-2.5 text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700"
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-2.5 text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors dark:bg-zinc-950/75 dark:text-zinc-200 dark:border-zinc-800/60"
                                             placeholder="0,00"
                                         />
                                     </div>
@@ -322,7 +322,7 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved, availab
                                         max={tipo === 'fracionado' ? qtdSlots : 99}
                                         value={minSlots}
                                         onChange={e => setMinSlots(Math.max(0, Number(e.target.value)))}
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors dark:bg-zinc-950/75 dark:text-zinc-200 dark:border-zinc-800/60"
                                     />
                                 </div>
                                 <div>
@@ -333,7 +333,7 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved, availab
                                         max={tipo === 'fracionado' ? qtdSlots : 99}
                                         value={maxSlots}
                                         onChange={e => setMaxSlots(Math.max(1, Number(e.target.value)))}
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors dark:bg-zinc-950/75 dark:text-zinc-200 dark:border-zinc-800/60"
                                     />
                                 </div>
                             </div>
@@ -353,7 +353,7 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved, availab
                                                     'flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all',
                                                     completamentos.includes(Number(grupo.id))
                                                         ? 'border-primary bg-primary/10 dark:bg-primary/10'
-                                                        : 'border-slate-200 bg-slate-50 hover:border-slate-300 dark:bg-slate-900/75 dark:border-slate-700'
+                                                        : 'border-slate-200 bg-slate-50 hover:border-slate-300 dark:bg-zinc-950/75 dark:border-zinc-800/60'
                                                 )}
                                             >
                                                 <input
@@ -384,7 +384,7 @@ export function GrupoSlotModal({ isOpen, editingGrupo, onClose, onSaved, availab
                         <div className="flex gap-3 mt-6 pt-4 border-t border-slate-200">
                             <button
                                 onClick={onClose}
-                                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300 transition-colors text-sm font-medium dark:hover:border-slate-800 dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700"
+                                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300 transition-colors text-sm font-medium dark:hover:border-zinc-800/60 dark:bg-zinc-950/75 dark:text-zinc-200 dark:border-zinc-800/60"
                             >
                                 Cancelar
                             </button>

@@ -259,7 +259,7 @@ export default function PaymentForm({ pedidoId, total, empresaId, onSuccess, onE
               value={formData.cardNumber}
               onChange={(e) => handleInputChange('cardNumber', e.target.value)}
               placeholder="0000 0000 0000 0000"
-              className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-violet-500/20"
+              className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-violet-500/20"
             />
             <CreditCard className="absolute right-4 top-1/2 -translate-y-1/2 size-5 text-slate-300" />
           </div>
@@ -273,7 +273,7 @@ export default function PaymentForm({ pedidoId, total, empresaId, onSuccess, onE
               value={formData.cardExpiration}
               onChange={(e) => handleInputChange('cardExpiration', e.target.value)}
               placeholder="MM/AA"
-              className="w-full mt-1 px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-violet-500/20"
+              className="w-full mt-1 px-4 py-3 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-violet-500/20"
             />
           </div>
           <div>
@@ -283,7 +283,7 @@ export default function PaymentForm({ pedidoId, total, empresaId, onSuccess, onE
               value={formData.cardCvv}
               onChange={(e) => handleInputChange('cardCvv', e.target.value)}
               placeholder="123"
-              className="w-full mt-1 px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-violet-500/20"
+              className="w-full mt-1 px-4 py-3 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-violet-500/20"
             />
           </div>
         </div>
@@ -295,7 +295,7 @@ export default function PaymentForm({ pedidoId, total, empresaId, onSuccess, onE
             value={formData.cardHolderName}
             onChange={(e) => setFormData({ ...formData, cardHolderName: e.target.value })}
             placeholder="Como escrito no cartão"
-            className="w-full mt-1 px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-violet-500/20"
+            className="w-full mt-1 px-4 py-3 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-violet-500/20"
           />
         </div>
 
@@ -306,7 +306,7 @@ export default function PaymentForm({ pedidoId, total, empresaId, onSuccess, onE
             value={formData.docNumber}
             onChange={(e) => handleInputChange('docNumber', e.target.value)}
             placeholder="000.000.000-00"
-            className="w-full mt-1 px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-violet-500/20"
+            className="w-full mt-1 px-4 py-3 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-violet-500/20"
           />
         </div>
       </div>

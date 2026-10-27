@@ -122,7 +122,7 @@ export default function DisclosurePanel() {
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white dark:bg-slate-800 p-8 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-6"
+              className="bg-white dark:bg-zinc-900 p-8 rounded-2xl border border-slate-200 dark:border-zinc-800/60 shadow-sm space-y-6"
             >
               <div className="flex items-center gap-3">
                 <div className="size-11 bg-violet-100 dark:bg-violet-900/30 rounded-xl flex items-center justify-center text-violet-600 dark:text-violet-400">
@@ -135,7 +135,7 @@ export default function DisclosurePanel() {
               </div>
 
               <div className="flex gap-2">
-                <div className="flex-1 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm font-mono text-slate-600 dark:text-slate-300 flex items-center truncate">
+                <div className="flex-1 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-sm font-mono text-slate-600 dark:text-slate-300 flex items-center truncate">
                   {displayUrl || 'Carregando...'}
                 </div>
                 <button
@@ -175,9 +175,9 @@ export default function DisclosurePanel() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-white dark:bg-slate-800 p-8 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col md:flex-row gap-8 items-center"
+              className="bg-white dark:bg-zinc-900 p-8 rounded-2xl border border-slate-200 dark:border-zinc-800/60 shadow-sm flex flex-col md:flex-row gap-8 items-center"
             >
-              <div className="size-44 bg-white rounded-2xl border-2 border-slate-200 dark:border-slate-600 flex items-center justify-center shrink-0 p-2">
+              <div className="size-44 bg-white rounded-2xl border-2 border-slate-200 dark:border-zinc-700 flex items-center justify-center shrink-0 p-2">
                 <canvas ref={canvasRef} className="w-full h-full" />
               </div>
               <div className="space-y-4 text-center md:text-left flex-1">

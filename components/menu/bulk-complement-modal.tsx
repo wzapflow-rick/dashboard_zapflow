@@ -88,10 +88,10 @@ export default function BulkComplementModal({
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="relative w-full max-w-2xl bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-slate-200 dark:border-slate-700"
+                        className="relative w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-slate-200 dark:border-zinc-800/60"
                     >
                         {/* Header */}
-                        <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-white dark:bg-slate-800 relative z-10">
+                        <div className="p-6 border-b border-slate-100 dark:border-zinc-800/60 flex items-center justify-between bg-white dark:bg-zinc-900 relative z-10">
                             <div>
                                 <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
                                     <CheckCircle2 className="size-5 text-violet-500" />
@@ -120,7 +120,7 @@ export default function BulkComplementModal({
                                     <select
                                         value={selectedGrupoId}
                                         onChange={(e) => setSelectedGrupoId(e.target.value)}
-                                        className="w-full h-12 px-4 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-violet-500/20 outline-none transition-all appearance-none cursor-pointer"
+                                        className="w-full h-12 px-4 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-violet-500/20 outline-none transition-all appearance-none cursor-pointer"
                                     >
                                         <option value="">Selecione um grupo...</option>
                                         {grupos.map((g) => (
@@ -151,7 +151,7 @@ export default function BulkComplementModal({
                                         placeholder="Buscar no cardápio..."
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full h-11 pl-11 pr-4 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-medium text-slate-900 dark:text-white focus:ring-2 focus:ring-violet-500/20 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                                        className="w-full h-11 pl-11 pr-4 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm font-medium text-slate-900 dark:text-white focus:ring-2 focus:ring-violet-500/20 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                     />
                                 </div>
 

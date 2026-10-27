@@ -186,7 +186,7 @@ export default function TestPage() {
                     </div>
 
                     {/* Stats / Feedback */}
-                    <div className="bg-slate-900 rounded-3xl p-8 text-white relative overflow-hidden">
+                    <div className="bg-slate-900 rounded-2xl p-8 text-white relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-8 opacity-10">
                             <CheckCircle2 className="size-32" />
                         </div>

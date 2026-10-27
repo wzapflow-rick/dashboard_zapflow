@@ -135,7 +135,7 @@ export function DashboardDock({ user }: DashboardDockProps) {
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 14, scale: 0.96 }}
             transition={panelTransition}
             style={{ transformOrigin: 'bottom center' }}
-            className="pointer-events-auto absolute bottom-[calc(100%+0.75rem)] w-[calc(100vw-2rem)] max-w-2xl overflow-hidden rounded-3xl border border-border-dark bg-surface-dark/95 text-text-primary shadow-2xl backdrop-blur-xl"
+            className="pointer-events-auto absolute bottom-[calc(100%+0.75rem)] w-[calc(100vw-2rem)] max-w-2xl overflow-hidden rounded-2xl border border-border-dark bg-surface-dark/95 text-text-primary shadow-2xl backdrop-blur-xl"
           >
             <motion.div
               initial={reduceMotion ? false : { opacity: 0, y: 6 }}

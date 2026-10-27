@@ -86,9 +86,9 @@ export function ZapflowChat() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.96 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-40 right-4 z-40 flex h-[calc(100dvh-11rem)] max-h-[520px] w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-white/95 shadow-2xl backdrop-blur-xl dark:border-slate-700/60 dark:bg-[#111113]/95 lg:bottom-24 lg:right-6 lg:h-[520px] lg:w-[calc(100vw-3rem)]"
+            className="fixed bottom-40 right-4 z-40 flex h-[calc(100dvh-11rem)] max-h-[520px] w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white/95 shadow-2xl backdrop-blur-xl dark:border-zinc-800/60 dark:bg-[#111113]/95 lg:bottom-24 lg:right-6 lg:h-[520px] lg:w-[calc(100vw-3rem)]"
           >
-            <header className="flex items-center gap-3 border-b border-slate-200/70 bg-slate-50/80 p-4 dark:border-slate-700/50 dark:bg-white/[0.03]">
+            <header className="flex items-center gap-3 border-b border-slate-200/70 bg-slate-50/80 p-4 dark:border-zinc-800/50 dark:bg-white/[0.03]">
               <div className="flex size-9 items-center justify-center rounded-full bg-primary/15">
                 <Sparkles className="size-5 text-primary" aria-hidden="true" />
               </div>
@@ -111,7 +111,7 @@ export function ZapflowChat() {
                         type="button"
                         onClick={() => enviar(sugestao)}
                         disabled={carregando}
-                        className="w-full rounded-xl border border-slate-200/80 bg-slate-50/70 px-3 py-2 text-left text-xs text-slate-600 transition-colors hover:border-primary/40 hover:text-slate-900 disabled:opacity-50 dark:border-slate-700/60 dark:bg-white/[0.03] dark:text-slate-300 dark:hover:text-white"
+                        className="w-full rounded-xl border border-slate-200/80 bg-slate-50/70 px-3 py-2 text-left text-xs text-slate-600 transition-colors hover:border-primary/40 hover:text-slate-900 disabled:opacity-50 dark:border-zinc-800/60 dark:bg-white/[0.03] dark:text-slate-300 dark:hover:text-white"
                       >
                         {sugestao}
                       </button>
@@ -146,8 +146,8 @@ export function ZapflowChat() {
               <div ref={fimRef} />
             </div>
 
-            <div className="border-t border-slate-200/70 p-3 dark:border-slate-700/50">
-              <div className="flex items-center gap-2 rounded-full border border-slate-200/80 bg-slate-50/70 px-3 py-1.5 focus-within:border-primary/40 dark:border-slate-700/60 dark:bg-white/[0.03]">
+            <div className="border-t border-slate-200/70 p-3 dark:border-zinc-800/50">
+              <div className="flex items-center gap-2 rounded-full border border-slate-200/80 bg-slate-50/70 px-3 py-1.5 focus-within:border-primary/40 dark:border-zinc-800/60 dark:bg-white/[0.03]">
                 <input
                   value={input}
                   onChange={(event) => setInput(event.target.value)}

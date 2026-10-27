@@ -141,7 +141,7 @@ export default function InsumosManagement() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.1 }}
-                        className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-4"
+                        className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-slate-200 dark:border-zinc-800/60 shadow-sm flex items-center gap-4"
                     >
                         <div className={cn(
                             "p-3 rounded-xl shrink-0",
@@ -159,16 +159,16 @@ export default function InsumosManagement() {
                 ))}
             </div>
 
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden relative min-h-[300px]">
+            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-slate-200 dark:border-zinc-800/60 shadow-sm overflow-hidden relative min-h-[300px]">
                 {isLoading && (
-                    <div className="absolute inset-0 bg-white/50 dark:bg-slate-800/50 backdrop-blur-[1px] z-10 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-[1px] z-10 flex items-center justify-center">
                         <MorphingInfinity className="size-8 text-primary" />
                     </div>
                 )}
                 <div className="overflow-x-auto custom-scrollbar">
                     <table className="w-full text-left border-collapse min-w-[800px]">
                         <thead>
-                            <tr className="bg-slate-50 dark:bg-slate-700 border-b border-slate-200 dark:border-slate-600">
+                            <tr className="bg-slate-50 dark:bg-zinc-800 border-b border-slate-200 dark:border-zinc-700">
                                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Insumo</th>
                                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-center">Estoque Atual</th>
                                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-center">Estoque Mínimo</th>
@@ -176,7 +176,7 @@ export default function InsumosManagement() {
                                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Ações</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                        <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/60">
                             {insumos.length === 0 && !isLoading ? (
                                 <tr>
                                     <td colSpan={5} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400 font-medium">
@@ -190,7 +190,7 @@ export default function InsumosManagement() {
                                     return (
                                         <tr
                                             key={insumo.id}
-                                            className="hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors group"
+                                            className="hover:bg-slate-50/50 dark:hover:bg-zinc-800/50 transition-colors group"
                                         >
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">

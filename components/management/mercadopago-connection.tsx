@@ -112,7 +112,7 @@ export default function MercadoPagoConnection() {
                 )}
             </div>
 
-            <div className="bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-6">
+            <div className="bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-800/60 rounded-2xl p-6">
                 {status?.connected ? (
                     <div className="space-y-4">
                         <div className="flex items-start gap-4">
@@ -167,7 +167,7 @@ export default function MercadoPagoConnection() {
                         <div className="pt-4 flex flex-wrap gap-3">
                             <button
                                 onClick={handleConnect}
-                                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 transition-all"
+                                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 transition-all"
                             >
                                 <RefreshCw className="size-4" />
                                 Alterar Conta
@@ -206,7 +206,7 @@ export default function MercadoPagoConnection() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 border border-slate-100 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800">
+                <div className="p-4 border border-slate-100 dark:border-zinc-800/60 rounded-xl bg-white dark:bg-zinc-900">
                     <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase mb-2">Vantagens</p>
                     <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
                         <li className="flex items-center gap-2">
@@ -217,7 +217,7 @@ export default function MercadoPagoConnection() {
                         </li>
                     </ul>
                 </div>
-                <div className="p-4 border border-slate-100 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800">
+                <div className="p-4 border border-slate-100 dark:border-zinc-800/60 rounded-xl bg-white dark:bg-zinc-900">
                     <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase mb-2">Taxas do MP</p>
                     <p className="text-sm text-slate-600 dark:text-slate-300">
                         As taxas aplicadas são as mesmas que você já possui negociadas no seu painel do Mercado Pago.

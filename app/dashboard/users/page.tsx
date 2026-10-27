@@ -125,7 +125,7 @@ export default function UsersPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {Object.entries(ROLE_PERMS).map(([role, perms]) => (
-                            <div key={role} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+                            <div key={role} className="bg-white dark:bg-zinc-900 rounded-xl border border-slate-200 dark:border-zinc-800/60 p-5">
                                 <div className="flex items-center gap-2 mb-3">
                                     {ROLE_ICONS[role]}
                                     <span className="font-bold text-slate-800 dark:text-white">{ROLE_LABELS[role]}</span>
@@ -142,7 +142,7 @@ export default function UsersPage() {
                         ))}
                     </div>
 
-                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                    <div className="bg-white dark:bg-zinc-900 rounded-xl border border-slate-200 dark:border-zinc-800/60 shadow-sm overflow-hidden">
                         {loading ? (
                             <div className="flex justify-center items-center py-16">
                                 <MorphingInfinity className="size-7 text-primary" />
@@ -156,7 +156,7 @@ export default function UsersPage() {
                         ) : (
                             <table className="w-full text-left">
                                 <thead>
-                                    <tr className="bg-slate-50 dark:bg-slate-700 border-b border-slate-200 dark:border-slate-600">
+                                    <tr className="bg-slate-50 dark:bg-zinc-800 border-b border-slate-200 dark:border-zinc-700">
                                         <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Nome</th>
                                         <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">E-mail</th>
                                         <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Perfil</th>
@@ -164,9 +164,9 @@ export default function UsersPage() {
                                         <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Ações</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                                <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/60">
                                     {users.map((u, idx) => (
-                                        <tr key={u.id ?? idx} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                        <tr key={u.id ?? idx} className="hover:bg-slate-50 dark:hover:bg-zinc-800/50 transition-colors">
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
                                                     <div className="size-9 rounded-full bg-primary/10 text-primary font-bold text-sm flex items-center justify-center">
@@ -212,7 +212,7 @@ export default function UsersPage() {
 
                 {showModal && (
                     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md p-8">
+                        <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl w-full max-w-md p-8">
                             <div className="flex items-center justify-between mb-6">
                                 <h2 className="text-xl font-bold text-slate-900 dark:text-white">
                                     {editingUser ? 'Editar Usuário' : 'Novo Usuário'}
@@ -230,7 +230,7 @@ export default function UsersPage() {
                                         value={form.nome}
                                         onChange={e => setForm({ ...form, nome: e.target.value })}
                                         placeholder="Maria Silva"
-                                        className="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
+                                        className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
                                     />
                                 </div>
                                 <div>
@@ -240,7 +240,7 @@ export default function UsersPage() {
                                         value={form.email}
                                         onChange={e => setForm({ ...form, email: e.target.value })}
                                         placeholder="membro@loja.com"
-                                        className="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
+                                        className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
                                     />
                                 </div>
                                 <div>
@@ -252,7 +252,7 @@ export default function UsersPage() {
                                         value={form.senha}
                                         onChange={e => setForm({ ...form, senha: e.target.value })}
                                         placeholder={editingUser ? 'Nova senha (opcional)' : 'Mínimo 6 caracteres'}
-                                        className="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
+                                        className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
                                     />
                                 </div>
                                 <div>
@@ -260,7 +260,7 @@ export default function UsersPage() {
                                     <select
                                         value={form.role}
                                         onChange={e => setForm({ ...form, role: e.target.value })}
-                                        className="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
+                                        className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
                                     >
                                         <option value="gerente">Gerente (Kanban + Mesas + Clientes + Avaliações + Acertos)</option>
                                         <option value="atendente">Atendente (Kanban + Mesas + Clientes)</option>
@@ -270,7 +270,7 @@ export default function UsersPage() {
 
                                 <div className="flex gap-3 pt-2">
                                     <button type="button" onClick={() => { setShowModal(false); setEditingUser(null); }}
-                                        className="flex-1 py-3 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">
+                                        className="flex-1 py-3 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all">
                                         Cancelar
                                     </button>
                                     <button type="submit" disabled={saving}

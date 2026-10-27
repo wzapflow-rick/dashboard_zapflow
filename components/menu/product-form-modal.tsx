@@ -257,7 +257,7 @@ export default function ProductFormModal({
                                         }
                                     }}
                                 />
-                                <div className="size-20 sm:size-24 rounded-xl sm:rounded-2xl bg-slate-100 dark:bg-slate-700 border-2 border-dashed border-slate-300 dark:border-slate-600 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 group-hover:border-primary group-hover:text-primary transition-all overflow-hidden relative">
+                                <div className="size-20 sm:size-24 rounded-xl sm:rounded-2xl bg-slate-100 dark:bg-zinc-800 border-2 border-dashed border-slate-300 dark:border-zinc-700 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 group-hover:border-primary group-hover:text-primary transition-all overflow-hidden relative">
                                     {imagePreview ? (
                                         <Image
                                             src={imagePreview}
@@ -286,7 +286,7 @@ export default function ProductFormModal({
                                     name="nome"
                                     defaultValue={editingProduct?.nome}
                                     required
-                                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                     placeholder="Ex: Pizza Calabresa"
                                 />
                             </div>
@@ -297,7 +297,7 @@ export default function ProductFormModal({
                                     name="descricao"
                                     defaultValue={editingProduct?.descricao?.split('[[SIZES:')[0].trim() || ''}
                                     rows={3}
-                                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                     placeholder="Descreva os ingredientes ou detalhes do produto..."
                                 />
                             </div>
@@ -309,7 +309,7 @@ export default function ProductFormModal({
                                         name="categoria_id"
                                         defaultValue={editingProduct?.categoria_id || (categories.length > 0 ? categories[0].id : '')}
                                         onChange={(e) => setIsCreatingCategory(e.target.value === 'new_category')}
-                                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none"
+                                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none"
                                     >
                                         {categories.map(cat => (
                                             <option key={cat.id} value={cat.id}>{cat.nome}</option>
@@ -321,7 +321,7 @@ export default function ProductFormModal({
                                             <input
                                                 name="new_category_name"
                                                 required={isCreatingCategory}
-                                                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                                                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                                 placeholder="Nome da Nova Categoria"
                                                 autoFocus
                                             />
@@ -335,7 +335,7 @@ export default function ProductFormModal({
                                             name="preco"
                                             required={!hasSizes}
                                             defaultValue={editingProduct?.preco}
-                                            className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                                            className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                                         />
                                     </div>
                                 )}
@@ -347,7 +347,7 @@ export default function ProductFormModal({
                                 <select
                                     name="tag"
                                     defaultValue={editingProduct?.tag || ''}
-                                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none"
+                                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none"
                                 >
                                     <option value="">Nenhuma tag</option>
                                     <option value="oferta">Oferta / Destaque (glow vermelho)</option>
@@ -359,9 +359,9 @@ export default function ProductFormModal({
                         </div>
 
                         {/* Sizes Section */}
-                        <div className="pt-4 border-t border-slate-100 dark:border-slate-700">
+                        <div className="pt-4 border-t border-slate-100 dark:border-zinc-800/60">
                             <label className="flex items-center gap-3 cursor-pointer group mb-4">
-                                <div className={`relative w-10 h-6 rounded-full transition-colors ${hasSizes ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-600'}`}>
+                                <div className={`relative w-10 h-6 rounded-full transition-colors ${hasSizes ? 'bg-primary' : 'bg-slate-200 dark:bg-zinc-700'}`}>
                                     <div className={`absolute left-1 top-1 w-4 h-4 rounded-full bg-white transition-transform ${hasSizes ? 'translate-x-4' : 'translate-x-0'}`} />
                                     <input
                                         type="checkbox"
@@ -386,7 +386,7 @@ export default function ProductFormModal({
                                         exit={{ height: 0, opacity: 0 }}
                                         className="overflow-hidden"
                                     >
-                                        <div className="bg-slate-50 dark:bg-slate-700 rounded-xl p-3 sm:p-4 border border-slate-100 dark:border-slate-600 space-y-3">
+                                        <div className="bg-slate-50 dark:bg-zinc-800 rounded-xl p-3 sm:p-4 border border-slate-100 dark:border-zinc-700 space-y-3">
                                             {sizes.map((size, index) => (
                                                 <div key={index} className="flex flex-col sm:flex-row gap-2 sm:items-center">
                                                     <div className="flex gap-2 items-center flex-1">
@@ -395,7 +395,7 @@ export default function ProductFormModal({
                                                             value={size.nome}
                                                             onChange={(e) => updateSize(index, 'nome', e.target.value)}
                                                             placeholder="Ex: Grande"
-                                                            className="flex-1 min-w-0 px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
+                                                            className="flex-1 min-w-0 px-3 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
                                                             required
                                                         />
                                                         <button
@@ -411,7 +411,7 @@ export default function ProductFormModal({
                                                             <CurrencyInput
                                                                 defaultValue={size.preco}
                                                                 onValueChange={(val) => updateSize(index, 'preco', val)}
-                                                                className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
+                                                                className="w-full px-3 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
                                                                 required
                                                             />
                                                         </div>
@@ -428,7 +428,7 @@ export default function ProductFormModal({
                                             <button
                                                 type="button"
                                                 onClick={addSize}
-                                                className="w-full py-2 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg text-xs font-bold text-slate-500 dark:text-slate-400 hover:border-primary hover:text-primary transition-all flex items-center justify-center gap-1.5"
+                                                className="w-full py-2 border-2 border-dashed border-slate-300 dark:border-zinc-700 rounded-lg text-xs font-bold text-slate-500 dark:text-slate-400 hover:border-primary hover:text-primary transition-all flex items-center justify-center gap-1.5"
                                             >
                                                 <Plus className="size-3" /> Adicionar Tamanho
                                             </button>
@@ -439,7 +439,7 @@ export default function ProductFormModal({
                         </div>
 
                         {/* Recommendations (Upsell) Section */}
-                        <div className="pt-4 border-t border-slate-100 dark:border-slate-700">
+                        <div className="pt-4 border-t border-slate-100 dark:border-zinc-800/60">
                             <div className="flex items-center gap-3 mb-4">
                                 <div className="size-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
                                     <Sparkles className="size-4" />
@@ -450,11 +450,11 @@ export default function ProductFormModal({
                                 </div>
                             </div>
 
-                            <div className="bg-slate-50 dark:bg-slate-700 rounded-xl p-4 border border-slate-100 dark:border-slate-600 space-y-4">
+                            <div className="bg-slate-50 dark:bg-zinc-800 rounded-xl p-4 border border-slate-100 dark:border-zinc-700 space-y-4">
                                 <div className="flex gap-2">
                                     <select
                                         id="recommendationSelector"
-                                        className="flex-1 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 text-slate-700 dark:text-slate-300"
+                                        className="flex-1 px-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 text-slate-700 dark:text-slate-300"
                                         defaultValue=""
                                     >
                                         <option value="" disabled>Sugerir produto...</option>
@@ -485,12 +485,12 @@ export default function ProductFormModal({
                                         const product = allProducts.find(p => p.id === id);
                                         if (!product) return null;
                                         return (
-                                            <div key={id} className="flex items-center gap-2 bg-white dark:bg-slate-800 pl-3 pr-1.5 py-1.5 rounded-full border border-slate-200 dark:border-slate-600 shadow-sm">
+                                            <div key={id} className="flex items-center gap-2 bg-white dark:bg-zinc-900 pl-3 pr-1.5 py-1.5 rounded-full border border-slate-200 dark:border-zinc-700 shadow-sm">
                                                 <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{product.nome}</span>
                                                 <button
                                                     type="button"
                                                     onClick={() => setSelectedRecommendations(selectedRecommendations.filter(rid => rid !== id))}
-                                                    className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full text-slate-400 hover:text-red-500 transition-colors"
+                                                    className="p-1 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full text-slate-400 hover:text-red-500 transition-colors"
                                                 >
                                                     <X className="size-3" />
                                                 </button>
@@ -508,9 +508,9 @@ export default function ProductFormModal({
 
                         {/* Insumos Section */}
                         {user?.controle_estoque && (
-                            <div className="pt-4 border-t border-slate-100 dark:border-slate-700">
+                            <div className="pt-4 border-t border-slate-100 dark:border-zinc-800/60">
                                 <label className="flex items-center gap-3 cursor-pointer group mb-4">
-                                    <div className={`relative w-10 h-6 rounded-full transition-colors ${usaInsumos ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-600'}`}>
+                                    <div className={`relative w-10 h-6 rounded-full transition-colors ${usaInsumos ? 'bg-primary' : 'bg-slate-200 dark:bg-zinc-700'}`}>
                                         <div className={`absolute left-1 top-1 w-4 h-4 rounded-full bg-white transition-transform ${usaInsumos ? 'translate-x-4' : 'translate-x-0'}`} />
                                         <input
                                             type="checkbox"
@@ -533,11 +533,11 @@ export default function ProductFormModal({
                                             exit={{ height: 0, opacity: 0 }}
                                             className="overflow-hidden"
                                         >
-                                            <div className="bg-slate-50 dark:bg-slate-700 rounded-xl p-4 border border-slate-100 dark:border-slate-600 space-y-4">
+                                            <div className="bg-slate-50 dark:bg-zinc-800 rounded-xl p-4 border border-slate-100 dark:border-zinc-700 space-y-4">
                                                 <div className="flex gap-2">
                                                     <select
                                                         id="insumoSelector"
-                                                        className="flex-1 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 text-slate-700 dark:text-slate-300"
+                                                        className="flex-1 px-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 text-slate-700 dark:text-slate-300"
                                                         defaultValue=""
                                                     >
                                                         <option value="" disabled>Selecione um insumo...</option>
@@ -561,7 +561,7 @@ export default function ProductFormModal({
                                                     {selectedInsumos.map((item, idx) => {
                                                         const insumo = insumosList.find(i => i.id === item.insumo_id);
                                                         return (
-                                                            <div key={idx} className="flex items-center gap-3 bg-white dark:bg-slate-800 p-2 rounded-lg border border-slate-100 dark:border-slate-600">
+                                                            <div key={idx} className="flex items-center gap-3 bg-white dark:bg-zinc-900 p-2 rounded-lg border border-slate-100 dark:border-zinc-700">
                                                                 <div className="flex-1 min-w-0">
                                                                     <div className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">{insumo?.nome}</div>
                                                                     <div className="text-[10px] text-slate-500">Unidade: {insumo?.unidade_medida}</div>
@@ -572,7 +572,7 @@ export default function ProductFormModal({
                                                                         step="0.001"
                                                                         value={item.quantidade_necessaria}
                                                                         onChange={(e) => updateInsumoQty(item.insumo_id, Number(e.target.value))}
-                                                                        className="w-20 px-2 py-1 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded text-xs outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
+                                                                        className="w-20 px-2 py-1 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded text-xs outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
                                                                         placeholder="Qtd"
                                                                     />
                                                                     <button
@@ -598,7 +598,7 @@ export default function ProductFormModal({
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="flex-1 px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+                                className="flex-1 px-4 py-3 border border-slate-200 dark:border-zinc-800/60 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all"
                             >
                                 Cancelar
                             </button>

@@ -20,13 +20,13 @@ export default function MenuPage() {
 
   return (
     <>
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-700 pb-px">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-zinc-800/60 pb-px">
         <div className="flex space-x-2">
           <button
             onClick={() => setActiveTab('produtos')}
             className={cn(
               "flex items-center gap-2 px-6 py-3 text-sm font-semibold border-b-2 transition-colors",
-              activeTab === 'produtos' ? "border-primary text-primary" : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600"
+              activeTab === 'produtos' ? "border-primary text-primary" : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-zinc-700"
             )}
           >
             <Package className="size-4" />
@@ -36,7 +36,7 @@ export default function MenuPage() {
             onClick={() => setActiveTab('compostos')}
             className={cn(
               "flex items-center gap-2 px-6 py-3 text-sm font-semibold border-b-2 transition-colors",
-              activeTab === 'compostos' ? "border-primary text-primary" : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600"
+              activeTab === 'compostos' ? "border-primary text-primary" : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-zinc-700"
             )}
           >
             <PlusCircle className="size-4" />
@@ -46,7 +46,7 @@ export default function MenuPage() {
 
         <button
           onClick={() => setIsCategoryModalOpen(true)}
-          className="mb-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm flex items-center gap-2 transition-all active:scale-95 dark:bg-slate-800/75 dark:text-zinc-200 dark:border-slate-700"
+          className="mb-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm flex items-center gap-2 transition-all active:scale-95 dark:bg-zinc-900/75 dark:text-zinc-200 dark:border-zinc-800/60"
         >
           <Folder className="size-4 text-amber-500" />
           Gerenciar Categorias

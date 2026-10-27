@@ -44,7 +44,7 @@ export function StatCard({ stat, index }: StatCardProps) {
                 "relative p-6 rounded-2xl border backdrop-blur-xl transition-all duration-300 cursor-pointer group overflow-hidden",
                 isPrimary 
                     ? "bg-gradient-to-br from-emerald-500/90 to-emerald-600/90 text-white border-emerald-400/30 shadow-xl shadow-emerald-500/20" 
-                    : "bg-white/70 dark:bg-slate-900/50 border-slate-200/50 dark:border-slate-700/50 shadow-lg shadow-slate-200/50 dark:shadow-black/20"
+                    : "bg-white/70 dark:bg-zinc-950/50 border-slate-200/50 dark:border-zinc-800/50 shadow-lg shadow-slate-200/50 dark:shadow-black/20"
             )}
         >
             {/* Subtle gradient overlay */}
@@ -73,7 +73,7 @@ export function StatCard({ stat, index }: StatCardProps) {
                             "p-3 rounded-xl transition-all duration-300",
                             isPrimary 
                                 ? "bg-white/20 backdrop-blur-sm" 
-                                : "bg-slate-100/80 dark:bg-slate-800/80 group-hover:bg-primary/10 dark:group-hover:bg-primary/20"
+                                : "bg-slate-100/80 dark:bg-zinc-900/80 group-hover:bg-primary/10 dark:group-hover:bg-primary/20"
                         )}
                     >
                         <stat.icon className={cn(

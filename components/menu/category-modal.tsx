@@ -171,7 +171,7 @@ export default function CategoryModal({
               key={editingCategory?.id || 'new'}
               defaultValue={editingCategory?.nome || ''}
               required
-              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
+              className="w-full px-4 py-3 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
               placeholder="Ex: Pizzas Salgadas"
               autoFocus
             />
@@ -195,7 +195,7 @@ export default function CategoryModal({
               <button
                 type="button"
                 onClick={() => setEditingCategory(null)}
-                className="px-4 py-3 bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-300 dark:hover:bg-slate-500 transition-all text-sm"
+                className="px-4 py-3 bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-300 dark:hover:bg-zinc-600 transition-all text-sm"
               >
                 Cancelar
               </button>
@@ -205,7 +205,7 @@ export default function CategoryModal({
 
         {/* Lista de categorias com ordenacao */}
         {orderedCategories.length > 0 && (
-          <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
+          <div className="pt-4 border-t border-slate-200 dark:border-zinc-800/60">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                 Ordenar Categorias
@@ -219,14 +219,14 @@ export default function CategoryModal({
               {orderedCategories.map((cat, index) => (
                 <div 
                   key={cat.id} 
-                  className={`flex items-center gap-2 p-3 bg-slate-50 dark:bg-slate-700 rounded-xl border-2 transition-all ${
+                  className={`flex items-center gap-2 p-3 bg-slate-50 dark:bg-zinc-800 rounded-xl border-2 transition-all ${
                     editingCategory?.id === cat.id 
                       ? 'border-primary bg-primary/5 dark:bg-primary/10' 
                       : 'border-transparent'
                   }`}
                 >
                   {/* Indicador de posicao */}
-                  <div className="flex items-center justify-center size-6 bg-slate-200 dark:bg-slate-600 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300">
+                  <div className="flex items-center justify-center size-6 bg-slate-200 dark:bg-zinc-700 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300">
                     {index + 1}
                   </div>
                   
@@ -261,7 +261,7 @@ export default function CategoryModal({
                   </div>
                   
                   {/* Botoes de acao */}
-                  <div className="flex gap-1 border-l border-slate-200 dark:border-slate-600 pl-2 ml-1">
+                  <div className="flex gap-1 border-l border-slate-200 dark:border-zinc-700 pl-2 ml-1">
                     <button
                       type="button"
                       onClick={() => openImageModal(cat)}
@@ -305,13 +305,13 @@ export default function CategoryModal({
             onClick={closeImageModal}
             className="absolute inset-0 bg-slate-900/70 backdrop-blur-sm"
           />
-          <div className="relative w-full max-w-sm bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-slate-200 dark:border-slate-700">
-            <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-700/50">
+          <div className="relative w-full max-w-sm bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-slate-200 dark:border-zinc-800/60">
+            <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-zinc-800/60 flex justify-between items-center bg-slate-50/50 dark:bg-zinc-800/50">
               <div>
                 <h2 className="text-base font-bold text-slate-900 dark:text-white">Foto da categoria</h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{imageCategory.nome}</p>
               </div>
-              <button type="button" onClick={closeImageModal} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-full transition-colors">
+              <button type="button" onClick={closeImageModal} className="p-2 hover:bg-slate-200 dark:hover:bg-zinc-700 rounded-full transition-colors">
                 <X className="size-5 text-slate-500 dark:text-slate-400" />
               </button>
             </div>
@@ -321,7 +321,7 @@ export default function CategoryModal({
                 A imagem escolhida será aplicada a <strong>todos os produtos</strong> desta categoria.
               </p>
 
-              <label className="group relative flex flex-col items-center justify-center gap-2 w-full aspect-video rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-primary cursor-pointer overflow-hidden transition-colors bg-slate-50 dark:bg-slate-700/50">
+              <label className="group relative flex flex-col items-center justify-center gap-2 w-full aspect-video rounded-xl border-2 border-dashed border-slate-300 dark:border-zinc-700 hover:border-primary cursor-pointer overflow-hidden transition-colors bg-slate-50 dark:bg-zinc-800/50">
                 {previewUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={previewUrl || "/placeholder.svg"} alt="Pré-visualizaç��o" className="absolute inset-0 w-full h-full object-cover" />

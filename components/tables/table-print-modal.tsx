@@ -123,13 +123,13 @@ export default function TablePrintModal({ isOpen, onClose, mesa, comanda, tipo }
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-700 max-h-[90vh] flex flex-col"
+          className="relative w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-zinc-800/60 max-h-[90vh] flex flex-col"
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
+          <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-zinc-800/60 shrink-0">
             <button
               onClick={onClose}
-              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              className="p-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
             >
               <ChevronLeft className="size-5 text-slate-600 dark:text-slate-300" />
             </button>
@@ -140,7 +140,7 @@ export default function TablePrintModal({ isOpen, onClose, mesa, comanda, tipo }
           </div>
 
           {/* Ticket Preview */}
-          <div className="p-4 overflow-y-auto flex-1 flex justify-center bg-slate-100 dark:bg-slate-900/50">
+          <div className="p-4 overflow-y-auto flex-1 flex justify-center bg-slate-100 dark:bg-zinc-950/50">
             <div
               ref={printRef}
               className="zf-receipt bg-white shadow-lg h-fit"
@@ -255,7 +255,7 @@ export default function TablePrintModal({ isOpen, onClose, mesa, comanda, tipo }
           </div>
 
           {/* Actions */}
-          <div className="p-4 border-t border-slate-200 dark:border-slate-700 space-y-3 shrink-0">
+          <div className="p-4 border-t border-slate-200 dark:border-zinc-800/60 space-y-3 shrink-0">
             <div className="flex items-center justify-center gap-2">
               <span className="text-xs text-slate-500 dark:text-slate-400">Largura do papel:</span>
               {(['58mm', '80mm'] as const).map((l) => (
@@ -265,7 +265,7 @@ export default function TablePrintModal({ isOpen, onClose, mesa, comanda, tipo }
                   className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
                     largura === l
                       ? 'bg-primary text-white'
-                      : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                      : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-300'
                   }`}
                 >
                   {l}
@@ -275,7 +275,7 @@ export default function TablePrintModal({ isOpen, onClose, mesa, comanda, tipo }
             <div className="flex gap-3">
               <button
                 onClick={onClose}
-                className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+                className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all"
               >
                 Cancelar
               </button>
@@ -289,7 +289,7 @@ export default function TablePrintModal({ isOpen, onClose, mesa, comanda, tipo }
             </div>
             <button
               onClick={handlePrintMobile}
-              className="w-full px-4 py-2.5 bg-slate-800 dark:bg-slate-700 text-white font-bold rounded-xl hover:bg-slate-900 dark:hover:bg-slate-600 transition-all flex items-center justify-center gap-2"
+              className="w-full px-4 py-2.5 bg-slate-800 dark:bg-zinc-800 text-white font-bold rounded-xl hover:bg-slate-900 dark:hover:bg-zinc-700 transition-all flex items-center justify-center gap-2"
             >
               <Smartphone className="size-4" />
               Imprimir no celular (RawBT)

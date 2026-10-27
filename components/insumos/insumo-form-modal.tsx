@@ -78,7 +78,7 @@ export default function InsumoFormModal({ isOpen, onClose, editingInsumo, onSubm
                                 name="nome"
                                 defaultValue={editingInsumo?.nome}
                                 required
-                                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                 placeholder="Ex: Farinha de Trigo, Queijo Muçarela, Calabresa"
                             />
                         </div>
@@ -92,7 +92,7 @@ export default function InsumoFormModal({ isOpen, onClose, editingInsumo, onSubm
                                     step="0.001"
                                     defaultValue={editingInsumo?.quantidade_atual ?? 0}
                                     required
-                                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                     placeholder="Ex: 5.5"
                                 />
                             </div>
@@ -102,7 +102,7 @@ export default function InsumoFormModal({ isOpen, onClose, editingInsumo, onSubm
                                     name="unidade_medida"
                                     value={selectedUnit}
                                     onChange={(e) => setSelectedUnit(e.target.value)}
-                                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none cursor-pointer"
+                                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none cursor-pointer"
                                 >
                                     <option value="KG">Quilogramas (kg)</option>
                                     <option value="G">Gramas (g)</option>
@@ -145,7 +145,7 @@ export default function InsumoFormModal({ isOpen, onClose, editingInsumo, onSubm
                         </div>
 
                         {/* Cálculo rápido por embalagem */}
-                        <div className="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl p-3 sm:p-4">
+                        <div className="bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3 sm:p-4">
                             <p className="text-[10px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3">
                                 Calcular custo por embalagem
                             </p>
@@ -157,7 +157,7 @@ export default function InsumoFormModal({ isOpen, onClose, editingInsumo, onSubm
                                         step="0.01"
                                         value={embalagemPreco}
                                         onChange={(e) => setEmbalagemPreco(Number(e.target.value) || 0)}
-                                        className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm dark:text-white"
+                                        className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm dark:text-white"
                                         placeholder="R$ 0,00"
                                     />
                                 </div>
@@ -168,12 +168,12 @@ export default function InsumoFormModal({ isOpen, onClose, editingInsumo, onSubm
                                         step="0.001"
                                         value={embalagemQuantidade}
                                         onChange={(e) => setEmbalagemQuantidade(Number(e.target.value) || 1)}
-                                        className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm dark:text-white"
+                                        className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm dark:text-white"
                                     />
                                 </div>
                             </div>
                             {embalagemPreco > 0 && embalagemQuantidade > 0 && (
-                                <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-600">
+                                <div className="mt-3 pt-3 border-t border-slate-200 dark:border-zinc-700">
                                     <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
                                         Custo por {unidadeLabel}: 
                                         <span className="text-emerald-600 dark:text-emerald-400 font-bold ml-1">
@@ -205,7 +205,7 @@ export default function InsumoFormModal({ isOpen, onClose, editingInsumo, onSubm
                                 type="button"
                                 onClick={onClose}
                                 disabled={isSubmitting}
-                                className="order-2 sm:order-1 flex-1 px-6 py-2.5 sm:py-3 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all text-sm disabled:opacity-50"
+                                className="order-2 sm:order-1 flex-1 px-6 py-2.5 sm:py-3 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all text-sm disabled:opacity-50"
                             >
                                 Cancelar
                             </button>

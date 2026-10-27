@@ -86,7 +86,7 @@ export default function CategoryManagement() {
                 </button>
             </header>
 
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden relative min-h-[300px]">
+            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-slate-200 dark:border-zinc-800/60 shadow-sm overflow-hidden relative min-h-[300px]">
                 {loading && (
                     <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] z-10 flex items-center justify-center">
                         <MorphingInfinity className="size-8 text-primary" />
@@ -94,16 +94,16 @@ export default function CategoryManagement() {
                 )}
                 <table className="w-full text-left border-collapse">
                     <thead>
-                        <tr className="bg-slate-50 dark:bg-slate-700 border-b border-slate-200 dark:border-slate-600">
+                        <tr className="bg-slate-50 dark:bg-zinc-800 border-b border-slate-200 dark:border-zinc-700">
                             <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 w-16">ID</th>
                             <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Nome</th>
                             <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 w-24">Ordem</th>
                             <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right w-32">Ações</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                    <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/60">
                         {categories.map((cat) => (
-                            <tr key={cat.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors">
+                            <tr key={cat.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-800/50 transition-colors">
                                 <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">{cat.id}</td>
                                 <td className="px-6 py-4 font-semibold text-slate-900 dark:text-white">{cat.nome}</td>
                                 <td className="px-6 py-4 text-sm font-medium text-slate-600 dark:text-slate-300">{cat.ordem || 0}</td>
@@ -149,11 +149,11 @@ export default function CategoryManagement() {
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="relative w-full max-w-sm bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-slate-200 dark:border-slate-700"
+                            className="relative w-full max-w-sm bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-slate-200 dark:border-zinc-800/60"
                         >
-                            <div className="p-4 sm:p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-700/50">
+                            <div className="p-4 sm:p-6 border-b border-slate-100 dark:border-zinc-800/60 flex justify-between items-center bg-slate-50/50 dark:bg-zinc-800/50">
                                 <h2 className="text-lg font-bold text-slate-900 dark:text-white">{editingCategory ? 'Editar' : 'Nova'} Categoria</h2>
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-full transition-colors">
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-200 dark:hover:bg-zinc-700 rounded-full transition-colors">
                                     <X className="size-5 text-slate-500 dark:text-slate-400" />
                                 </button>
                             </div>
@@ -165,7 +165,7 @@ export default function CategoryManagement() {
                                         name="nome"
                                         defaultValue={editingCategory?.nome}
                                         required
-                                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all dark:text-white"
+                                        className="w-full px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all dark:text-white"
                                         placeholder="Ex: Pizzas Salgadas"
                                         autoFocus
                                     />
@@ -177,7 +177,7 @@ export default function CategoryManagement() {
                                         name="ordem"
                                         type="number"
                                         defaultValue={editingCategory?.ordem || 0}
-                                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all dark:text-white"
+                                        className="w-full px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all dark:text-white"
                                     />
                                 </div>
 

@@ -138,7 +138,7 @@ export default function MenuManagement({ hideCategoryButton }: { hideCategoryBut
           {!hideCategoryButton && (
             <button
               onClick={() => { setEditingCategory(null); setIsCategoryModalOpen(true); }}
-              className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2.5 rounded-lg text-sm font-semibold shadow-sm flex items-center gap-2 transition-all active:scale-95 dark:bg-slate-800/75 dark:text-zinc-200 dark:border-slate-700"
+              className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2.5 rounded-lg text-sm font-semibold shadow-sm flex items-center gap-2 transition-all active:scale-95 dark:bg-zinc-900/75 dark:text-zinc-200 dark:border-zinc-800/60"
             >
               <Folder className="size-4 text-amber-500" />
               Gerenciar Categorias
@@ -171,11 +171,11 @@ export default function MenuManagement({ hideCategoryButton }: { hideCategoryBut
       </header>
 
       {/* Filters & Search */}
-      <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 dark:bg-slate-800/75 dark:border-slate-700">
+      <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 dark:bg-zinc-900/75 dark:border-zinc-800/60">
         <div id="search-bar" className="relative flex-1 group">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400 group-focus-within:text-primary transition-colors" />
           <input
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-primary/20 placeholder:text-slate-400 transition-all outline-none dark:bg-slate-800"
+            className="w-full pl-10 pr-4 py-2 bg-slate-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-primary/20 placeholder:text-slate-400 transition-all outline-none dark:bg-zinc-900"
             placeholder="Buscar por nome ou código..."
             type="text"
             value={searchQuery}
@@ -187,7 +187,7 @@ export default function MenuManagement({ hideCategoryButton }: { hideCategoryBut
             onClick={() => { setSelectedCategoryId(0); setCurrentPage(1); }}
             className={cn(
               "px-4 py-2 text-sm font-semibold rounded-lg transition-colors whitespace-nowrap",
-              selectedCategoryId === 0 ? "bg-primary text-white" : "text-slate-600 hover:bg-slate-50 dark:text-zinc-200 dark:border-slate-700"
+              selectedCategoryId === 0 ? "bg-primary text-white" : "text-slate-600 hover:bg-slate-50 dark:text-zinc-200 dark:border-zinc-800/60"
             )}
           >
             Todos
@@ -198,7 +198,7 @@ export default function MenuManagement({ hideCategoryButton }: { hideCategoryBut
               onClick={() => { setSelectedCategoryId(cat.id); setCurrentPage(1); }}
               className={cn(
                 "px-4 py-2 text-sm font-semibold rounded-lg transition-colors whitespace-nowrap",
-                selectedCategoryId === cat.id ? "bg-primary text-white" : "text-slate-600 hover:bg-slate-50 dark:text-zinc-200 dark:border-slate-700 dark:hover:bg-slate-700"
+                selectedCategoryId === cat.id ? "bg-primary text-white" : "text-slate-600 hover:bg-slate-50 dark:text-zinc-200 dark:border-zinc-800/60 dark:hover:bg-zinc-800"
               )}
             >
               {cat.nome}
@@ -226,14 +226,14 @@ export default function MenuManagement({ hideCategoryButton }: { hideCategoryBut
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                    className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 p-4 space-y-4"
+                    className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-zinc-900 rounded-xl shadow-xl border border-slate-200 dark:border-zinc-800/60 z-50 p-4 space-y-4"
                   >
                     <div className="space-y-2">
                       <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Disponibilidade</label>
                       <select
                         value={availabilityFilter}
                         onChange={(e) => { setAvailabilityFilter(e.target.value); setCurrentPage(1); }}
-                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                        className="w-full px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                       >
                         <option value="all">Todos</option>
                         <option value="available">Apenas Disponíveis</option>
@@ -246,7 +246,7 @@ export default function MenuManagement({ hideCategoryButton }: { hideCategoryBut
                       <select
                         value={sortBy}
                         onChange={(e) => { setSortBy(e.target.value); setCurrentPage(1); }}
-                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                        className="w-full px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm dark:text-white focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                       >
                         <option value="recent">Mais Recentes</option>
                         <option value="id_asc">Mais Antigos</option>

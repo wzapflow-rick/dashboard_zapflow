@@ -55,7 +55,7 @@ export default function StockWarningModal({ isOpen, onClose, onConfirm, shortage
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-slate-200 dark:border-slate-700"
+                    className="relative w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-slate-200 dark:border-zinc-800/60"
                 >
                     <div className="p-6 text-center space-y-4">
                         <div className="size-16 bg-red-100 rounded-2xl flex items-center justify-center text-red-600 mx-auto">
@@ -74,14 +74,14 @@ export default function StockWarningModal({ isOpen, onClose, onConfirm, shortage
                             disabled={!cliente?.telefone}
                             className={`w-full py-3 rounded-2xl border flex items-center justify-center gap-2 text-sm font-black transition-all uppercase tracking-wider ${cliente?.telefone
                                     ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50"
-                                    : "bg-slate-50 dark:bg-slate-700 text-slate-400 dark:text-slate-500 border-slate-100 dark:border-slate-600 cursor-not-allowed"
+                                    : "bg-slate-50 dark:bg-zinc-800 text-slate-400 dark:text-slate-500 border-slate-100 dark:border-zinc-700 cursor-not-allowed"
                                 }`}
                         >
                             <MessageCircle className="size-5" />
                             {cliente?.telefone ? "Avisar Cliente no WhatsApp" : "Telefone não encontrado"}
                         </button>
 
-                        <div className="bg-slate-50 dark:bg-slate-700 rounded-2xl border border-slate-100 dark:border-slate-600 divide-y divide-slate-200 dark:divide-slate-600 overflow-y-auto max-h-[200px] custom-scrollbar">
+                        <div className="bg-slate-50 dark:bg-zinc-800 rounded-2xl border border-slate-100 dark:border-zinc-700 divide-y divide-slate-200 dark:divide-zinc-700 overflow-y-auto max-h-[200px] custom-scrollbar">
                             {shortages.map((s) => (
                                 <div key={s.insumo_id} className="p-4 flex items-center justify-between text-left">
                                     <div>
@@ -107,10 +107,10 @@ export default function StockWarningModal({ isOpen, onClose, onConfirm, shortage
                         </div>
                     </div>
 
-                    <div className="p-6 bg-slate-50 dark:bg-slate-700 border-t border-slate-100 dark:border-slate-600 flex gap-3">
+                    <div className="p-6 bg-slate-50 dark:bg-zinc-800 border-t border-slate-100 dark:border-zinc-700 flex gap-3">
                         <button
                             onClick={onClose}
-                            className="flex-1 px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all text-sm uppercase tracking-wider"
+                            className="flex-1 px-4 py-3 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all text-sm uppercase tracking-wider"
                         >
                             Cancelar
                         </button>

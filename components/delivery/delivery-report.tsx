@@ -86,13 +86,13 @@ export default function DeliveryReport() {
           <select
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value as any)}
-            className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none dark:bg-slate-900 dark:border-slate-700 dark:text-slate-300"
+            className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none dark:bg-zinc-950 dark:border-zinc-800/60 dark:text-slate-300"
           >
             <option value="today">Hoje</option>
             <option value="week">Esta Semana</option>
             <option value="month">Este Mês</option>
           </select>
-          <button className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-200 transition-colors dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700">
+          <button className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-200 transition-colors dark:bg-zinc-900 dark:text-slate-300 dark:hover:bg-zinc-800">
             <Download className="size-4" />
             Exportar
           </button>
@@ -104,7 +104,7 @@ export default function DeliveryReport() {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white border border-slate-200 rounded-xl p-4 dark:bg-slate-800 dark:border-slate-700"
+          className="bg-white border border-slate-200 rounded-xl p-4 dark:bg-zinc-900 dark:border-zinc-800/60"
         >
           <div className="flex items-center gap-3">
             <div className="size-10 bg-blue-100 rounded-lg flex items-center justify-center dark:bg-blue-900/30">
@@ -121,7 +121,7 @@ export default function DeliveryReport() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white border border-slate-200 rounded-xl p-4 dark:bg-slate-800 dark:border-slate-700"
+          className="bg-white border border-slate-200 rounded-xl p-4 dark:bg-zinc-900 dark:border-zinc-800/60"
         >
           <div className="flex items-center gap-3">
             <div className="size-10 bg-green-100 rounded-lg flex items-center justify-center dark:bg-green-900/30">
@@ -138,7 +138,7 @@ export default function DeliveryReport() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-white border border-slate-200 rounded-xl p-4 dark:bg-slate-800 dark:border-slate-700"
+          className="bg-white border border-slate-200 rounded-xl p-4 dark:bg-zinc-900 dark:border-zinc-800/60"
         >
           <div className="flex items-center gap-3">
             <div className="size-10 bg-amber-100 rounded-lg flex items-center justify-center dark:bg-amber-900/30">
@@ -155,7 +155,7 @@ export default function DeliveryReport() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="bg-white border border-slate-200 rounded-xl p-4 dark:bg-slate-800 dark:border-slate-700"
+          className="bg-white border border-slate-200 rounded-xl p-4 dark:bg-zinc-900 dark:border-zinc-800/60"
         >
           <div className="flex items-center gap-3">
             <div className="size-10 bg-purple-100 rounded-lg flex items-center justify-center dark:bg-purple-900/30">
@@ -170,8 +170,8 @@ export default function DeliveryReport() {
       </div>
 
       {/* Ranking de Entregadores */}
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden dark:bg-slate-800 dark:border-slate-700">
-        <div className="p-4 border-b border-slate-100 dark:border-slate-700">
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden dark:bg-zinc-900 dark:border-zinc-800/60">
+        <div className="p-4 border-b border-slate-100 dark:border-zinc-800/60">
           <h4 className="font-bold text-slate-900 dark:text-white">Ranking de Entregadores</h4>
         </div>
 
@@ -181,7 +181,7 @@ export default function DeliveryReport() {
             <p className="text-slate-500">Nenhum entregador cadastrado</p>
           </div>
         ) : (
-          <div className="divide-y divide-slate-100 dark:divide-slate-700">
+          <div className="divide-y divide-slate-100 dark:divide-zinc-800/60">
             {stats
               .sort((a, b) => b.totalDeliveries - a.totalDeliveries)
               .map((stat, index) => {
@@ -190,7 +190,7 @@ export default function DeliveryReport() {
 
                 return (
                   <div key={stat.driverId} className="p-4 flex items-center gap-4">
-                    <div className="size-10 bg-slate-100 rounded-full flex items-center justify-center text-lg dark:bg-slate-900/50">
+                    <div className="size-10 bg-slate-100 rounded-full flex items-center justify-center text-lg dark:bg-zinc-950/50">
                       {index < 3 ? medals[index] : `#${index + 1}`}
                     </div>
 
@@ -220,14 +220,14 @@ export default function DeliveryReport() {
       </div>
 
       {/* Tabela Detalhada */}
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden dark:bg-slate-800 dark:border-slate-700">
-        <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden dark:bg-zinc-900 dark:border-zinc-800/60">
+        <div className="p-4 border-b border-slate-100 dark:border-zinc-800/60 flex items-center justify-between">
           <h4 className="font-bold text-slate-900 dark:text-white">Detalhamento</h4>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-slate-500 dark:bg-slate-900/50 dark:text-slate-400">
+            <thead className="bg-slate-50 text-slate-500 dark:bg-zinc-950/50 dark:text-slate-400">
               <tr>
                 <th className="text-left px-4 py-3 font-medium">Entregador</th>
                 <th className="text-left px-4 py-3 font-medium">Veículo</th>
@@ -236,11 +236,11 @@ export default function DeliveryReport() {
                 <th className="text-right px-4 py-3 font-medium">Comissão</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+            <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/60">
               {drivers.map((driver) => {
                 const stat = stats.find(s => s.driverId === driver.id);
                 return (
-                  <tr key={driver.id} className="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                  <tr key={driver.id} className="hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <div className="size-8 bg-primary/10 rounded-full flex items-center justify-center dark:bg-primary/20">
@@ -255,7 +255,7 @@ export default function DeliveryReport() {
                     <td className="px-4 py-3 text-center">
                       <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${driver.status === 'disponivel' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
                           driver.status === 'ocupado' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
-                            'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                            'bg-slate-100 text-slate-500 dark:bg-zinc-900 dark:text-slate-400'
                         }`}>
                         {driver.status === 'disponivel' ? 'Disponível' :
                           driver.status === 'ocupado' ? 'Ocupado' : 'Offline'}

@@ -486,7 +486,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="relative w-full sm:max-w-md md:max-w-lg bg-[#0a0a0a] rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[80vh] sm:my-auto"
+              className="relative w-full sm:max-w-md md:max-w-lg bg-[#0a0a0a] rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[80vh] sm:my-auto"
             >
               {/* Drag Handle - Mobile */}
               <div className="sm:hidden flex justify-center pt-3 pb-1">

@@ -159,7 +159,7 @@ export function BibliotecaItemModal({ isOpen, editingItem, onClose, onSaved, con
     };
 
     const inputClass =
-        'w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700';
+        'w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors dark:bg-zinc-950/75 dark:text-zinc-200 dark:border-zinc-800/60';
 
     return (
         <AnimatePresence>
@@ -173,7 +173,7 @@ export function BibliotecaItemModal({ isOpen, editingItem, onClose, onSaved, con
                         onClick={onClose}
                     />
                     <motion.div
-                        className="relative bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md p-6 shadow-xl border border-slate-200 dark:border-slate-700"
+                        className="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-md p-6 shadow-xl border border-slate-200 dark:border-zinc-800/60"
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -282,7 +282,7 @@ export function BibliotecaItemModal({ isOpen, editingItem, onClose, onSaved, con
                                                 {receita.map(item => {
                                                     const insumo = insumosDisponiveis.find(i => i.id === item.insumo);
                                                     return (
-                                                        <div key={item.insumo} className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg dark:bg-slate-900/75 dark:text-zinc-200 dark:border-slate-700">
+                                                        <div key={item.insumo} className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg dark:bg-zinc-950/75 dark:text-zinc-200 dark:border-zinc-800/60">
                                                             <span className="flex-1 text-sm text-slate-700 dark:text-zinc-200">
                                                                 {insumo?.nome || `Insumo #${item.insumo}`}
                                                             </span>

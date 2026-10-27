@@ -395,8 +395,8 @@ export default function ExpeditionMonitor() {
   return (
     <>
       <FeedbackComponent />
-      <div className="flex h-[calc(100dvh-6rem)] min-h-[48rem] min-w-0 flex-col overflow-hidden rounded-xl bg-white dark:bg-slate-950">
-      <header className="h-auto min-h-16 border-b border-slate-200 dark:border-slate-800/50 bg-white dark:bg-gradient-to-r dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 px-4 sm:px-8 py-3 flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0 rounded-t-xl shadow-sm dark:shadow-2xl dark:shadow-black/30">
+      <div className="flex h-[calc(100dvh-6rem)] min-h-[48rem] min-w-0 flex-col overflow-hidden rounded-xl bg-white dark:bg-zinc-950">
+      <header className="h-auto min-h-16 border-b border-slate-200 dark:border-zinc-800/50 bg-white dark:bg-gradient-to-r dark:from-zinc-950 dark:via-zinc-950 dark:to-zinc-950 px-4 sm:px-8 py-3 flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0 rounded-t-xl shadow-sm dark:shadow-2xl dark:shadow-black/30">
         <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
           <div className="flex items-center gap-4">
             <h2 className="text-lg sm:text-xl font-bold text-slate-950 dark:text-white dark:font-extrabold">
@@ -425,7 +425,7 @@ export default function ExpeditionMonitor() {
               </span>
             )}
           </div>
-          <button className="sm:hidden size-9 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-200 hover:shadow-lg">
+          <button className="sm:hidden size-9 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-zinc-900/80 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-zinc-800 transition-all duration-200 hover:shadow-lg">
             <Printer className="size-5" />
           </button>
         </div>
@@ -433,7 +433,7 @@ export default function ExpeditionMonitor() {
           <div className="relative flex-1 sm:flex-none">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 size-4 pointer-events-none" />
             <input
-              className="pl-9 pr-3 h-9 w-full sm:w-64 bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/50 rounded-lg text-sm text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 dark:focus:ring-blue-500/40 dark:focus:border-blue-500/50 outline-none transition-all duration-200 hover:border-slate-300 dark:hover:border-slate-600/50"
+              className="pl-9 pr-3 h-9 w-full sm:w-64 bg-slate-100 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800/50 rounded-lg text-sm text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 dark:focus:ring-blue-500/40 dark:focus:border-blue-500/50 outline-none transition-all duration-200 hover:border-slate-300 dark:hover:border-zinc-700/50"
               placeholder="Buscar pedido..."
               type="text"
               value={searchQuery}
@@ -447,7 +447,7 @@ export default function ExpeditionMonitor() {
             <Plus className="size-4" />
             Novo Pedido
           </button>
-          <div className="hidden lg:flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/50 text-[10px] text-slate-500 dark:text-slate-400" title="Atalhos de teclado: ↑↓ navegar, Enter mover, P imprimir, E editar, D detalhes, Esc limpar">
+          <div className="hidden lg:flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800/50 text-[10px] text-slate-500 dark:text-slate-400" title="Atalhos de teclado: ↑↓ navegar, Enter mover, P imprimir, E editar, D detalhes, Esc limpar">
             <Keyboard className="size-3.5" />
             <span className="font-medium">↑↓</span>
             <span className="text-slate-300 dark:text-slate-600">|</span>
@@ -455,7 +455,7 @@ export default function ExpeditionMonitor() {
             <span className="text-slate-300 dark:text-slate-600">|</span>
             <span className="font-medium">P E D</span>
           </div>
-          <button className="hidden sm:flex size-9 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-200 hover:shadow-lg">
+          <button className="hidden sm:flex size-9 items-center justify-center rounded-lg bg-slate-100 dark:bg-zinc-900/80 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-zinc-800 transition-all duration-200 hover:shadow-lg">
             <Printer className="size-5" />
           </button>
         </div>
@@ -478,7 +478,7 @@ export default function ExpeditionMonitor() {
       </div>
 
       <div
-        className="custom-scrollbar flex min-h-0 min-w-0 flex-1 items-stretch gap-4 overflow-x-auto overflow-y-hidden rounded-b-xl border-x border-b border-slate-200 bg-gradient-to-br from-slate-50 via-slate-50 to-slate-100 p-4 dark:border-slate-800/50 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 sm:gap-6 sm:p-6"
+        className="custom-scrollbar flex min-h-0 min-w-0 flex-1 items-stretch gap-4 overflow-x-auto overflow-y-hidden rounded-b-xl border-x border-b border-slate-200 bg-gradient-to-br from-slate-50 via-slate-50 to-slate-100 p-4 dark:border-zinc-800/50 dark:from-zinc-950 dark:via-zinc-950 dark:to-zinc-950 sm:gap-6 sm:p-6"
         aria-label="Quadro Kanban de pedidos"
       >
         {columns.map((col) => {

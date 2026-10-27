@@ -50,7 +50,7 @@ export default function QuickRestockModal({ isOpen, onClose, onConfirm, insumo }
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="relative w-full max-w-sm bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-slate-200 dark:border-slate-700"
+                    className="relative w-full max-w-sm bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-slate-200 dark:border-zinc-800/60"
                 >
                     <div className="p-6">
                         <div className="flex items-center justify-between mb-6">
@@ -63,7 +63,7 @@ export default function QuickRestockModal({ isOpen, onClose, onConfirm, insumo }
                                     <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">{insumo.nome}</p>
                                 </div>
                             </div>
-                            <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors">
+                            <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full transition-colors">
                                 <X className="size-5 text-slate-400 dark:text-slate-500" />
                             </button>
                         </div>
@@ -76,7 +76,7 @@ export default function QuickRestockModal({ isOpen, onClose, onConfirm, insumo }
                                         autoFocus
                                         type="text"
                                         placeholder={`Ex: 5.50`}
-                                        className="w-full h-14 bg-slate-50 dark:bg-slate-700 border-2 border-slate-100 dark:border-slate-600 rounded-2xl px-5 text-xl font-black focus:border-primary/30 focus:bg-white dark:focus:bg-slate-600 outline-none transition-all placeholder:text-slate-300 dark:placeholder:text-slate-500 dark:text-white"
+                                        className="w-full h-14 bg-slate-50 dark:bg-zinc-800 border-2 border-slate-100 dark:border-zinc-700 rounded-2xl px-5 text-xl font-black focus:border-primary/30 focus:bg-white dark:focus:bg-zinc-700 outline-none transition-all placeholder:text-slate-300 dark:placeholder:text-slate-500 dark:text-white"
                                         value={quantity}
                                         onChange={(e) => setQuantity(e.target.value)}
                                         disabled={isSubmitting}

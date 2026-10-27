@@ -152,7 +152,7 @@ export default function CouponsManagement() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700">
+        <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-slate-100 dark:border-zinc-800/60">
           <div className="flex items-center gap-3">
             <div className="size-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
               <Ticket className="size-5 text-blue-600 dark:text-blue-400" />
@@ -163,7 +163,7 @@ export default function CouponsManagement() {
             </div>
           </div>
         </div>
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700">
+        <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-slate-100 dark:border-zinc-800/60">
           <div className="flex items-center gap-3">
             <div className="size-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
               <Check className="size-5 text-green-600 dark:text-green-400" />
@@ -174,7 +174,7 @@ export default function CouponsManagement() {
             </div>
           </div>
         </div>
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700">
+        <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-slate-100 dark:border-zinc-800/60">
           <div className="flex items-center gap-3">
             <div className="size-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
               <TrendingUp className="size-5 text-purple-600 dark:text-purple-400" />
@@ -188,7 +188,7 @@ export default function CouponsManagement() {
       </div>
 
       {/* Lista de Cupons */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 overflow-hidden">
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800/60 overflow-hidden">
         {coupons.length === 0 ? (
           <div className="py-12 text-center">
             <Ticket className="size-12 text-slate-200 dark:text-slate-600 mx-auto mb-3" />
@@ -199,7 +199,7 @@ export default function CouponsManagement() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-slate-50/50 dark:bg-slate-700/50 border-b border-slate-100 dark:border-slate-600">
+                <tr className="bg-slate-50/50 dark:bg-zinc-800/50 border-b border-slate-100 dark:border-zinc-700">
                   <th className="px-4 py-3 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase">Código</th>
                   <th className="px-4 py-3 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase">Tipo</th>
                   <th className="px-4 py-3 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase">Valor</th>
@@ -208,11 +208,11 @@ export default function CouponsManagement() {
                   <th className="px-4 py-3 text-right text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase">Ações</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50 dark:divide-slate-700">
+              <tbody className="divide-y divide-slate-50 dark:divide-zinc-800/60">
                 {coupons.map((coupon) => (
-                  <tr key={coupon.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors">
+                  <tr key={coupon.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-800/50 transition-colors">
                     <td className="px-4 py-3">
-                      <span className="font-mono font-bold text-sm text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-600 px-2 py-1 rounded">
+                      <span className="font-mono font-bold text-sm text-slate-900 dark:text-white bg-slate-100 dark:bg-zinc-700 px-2 py-1 rounded">
                         {coupon.codigo}
                       </span>
                     </td>
@@ -245,7 +245,7 @@ export default function CouponsManagement() {
                     <td className="px-4 py-3">
                       <span className={cn(
                         "text-[10px] font-bold px-2 py-0.5 rounded-full uppercase",
-                        coupon.ativo ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300" : "bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400"
+                        coupon.ativo ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300" : "bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-slate-400"
                       )}>
                         {coupon.ativo ? 'Ativo' : 'Inativo'}
                       </span>
@@ -254,7 +254,7 @@ export default function CouponsManagement() {
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => openModal(coupon)}
-                          className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                          className="p-1.5 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
                         >
                           <Edit className="size-4 text-slate-400 dark:text-slate-500" />
                         </button>
@@ -289,14 +289,14 @@ export default function CouponsManagement() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-700"
+              className="relative w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-zinc-800/60"
             >
-              <div className="p-6 border-b border-slate-100 dark:border-slate-700">
+              <div className="p-6 border-b border-slate-100 dark:border-zinc-800/60">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                     {editingCoupon ? 'Editar Cupom' : 'Novo Cupom'}
                   </h3>
-                  <button onClick={closeModal} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+                  <button onClick={closeModal} className="p-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg">
                     <X className="size-5 text-slate-400 dark:text-slate-500" />
                   </button>
                 </div>
@@ -309,7 +309,7 @@ export default function CouponsManagement() {
                     type="text"
                     value={formData.codigo}
                     onChange={(e) => setFormData({ ...formData, codigo: e.target.value.toUpperCase() })}
-                    className="w-full mt-1 px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none font-mono dark:bg-slate-700 dark:text-white"
+                    className="w-full mt-1 px-4 py-2 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none font-mono dark:bg-zinc-800 dark:text-white"
                     placeholder="EXEMPLO20"
                     required
                   />
@@ -321,7 +321,7 @@ export default function CouponsManagement() {
                     <select
                       value={formData.tipo}
                       onChange={(e) => setFormData({ ...formData, tipo: e.target.value as any })}
-                      className="w-full mt-1 px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none dark:bg-slate-700 dark:text-white"
+                      className="w-full mt-1 px-4 py-2 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none dark:bg-zinc-800 dark:text-white"
                     >
                       <option value="percentual">Percentual (%)</option>
                       <option value="valor_fixo">Valor Fixo (R$)</option>
@@ -335,7 +335,7 @@ export default function CouponsManagement() {
                       min="0"
                       value={formData.valor}
                       onChange={(e) => setFormData({ ...formData, valor: parseFloat(e.target.value) || 0 })}
-                      className="w-full mt-1 px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none dark:bg-slate-700 dark:text-white"
+                      className="w-full mt-1 px-4 py-2 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none dark:bg-zinc-800 dark:text-white"
                       required
                     />
                   </div>
@@ -350,7 +350,7 @@ export default function CouponsManagement() {
                       min="0"
                       value={formData.valor_minimo_pedido}
                       onChange={(e) => setFormData({ ...formData, valor_minimo_pedido: parseFloat(e.target.value) || 0 })}
-                      className="w-full mt-1 px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none dark:bg-slate-700 dark:text-white"
+                      className="w-full mt-1 px-4 py-2 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none dark:bg-zinc-800 dark:text-white"
                     />
                   </div>
                   <div>
@@ -360,7 +360,7 @@ export default function CouponsManagement() {
                       min="1"
                       value={formData.limite_uso || ''}
                       onChange={(e) => setFormData({ ...formData, limite_uso: e.target.value ? parseInt(e.target.value) : undefined })}
-                      className="w-full mt-1 px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none dark:bg-slate-700 dark:text-white"
+                      className="w-full mt-1 px-4 py-2 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none dark:bg-zinc-800 dark:text-white"
                       placeholder="Ilimitado"
                     />
                   </div>
@@ -373,7 +373,7 @@ export default function CouponsManagement() {
                       type="date"
                       value={formData.data_inicio || ''}
                       onChange={(e) => setFormData({ ...formData, data_inicio: e.target.value })}
-                      className="w-full mt-1 px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none dark:bg-slate-700 dark:text-white"
+                      className="w-full mt-1 px-4 py-2 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none dark:bg-zinc-800 dark:text-white"
                     />
                   </div>
                   <div>
@@ -382,7 +382,7 @@ export default function CouponsManagement() {
                       type="date"
                       value={formData.data_fim || ''}
                       onChange={(e) => setFormData({ ...formData, data_fim: e.target.value })}
-                      className="w-full mt-1 px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none dark:bg-slate-700 dark:text-white"
+                      className="w-full mt-1 px-4 py-2 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none dark:bg-zinc-800 dark:text-white"
                     />
                   </div>
                 </div>
@@ -393,7 +393,7 @@ export default function CouponsManagement() {
                     onClick={() => setFormData({ ...formData, ativo: !formData.ativo })}
                     className={cn(
                       "relative w-12 h-6 rounded-full transition-colors",
-                      formData.ativo ? "bg-primary" : "bg-slate-200 dark:bg-slate-600"
+                      formData.ativo ? "bg-primary" : "bg-slate-200 dark:bg-zinc-700"
                     )}
                   >
                     <div className={cn(
@@ -410,7 +410,7 @@ export default function CouponsManagement() {
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="flex-1 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                    className="flex-1 py-2.5 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors"
                   >
                     Cancelar
                   </button>

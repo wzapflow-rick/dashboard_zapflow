@@ -42,7 +42,7 @@ export default function RegisterCustomerModal({ isOpen, onClose, order, onSucces
 
     return (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-700">
+            <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-zinc-800/60">
                 <div className="bg-slate-900 px-6 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="size-10 bg-primary/20 rounded-full flex items-center justify-center">
@@ -66,7 +66,7 @@ export default function RegisterCustomerModal({ isOpen, onClose, order, onSucces
                             <input
                                 value={formData.nome}
                                 onChange={e => setFormData({ ...formData, nome: e.target.value })}
-                                className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-100 dark:border-slate-600 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                                className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                 placeholder="Ex: João Silva"
                             />
                         </div>
@@ -79,7 +79,7 @@ export default function RegisterCustomerModal({ isOpen, onClose, order, onSucces
                             <input
                                 value={formData.telefone}
                                 readOnly
-                                className="w-full pl-10 pr-4 py-3 bg-slate-100 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-sm text-slate-500 dark:text-slate-300 cursor-not-allowed outline-none"
+                                className="w-full pl-10 pr-4 py-3 bg-slate-100 dark:bg-zinc-700 border border-slate-200 dark:border-zinc-600 rounded-xl text-sm text-slate-500 dark:text-slate-300 cursor-not-allowed outline-none"
                             />
                         </div>
                     </div>
@@ -91,7 +91,7 @@ export default function RegisterCustomerModal({ isOpen, onClose, order, onSucces
                             <input
                                 value={formData.bairro_entrega}
                                 onChange={e => setFormData({ ...formData, bairro_entrega: e.target.value })}
-                                className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-100 dark:border-slate-600 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                                className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                 placeholder="Ex: Centro"
                             />
                         </div>
@@ -105,7 +105,7 @@ export default function RegisterCustomerModal({ isOpen, onClose, order, onSucces
                                 value={formData.endereco_completo}
                                 onChange={e => setFormData({ ...formData, endereco_completo: e.target.value })}
                                 rows={3}
-                                className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-100 dark:border-slate-600 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                                className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 rounded-xl text-sm dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                 placeholder="Rua, Número, Complemento..."
                             />
                         </div>
@@ -115,7 +115,7 @@ export default function RegisterCustomerModal({ isOpen, onClose, order, onSucces
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 py-3 text-sm font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors uppercase tracking-wider"
+                            className="flex-1 py-3 text-sm font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-zinc-800 rounded-xl hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors uppercase tracking-wider"
                         >
                             Cancelar
                         </button>

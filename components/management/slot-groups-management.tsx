@@ -303,7 +303,7 @@ export default function SlotGroupsManagement() {
             </header>
 
             {/* Tabs */}
-            <div className="flex gap-1 bg-slate-100 border border-slate-200 rounded-xl p-1 w-fit dark:bg-slate-800 dark:border-slate-600">
+            <div className="flex gap-1 bg-slate-100 border border-slate-200 rounded-xl p-1 w-fit dark:bg-zinc-900 dark:border-zinc-700">
                 {([
                     { key: 'grupos', label: 'Grupos de Opcionais', icon: List },
                     { key: 'biblioteca', label: 'Biblioteca de Sabores', icon: ChefHat },
@@ -359,11 +359,11 @@ export default function SlotGroupsManagement() {
                                     <motion.div
                                         key={grupo.id}
                                         layout
-                                        className="flex items-center gap-4 p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-all dark:bg-slate-800 dark:border-slate-600"
+                                        className="flex items-center gap-4 p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-all dark:bg-zinc-900 dark:border-zinc-700"
                                     >
                                         {/* Icon */}
                                         <div className={cn(
-                                            'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-lg dark:bg-slate-800 dark:border-slate-600',
+                                            'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-lg dark:bg-zinc-900 dark:border-zinc-700',
                                             grupo.tipo === 'fracionado'
                                                 ? 'bg-orange-100 text-orange-600'
                                                 : 'bg-blue-100 text-blue-600'
@@ -409,7 +409,7 @@ export default function SlotGroupsManagement() {
                                         <div className="flex items-center gap-2 flex-shrink-0">
                                             <button
                                                 onClick={() => setActiveGrupoItens(grupo)}
-                                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs font-medium transition-all dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-500/10"
+                                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs font-medium transition-all dark:bg-zinc-900 dark:text-slate-200 dark:hover:bg-zinc-600/10"
                                             >
                                                 <Settings className="w-3.5 h-3.5" />
                                                 Gerenciar Itens
@@ -470,7 +470,7 @@ export default function SlotGroupsManagement() {
                                     <motion.div
                                         key={item.id}
                                         layout
-                                        className="flex flex-col p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-all dark:bg-slate-800 dark:border-slate-500"
+                                        className="flex flex-col p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-all dark:bg-zinc-900 dark:border-zinc-600"
                                     >
                                         <div className="flex items-start justify-between gap-2 mb-3">
                                             <div className="min-w-0">
@@ -479,7 +479,7 @@ export default function SlotGroupsManagement() {
                                             <div className="flex gap-1 flex-shrink-0">
                                                 <button
                                                     onClick={() => handleEditItemBase(item)}
-                                                    className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors dark:hover:bg-slate-500/10"
+                                                    className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors dark:hover:bg-zinc-600/10"
                                                 >
                                                     <Edit3 className="w-3.5 h-3.5" />
                                                 </button>

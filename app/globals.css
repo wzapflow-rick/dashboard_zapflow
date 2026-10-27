@@ -47,6 +47,10 @@
 }
 
 @layer base {
+  svg.lucide {
+    stroke-width: 1.75;
+  }
+
   body {
     @apply bg-background-light text-slate-900 antialiased;
     font-family: var(--font-sans);

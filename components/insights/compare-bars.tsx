@@ -41,7 +41,7 @@ export function CompareBars({
       ];
 
   return (
-    <article className="rounded-2xl border border-slate-200/70 bg-white/75 p-5 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/50">
+    <article className="rounded-2xl border border-slate-200/70 bg-white/75 p-5 shadow-sm dark:border-zinc-800/50 dark:bg-zinc-950/50">
       <div className="mb-4 flex items-center justify-between gap-3">
         <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">{titulo}</h4>
         <span

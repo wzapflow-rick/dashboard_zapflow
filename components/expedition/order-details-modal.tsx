@@ -52,10 +52,10 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-700"
+              className="relative w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-zinc-800/60"
             >
             {/* Header */}
-            <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-gradient-to-r from-primary/5 to-transparent">
+            <div className="p-4 border-b border-slate-100 dark:border-zinc-800/60 flex items-center justify-between bg-gradient-to-r from-primary/5 to-transparent">
               <div className="flex items-center gap-3">
                 <div className="size-10 bg-primary/10 rounded-lg flex items-center justify-center">
                   <Package className="size-5 text-primary" />
@@ -69,7 +69,7 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
               </div>
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                className="p-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
               >
                 <X className="size-5 text-slate-400 dark:text-slate-500" />
               </button>
@@ -78,7 +78,7 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
             {/* Content */}
             <div className="p-4 space-y-4 max-h-[60vh] overflow-y-auto">
               {/* Cliente */}
-              <div className="bg-slate-50 dark:bg-slate-700 rounded-xl p-4">
+              <div className="bg-slate-50 dark:bg-zinc-800 rounded-xl p-4">
                 <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-3 flex items-center gap-2">
                   <User className="size-3" />
                   Cliente
@@ -91,7 +91,7 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
               </div>
 
               {/* Endereço / Retirada */}
-              <div className="bg-slate-50 dark:bg-slate-700 rounded-xl p-4">
+              <div className="bg-slate-50 dark:bg-zinc-800 rounded-xl p-4">
                 <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-3 flex items-center gap-2">
                   <MapPin className="size-3" />
                   {order.tipo_entrega === 'retirada' ? 'Retirada' : 'Endereço de Entrega'}
@@ -117,12 +117,12 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
               </div>
 
               {/* Itens */}
-              <div className="bg-slate-50 dark:bg-slate-700 rounded-xl p-4">
+              <div className="bg-slate-50 dark:bg-zinc-800 rounded-xl p-4">
                 <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-3">Itens do Pedido</h3>
                 <div className="space-y-2">
                   {items.length > 0 ? (
                     items.map((item: any, idx: number) => (
-                      <div key={idx} className="flex justify-between items-start py-2 border-b border-slate-200 dark:border-slate-600 last:border-0">
+                      <div key={idx} className="flex justify-between items-start py-2 border-b border-slate-200 dark:border-zinc-700 last:border-0">
                         <div className="flex-1">
                           <p className="text-sm font-medium text-slate-900 dark:text-white">
                             {item.quantidade || 1}x {item.produto || item.nome || 'Item'}
@@ -151,7 +151,7 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
               )}
 
               {/* Resumo Financeiro */}
-              <div className="bg-slate-50 dark:bg-slate-700 rounded-xl p-4">
+              <div className="bg-slate-50 dark:bg-zinc-800 rounded-xl p-4">
                 <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-3">Resumo</h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
@@ -170,7 +170,7 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
                       <span>{formatPrice(order.taxa_entrega)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between font-bold text-base pt-2 border-t border-slate-200 dark:border-slate-600">
+                  <div className="flex justify-between font-bold text-base pt-2 border-t border-slate-200 dark:border-zinc-700">
                     <span className="dark:text-white">Total</span>
                     <span className="text-primary">{formatPrice(order.valor_total)}</span>
                   </div>
@@ -179,7 +179,7 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
 
               {/* Pagamento e Pontos */}
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-slate-50 dark:bg-slate-700 rounded-xl p-3">
+                <div className="bg-slate-50 dark:bg-zinc-800 rounded-xl p-3">
                   <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 flex items-center gap-1">
                     <CreditCard className="size-3" />
                     Pagamento
@@ -195,7 +195,7 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
                     <p className="text-xs text-slate-500 dark:text-slate-400">Troco para: {formatPrice(order.troco_necessario)}</p>
                   )}
                 </div>
-                <div className="bg-slate-50 dark:bg-slate-700 rounded-xl p-3">
+                <div className="bg-slate-50 dark:bg-zinc-800 rounded-xl p-3">
                   <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 flex items-center gap-1">
                     <Star className="size-3" />
                     Pontos
@@ -211,7 +211,7 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
             </div>
 
             {/* Footer */}
-            <div className="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-700">
+            <div className="p-4 border-t border-slate-100 dark:border-zinc-800/60 bg-slate-50 dark:bg-zinc-800">
               <p className="text-xs text-center text-slate-400 dark:text-slate-500">
                 Origem: {order.origem === 'cardapio_publico' ? 'Cardápio Online' : 'Painel Admin'}
               </p>
