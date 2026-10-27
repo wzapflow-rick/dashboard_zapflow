@@ -150,7 +150,7 @@ export default function AssinaturasAdminPage() {
           value={search}
           onChange={(e) => handleSearch(e.target.value)}
           placeholder="Buscar por empresa..."
-          className="w-full bg-[#0f1f35] border border-[#1e3a5f] rounded-lg pl-10 pr-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500"
+          className="w-full bg-[#111113] border border-[#27272a] rounded-lg pl-10 pr-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500"
         />
       </div>
 
@@ -161,14 +161,14 @@ export default function AssinaturasAdminPage() {
             <MorphingInfinity className="size-8 text-orange-500" />
           </div>
         ) : assinaturas.length === 0 ? (
-          <div className="text-center py-12 text-slate-400 bg-[#0f1f35] border border-[#1e3a5f] rounded-xl">
+          <div className="text-center py-12 text-slate-400 bg-[#111113] border border-[#27272a] rounded-xl">
             Nenhuma assinatura encontrada
           </div>
         ) : (
           assinaturas.map((assinatura) => {
             const statusInfo = getStatusLabel(assinatura.status, assinatura.data_proxima_cobranca);
             return (
-              <div key={assinatura.id} className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl p-4 space-y-3">
+              <div key={assinatura.id} className="bg-[#111113] border border-[#27272a] rounded-xl p-4 space-y-3">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="font-medium text-white">{assinatura.nome_fantasia || assinatura.empresa_nome}</p>
@@ -187,13 +187,13 @@ export default function AssinaturasAdminPage() {
                   </span>
                   <span className="text-slate-300">{formatCurrency(assinatura.valor)}</span>
                 </div>
-                <div className="flex items-center justify-between text-sm pt-2 border-t border-[#1e3a5f]/50">
+                <div className="flex items-center justify-between text-sm pt-2 border-t border-[#27272a]/50">
                   <div className="text-slate-400">
                     <span>Vence: {formatDate(assinatura.data_proxima_cobranca)}</span>
                   </div>
                   <button
                     onClick={() => openEditModal(assinatura)}
-                    className="flex items-center gap-2 px-3 py-2 bg-[#162438] rounded-lg text-slate-300 hover:text-white transition-colors"
+                    className="flex items-center gap-2 px-3 py-2 bg-[#18181b] rounded-lg text-slate-300 hover:text-white transition-colors"
                   >
                     <Edit2 className="size-4" />
                     <span>Editar</span>
@@ -206,10 +206,10 @@ export default function AssinaturasAdminPage() {
       </div>
 
       {/* Tabela Desktop */}
-      <div className="hidden lg:block bg-[#0f1f35] border border-[#1e3a5f] rounded-xl overflow-hidden">
+      <div className="hidden lg:block bg-[#111113] border border-[#27272a] rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-[#0a1628]">
+            <thead className="bg-[#09090b]">
               <tr>
                 <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase">Status</th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase">Empresa</th>
@@ -220,7 +220,7 @@ export default function AssinaturasAdminPage() {
                 <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase">Acoes</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#1e3a5f]/50">
+            <tbody className="divide-y divide-[#27272a]/50">
               {loading ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center text-slate-400">
@@ -237,7 +237,7 @@ export default function AssinaturasAdminPage() {
                 assinaturas.map((assinatura) => {
                   const statusInfo = getStatusLabel(assinatura.status, assinatura.data_proxima_cobranca);
                   return (
-                    <tr key={assinatura.id} className="hover:bg-[#162438]/50">
+                    <tr key={assinatura.id} className="hover:bg-[#18181b]/50">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           {getStatusIcon(assinatura.status, assinatura.data_proxima_cobranca)}
@@ -272,7 +272,7 @@ export default function AssinaturasAdminPage() {
                       <td className="px-6 py-4">
                         <button
                           onClick={() => openEditModal(assinatura)}
-                          className="p-2 hover:bg-[#1e3a5f] rounded-lg text-slate-400 hover:text-white transition-colors"
+                          className="p-2 hover:bg-[#27272a] rounded-lg text-slate-400 hover:text-white transition-colors"
                           title="Editar"
                         >
                           <Edit2 className="size-4" />
@@ -288,7 +288,7 @@ export default function AssinaturasAdminPage() {
 
         {/* Paginacao */}
         {pagination && pagination.totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-[#1e3a5f] flex items-center justify-between">
+          <div className="px-6 py-4 border-t border-[#27272a] flex items-center justify-between">
             <p className="text-sm text-slate-400 hidden sm:block">
               Mostrando {assinaturas.length} de {pagination.total} assinaturas
             </p>
@@ -296,7 +296,7 @@ export default function AssinaturasAdminPage() {
               <button
                 onClick={() => loadAssinaturas(pagination.page - 1)}
                 disabled={pagination.page <= 1}
-                className="p-2 hover:bg-[#1e3a5f] rounded-lg text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-2 hover:bg-[#27272a] rounded-lg text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ChevronLeft className="size-5" />
               </button>
@@ -306,7 +306,7 @@ export default function AssinaturasAdminPage() {
               <button
                 onClick={() => loadAssinaturas(pagination.page + 1)}
                 disabled={pagination.page >= pagination.totalPages}
-                className="p-2 hover:bg-[#1e3a5f] rounded-lg text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-2 hover:bg-[#27272a] rounded-lg text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ChevronRight className="size-5" />
               </button>
@@ -321,7 +321,7 @@ export default function AssinaturasAdminPage() {
           <button
             onClick={() => loadAssinaturas(pagination.page - 1)}
             disabled={pagination.page <= 1}
-            className="p-2 bg-[#0f1f35] border border-[#1e3a5f] rounded-lg text-slate-400 hover:text-white disabled:opacity-50"
+            className="p-2 bg-[#111113] border border-[#27272a] rounded-lg text-slate-400 hover:text-white disabled:opacity-50"
           >
             <ChevronLeft className="size-5" />
           </button>
@@ -331,7 +331,7 @@ export default function AssinaturasAdminPage() {
           <button
             onClick={() => loadAssinaturas(pagination.page + 1)}
             disabled={pagination.page >= pagination.totalPages}
-            className="p-2 bg-[#0f1f35] border border-[#1e3a5f] rounded-lg text-slate-400 hover:text-white disabled:opacity-50"
+            className="p-2 bg-[#111113] border border-[#27272a] rounded-lg text-slate-400 hover:text-white disabled:opacity-50"
           >
             <ChevronRight className="size-5" />
           </button>
@@ -398,8 +398,8 @@ function EditAssinaturaModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl w-full max-w-lg">
-        <div className="flex items-center justify-between p-6 border-b border-[#1e3a5f]">
+      <div className="bg-[#111113] border border-[#27272a] rounded-xl w-full max-w-lg">
+        <div className="flex items-center justify-between p-6 border-b border-[#27272a]">
           <div>
             <h2 className="text-xl font-bold text-white">Editar Assinatura</h2>
             <p className="text-sm text-slate-400 mt-1">{assinatura.nome_fantasia || assinatura.empresa_nome}</p>
@@ -422,7 +422,7 @@ function EditAssinaturaModal({
               <select
                 value={formData.plano}
                 onChange={(e) => setFormData({ ...formData, plano: e.target.value })}
-                className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
+                className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
               >
                 <option value="start">Start</option>
                 <option value="pro">Pro</option>
@@ -434,7 +434,7 @@ function EditAssinaturaModal({
               <select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
+                className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
               >
                 <option value="authorized">Ativa</option>
                 <option value="pending">Pendente</option>
@@ -452,7 +452,7 @@ function EditAssinaturaModal({
               type="date"
               value={formData.data_proxima_cobranca}
               onChange={(e) => setFormData({ ...formData, data_proxima_cobranca: e.target.value })}
-              className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
+              className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
             />
           </div>
 
@@ -463,12 +463,12 @@ function EditAssinaturaModal({
               step="0.01"
               value={formData.valor}
               onChange={(e) => setFormData({ ...formData, valor: parseFloat(e.target.value) })}
-              className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
+              className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
             />
           </div>
 
           {/* Atalhos */}
-          <div className="bg-[#0a1628] rounded-lg p-4">
+          <div className="bg-[#09090b] rounded-lg p-4">
             <p className="text-sm text-slate-400 mb-3">Atalhos rapidos:</p>
             <div className="flex flex-wrap gap-2">
               <button
@@ -478,7 +478,7 @@ function EditAssinaturaModal({
                   date.setDate(date.getDate() + 7);
                   setFormData({ ...formData, data_proxima_cobranca: date.toISOString().split('T')[0] });
                 }}
-                className="px-3 py-1 bg-[#1e3a5f] hover:bg-[#2a4a6f] rounded text-sm text-slate-300 transition-colors"
+                className="px-3 py-1 bg-[#27272a] hover:bg-[#2a4a6f] rounded text-sm text-slate-300 transition-colors"
               >
                 +7 dias
               </button>
@@ -489,7 +489,7 @@ function EditAssinaturaModal({
                   date.setDate(date.getDate() + 30);
                   setFormData({ ...formData, data_proxima_cobranca: date.toISOString().split('T')[0] });
                 }}
-                className="px-3 py-1 bg-[#1e3a5f] hover:bg-[#2a4a6f] rounded text-sm text-slate-300 transition-colors"
+                className="px-3 py-1 bg-[#27272a] hover:bg-[#2a4a6f] rounded text-sm text-slate-300 transition-colors"
               >
                 +30 dias
               </button>
@@ -500,7 +500,7 @@ function EditAssinaturaModal({
                   date.setDate(date.getDate() + 90);
                   setFormData({ ...formData, data_proxima_cobranca: date.toISOString().split('T')[0] });
                 }}
-                className="px-3 py-1 bg-[#1e3a5f] hover:bg-[#2a4a6f] rounded text-sm text-slate-300 transition-colors"
+                className="px-3 py-1 bg-[#27272a] hover:bg-[#2a4a6f] rounded text-sm text-slate-300 transition-colors"
               >
                 +90 dias
               </button>
@@ -511,7 +511,7 @@ function EditAssinaturaModal({
                   date.setFullYear(date.getFullYear() + 1);
                   setFormData({ ...formData, data_proxima_cobranca: date.toISOString().split('T')[0] });
                 }}
-                className="px-3 py-1 bg-[#1e3a5f] hover:bg-[#2a4a6f] rounded text-sm text-slate-300 transition-colors"
+                className="px-3 py-1 bg-[#27272a] hover:bg-[#2a4a6f] rounded text-sm text-slate-300 transition-colors"
               >
                 +1 ano
               </button>
@@ -522,7 +522,7 @@ function EditAssinaturaModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-3 border border-[#1e3a5f] rounded-lg text-slate-300 hover:bg-[#1e3a5f] transition-colors"
+              className="flex-1 px-4 py-3 border border-[#27272a] rounded-lg text-slate-300 hover:bg-[#27272a] transition-colors"
             >
               Cancelar
             </button>

@@ -279,7 +279,7 @@ export default function MensagensPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-[#1e3a5f] pb-4">
+      <div className="flex gap-2 border-b border-[#27272a] pb-4">
         <button
           onClick={openCreateMensagem}
           className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2 rounded-lg font-medium transition-all text-sm"
@@ -289,14 +289,14 @@ export default function MensagensPage() {
         </button>
         <button
           onClick={openCreateTipoDor}
-          className="flex items-center gap-2 bg-[#162438] hover:bg-[#1e3a5f] text-white px-4 py-2 rounded-lg font-medium transition-all text-sm"
+          className="flex items-center gap-2 bg-[#18181b] hover:bg-[#27272a] text-white px-4 py-2 rounded-lg font-medium transition-all text-sm"
         >
           <Plus className="size-4" />
           Novo Tipo de Dor
         </button>
         <button
           onClick={() => setShowCombinacoesModal(true)}
-          className="flex items-center gap-2 bg-[#162438] hover:bg-[#1e3a5f] text-white px-4 py-2 rounded-lg font-medium transition-all text-sm"
+          className="flex items-center gap-2 bg-[#18181b] hover:bg-[#27272a] text-white px-4 py-2 rounded-lg font-medium transition-all text-sm"
         >
           <Link2 className="size-4" />
           Combinacoes
@@ -314,7 +314,7 @@ export default function MensagensPage() {
             <h2 className="text-lg font-semibold text-white mb-4">Tipos de Dor</h2>
             <div className="space-y-2">
               {tiposDor.length === 0 ? (
-                <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl p-4 text-center text-slate-400">
+                <div className="bg-[#111113] border border-[#27272a] rounded-xl p-4 text-center text-slate-400">
                   Nenhum tipo cadastrado
                 </div>
               ) : (
@@ -322,7 +322,7 @@ export default function MensagensPage() {
                   <div
                     key={tipo.id}
                     className={cn(
-                      "bg-[#0f1f35] border border-[#1e3a5f] rounded-lg p-3 flex items-center justify-between",
+                      "bg-[#111113] border border-[#27272a] rounded-lg p-3 flex items-center justify-between",
                       !tipo.ativo && "opacity-50"
                     )}
                   >
@@ -330,7 +330,7 @@ export default function MensagensPage() {
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => openEditTipoDor(tipo)}
-                        className="p-1.5 hover:bg-[#1e3a5f] rounded text-slate-400 hover:text-white"
+                        className="p-1.5 hover:bg-[#27272a] rounded text-slate-400 hover:text-white"
                       >
                         <Edit2 className="size-3.5" />
                       </button>
@@ -352,7 +352,7 @@ export default function MensagensPage() {
             <h2 className="text-lg font-semibold text-white mb-4">Templates de Mensagem</h2>
             <div className="space-y-3">
               {mensagens.length === 0 ? (
-                <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl p-8 text-center text-slate-400">
+                <div className="bg-[#111113] border border-[#27272a] rounded-xl p-8 text-center text-slate-400">
                   <MessageSquare className="size-12 mx-auto mb-4 opacity-50" />
                   <p>Nenhuma mensagem cadastrada</p>
                 </div>
@@ -363,12 +363,12 @@ export default function MensagensPage() {
                     <div
                       key={msg.id}
                       className={cn(
-                        "bg-[#0f1f35] border border-[#1e3a5f] rounded-xl p-4",
+                        "bg-[#111113] border border-[#27272a] rounded-xl p-4",
                         !msg.ativo && "opacity-50"
                       )}
                     >
                       <div className="flex items-start gap-3">
-                        <div className="p-2 bg-[#162438] rounded-lg">
+                        <div className="p-2 bg-[#18181b] rounded-lg">
                           <MidiaIcon className="size-5 text-slate-400" />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -387,7 +387,7 @@ export default function MensagensPage() {
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => openEditMensagem(msg)}
-                            className="p-2 hover:bg-[#1e3a5f] rounded-lg text-slate-400 hover:text-white"
+                            className="p-2 hover:bg-[#27272a] rounded-lg text-slate-400 hover:text-white"
                           >
                             <Edit2 className="size-4" />
                           </button>
@@ -411,8 +411,8 @@ export default function MensagensPage() {
       {/* Modal Mensagem */}
       {showMensagemModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b border-[#1e3a5f]">
+          <div className="bg-[#111113] border border-[#27272a] rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-[#27272a]">
               <h2 className="text-xl font-bold text-white">
                 {editingMensagem ? 'Editar Mensagem' : 'Nova Mensagem'}
               </h2>
@@ -435,7 +435,7 @@ export default function MensagensPage() {
                   type="text"
                   value={mensagemForm.nome}
                   onChange={(e) => setMensagemForm({ ...mensagemForm, nome: e.target.value })}
-                  className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500"
+                  className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500"
                   placeholder="Ex: Saudade - 30 dias"
                 />
               </div>
@@ -445,7 +445,7 @@ export default function MensagensPage() {
                 <select
                   value={mensagemForm.tipo_dor_id || ''}
                   onChange={(e) => setMensagemForm({ ...mensagemForm, tipo_dor_id: e.target.value ? parseInt(e.target.value) : null })}
-                  className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
+                  className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
                 >
                   <option value="">Nenhum (generico)</option>
                   {tiposDor.map((tipo) => (
@@ -466,7 +466,7 @@ export default function MensagensPage() {
                         "flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors",
                         mensagemForm.tipo_midia === tipo.value
                           ? "bg-orange-500/10 border-orange-500 text-orange-400"
-                          : "bg-[#0a1628] border-[#1e3a5f] text-slate-400 hover:text-white"
+                          : "bg-[#09090b] border-[#27272a] text-slate-400 hover:text-white"
                       )}
                     >
                       <tipo.icon className="size-4" />
@@ -483,7 +483,7 @@ export default function MensagensPage() {
                     type="text"
                     value={mensagemForm.midia_url}
                     onChange={(e) => setMensagemForm({ ...mensagemForm, midia_url: e.target.value })}
-                    className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500"
+                    className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500"
                     placeholder="https://..."
                   />
                 </div>
@@ -494,7 +494,7 @@ export default function MensagensPage() {
                 <textarea
                   value={mensagemForm.conteudo}
                   onChange={(e) => setMensagemForm({ ...mensagemForm, conteudo: e.target.value })}
-                  className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500 resize-none"
+                  className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500 resize-none"
                   rows={5}
                   placeholder="Ola {{nome}}, sentimos sua falta..."
                 />
@@ -504,7 +504,7 @@ export default function MensagensPage() {
                       key={v.key}
                       type="button"
                       onClick={() => insertVariable(v.key)}
-                      className="px-2 py-1 text-xs bg-[#162438] hover:bg-[#1e3a5f] text-slate-400 rounded transition-colors"
+                      className="px-2 py-1 text-xs bg-[#18181b] hover:bg-[#27272a] text-slate-400 rounded transition-colors"
                     >
                       {`{{${v.key}}}`}
                     </button>
@@ -516,7 +516,7 @@ export default function MensagensPage() {
                 <button
                   type="button"
                   onClick={() => setShowMensagemModal(false)}
-                  className="flex-1 px-4 py-3 border border-[#1e3a5f] rounded-lg text-slate-300 hover:bg-[#1e3a5f] transition-colors"
+                  className="flex-1 px-4 py-3 border border-[#27272a] rounded-lg text-slate-300 hover:bg-[#27272a] transition-colors"
                 >
                   Cancelar
                 </button>
@@ -538,8 +538,8 @@ export default function MensagensPage() {
       {/* Modal Tipo de Dor */}
       {showTipoDorModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl w-full max-w-md">
-            <div className="flex items-center justify-between p-6 border-b border-[#1e3a5f]">
+          <div className="bg-[#111113] border border-[#27272a] rounded-xl w-full max-w-md">
+            <div className="flex items-center justify-between p-6 border-b border-[#27272a]">
               <h2 className="text-xl font-bold text-white">
                 {editingTipoDor ? 'Editar Tipo de Dor' : 'Novo Tipo de Dor'}
               </h2>
@@ -562,7 +562,7 @@ export default function MensagensPage() {
                   type="text"
                   value={tipoDorForm.nome}
                   onChange={(e) => setTipoDorForm({ ...tipoDorForm, nome: e.target.value })}
-                  className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500"
+                  className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500"
                   placeholder="Ex: Saudade, Oferta, Novidade..."
                 />
               </div>
@@ -572,7 +572,7 @@ export default function MensagensPage() {
                 <textarea
                   value={tipoDorForm.descricao}
                   onChange={(e) => setTipoDorForm({ ...tipoDorForm, descricao: e.target.value })}
-                  className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500 resize-none"
+                  className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500 resize-none"
                   rows={2}
                 />
               </div>
@@ -581,7 +581,7 @@ export default function MensagensPage() {
                 <button
                   type="button"
                   onClick={() => setShowTipoDorModal(false)}
-                  className="flex-1 px-4 py-3 border border-[#1e3a5f] rounded-lg text-slate-300 hover:bg-[#1e3a5f] transition-colors"
+                  className="flex-1 px-4 py-3 border border-[#27272a] rounded-lg text-slate-300 hover:bg-[#27272a] transition-colors"
                 >
                   Cancelar
                 </button>
@@ -603,8 +603,8 @@ export default function MensagensPage() {
       {/* Modal Combinacoes */}
       {showCombinacoesModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between p-6 border-b border-[#1e3a5f]">
+          <div className="bg-[#111113] border border-[#27272a] rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-[#27272a]">
               <h2 className="text-xl font-bold text-white">Combinacoes</h2>
               <button onClick={() => setShowCombinacoesModal(false)} className="text-slate-400 hover:text-white">
                 <X className="size-6" />
@@ -613,13 +613,13 @@ export default function MensagensPage() {
 
             <div className="p-6 flex-1 overflow-y-auto space-y-6">
               {/* Add new */}
-              <div className="bg-[#0a1628] rounded-lg p-4">
+              <div className="bg-[#09090b] rounded-lg p-4">
                 <p className="text-sm text-slate-400 mb-3">Adicionar nova combinacao:</p>
                 <div className="grid grid-cols-3 gap-2">
                   <select
                     value={combinacaoForm.categoria_id || ''}
                     onChange={(e) => setCombinacaoForm({ ...combinacaoForm, categoria_id: e.target.value ? parseInt(e.target.value) : null })}
-                    className="bg-[#162438] border border-[#1e3a5f] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"
+                    className="bg-[#18181b] border border-[#27272a] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"
                   >
                     <option value="">Categoria</option>
                     {categorias.map((c) => (
@@ -629,7 +629,7 @@ export default function MensagensPage() {
                   <select
                     value={combinacaoForm.tipo_dor_id || ''}
                     onChange={(e) => setCombinacaoForm({ ...combinacaoForm, tipo_dor_id: e.target.value ? parseInt(e.target.value) : null })}
-                    className="bg-[#162438] border border-[#1e3a5f] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"
+                    className="bg-[#18181b] border border-[#27272a] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"
                   >
                     <option value="">Tipo de Dor</option>
                     {tiposDor.map((t) => (
@@ -639,7 +639,7 @@ export default function MensagensPage() {
                   <select
                     value={combinacaoForm.mensagem_id || ''}
                     onChange={(e) => setCombinacaoForm({ ...combinacaoForm, mensagem_id: e.target.value ? parseInt(e.target.value) : null })}
-                    className="bg-[#162438] border border-[#1e3a5f] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"
+                    className="bg-[#18181b] border border-[#27272a] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"
                   >
                     <option value="">Mensagem</option>
                     {mensagens.map((m) => (
@@ -664,7 +664,7 @@ export default function MensagensPage() {
                   combinacoes.map((comb) => (
                     <div
                       key={comb.id}
-                      className="bg-[#162438] rounded-lg p-3 flex items-center justify-between"
+                      className="bg-[#18181b] rounded-lg p-3 flex items-center justify-between"
                     >
                       <div className="flex items-center gap-2 text-sm">
                         <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400">{comb.categoria_nome}</span>

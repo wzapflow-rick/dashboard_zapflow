@@ -139,7 +139,7 @@ export default function EtiquetasPage() {
       </div>
 
       {/* Lista */}
-      <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-2xl overflow-hidden">
+      <div className="bg-[#111113] border border-[#27272a] rounded-2xl overflow-hidden">
         {loading ? (
           <div className="p-12 text-center">
             <MorphingInfinity className="size-8 text-orange-500 mx-auto" />
@@ -157,9 +157,9 @@ export default function EtiquetasPage() {
             </button>
           </div>
         ) : (
-          <div className="divide-y divide-[#1e3a5f]/50">
+          <div className="divide-y divide-[#27272a]/50">
             {etiquetas.map((etiqueta) => (
-              <div key={etiqueta.id} className="p-4 hover:bg-[#162438]/50 transition-colors">
+              <div key={etiqueta.id} className="p-4 hover:bg-[#18181b]/50 transition-colors">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     {/* Cor */}
@@ -183,7 +183,7 @@ export default function EtiquetasPage() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => openEditModal(etiqueta)}
-                      className="p-2 hover:bg-[#1e3a5f] rounded-lg transition-colors text-slate-400 hover:text-white"
+                      className="p-2 hover:bg-[#27272a] rounded-lg transition-colors text-slate-400 hover:text-white"
                     >
                       <Edit2 className="size-4" />
                     </button>
@@ -209,14 +209,14 @@ export default function EtiquetasPage() {
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-2xl w-full max-w-md">
-            <div className="flex items-center justify-between p-4 border-b border-[#1e3a5f]">
+          <div className="bg-[#111113] border border-[#27272a] rounded-2xl w-full max-w-md">
+            <div className="flex items-center justify-between p-4 border-b border-[#27272a]">
               <h2 className="text-lg font-semibold text-white">
                 {editingEtiqueta ? 'Editar Etiqueta' : 'Nova Etiqueta'}
               </h2>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-1 hover:bg-[#1e3a5f] rounded-lg text-slate-400"
+                className="p-1 hover:bg-[#27272a] rounded-lg text-slate-400"
               >
                 <X className="size-5" />
               </button>
@@ -238,7 +238,7 @@ export default function EtiquetasPage() {
                   type="text"
                   value={formData.nome}
                   onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                  className="w-full px-3 py-2 bg-[#0a1628] border border-[#1e3a5f] rounded-lg text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full px-3 py-2 bg-[#09090b] border border-[#27272a] rounded-lg text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   placeholder="Ex: Cliente VIP"
                 />
               </div>
@@ -252,7 +252,7 @@ export default function EtiquetasPage() {
                   type="text"
                   value={formData.descricao}
                   onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                  className="w-full px-3 py-2 bg-[#0a1628] border border-[#1e3a5f] rounded-lg text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full px-3 py-2 bg-[#09090b] border border-[#27272a] rounded-lg text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   placeholder="Descricao opcional"
                 />
               </div>
@@ -270,7 +270,7 @@ export default function EtiquetasPage() {
                       onClick={() => setFormData({ ...formData, cor: color })}
                       className={cn(
                         "size-8 rounded-lg transition-all",
-                        formData.cor === color && "ring-2 ring-white ring-offset-2 ring-offset-[#0f1f35]"
+                        formData.cor === color && "ring-2 ring-white ring-offset-2 ring-offset-[#111113]"
                       )}
                       style={{ backgroundColor: color }}
                     />
@@ -279,7 +279,7 @@ export default function EtiquetasPage() {
               </div>
             </div>
             
-            <div className="flex items-center justify-end gap-3 p-4 border-t border-[#1e3a5f]">
+            <div className="flex items-center justify-end gap-3 p-4 border-t border-[#27272a]">
               <button
                 onClick={() => setShowModal(false)}
                 className="px-4 py-2 text-slate-400 hover:text-white"

@@ -98,7 +98,7 @@ export default function AdminSidebar({ username }: AdminSidebarProps) {
   return (
     <>
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-[#0f1f35] border-b border-[#1e3a5f]/50 z-50 flex items-center justify-between px-4">
+      <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-[#111113] border-b border-[#27272a]/50 z-50 flex items-center justify-between px-4">
         <div className="flex items-center gap-3">
           <div className="size-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-orange-500/20">
             <Bolt className="size-6" />
@@ -129,12 +129,12 @@ export default function AdminSidebar({ username }: AdminSidebarProps) {
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-[#0f1f35] to-[#0a1628] border-r border-[#1e3a5f]/50 flex flex-col z-50 transition-transform duration-300",
+        "fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-[#111113] to-[#09090b] border-r border-[#27272a]/50 flex flex-col z-50 transition-transform duration-300",
         "lg:translate-x-0",
         mobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}>
         {/* Header */}
-        <div className="p-6 border-b border-[#1e3a5f]/50">
+        <div className="p-6 border-b border-[#27272a]/50">
           <div className="flex items-center gap-3">
             <div className="size-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-orange-500/20">
               <Bolt className="size-6" />
@@ -162,7 +162,7 @@ export default function AdminSidebar({ username }: AdminSidebarProps) {
                   'flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200',
                   isActive
                     ? 'bg-orange-500/10 text-orange-400 border-l-4 border-orange-500'
-                    : 'text-slate-400 hover:bg-[#162438] hover:text-white'
+                    : 'text-slate-400 hover:bg-[#18181b] hover:text-white'
                 )}
               >
                 <item.icon className="size-5" />
@@ -179,7 +179,7 @@ export default function AdminSidebar({ username }: AdminSidebarProps) {
                 'w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-all duration-200',
                 isRemarketingActive
                   ? 'bg-orange-500/10 text-orange-400'
-                  : 'text-slate-400 hover:bg-[#162438] hover:text-white'
+                  : 'text-slate-400 hover:bg-[#18181b] hover:text-white'
               )}
             >
               <div className="flex items-center gap-3">
@@ -194,7 +194,7 @@ export default function AdminSidebar({ username }: AdminSidebarProps) {
             </button>
             
             {remarketingOpen && (
-              <div className="ml-4 mt-1 space-y-1 border-l border-[#1e3a5f]/50 pl-4">
+              <div className="ml-4 mt-1 space-y-1 border-l border-[#27272a]/50 pl-4">
                 {remarketingMenu.items.map((item) => {
                   const isActive = pathname === item.href;
                   return (
@@ -206,7 +206,7 @@ export default function AdminSidebar({ username }: AdminSidebarProps) {
                         'flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-sm',
                         isActive
                           ? 'bg-orange-500/10 text-orange-400'
-                          : 'text-slate-400 hover:bg-[#162438] hover:text-white'
+                          : 'text-slate-400 hover:bg-[#18181b] hover:text-white'
                       )}
                     >
                       <item.icon className="size-4" />
@@ -220,7 +220,7 @@ export default function AdminSidebar({ username }: AdminSidebarProps) {
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t border-[#1e3a5f]/50">
+        <div className="p-4 border-t border-[#27272a]/50">
           <div className="flex items-center gap-3 px-4 py-2 mb-2">
             <div className="size-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
               {username.charAt(0).toUpperCase()}

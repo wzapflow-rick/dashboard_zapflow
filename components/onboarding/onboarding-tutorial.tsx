@@ -230,11 +230,11 @@ export default function OnboardingTutorial() {
       <button
         type="button"
         onClick={handleReplay}
-        className="fixed bottom-24 right-20 z-50 flex size-14 items-center justify-center rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background lg:bottom-6 lg:right-24"
+        className="dashboard-fab-safe fixed right-4 z-[70] flex size-12 items-center justify-center rounded-2xl border border-emerald-500/40 bg-zinc-900/95 text-emerald-500 shadow-lg shadow-black/30 backdrop-blur-md transition-colors hover:border-emerald-500/70 hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 lg:right-6"
         title="Ver tutorial novamente"
         aria-label="Ver tutorial novamente"
       >
-        <Sparkles className="size-5" />
+        <Sparkles className="size-5" strokeWidth={2} aria-hidden="true" />
       </button>
     );
   }

@@ -5,16 +5,16 @@
 @theme {
   /* ============================================================
    * DESIGN SYSTEM ZapFlash
-   * DARK NAVY (ambiente) + VERDE (funcional) + LARANJA/ÂMBAR (marca)
-   * Proporção alvo: ~70% navy/neutros · ~20% verde · ~10% laranja
+   * DARK ZINC (ambiente) + VERDE (funcional) + LARANJA/ÂMBAR (marca)
+   * Proporção alvo: ~70% zinc/neutros · ~20% verde · ~10% laranja
    * ============================================================ */
 
   /* VERDE = cor funcional (status positivo, operação, disponibilidade) */
-  --color-primary: #22c55e;
-  --color-primary-hover: #16a34a;
+  --color-primary: #10b981;
+  --color-primary-hover: #059669;
   --color-green: #19d879;
   --color-green-hover: #12b866;
-  --color-accent-green: #22c55e;
+  --color-accent-green: #10b981;
 
   /* LARANJA / ÂMBAR = cor de identidade da marca (CTA, destaques, ativo) */
   --color-brand: #ff9d24;
@@ -31,14 +31,14 @@
   --color-text-secondary: #aab5c4;
   --color-text-muted: #66758a;
 
-  /* Ambiente (dark navy sofisticado) */
+  /* Ambiente (dark zinc estilo Vercel/Linear) */
   --color-background-light: #f6f6f8;
-  --color-background-dark: #0a1628;
+  --color-background-dark: #09090b;
 
   /* Cards e superficies */
-  --color-surface-dark: #0f1f35;
-  --color-surface-elevated: #162438;
-  --color-border-dark: #1e3a5f;
+  --color-surface-dark: #111113;
+  --color-surface-elevated: #18181b;
+  --color-border-dark: #27272a;
   
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --font-display: "Inter", ui-sans-serif, system-ui, sans-serif;
@@ -53,21 +53,21 @@
   }
 
   .dark {
-    --background: #0a1628;
+    --background: #09090b;
     --foreground: #ffffff;
     color-scheme: dark;
   }
 
   .dark body {
-    background-color: #0a1628;
+    background-color: #09090b;
     @apply text-slate-100;
   }
 
   .dark input, 
   .dark textarea,
   .dark select {
-    background-color: #0f1f35;
-    border-color: #1e3a5f;
+    background-color: #111113;
+    border-color: #27272a;
     @apply text-slate-100;
   }
 
@@ -140,6 +140,11 @@
   .dashboard-dock-safe {
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
   }
+
+  /* Floats above the mobile dock (~4.75rem tall) with a clear gap. */
+  .dashboard-fab-safe {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 6rem);
+  }
   
   /* Custom scrollbar for sidebar */
   .custom-scrollbar::-webkit-scrollbar {
@@ -160,24 +165,24 @@
 /* Overrides globais para o tema dark - cores consistentes com a landing page */
 @layer utilities {
   /* Background overrides */
-  .dark .bg-slate-900 { background-color: #0a1628 !important; }
-  .dark .bg-slate-800 { background-color: #0f1f35 !important; }
-  .dark .bg-slate-700 { background-color: #162438 !important; }
+  .dark .bg-slate-900 { background-color: #09090b !important; }
+  .dark .bg-slate-800 { background-color: #111113 !important; }
+  .dark .bg-slate-700 { background-color: #18181b !important; }
   
   /* Border overrides */
-  .dark .border-slate-700 { border-color: #1e3a5f !important; }
+  .dark .border-slate-700 { border-color: #27272a !important; }
   .dark .border-slate-600 { border-color: #2a4a6f !important; }
-  .dark .divide-slate-700 > :not([hidden]) ~ :not([hidden]) { border-color: #1e3a5f !important; }
+  .dark .divide-slate-700 > :not([hidden]) ~ :not([hidden]) { border-color: #27272a !important; }
   
   /* Hover overrides */
-  .dark .hover\:bg-slate-800:hover { background-color: #162438 !important; }
-  .dark .hover\:bg-slate-700:hover { background-color: #1e3a5f !important; }
+  .dark .hover\:bg-slate-800:hover { background-color: #18181b !important; }
+  .dark .hover\:bg-slate-700:hover { background-color: #27272a !important; }
   
   /* Gradients */
-  .dark .from-slate-900 { --tw-gradient-from: #0a1628 !important; }
-  .dark .from-slate-800 { --tw-gradient-from: #0f1f35 !important; }
-  .dark .to-slate-800 { --tw-gradient-to: #0f1f35 !important; }
-  .dark .to-slate-700 { --tw-gradient-to: #162438 !important; }
+  .dark .from-slate-900 { --tw-gradient-from: #09090b !important; }
+  .dark .from-slate-800 { --tw-gradient-from: #111113 !important; }
+  .dark .to-slate-800 { --tw-gradient-to: #111113 !important; }
+  .dark .to-slate-700 { --tw-gradient-to: #18181b !important; }
 }
 
 /*

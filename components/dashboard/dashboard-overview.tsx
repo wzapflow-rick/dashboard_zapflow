@@ -13,6 +13,7 @@ import { MetricStrip } from './home/metric-strip';
 import { AIConsultant } from './home/ai-consultant';
 import { QuickActions } from './home/quick-actions';
 import { SectionHeader } from './home/section-header';
+import { ControlCenter } from './home/control-center';
 import { OperationsOverview } from './home/operations-overview';
 import { RecentOrders } from './home/recent-orders';
 
@@ -50,7 +51,7 @@ function DashboardSkeleton() {
           <div key={item} className="h-28 rounded-2xl bg-slate-200/40 dark:bg-white/[0.03]" />
         ))}
       </div>
-      <div className="h-56 rounded-3xl bg-slate-200/40 dark:bg-white/[0.03]" />
+      <div className="h-56 rounded-2xl bg-slate-200/40 dark:bg-white/[0.03]" />
       <div className="grid gap-3 sm:grid-cols-3">
         {[0, 1, 2].map((item) => (
           <div key={item} className="h-20 rounded-2xl bg-slate-200/40 dark:bg-white/[0.03]" />
@@ -213,6 +214,8 @@ export default function DashboardOverview() {
       </AnimatePresence>
 
       <MetricStrip stats={stats} lowPower={lowPower} />
+
+      <ControlCenter />
 
       <AIConsultant />
 

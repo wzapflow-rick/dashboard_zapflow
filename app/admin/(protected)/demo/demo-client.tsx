@@ -167,7 +167,7 @@ export default function DemoCardapioClient() {
     const totalItens = cardapio?.categorias.reduce((acc, c) => acc + c.itens.length, 0) ?? 0;
 
     return (
-        <div className="min-h-screen bg-[#0a1628] p-4 lg:p-8">
+        <div className="min-h-screen bg-[#09090b] p-4 lg:p-8">
             <div className="max-w-4xl mx-auto">
                 {/* Header */}
                 <div className="flex items-start gap-4 mb-8">
@@ -200,7 +200,7 @@ export default function DemoCardapioClient() {
                                             ? 'bg-orange-500/15 border-orange-500/50 text-orange-300'
                                             : concluido
                                               ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-                                              : 'bg-[#0f1f35] border-[#1e3a5f] text-slate-500')
+                                              : 'bg-[#111113] border-[#27272a] text-slate-500')
                                     }
                                 >
                                     {labels[i]}
@@ -219,7 +219,7 @@ export default function DemoCardapioClient() {
 
                 {/* ETAPA 1: ENTRADA */}
                 {etapa === 'entrada' && (
-                    <div className="bg-[#0f1f35] border border-[#1e3a5f]/50 rounded-2xl p-6 space-y-5">
+                    <div className="bg-[#111113] border border-[#27272a]/50 rounded-2xl p-6 space-y-5">
                         <div>
                             <label className="block text-sm font-medium text-slate-300 mb-2">
                                 <ClipboardPaste className="inline size-4 mr-1.5 -mt-0.5" />
@@ -232,14 +232,14 @@ export default function DemoCardapioClient() {
                                 placeholder={
                                     'Ex:\nX-Burguer - 18,00\nX-Salada - 20,00\nRefrigerante lata - 6,00\n...'
                                 }
-                                className="w-full rounded-lg bg-[#0a1628] border border-[#1e3a5f] text-white placeholder:text-slate-600 px-4 py-3 text-sm focus:outline-none focus:border-orange-500/50 resize-y"
+                                className="w-full rounded-lg bg-[#09090b] border border-[#27272a] text-white placeholder:text-slate-600 px-4 py-3 text-sm focus:outline-none focus:border-orange-500/50 resize-y"
                             />
                         </div>
 
                         <div className="flex items-center gap-3 text-slate-500 text-xs">
-                            <div className="h-px bg-[#1e3a5f] flex-1" />
+                            <div className="h-px bg-[#27272a] flex-1" />
                             E / OU
-                            <div className="h-px bg-[#1e3a5f] flex-1" />
+                            <div className="h-px bg-[#27272a] flex-1" />
                         </div>
 
                         <div>
@@ -260,7 +260,7 @@ export default function DemoCardapioClient() {
                                     <img
                                         src={imagem || '/placeholder.svg'}
                                         alt="Print do cardápio enviado"
-                                        className="max-h-48 rounded-lg border border-[#1e3a5f]"
+                                        className="max-h-48 rounded-lg border border-[#27272a]"
                                     />
                                     <button
                                         onClick={() => setImagem(null)}
@@ -273,7 +273,7 @@ export default function DemoCardapioClient() {
                             ) : (
                                 <button
                                     onClick={() => fileInputRef.current?.click()}
-                                    className="w-full border-2 border-dashed border-[#1e3a5f] rounded-lg py-8 text-slate-500 hover:border-orange-500/40 hover:text-slate-400 transition-colors flex flex-col items-center gap-2"
+                                    className="w-full border-2 border-dashed border-[#27272a] rounded-lg py-8 text-slate-500 hover:border-orange-500/40 hover:text-slate-400 transition-colors flex flex-col items-center gap-2"
                                 >
                                     <ImagePlus className="size-7" />
                                     <span className="text-sm">Clique para enviar um print</span>
@@ -302,14 +302,14 @@ export default function DemoCardapioClient() {
                 {/* ETAPA 2: REVISAO */}
                 {etapa === 'revisao' && cardapio && (
                     <div className="space-y-5">
-                        <div className="bg-[#0f1f35] border border-[#1e3a5f]/50 rounded-2xl p-6 grid sm:grid-cols-2 gap-4">
+                        <div className="bg-[#111113] border border-[#27272a]/50 rounded-2xl p-6 grid sm:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-slate-300 mb-2">Nome da loja *</label>
                                 <input
                                     value={nomeLoja}
                                     onChange={(e) => setNomeLoja(e.target.value)}
                                     placeholder="Ex: Burguer do João"
-                                    className="w-full rounded-lg bg-[#0a1628] border border-[#1e3a5f] text-white placeholder:text-slate-600 px-4 py-2.5 text-sm focus:outline-none focus:border-orange-500/50"
+                                    className="w-full rounded-lg bg-[#09090b] border border-[#27272a] text-white placeholder:text-slate-600 px-4 py-2.5 text-sm focus:outline-none focus:border-orange-500/50"
                                 />
                             </div>
                             <div>
@@ -320,7 +320,7 @@ export default function DemoCardapioClient() {
                                     value={telefone}
                                     onChange={(e) => setTelefone(e.target.value)}
                                     placeholder="Ex: 79998049790"
-                                    className="w-full rounded-lg bg-[#0a1628] border border-[#1e3a5f] text-white placeholder:text-slate-600 px-4 py-2.5 text-sm focus:outline-none focus:border-orange-500/50"
+                                    className="w-full rounded-lg bg-[#09090b] border border-[#27272a] text-white placeholder:text-slate-600 px-4 py-2.5 text-sm focus:outline-none focus:border-orange-500/50"
                                 />
                             </div>
                         </div>
@@ -336,7 +336,7 @@ export default function DemoCardapioClient() {
                             {cardapio.categorias.map((cat, ci) => (
                                 <div
                                     key={ci}
-                                    className="bg-[#0f1f35] border border-[#1e3a5f]/50 rounded-2xl p-5"
+                                    className="bg-[#111113] border border-[#27272a]/50 rounded-2xl p-5"
                                 >
                                     <input
                                         value={cat.nome}
@@ -347,7 +347,7 @@ export default function DemoCardapioClient() {
                                         {cat.itens.map((item, ii) => (
                                             <div
                                                 key={ii}
-                                                className="flex flex-col sm:flex-row sm:items-center gap-2 bg-[#0a1628] rounded-lg p-3"
+                                                className="flex flex-col sm:flex-row sm:items-center gap-2 bg-[#09090b] rounded-lg p-3"
                                             >
                                                 <div className="flex-1 space-y-1">
                                                     <input
@@ -371,7 +371,7 @@ export default function DemoCardapioClient() {
                                                         value={String(item.preco).replace('.', ',')}
                                                         onChange={(e) => updateItem(ci, ii, 'preco', e.target.value)}
                                                         inputMode="decimal"
-                                                        className="w-20 bg-[#0f1f35] border border-[#1e3a5f] rounded px-2 py-1 text-white text-sm text-right focus:outline-none focus:border-orange-500/50"
+                                                        className="w-20 bg-[#111113] border border-[#27272a] rounded px-2 py-1 text-white text-sm text-right focus:outline-none focus:border-orange-500/50"
                                                     />
                                                     <button
                                                         onClick={() => removerItem(ci, ii)}
@@ -397,7 +397,7 @@ export default function DemoCardapioClient() {
                         <div className="flex flex-col sm:flex-row gap-3">
                             <button
                                 onClick={() => setEtapa('entrada')}
-                                className="sm:w-auto px-4 py-3 rounded-lg border border-[#1e3a5f] text-slate-300 hover:bg-[#162438] flex items-center justify-center gap-2"
+                                className="sm:w-auto px-4 py-3 rounded-lg border border-[#27272a] text-slate-300 hover:bg-[#18181b] flex items-center justify-center gap-2"
                             >
                                 <ArrowLeft className="size-4" /> Voltar
                             </button>
@@ -422,7 +422,7 @@ export default function DemoCardapioClient() {
 
                 {/* ETAPA 3: PRONTO */}
                 {etapa === 'pronto' && demo && (
-                    <div className="bg-[#0f1f35] border border-[#1e3a5f]/50 rounded-2xl p-6 space-y-6">
+                    <div className="bg-[#111113] border border-[#27272a]/50 rounded-2xl p-6 space-y-6">
                         <div className="text-center">
                             <div className="size-14 bg-emerald-500/15 rounded-full flex items-center justify-center mx-auto mb-3">
                                 <Check className="size-7 text-emerald-400" />
@@ -433,7 +433,7 @@ export default function DemoCardapioClient() {
                             </p>
                         </div>
 
-                        <div className="flex items-center gap-2 bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3">
+                        <div className="flex items-center gap-2 bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3">
                             <span className="text-slate-300 text-sm truncate flex-1">{linkPublico}</span>
                             <button
                                 onClick={copiarLink}
@@ -453,7 +453,7 @@ export default function DemoCardapioClient() {
                                 href={linkPublico}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="px-4 py-3 rounded-lg border border-[#1e3a5f] text-slate-300 hover:bg-[#162438] flex items-center justify-center gap-2 font-medium"
+                                className="px-4 py-3 rounded-lg border border-[#27272a] text-slate-300 hover:bg-[#18181b] flex items-center justify-center gap-2 font-medium"
                             >
                                 <ExternalLink className="size-4" /> Abrir cardápio
                             </a>

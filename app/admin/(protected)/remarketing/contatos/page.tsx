@@ -364,7 +364,7 @@ export default function ContatosPage() {
           )}
           <button
             onClick={() => setShowAddManualModal(true)}
-            className="flex items-center gap-2 bg-[#1e3a5f] hover:bg-[#2a4a6f] text-white px-4 py-2.5 rounded-xl font-medium transition-all"
+            className="flex items-center gap-2 bg-[#27272a] hover:bg-[#2a4a6f] text-white px-4 py-2.5 rounded-xl font-medium transition-all"
           >
             <UserPlus className="size-4" />
             <span>Adicionar</span>
@@ -387,19 +387,19 @@ export default function ContatosPage() {
           value={search}
           onChange={(e) => handleSearch(e.target.value)}
           placeholder="Buscar por nome, telefone..."
-          className="w-full bg-[#0f1f35] border border-[#1e3a5f] rounded-xl pl-12 pr-4 py-3.5 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all"
+          className="w-full bg-[#111113] border border-[#27272a] rounded-xl pl-12 pr-4 py-3.5 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all"
         />
       </div>
 
       {/* Contacts List */}
-      <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-2xl overflow-hidden">
+      <div className="bg-[#111113] border border-[#27272a] rounded-2xl overflow-hidden">
         {loading ? (
           <div className="flex justify-center py-16">
             <MorphingInfinity className="size-8 text-orange-500" />
           </div>
         ) : contatos.length === 0 ? (
           <div className="text-center py-16 px-4">
-            <div className="w-16 h-16 bg-[#1e3a5f] rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-[#27272a] rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Users className="size-8 text-slate-400" />
             </div>
             <p className="text-lg font-medium text-white mb-2">Nenhum contato encontrado</p>
@@ -421,14 +421,14 @@ export default function ContatosPage() {
             </div>
           </div>
         ) : (
-          <div className="divide-y divide-[#1e3a5f]/50">
+          <div className="divide-y divide-[#27272a]/50">
             {/* Header with select all */}
-            <div className="px-5 py-3 bg-[#0a1628] flex items-center gap-4">
+            <div className="px-5 py-3 bg-[#09090b] flex items-center gap-4">
               <input
                 type="checkbox"
                 checked={selectedContatos.size === contatos.length && contatos.length > 0}
                 onChange={toggleSelectAllContatos}
-                className="size-4 rounded border-[#1e3a5f] bg-[#0a1628] text-orange-500 focus:ring-orange-500 focus:ring-offset-0"
+                className="size-4 rounded border-[#27272a] bg-[#09090b] text-orange-500 focus:ring-orange-500 focus:ring-offset-0"
               />
               <span className="text-sm text-slate-400">
                 {selectedContatos.size > 0 
@@ -440,7 +440,7 @@ export default function ContatosPage() {
             {contatos.map((contato) => (
               <div key={contato.id} className={cn(
                 "p-5 transition-colors",
-                selectedContatos.has(contato.id) ? "bg-orange-500/5" : "hover:bg-[#162438]/50"
+                selectedContatos.has(contato.id) ? "bg-orange-500/5" : "hover:bg-[#18181b]/50"
               )}>
                 <div className="flex items-start gap-4">
                   {/* Checkbox */}
@@ -448,11 +448,11 @@ export default function ContatosPage() {
                     type="checkbox"
                     checked={selectedContatos.has(contato.id)}
                     onChange={() => toggleSelectContato(contato.id)}
-                    className="mt-3 size-4 rounded border-[#1e3a5f] bg-[#0a1628] text-orange-500 focus:ring-orange-500 focus:ring-offset-0"
+                    className="mt-3 size-4 rounded border-[#27272a] bg-[#09090b] text-orange-500 focus:ring-orange-500 focus:ring-offset-0"
                   />
                   
                   {/* Avatar */}
-                  <div className="size-12 bg-gradient-to-br from-[#1e3a5f] to-[#0f1f35] rounded-xl flex items-center justify-center flex-shrink-0 border border-[#1e3a5f]">
+                  <div className="size-12 bg-gradient-to-br from-[#27272a] to-[#111113] rounded-xl flex items-center justify-center flex-shrink-0 border border-[#27272a]">
                     {contato.foto_url ? (
                       <img 
                         src={contato.foto_url} 
@@ -535,14 +535,14 @@ export default function ContatosPage() {
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => openEtiquetasModal(contato)}
-                      className="p-2.5 hover:bg-[#1e3a5f] rounded-xl text-slate-400 hover:text-white transition-colors"
+                      className="p-2.5 hover:bg-[#27272a] rounded-xl text-slate-400 hover:text-white transition-colors"
                       title="Etiquetas"
                     >
                       <Tag className="size-4" />
                     </button>
                     <button
                       onClick={() => openCategoriasModal(contato)}
-                      className="p-2.5 hover:bg-[#1e3a5f] rounded-xl text-slate-400 hover:text-white transition-colors"
+                      className="p-2.5 hover:bg-[#27272a] rounded-xl text-slate-400 hover:text-white transition-colors"
                       title="Categorias"
                     >
                       <Target className="size-4" />
@@ -587,12 +587,12 @@ export default function ContatosPage() {
 
         {/* Pagination */}
         {pagination.totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-[#1e3a5f] flex items-center justify-center bg-[#0a1628]/50">
+          <div className="px-6 py-4 border-t border-[#27272a] flex items-center justify-center bg-[#09090b]/50">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => loadContatos(pagination.page - 1)}
                 disabled={pagination.page <= 1 || loading}
-                className="p-2.5 hover:bg-[#1e3a5f] rounded-xl text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="p-2.5 hover:bg-[#27272a] rounded-xl text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <ChevronLeft className="size-5" />
               </button>
@@ -602,7 +602,7 @@ export default function ContatosPage() {
               <button
                 onClick={() => loadContatos(pagination.page + 1)}
                 disabled={pagination.page >= pagination.totalPages || loading}
-                className="p-2.5 hover:bg-[#1e3a5f] rounded-xl text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="p-2.5 hover:bg-[#27272a] rounded-xl text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <ChevronRight className="size-5" />
               </button>
@@ -614,8 +614,8 @@ export default function ContatosPage() {
       {/* Modal: Add Manual Contact */}
       {showAddManualModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-2xl w-full max-w-md shadow-2xl">
-            <div className="flex items-center justify-between p-6 border-b border-[#1e3a5f]">
+          <div className="bg-[#111113] border border-[#27272a] rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-[#27272a]">
               <h2 className="text-xl font-bold text-white">Adicionar Contato</h2>
               <button onClick={() => setShowAddManualModal(false)} className="text-slate-400 hover:text-white p-1">
                 <X className="size-5" />
@@ -630,7 +630,7 @@ export default function ContatosPage() {
                   value={manualForm.telefone}
                   onChange={(e) => setManualForm({ ...manualForm, telefone: e.target.value })}
                   placeholder="5511999999999"
-                  className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500"
+                  className="w-full bg-[#09090b] border border-[#27272a] rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500"
                 />
                 <p className="text-xs text-slate-500 mt-1">Apenas numeros, com DDD e codigo do pais</p>
               </div>
@@ -642,7 +642,7 @@ export default function ContatosPage() {
                   value={manualForm.nome}
                   onChange={(e) => setManualForm({ ...manualForm, nome: e.target.value })}
                   placeholder="Nome do contato"
-                  className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500"
+                  className="w-full bg-[#09090b] border border-[#27272a] rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500"
                 />
               </div>
 
@@ -650,7 +650,7 @@ export default function ContatosPage() {
                 <button
                   type="button"
                   onClick={() => setShowAddManualModal(false)}
-                  className="flex-1 px-4 py-3 border border-[#1e3a5f] rounded-xl text-slate-300 hover:bg-[#1e3a5f] transition-colors font-medium"
+                  className="flex-1 px-4 py-3 border border-[#27272a] rounded-xl text-slate-300 hover:bg-[#27272a] transition-colors font-medium"
                 >
                   Cancelar
                 </button>
@@ -671,8 +671,8 @@ export default function ContatosPage() {
       {/* Modal: Import from Evolution */}
       {showImportModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
-            <div className="flex items-center justify-between p-6 border-b border-[#1e3a5f]">
+          <div className="bg-[#111113] border border-[#27272a] rounded-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-[#27272a]">
               <h2 className="text-xl font-bold text-white">Importar Contatos</h2>
               <button onClick={() => setShowImportModal(false)} className="text-slate-400 hover:text-white p-1">
                 <X className="size-5" />
@@ -686,12 +686,12 @@ export default function ContatosPage() {
                   value={instanceName}
                   onChange={(e) => setInstanceName(e.target.value)}
                   placeholder="Nome da instancia"
-                  className="flex-1 bg-[#0a1628] border border-[#1e3a5f] rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500"
+                  className="flex-1 bg-[#09090b] border border-[#27272a] rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500"
                 />
                 <button
                   onClick={handleFetchEvolution}
                   disabled={importLoading}
-                  className="flex items-center gap-2 bg-[#1e3a5f] hover:bg-[#2a4a6f] text-white px-5 py-3 rounded-xl font-medium transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 bg-[#27272a] hover:bg-[#2a4a6f] text-white px-5 py-3 rounded-xl font-medium transition-colors disabled:opacity-50"
                 >
                   {importLoading ? <MorphingInfinity className="size-4" /> : <RefreshCw className="size-4" />}
                   <span>Buscar</span>
@@ -709,7 +709,7 @@ export default function ContatosPage() {
                         value={importSearch}
                         onChange={(e) => setImportSearch(e.target.value)}
                         placeholder="Buscar por nome ou telefone..."
-                        className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500"
+                        className="w-full bg-[#09090b] border border-[#27272a] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500"
                       />
                     </div>
                     
@@ -720,7 +720,7 @@ export default function ContatosPage() {
                           "px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
                           importFilter === 'all'
                             ? "bg-orange-500/20 text-orange-400 border border-orange-500/30"
-                            : "bg-[#0a1628] text-slate-400 border border-[#1e3a5f] hover:bg-[#162438]"
+                            : "bg-[#09090b] text-slate-400 border border-[#27272a] hover:bg-[#18181b]"
                         )}
                       >
                         Todos ({evolutionContacts.length})
@@ -731,7 +731,7 @@ export default function ContatosPage() {
                           "px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
                           importFilter === 'with_name'
                             ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                            : "bg-[#0a1628] text-slate-400 border border-[#1e3a5f] hover:bg-[#162438]"
+                            : "bg-[#09090b] text-slate-400 border border-[#27272a] hover:bg-[#18181b]"
                         )}
                       >
                         Com nome ({evolutionContacts.filter(c => c.nome && c.nome.trim()).length})
@@ -742,7 +742,7 @@ export default function ContatosPage() {
                           "px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
                           importFilter === 'without_name'
                             ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
-                            : "bg-[#0a1628] text-slate-400 border border-[#1e3a5f] hover:bg-[#162438]"
+                            : "bg-[#09090b] text-slate-400 border border-[#27272a] hover:bg-[#18181b]"
                         )}
                       >
                         Sem nome ({evolutionContacts.filter(c => !c.nome || !c.nome.trim()).length})
@@ -756,7 +756,7 @@ export default function ContatosPage() {
                         type="checkbox"
                         checked={selectedForImport.size === filteredEvolutionContacts.length && filteredEvolutionContacts.length > 0}
                         onChange={toggleSelectAll}
-                        className="size-4 rounded border-[#1e3a5f] bg-[#0a1628] text-orange-500 focus:ring-orange-500 focus:ring-offset-0"
+                        className="size-4 rounded border-[#27272a] bg-[#09090b] text-orange-500 focus:ring-orange-500 focus:ring-offset-0"
                       />
                       Selecionar todos ({filteredEvolutionContacts.length})
                     </label>
@@ -779,16 +779,16 @@ export default function ContatosPage() {
                             "flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all",
                             selectedForImport.has(contact.remote_jid)
                               ? "bg-orange-500/10 border-orange-500/30"
-                              : "bg-[#0a1628] border-[#1e3a5f] hover:bg-[#162438] hover:border-[#2a4a6f]"
+                              : "bg-[#09090b] border-[#27272a] hover:bg-[#18181b] hover:border-[#2a4a6f]"
                           )}
                         >
                           <input
                             type="checkbox"
                             checked={selectedForImport.has(contact.remote_jid)}
                             onChange={() => toggleSelect(contact.remote_jid)}
-                            className="size-4 rounded border-[#1e3a5f] bg-[#0a1628] text-orange-500 focus:ring-orange-500 focus:ring-offset-0"
+                            className="size-4 rounded border-[#27272a] bg-[#09090b] text-orange-500 focus:ring-orange-500 focus:ring-offset-0"
                           />
-                          <div className="size-10 bg-gradient-to-br from-[#1e3a5f] to-[#0f1f35] rounded-lg flex items-center justify-center flex-shrink-0">
+                          <div className="size-10 bg-gradient-to-br from-[#27272a] to-[#111113] rounded-lg flex items-center justify-center flex-shrink-0">
                             {contact.foto_url ? (
                               <img 
                                 src={contact.foto_url} 
@@ -813,10 +813,10 @@ export default function ContatosPage() {
               )}
             </div>
 
-            <div className="p-6 border-t border-[#1e3a5f] flex gap-3 bg-[#0a1628]/50">
+            <div className="p-6 border-t border-[#27272a] flex gap-3 bg-[#09090b]/50">
               <button
                 onClick={() => setShowImportModal(false)}
-                className="flex-1 px-4 py-3 border border-[#1e3a5f] rounded-xl text-slate-300 hover:bg-[#1e3a5f] transition-colors font-medium"
+                className="flex-1 px-4 py-3 border border-[#27272a] rounded-xl text-slate-300 hover:bg-[#27272a] transition-colors font-medium"
               >
                 Cancelar
               </button>
@@ -836,8 +836,8 @@ export default function ContatosPage() {
       {/* Modal: Etiquetas */}
       {showEtiquetasModal && selectedContato && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-2xl w-full max-w-md shadow-2xl">
-            <div className="flex items-center justify-between p-6 border-b border-[#1e3a5f]">
+          <div className="bg-[#111113] border border-[#27272a] rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-[#27272a]">
               <div>
                 <h2 className="text-xl font-bold text-white">Etiquetas</h2>
                 <p className="text-sm text-slate-400">{selectedContato.nome || selectedContato.telefone}</p>
@@ -863,7 +863,7 @@ export default function ContatosPage() {
                         "w-full flex items-center gap-3 p-3 rounded-xl border transition-all disabled:opacity-50",
                         isActive
                           ? "border-opacity-50"
-                          : "bg-[#0a1628] border-[#1e3a5f] hover:bg-[#162438]"
+                          : "bg-[#09090b] border-[#27272a] hover:bg-[#18181b]"
                       )}
                       style={isActive ? { 
                         backgroundColor: `${etiqueta.cor}15`,
@@ -894,8 +894,8 @@ export default function ContatosPage() {
       {/* Modal: Categorias */}
       {showCategoriasModal && selectedContato && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-2xl w-full max-w-md shadow-2xl">
-            <div className="flex items-center justify-between p-6 border-b border-[#1e3a5f]">
+          <div className="bg-[#111113] border border-[#27272a] rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-[#27272a]">
               <div>
                 <h2 className="text-xl font-bold text-white">Categorias</h2>
                 <p className="text-sm text-slate-400">{selectedContato.nome || selectedContato.telefone}</p>
@@ -921,7 +921,7 @@ export default function ContatosPage() {
                         "w-full flex items-center gap-3 p-3 rounded-xl border transition-all disabled:opacity-50",
                         isActive
                           ? "border-opacity-50"
-                          : "bg-[#0a1628] border-[#1e3a5f] hover:bg-[#162438]"
+                          : "bg-[#09090b] border-[#27272a] hover:bg-[#18181b]"
                       )}
                       style={isActive ? { 
                         backgroundColor: `${categoria.cor}15`,

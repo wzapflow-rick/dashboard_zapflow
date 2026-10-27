@@ -99,7 +99,7 @@ export default function CaptacaoClient() {
     const elegiveis = leads.filter((l) => !l.jaExiste && l.telefone).length;
 
     return (
-        <div className="min-h-screen bg-[#0a1628] p-4 lg:p-8">
+        <div className="min-h-screen bg-[#09090b] p-4 lg:p-8">
             <div className="max-w-5xl mx-auto">
                 {/* Header */}
                 <div className="flex items-start gap-4 mb-8">
@@ -116,7 +116,7 @@ export default function CaptacaoClient() {
                 </div>
 
                 {/* Form de busca */}
-                <div className="bg-[#0f1f35] border border-[#1e3a5f]/50 rounded-2xl p-6 space-y-5 mb-6">
+                <div className="bg-[#111113] border border-[#27272a]/50 rounded-2xl p-6 space-y-5 mb-6">
                     <div className="grid sm:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-slate-300 mb-2">
@@ -127,7 +127,7 @@ export default function CaptacaoClient() {
                                 value={cidade}
                                 onChange={(e) => setCidade(e.target.value)}
                                 placeholder="Ex: Aracaju, SE"
-                                className="w-full rounded-lg bg-[#0a1628] border border-[#1e3a5f] text-white placeholder:text-slate-600 px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500/50"
+                                className="w-full rounded-lg bg-[#09090b] border border-[#27272a] text-white placeholder:text-slate-600 px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500/50"
                             />
                         </div>
                         <div>
@@ -139,7 +139,7 @@ export default function CaptacaoClient() {
                                 value={tipoComida}
                                 onChange={(e) => setTipoComida(e.target.value)}
                                 placeholder="Ex: hamburgueria, pizzaria, açaí"
-                                className="w-full rounded-lg bg-[#0a1628] border border-[#1e3a5f] text-white placeholder:text-slate-600 px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500/50"
+                                className="w-full rounded-lg bg-[#09090b] border border-[#27272a] text-white placeholder:text-slate-600 px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500/50"
                             />
                         </div>
                     </div>
@@ -150,7 +150,7 @@ export default function CaptacaoClient() {
                                 type="checkbox"
                                 checked={soComTelefone}
                                 onChange={(e) => setSoComTelefone(e.target.checked)}
-                                className="size-4 rounded border-[#1e3a5f] bg-[#0a1628] accent-emerald-500"
+                                className="size-4 rounded border-[#27272a] bg-[#09090b] accent-emerald-500"
                             />
                             Só lojas com telefone
                         </label>
@@ -234,10 +234,10 @@ export default function CaptacaoClient() {
                                         className={
                                             'flex items-start gap-3 rounded-xl p-4 border transition-colors ' +
                                             (lead.jaExiste
-                                                ? 'bg-[#0f1f35]/40 border-[#1e3a5f]/30 opacity-60'
+                                                ? 'bg-[#111113]/40 border-[#27272a]/30 opacity-60'
                                                 : checked
                                                   ? 'bg-emerald-500/5 border-emerald-500/40'
-                                                  : 'bg-[#0f1f35] border-[#1e3a5f]/50')
+                                                  : 'bg-[#111113] border-[#27272a]/50')
                                         }
                                     >
                                         <input
@@ -245,7 +245,7 @@ export default function CaptacaoClient() {
                                             checked={checked}
                                             disabled={!selecionavel}
                                             onChange={() => toggle(lead.place_id)}
-                                            className="mt-1 size-4 rounded border-[#1e3a5f] bg-[#0a1628] accent-emerald-500 disabled:opacity-30"
+                                            className="mt-1 size-4 rounded border-[#27272a] bg-[#09090b] accent-emerald-500 disabled:opacity-30"
                                         />
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 flex-wrap">
@@ -256,7 +256,7 @@ export default function CaptacaoClient() {
                                                     </span>
                                                 )}
                                                 {lead.tipo && (
-                                                    <span className="text-[10px] uppercase tracking-wide bg-[#1e3a5f]/50 text-slate-400 px-2 py-0.5 rounded-full">
+                                                    <span className="text-[10px] uppercase tracking-wide bg-[#27272a]/50 text-slate-400 px-2 py-0.5 rounded-full">
                                                         {lead.tipo}
                                                     </span>
                                                 )}

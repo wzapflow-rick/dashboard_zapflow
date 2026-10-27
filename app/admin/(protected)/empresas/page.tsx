@@ -165,7 +165,7 @@ export default function EmpresasAdminPage() {
           value={search}
           onChange={(e) => handleSearch(e.target.value)}
           placeholder="Buscar por nome, slug ou email..."
-          className="w-full bg-[#0f1f35] border border-[#1e3a5f] rounded-lg pl-10 pr-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500"
+          className="w-full bg-[#111113] border border-[#27272a] rounded-lg pl-10 pr-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500"
         />
       </div>
 
@@ -176,12 +176,12 @@ export default function EmpresasAdminPage() {
             <MorphingInfinity className="size-8 text-orange-500" />
           </div>
         ) : empresas.length === 0 ? (
-          <div className="text-center py-12 text-slate-400 bg-[#0f1f35] border border-[#1e3a5f] rounded-xl">
+          <div className="text-center py-12 text-slate-400 bg-[#111113] border border-[#27272a] rounded-xl">
             Nenhuma empresa encontrada
           </div>
         ) : (
           empresas.map((empresa) => (
-            <div key={empresa.id} className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl p-4 space-y-3">
+            <div key={empresa.id} className="bg-[#111113] border border-[#27272a] rounded-xl p-4 space-y-3">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="font-medium text-white">{empresa.nome_fantasia || empresa.nome}</p>
@@ -197,10 +197,10 @@ export default function EmpresasAdminPage() {
                   <span className="text-slate-400">Vence: {formatDate(empresa.data_proxima_cobranca)}</span>
                 )}
               </div>
-              <div className="flex items-center gap-2 pt-2 border-t border-[#1e3a5f]/50">
+              <div className="flex items-center gap-2 pt-2 border-t border-[#27272a]/50">
                 <button
                   onClick={() => openEditModal(empresa)}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-[#162438] rounded-lg text-slate-300 hover:text-white transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-[#18181b] rounded-lg text-slate-300 hover:text-white transition-colors"
                 >
                   <Edit2 className="size-4" />
                   <span className="text-sm">Editar</span>
@@ -232,10 +232,10 @@ export default function EmpresasAdminPage() {
       </div>
 
       {/* Tabela Desktop */}
-      <div className="hidden lg:block bg-[#0f1f35] border border-[#1e3a5f] rounded-xl overflow-hidden">
+      <div className="hidden lg:block bg-[#111113] border border-[#27272a] rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-[#0a1628]">
+            <thead className="bg-[#09090b]">
               <tr>
                 <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase">Empresa</th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase">Slug</th>
@@ -245,7 +245,7 @@ export default function EmpresasAdminPage() {
                 <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase">Acoes</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#1e3a5f]/50">
+            <tbody className="divide-y divide-[#27272a]/50">
               {loading ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
@@ -260,7 +260,7 @@ export default function EmpresasAdminPage() {
                 </tr>
               ) : (
                 empresas.map((empresa) => (
-                  <tr key={empresa.id} className="hover:bg-[#162438]/50">
+                  <tr key={empresa.id} className="hover:bg-[#18181b]/50">
                     <td className="px-6 py-4">
                       <div>
                         <p className="font-medium text-white">{empresa.nome_fantasia || empresa.nome}</p>
@@ -285,7 +285,7 @@ export default function EmpresasAdminPage() {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => openEditModal(empresa)}
-                          className="p-2 hover:bg-[#1e3a5f] rounded-lg text-slate-400 hover:text-white transition-colors"
+                          className="p-2 hover:bg-[#27272a] rounded-lg text-slate-400 hover:text-white transition-colors"
                           title="Editar"
                         >
                           <Edit2 className="size-4" />
@@ -315,7 +315,7 @@ export default function EmpresasAdminPage() {
                           href={`/menu/${getMenuSlug(empresa)}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="p-2 hover:bg-[#1e3a5f] rounded-lg text-slate-400 hover:text-white transition-colors"
+                          className="p-2 hover:bg-[#27272a] rounded-lg text-slate-400 hover:text-white transition-colors"
                           title="Ver Cardapio"
                         >
                           <ExternalLink className="size-4" />
@@ -331,12 +331,12 @@ export default function EmpresasAdminPage() {
 
         {/* Paginacao */}
         {pagination && pagination.totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-[#1e3a5f] flex items-center justify-center">
+          <div className="px-6 py-4 border-t border-[#27272a] flex items-center justify-center">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => loadEmpresas(pagination.page - 1)}
                 disabled={pagination.page <= 1}
-                className="p-2 hover:bg-[#1e3a5f] rounded-lg text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-2 hover:bg-[#27272a] rounded-lg text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ChevronLeft className="size-5" />
               </button>
@@ -346,7 +346,7 @@ export default function EmpresasAdminPage() {
               <button
                 onClick={() => loadEmpresas(pagination.page + 1)}
                 disabled={pagination.page >= pagination.totalPages}
-                className="p-2 hover:bg-[#1e3a5f] rounded-lg text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-2 hover:bg-[#27272a] rounded-lg text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ChevronRight className="size-5" />
               </button>
@@ -361,7 +361,7 @@ export default function EmpresasAdminPage() {
           <button
             onClick={() => loadEmpresas(pagination.page - 1)}
             disabled={pagination.page <= 1}
-            className="p-2 bg-[#0f1f35] border border-[#1e3a5f] rounded-lg text-slate-400 hover:text-white disabled:opacity-50"
+            className="p-2 bg-[#111113] border border-[#27272a] rounded-lg text-slate-400 hover:text-white disabled:opacity-50"
           >
             <ChevronLeft className="size-5" />
           </button>
@@ -371,7 +371,7 @@ export default function EmpresasAdminPage() {
           <button
             onClick={() => loadEmpresas(pagination.page + 1)}
             disabled={pagination.page >= pagination.totalPages}
-            className="p-2 bg-[#0f1f35] border border-[#1e3a5f] rounded-lg text-slate-400 hover:text-white disabled:opacity-50"
+            className="p-2 bg-[#111113] border border-[#27272a] rounded-lg text-slate-400 hover:text-white disabled:opacity-50"
           >
             <ChevronRight className="size-5" />
           </button>
@@ -424,8 +424,8 @@ export default function EmpresasAdminPage() {
       {/* Modal QR Code do Cardapio */}
       {showQrModal && selectedEmpresa && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b border-[#1e3a5f]">
+          <div className="bg-[#111113] border border-[#27272a] rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-[#27272a]">
               <h2 className="text-xl font-bold text-white">QR Code do Cardapio</h2>
               <button
                 onClick={() => {
@@ -451,7 +451,7 @@ export default function EmpresasAdminPage() {
       {/* Modal Confirmar Exclusao */}
       {showDeleteConfirm && selectedEmpresa && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl w-full max-w-md">
+          <div className="bg-[#111113] border border-[#27272a] rounded-xl w-full max-w-md">
             <div className="p-6 text-center">
               <div className="size-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Trash2 className="size-8 text-red-400" />
@@ -467,7 +467,7 @@ export default function EmpresasAdminPage() {
                     setShowDeleteConfirm(false);
                     setSelectedEmpresa(null);
                   }}
-                  className="flex-1 px-4 py-3 border border-[#1e3a5f] rounded-lg text-slate-300 hover:bg-[#1e3a5f] transition-colors"
+                  className="flex-1 px-4 py-3 border border-[#27272a] rounded-lg text-slate-300 hover:bg-[#27272a] transition-colors"
                 >
                   Cancelar
                 </button>
@@ -546,8 +546,8 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-[#1e3a5f]">
+      <div className="bg-[#111113] border border-[#27272a] rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b border-[#27272a]">
           <h2 className="text-xl font-bold text-white">Nova Empresa</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-white">
             <X className="size-6" />
@@ -569,7 +569,7 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
               value={formData.nome}
               onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
               placeholder="Ex: Joao Silva"
-              className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
+              className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
               required
             />
           </div>
@@ -580,7 +580,7 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
               type="text"
               value={formData.nome_fantasia}
               onChange={(e) => setFormData({ ...formData, nome_fantasia: e.target.value })}
-              className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
+              className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
             />
           </div>
 
@@ -591,7 +591,7 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
+                className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
               />
             </div>
             <div>
@@ -600,7 +600,7 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
                 type="text"
                 value={formData.telefone}
                 onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
-                className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
+                className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
               />
             </div>
           </div>
@@ -611,7 +611,7 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
               <select
                 value={formData.plano}
                 onChange={(e) => setFormData({ ...formData, plano: e.target.value })}
-                className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
+                className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
               >
                 <option value="start">Start</option>
                 <option value="pro">Pro</option>
@@ -624,14 +624,14 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
                 type="number"
                 value={formData.dias_trial}
                 onChange={(e) => setFormData({ ...formData, dias_trial: parseInt(e.target.value) })}
-                className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
+                className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
                 min="1"
               />
             </div>
           </div>
 
           {/* Modo de criacao de senha */}
-          <div className="space-y-3 pt-2 border-t border-[#1e3a5f]">
+          <div className="space-y-3 pt-2 border-t border-[#27272a]">
             <label className="block text-sm font-medium text-slate-300">Como definir a senha?</label>
             <div className="flex gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
@@ -664,7 +664,7 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
                   value={formData.senha}
                   onChange={(e) => setFormData({ ...formData, senha: e.target.value })}
                   placeholder="Digite a senha do usuario"
-                  className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
+                  className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
                 />
               </div>
             )}
@@ -682,7 +682,7 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-3 border border-[#1e3a5f] rounded-lg text-slate-300 hover:bg-[#1e3a5f] transition-colors"
+              className="flex-1 px-4 py-3 border border-[#27272a] rounded-lg text-slate-300 hover:bg-[#27272a] transition-colors"
             >
               Cancelar
             </button>
@@ -733,8 +733,8 @@ function EditEmpresaModal({ empresa, onClose, onSuccess }: { empresa: Empresa; o
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl w-full max-w-lg">
-        <div className="flex items-center justify-between p-6 border-b border-[#1e3a5f]">
+      <div className="bg-[#111113] border border-[#27272a] rounded-xl w-full max-w-lg">
+        <div className="flex items-center justify-between p-6 border-b border-[#27272a]">
           <h2 className="text-xl font-bold text-white">Editar Empresa</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-white">
             <X className="size-6" />
@@ -754,7 +754,7 @@ function EditEmpresaModal({ empresa, onClose, onSuccess }: { empresa: Empresa; o
               type="text"
               value={formData.nome}
               onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-              className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
+              className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
             />
           </div>
 
@@ -764,7 +764,7 @@ function EditEmpresaModal({ empresa, onClose, onSuccess }: { empresa: Empresa; o
               type="text"
               value={formData.nome_fantasia}
               onChange={(e) => setFormData({ ...formData, nome_fantasia: e.target.value })}
-              className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
+              className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
             />
           </div>
 
@@ -774,7 +774,7 @@ function EditEmpresaModal({ empresa, onClose, onSuccess }: { empresa: Empresa; o
               type="text"
               value={formData.slug}
               onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-              className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
+              className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
             />
           </div>
 
@@ -785,7 +785,7 @@ function EditEmpresaModal({ empresa, onClose, onSuccess }: { empresa: Empresa; o
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
+                className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
               />
             </div>
             <div>
@@ -794,7 +794,7 @@ function EditEmpresaModal({ empresa, onClose, onSuccess }: { empresa: Empresa; o
                 type="text"
                 value={formData.telefone}
                 onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
-                className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
+                className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
               />
             </div>
           </div>
@@ -803,7 +803,7 @@ function EditEmpresaModal({ empresa, onClose, onSuccess }: { empresa: Empresa; o
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-3 border border-[#1e3a5f] rounded-lg text-slate-300 hover:bg-[#1e3a5f] transition-colors"
+              className="flex-1 px-4 py-3 border border-[#27272a] rounded-lg text-slate-300 hover:bg-[#27272a] transition-colors"
             >
               Cancelar
             </button>
@@ -844,8 +844,8 @@ function TrialModal({ empresa, onClose, onSuccess }: { empresa: Empresa; onClose
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl w-full max-w-md">
-        <div className="flex items-center justify-between p-6 border-b border-[#1e3a5f]">
+      <div className="bg-[#111113] border border-[#27272a] rounded-xl w-full max-w-md">
+        <div className="flex items-center justify-between p-6 border-b border-[#27272a]">
           <h2 className="text-xl font-bold text-white">Conceder Acesso Gratuito</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-white">
             <X className="size-6" />
@@ -868,7 +868,7 @@ function TrialModal({ empresa, onClose, onSuccess }: { empresa: Empresa; onClose
             <select
               value={plano}
               onChange={(e) => setPlano(e.target.value)}
-              className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
+              className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
             >
               <option value="start">Start</option>
               <option value="pro">Pro</option>
@@ -882,7 +882,7 @@ function TrialModal({ empresa, onClose, onSuccess }: { empresa: Empresa; onClose
               type="number"
               value={dias}
               onChange={(e) => setDias(parseInt(e.target.value))}
-              className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
+              className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
               min="1"
             />
             <p className="text-xs text-slate-500 mt-1">
@@ -894,7 +894,7 @@ function TrialModal({ empresa, onClose, onSuccess }: { empresa: Empresa; onClose
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-3 border border-[#1e3a5f] rounded-lg text-slate-300 hover:bg-[#1e3a5f] transition-colors"
+              className="flex-1 px-4 py-3 border border-[#27272a] rounded-lg text-slate-300 hover:bg-[#27272a] transition-colors"
             >
               Cancelar
             </button>

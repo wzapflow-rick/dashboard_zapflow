@@ -171,7 +171,7 @@ export default function ConfigPage() {
         )}
 
         {/* Status */}
-        <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl p-6">
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className={cn(
@@ -197,13 +197,13 @@ export default function ConfigPage() {
                 onChange={(e) => setFormData({ ...formData, ativo: e.target.checked })}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-[#1e3a5f] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+              <div className="w-11 h-6 bg-[#27272a] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
             </label>
           </div>
         </div>
 
         {/* Evolution Instance */}
-        <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl p-6 space-y-4">
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 space-y-4">
           <div className="flex items-center gap-3 mb-4">
             <MessageSquare className="size-5 text-blue-400" />
             <h2 className="text-lg font-semibold text-white">Evolution API</h2>
@@ -217,7 +217,7 @@ export default function ConfigPage() {
               type="text"
               value={formData.instance_name}
               onChange={(e) => setFormData({ ...formData, instance_name: e.target.value })}
-              className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500"
+              className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500"
               placeholder="Ex: zapflow_123"
             />
             <p className="text-xs text-slate-500 mt-1">
@@ -227,7 +227,7 @@ export default function ConfigPage() {
         </div>
 
         {/* API Key Cron */}
-        <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl p-6 space-y-4">
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 space-y-4">
           <div className="flex items-center gap-3 mb-4">
             <Key className="size-5 text-orange-400" />
             <h2 className="text-lg font-semibold text-white">Autenticacao do Cron</h2>
@@ -242,25 +242,25 @@ export default function ConfigPage() {
                 type="text"
                 value={formData.api_key_cron}
                 onChange={(e) => setFormData({ ...formData, api_key_cron: e.target.value })}
-                className="flex-1 bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500 font-mono text-sm"
+                className="flex-1 bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500 font-mono text-sm"
                 placeholder="Chave secreta para autenticar os endpoints"
               />
               <button
                 type="button"
                 onClick={generateApiKey}
-                className="px-4 py-3 bg-[#162438] hover:bg-[#1e3a5f] text-white rounded-lg transition-colors"
+                className="px-4 py-3 bg-[#18181b] hover:bg-[#27272a] text-white rounded-lg transition-colors"
               >
                 <RefreshCw className="size-5" />
               </button>
             </div>
             <p className="text-xs text-slate-500 mt-1">
-              Use no header: <code className="bg-[#0a1628] px-1 rounded">x-cron-key: SUA_CHAVE</code>
+              Use no header: <code className="bg-[#09090b] px-1 rounded">x-cron-key: SUA_CHAVE</code>
             </p>
           </div>
         </div>
 
         {/* Horarios */}
-        <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl p-6 space-y-4">
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 space-y-4">
           <div className="flex items-center gap-3 mb-4">
             <Clock className="size-5 text-green-400" />
             <h2 className="text-lg font-semibold text-white">Horarios de Envio</h2>
@@ -275,7 +275,7 @@ export default function ConfigPage() {
                 type="time"
                 value={formData.horario_inicio}
                 onChange={(e) => setFormData({ ...formData, horario_inicio: e.target.value })}
-                className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
+                className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
               />
             </div>
             <div>
@@ -286,7 +286,7 @@ export default function ConfigPage() {
                 type="time"
                 value={formData.horario_fim}
                 onChange={(e) => setFormData({ ...formData, horario_fim: e.target.value })}
-                className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
+                className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
               />
             </div>
           </div>
@@ -305,7 +305,7 @@ export default function ConfigPage() {
                     "px-4 py-2 rounded-lg border transition-colors",
                     formData.dias_semana.includes(dia.value)
                       ? "bg-orange-500/10 border-orange-500 text-orange-400"
-                      : "bg-[#0a1628] border-[#1e3a5f] text-slate-400 hover:text-white"
+                      : "bg-[#09090b] border-[#27272a] text-slate-400 hover:text-white"
                   )}
                 >
                   {dia.label}
@@ -316,7 +316,7 @@ export default function ConfigPage() {
         </div>
 
         {/* Limites */}
-        <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl p-6 space-y-4">
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 space-y-4">
           <div className="flex items-center gap-3 mb-4">
             <Calendar className="size-5 text-purple-400" />
             <h2 className="text-lg font-semibold text-white">Limites de Envio</h2>
@@ -333,7 +333,7 @@ export default function ConfigPage() {
                 max="500"
                 value={formData.limite_por_hora}
                 onChange={(e) => setFormData({ ...formData, limite_por_hora: parseInt(e.target.value) || 60 })}
-                className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
+                className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
               />
             </div>
             <div>
@@ -346,7 +346,7 @@ export default function ConfigPage() {
                 max="5000"
                 value={formData.limite_por_dia}
                 onChange={(e) => setFormData({ ...formData, limite_por_dia: parseInt(e.target.value) || 500 })}
-                className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
+                className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
               />
             </div>
             <div>
@@ -359,7 +359,7 @@ export default function ConfigPage() {
                 max="120"
                 value={formData.intervalo_segundos}
                 onChange={(e) => setFormData({ ...formData, intervalo_segundos: parseInt(e.target.value) || 10 })}
-                className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
+                className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
               />
             </div>
           </div>
@@ -369,9 +369,9 @@ export default function ConfigPage() {
         </div>
 
         {/* Cron Examples */}
-        <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl p-6">
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6">
           <h2 className="text-lg font-semibold text-white mb-4">Exemplo de Crontab</h2>
-          <div className="bg-[#0a1628] rounded-lg p-4 font-mono text-sm text-slate-300 overflow-x-auto">
+          <div className="bg-[#09090b] rounded-lg p-4 font-mono text-sm text-slate-300 overflow-x-auto">
             <p className="text-slate-500"># Classificar contatos a cada 6 horas</p>
             <p>0 */6 * * * curl -X POST -H &quot;x-cron-key: {formData.api_key_cron || 'SUA_CHAVE'}&quot; https://seusite.com/api/cron/remarketing/classificar</p>
             <p className="mt-2 text-slate-500"># Agendar mensagens a cada hora</p>
@@ -382,7 +382,7 @@ export default function ConfigPage() {
         </div>
 
         {/* Executar Crons Manualmente */}
-        <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl p-6">
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6">
           <div className="flex items-center gap-3 mb-4">
             <Play className="size-5 text-green-400" />
             <h2 className="text-lg font-semibold text-white">Executar Manualmente</h2>
@@ -462,7 +462,7 @@ export default function ConfigPage() {
             )}>
               <p className="font-medium">{cronResult.type}: {cronResult.message}</p>
               {cronResult.data && (
-                <pre className="mt-2 text-xs overflow-x-auto bg-[#0a1628] p-2 rounded">
+                <pre className="mt-2 text-xs overflow-x-auto bg-[#09090b] p-2 rounded">
                   {JSON.stringify(cronResult.data, null, 2)}
                 </pre>
               )}

@@ -136,7 +136,7 @@ export function LojaToggle() {
               onClick={() => setConfirmMode(null)}
             />
             <motion.div
-              className="relative w-full max-w-md rounded-2xl bg-white dark:bg-[#0f1f35] border border-slate-200 dark:border-white/10 shadow-2xl p-6"
+              className="relative w-full max-w-md rounded-2xl bg-white dark:bg-[#111113] border border-slate-200 dark:border-white/10 shadow-2xl p-6"
               initial={{ scale: 0.95, opacity: 0, y: 10 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 10 }}

@@ -37,14 +37,14 @@ export default function RemarketingFunilPage() {
         <div className="flex items-center gap-2">
           <Link
             href="/admin/remarketing/contatos"
-            className="flex items-center gap-2 bg-[#0f1f35] border border-[#1e3a5f] hover:bg-[#162438] text-slate-200 px-3 py-2 rounded-lg text-sm font-medium transition-all"
+            className="flex items-center gap-2 bg-[#111113] border border-[#27272a] hover:bg-[#18181b] text-slate-200 px-3 py-2 rounded-lg text-sm font-medium transition-all"
           >
             <Users className="size-4" />
             <span className="hidden sm:inline">Contatos</span>
           </Link>
           <Link
             href="/admin/remarketing/config"
-            className="flex items-center gap-2 bg-[#0f1f35] border border-[#1e3a5f] hover:bg-[#162438] text-slate-200 px-3 py-2 rounded-lg text-sm font-medium transition-all"
+            className="flex items-center gap-2 bg-[#111113] border border-[#27272a] hover:bg-[#18181b] text-slate-200 px-3 py-2 rounded-lg text-sm font-medium transition-all"
           >
             <Settings className="size-4" />
             <span className="hidden sm:inline">Configuracoes</span>
@@ -53,7 +53,7 @@ export default function RemarketingFunilPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 border-b border-[#1e3a5f] overflow-x-auto">
+      <div className="flex items-center gap-1 border-b border-[#27272a] overflow-x-auto">
         {ABAS.map((item) => {
           const active = aba === item.id;
           return (

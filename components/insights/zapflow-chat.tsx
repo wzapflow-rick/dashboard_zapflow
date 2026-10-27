@@ -68,13 +68,12 @@ export function ZapflowChat() {
         onClick={() => setAberto((current) => !current)}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className="fixed bottom-24 right-4 z-40 flex size-14 items-center justify-center rounded-full bg-primary text-slate-950 shadow-lg shadow-primary/30 lg:bottom-6 lg:right-6"
-        style={{ boxShadow: '0 0 24px rgba(34,197,94,0.35)' }}
+        className="dashboard-fab-safe fixed right-4 z-[70] flex size-12 items-center justify-center rounded-2xl border border-emerald-500/40 bg-zinc-900/95 text-emerald-500 shadow-lg shadow-black/30 backdrop-blur-md transition-colors hover:border-emerald-500/70 hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 lg:right-6"
         aria-label={aberto ? 'Fechar chat com o ZapFlash' : 'Abrir chat com o ZapFlash'}
         aria-expanded={aberto}
         aria-controls="zapflow-chat-panel"
       >
-        {aberto ? <X className="size-6" aria-hidden="true" /> : <MessageCircle className="size-6" aria-hidden="true" />}
+        {aberto ? <X className="size-5" strokeWidth={2} aria-hidden="true" /> : <MessageCircle className="size-5" strokeWidth={2} aria-hidden="true" />}
       </motion.button>
 
       <AnimatePresence>
@@ -87,7 +86,7 @@ export function ZapflowChat() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.96 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-40 right-4 z-40 flex h-[calc(100dvh-11rem)] max-h-[520px] w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-white/95 shadow-2xl backdrop-blur-xl dark:border-slate-700/60 dark:bg-[#0f1f35]/95 lg:bottom-24 lg:right-6 lg:h-[520px] lg:w-[calc(100vw-3rem)]"
+            className="fixed bottom-40 right-4 z-40 flex h-[calc(100dvh-11rem)] max-h-[520px] w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-white/95 shadow-2xl backdrop-blur-xl dark:border-slate-700/60 dark:bg-[#111113]/95 lg:bottom-24 lg:right-6 lg:h-[520px] lg:w-[calc(100vw-3rem)]"
           >
             <header className="flex items-center gap-3 border-b border-slate-200/70 bg-slate-50/80 p-4 dark:border-slate-700/50 dark:bg-white/[0.03]">
               <div className="flex size-9 items-center justify-center rounded-full bg-primary/15">

@@ -144,7 +144,7 @@ export default function FilaPage() {
           <button
             onClick={() => loadFila(1)}
             disabled={loading}
-            className="flex items-center gap-2 bg-[#1e3a5f] hover:bg-[#2a4a6f] text-white px-4 py-2.5 rounded-xl font-medium transition-all disabled:opacity-50"
+            className="flex items-center gap-2 bg-[#27272a] hover:bg-[#2a4a6f] text-white px-4 py-2.5 rounded-xl font-medium transition-all disabled:opacity-50"
           >
             {loading ? <MorphingInfinity className="size-4" /> : <RefreshCw className="size-4" />}
             <span>Atualizar</span>
@@ -154,7 +154,7 @@ export default function FilaPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-[#0f1f35] border border-yellow-500/20 rounded-2xl p-5">
+        <div className="bg-[#111113] border border-yellow-500/20 rounded-2xl p-5">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-yellow-500/10 rounded-xl">
               <Clock className="size-6 text-yellow-400" />
@@ -165,7 +165,7 @@ export default function FilaPage() {
             </div>
           </div>
         </div>
-        <div className="bg-[#0f1f35] border border-green-500/20 rounded-2xl p-5">
+        <div className="bg-[#111113] border border-green-500/20 rounded-2xl p-5">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-green-500/10 rounded-xl">
               <CheckCircle2 className="size-6 text-green-400" />
@@ -176,7 +176,7 @@ export default function FilaPage() {
             </div>
           </div>
         </div>
-        <div className="bg-[#0f1f35] border border-red-500/20 rounded-2xl p-5">
+        <div className="bg-[#111113] border border-red-500/20 rounded-2xl p-5">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-red-500/10 rounded-xl">
               <XCircle className="size-6 text-red-400" />
@@ -195,7 +195,7 @@ export default function FilaPage() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500"
+          className="bg-[#111113] border border-[#27272a] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500"
         >
           <option value="">Todos os status</option>
           <option value="pendente">Pendente</option>
@@ -207,21 +207,21 @@ export default function FilaPage() {
       </div>
 
       {/* Lista */}
-      <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-2xl overflow-hidden">
+      <div className="bg-[#111113] border border-[#27272a] rounded-2xl overflow-hidden">
         {loading ? (
           <div className="flex justify-center py-16">
             <MorphingInfinity className="size-8 text-orange-500" />
           </div>
         ) : fila.length === 0 ? (
           <div className="text-center py-16 px-4">
-            <div className="w-16 h-16 bg-[#1e3a5f] rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-[#27272a] rounded-2xl flex items-center justify-center mx-auto mb-4">
               <ListTodo className="size-8 text-slate-400" />
             </div>
             <p className="text-lg font-medium text-white mb-2">Nenhum item na fila</p>
             <p className="text-slate-400">Os disparos agendados aparecerao aqui</p>
           </div>
         ) : (
-          <div className="divide-y divide-[#1e3a5f]/50">
+          <div className="divide-y divide-[#27272a]/50">
             {fila.map((item) => {
               const statusConfig = getStatusConfig(item.status);
               const statusClasses = getStatusClasses(statusConfig.color);
@@ -230,7 +230,7 @@ export default function FilaPage() {
               const isCanceling = loadingActions.has(`cancel-${item.id}`);
               
               return (
-                <div key={item.id} className="p-5 hover:bg-[#162438]/50 transition-colors">
+                <div key={item.id} className="p-5 hover:bg-[#18181b]/50 transition-colors">
                   <div className="flex items-start gap-4">
                     {/* Status Icon */}
                     <div className={cn("p-3 rounded-xl", statusClasses.bg)}>
@@ -344,12 +344,12 @@ export default function FilaPage() {
 
         {/* Pagination */}
         {pagination.totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-[#1e3a5f] flex items-center justify-center bg-[#0a1628]/50">
+          <div className="px-6 py-4 border-t border-[#27272a] flex items-center justify-center bg-[#09090b]/50">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => loadFila(pagination.page - 1)}
                 disabled={pagination.page <= 1 || loading}
-                className="p-2.5 hover:bg-[#1e3a5f] rounded-xl text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="p-2.5 hover:bg-[#27272a] rounded-xl text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <ChevronLeft className="size-5" />
               </button>
@@ -359,7 +359,7 @@ export default function FilaPage() {
               <button
                 onClick={() => loadFila(pagination.page + 1)}
                 disabled={pagination.page >= pagination.totalPages || loading}
-                className="p-2.5 hover:bg-[#1e3a5f] rounded-xl text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="p-2.5 hover:bg-[#27272a] rounded-xl text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <ChevronRight className="size-5" />
               </button>
