@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/session-server';
 import { pg } from '@/lib/postgres';
+import { getErrorMessage } from '@/lib/errors';
 
 export type CampanhaTipo = 'reengajamento' | 'cupom' | 'pos_pedido' | 'horario' | 'data_especial' | 'produto_destaque';
 
@@ -60,28 +61,49 @@ export interface DisparoStats {
     total_clientes_alcancados: number;
 }
 
+type CampanhaRow = Omit<CampanhaConfig, 'dias_semana'> & {
+    dias_semana?: string | string[] | null;
+};
+
+export interface CampanhaResultado {
+    detalhes?: string;
+    motivo?: string;
+    [key: string]: unknown;
+}
+
+function parseDiasSemana(value: CampanhaRow['dias_semana']): string[] | undefined {
+    if (!value) return undefined;
+    if (Array.isArray(value)) return value;
+    try {
+        const parsed: unknown = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed.map(String) : undefined;
+    } catch {
+        return undefined;
+    }
+}
+
+function toCampanhaConfig(row: CampanhaRow): CampanhaConfig {
+    return { ...row, dias_semana: parseDiasSemana(row.dias_semana) };
+}
+
 export async function getCampanhas(): Promise<CampanhaConfig[]> {
     try {
         const user = await requireAdmin();
 
-        const data = await pg.list('campanhas_config', {
+        const data = await pg.list<CampanhaRow>('campanhas_config', {
             where: { empresa_id: user.empresaId },
             sort: '-id',
             limit: 100,
         });
 
-        return (data.list || []).map((c: any) => ({
-            ...c,
-            id: c.id,
-            dias_semana: c.dias_semana ? (typeof c.dias_semana === 'string' ? JSON.parse(c.dias_semana) : c.dias_semana) : undefined
-        }));
+        return (data.list || []).map(toCampanhaConfig);
     } catch (error) {
         console.error('getCampanhas error:', error);
         return [];
     }
 }
 
-export async function createCampanha(data: CampanhaFormData): Promise<{ success: boolean; data?: any; error?: string }> {
+export async function createCampanha(data: CampanhaFormData): Promise<{ success: boolean; data?: CampanhaConfig; error?: string }> {
     try {
         const user = await requireAdmin();
 
@@ -92,13 +114,13 @@ export async function createCampanha(data: CampanhaFormData): Promise<{ success:
             max_envios_semana: data.max_envios_semana || 2,
         };
 
-        const result = await pg.create('campanhas_config', payload);
+        const result = await pg.create<CampanhaRow>('campanhas_config', payload);
 
         revalidatePath('/dashboard/marketing');
-        return { success: true, data: result };
-    } catch (error: any) {
+        return { success: true, data: toCampanhaConfig(result) };
+    } catch (error) {
         console.error('createCampanha error:', error);
-        return { success: false, error: error.message || 'Erro ao criar campanha' };
+        return { success: false, error: getErrorMessage(error, 'Erro ao criar campanha') };
     }
 }
 
@@ -115,9 +137,9 @@ export async function updateCampanha(id: number, data: Partial<CampanhaFormData>
 
         revalidatePath('/dashboard/marketing');
         return { success: true };
-    } catch (error: any) {
+    } catch (error) {
         console.error('updateCampanha error:', error);
-        return { success: false, error: error.message || 'Erro ao atualizar campanha' };
+        return { success: false, error: getErrorMessage(error, 'Erro ao atualizar campanha') };
     }
 }
 
@@ -129,9 +151,9 @@ export async function deleteCampanha(id: number): Promise<{ success: boolean; er
 
         revalidatePath('/dashboard/marketing');
         return { success: true };
-    } catch (error: any) {
+    } catch (error) {
         console.error('deleteCampanha error:', error);
-        return { success: false, error: error.message || 'Erro ao excluir campanha' };
+        return { success: false, error: getErrorMessage(error, 'Erro ao excluir campanha') };
     }
 }
 
@@ -143,9 +165,9 @@ export async function toggleCampanha(id: number, ativo: boolean): Promise<{ succ
 
         revalidatePath('/dashboard/marketing');
         return { success: true };
-    } catch (error: any) {
+    } catch (error) {
         console.error('toggleCampanha error:', error);
-        return { success: false, error: error.message || 'Erro ao alternar campanha' };
+        return { success: false, error: getErrorMessage(error, 'Erro ao alternar campanha') };
     }
 }
 
@@ -162,7 +184,7 @@ export async function getDisparos(campanhaId?: number): Promise<DisparoLog[]> {
             LEFT JOIN clientes c ON c.id = d.cliente_id
             WHERE d.empresa_id = $1
         `;
-        const params: any[] = [user.empresaId];
+        const params: unknown[] = [user.empresaId];
         
         if (campanhaId) {
             query += ` AND d.campanha_id = $2`;
@@ -171,13 +193,11 @@ export async function getDisparos(campanhaId?: number): Promise<DisparoLog[]> {
         
         query += ` ORDER BY d.enviado_em DESC LIMIT 100`;
 
-        const result = await pg.query(query, params);
-        const rows = result.rows || result || [];
+        const result = await pg.query<DisparoLog>(query, params);
 
-        return rows.map((d: any) => ({
+        return (result.rows || []).map((d) => ({
             ...d,
-            id: d.id,
-            cliente_nome: d.cliente_nome || null
+            cliente_nome: d.cliente_nome || undefined,
         }));
     } catch (error) {
         console.error('getDisparos error:', error);
@@ -193,21 +213,18 @@ export async function getDisparosStats(): Promise<DisparoStats> {
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         const dataStr = thirtyDaysAgo.toISOString();
 
-        const result = await pg.query(
-            `SELECT * FROM campanhas_disparos WHERE empresa_id = $1 AND enviado_em > $2`,
+        const result = await pg.query<Pick<DisparoLog, 'status' | 'cliente_id'>>(
+            `SELECT status, cliente_id FROM campanhas_disparos WHERE empresa_id = $1 AND enviado_em > $2`,
             [user.empresaId, dataStr]
         );
 
         const disparos = result.rows || [];
+        const enviados = disparos.filter((d) => d.status === 'enviado');
 
-        const total_enviados = disparos.filter((d: any) => d.status === 'enviado').length;
-        const total_erros = disparos.filter((d: any) => d.status === 'erro').length;
+        const total_enviados = enviados.length;
+        const total_erros = disparos.filter((d) => d.status === 'erro').length;
 
-        const uniqueClientes = new Set(
-            disparos
-                .filter((d: any) => d.status === 'enviado')
-                .map((d: any) => d.cliente_id)
-        );
+        const uniqueClientes = new Set(enviados.map((d) => d.cliente_id));
 
         return {
             total_enviados,
@@ -226,16 +243,12 @@ export async function getCampanhasParaN8N(empresaId: string, apiKey: string): Pr
             throw new Error('API key inválida');
         }
 
-        const data = await pg.query(
+        const data = await pg.query<CampanhaRow>(
             `SELECT * FROM campanhas_config WHERE empresa_id = $1 AND ativo = true LIMIT 100`,
             [empresaId]
         );
 
-        return (data.rows || []).map((c: any) => ({
-            ...c,
-            id: c.id,
-            dias_semana: c.dias_semana ? (typeof c.dias_semana === 'string' ? JSON.parse(c.dias_semana) : c.dias_semana) : undefined
-        }));
+        return (data.rows || []).map(toCampanhaConfig);
     } catch (error) {
         console.error('getCampanhasParaN8N error:', error);
         return [];
@@ -269,9 +282,9 @@ export async function registrarDisparo(data: {
 
         revalidatePath('/dashboard/marketing');
         return { success: true };
-    } catch (error: any) {
+    } catch (error) {
         console.error('registrarDisparo error:', error);
-        return { success: false, error: error.message || 'Erro ao registrar disparo' };
+        return { success: false, error: getErrorMessage(error, 'Erro ao registrar disparo') };
     }
 }
 
@@ -283,7 +296,7 @@ export async function dispararCampanhasManual(): Promise<{
     enviados?: number; 
     erros?: number;
     campanhas_processadas?: number;
-    resultados?: any[];
+    resultados?: CampanhaResultado[];
     error?: string 
 }> {
     try {
@@ -312,8 +325,8 @@ export async function dispararCampanhasManual(): Promise<{
             campanhas_processadas: result.campanhas_processadas || 0,
             resultados: result.resultados || []
         };
-    } catch (error: any) {
+    } catch (error) {
         console.error('[dispararCampanhasManual] Erro:', error);
-        return { success: false, error: error.message || 'Erro ao disparar campanhas' };
+        return { success: false, error: getErrorMessage(error, 'Erro ao disparar campanhas') };
     }
 }

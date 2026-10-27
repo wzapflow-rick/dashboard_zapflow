@@ -66,9 +66,20 @@ export interface ClienteRow {
   empresa_id: Id;
   nome: string | null;
   telefone: string | null;
+  bairro_entrega?: string | null;
+  endereco?: string | null;
+  endereco_completo?: string | null;
   ultima_compra?: string | Date | null;
   criado_em?: string | Date | null;
   [key: string]: unknown;
+}
+
+export interface LoyaltyPointsRow {
+  id: number;
+  empresa_id: Id;
+  cliente_telefone: string | null;
+  pontos_acumulados: number | null;
+  pontos_gastos: number | null;
 }
 
 export interface EntregadorRow {
