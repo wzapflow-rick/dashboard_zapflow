@@ -50,9 +50,9 @@ export default function ProductTable({
     };
 
     return (
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden overflow-x-auto custom-scrollbar relative min-h-[300px]">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl border border-slate-200 dark:border-zinc-800/60 shadow-sm overflow-hidden overflow-x-auto custom-scrollbar relative min-h-[300px]">
             {loading && (
-                <div className="absolute inset-0 bg-white/50 dark:bg-slate-800/50 backdrop-blur-[1px] z-10 flex items-center justify-center">
+                <div className="absolute inset-0 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-[1px] z-10 flex items-center justify-center">
                     <div className="flex flex-col items-center gap-2">
                         <MorphingInfinity className="size-8 text-primary" />
                         <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Carregando...</p>
@@ -61,7 +61,7 @@ export default function ProductTable({
             )}
             <table className="w-full text-left border-collapse min-w-[800px]">
                 <thead>
-                    <tr className="bg-slate-50/50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-600">
+                    <tr className="bg-slate-50/50 dark:bg-zinc-800/50 border-b border-slate-200 dark:border-zinc-700">
                         <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Produto</th>
                         <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Categoria</th>
                         <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Preço</th>
@@ -69,7 +69,7 @@ export default function ProductTable({
                         <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Ações</th>
                     </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/60">
                     {paginatedProducts.length > 0 ? paginatedProducts.map((product) => {
                         const productReceita = productRecipes.filter(r => r.produto_id === product.id);
                         let maxMakers = -1;
@@ -89,11 +89,11 @@ export default function ProductTable({
                         const isEffectivelyUnavailable = !product.disponivel || isOutOfStock;
 
                         return (
-                            <tr key={product.id} className={cn("hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors group", isEffectivelyUnavailable && "opacity-75")}>
+                            <tr key={product.id} className={cn("hover:bg-slate-50/50 dark:hover:bg-zinc-800/50 transition-colors group", isEffectivelyUnavailable && "opacity-75")}>
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-4">
                                         <div className={cn(
-                                            "size-12 rounded-lg bg-slate-100 dark:bg-slate-700 overflow-hidden border border-slate-200 dark:border-slate-600 shrink-0 relative",
+                                            "size-12 rounded-lg bg-slate-100 dark:bg-zinc-800 overflow-hidden border border-slate-200 dark:border-zinc-700 shrink-0 relative",
                                             isEffectivelyUnavailable && "grayscale"
                                         )}>
                                             <Image
@@ -121,7 +121,7 @@ export default function ProductTable({
                                     </div>
                                 </td>
                                 <td className="px-6 py-4">
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-slate-300">
                                         {getCategoryName(product.categoria_id)}
                                     </span>
                                 </td>
@@ -137,7 +137,7 @@ export default function ProductTable({
                                             disabled={isOutOfStock}
                                             onChange={() => onToggleAvailability(product.id, product.disponivel)}
                                         />
-                                        <div className={cn("w-11 h-6 bg-slate-200 dark:bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all", product.disponivel ? "peer-checked:bg-primary" : "", isOutOfStock && "opacity-50 cursor-not-allowed")}></div>
+                                        <div className={cn("w-11 h-6 bg-slate-200 dark:bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all", product.disponivel ? "peer-checked:bg-primary" : "", isOutOfStock && "opacity-50 cursor-not-allowed")}></div>
                                     </label>
                                 </td>
                                 <td className="px-6 py-4 text-right">
@@ -168,7 +168,7 @@ export default function ProductTable({
 
             {/* Pagination */}
             {totalPages > 1 && (
-                <div className="px-4 sm:px-6 py-4 bg-slate-50/50 dark:bg-slate-700/50 border-t border-slate-200 dark:border-slate-600 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="px-4 sm:px-6 py-4 bg-slate-50/50 dark:bg-zinc-800/50 border-t border-slate-200 dark:border-zinc-700 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <span className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium tracking-wide uppercase text-center sm:text-left">
                         Mostrando {paginatedProducts.length} de {totalFiltered} produtos
                     </span>
@@ -187,7 +187,7 @@ export default function ProductTable({
                                     onClick={() => onPageChange(page)}
                                     className={cn(
                                         "w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg text-xs font-bold transition-colors",
-                                        currentPage === page ? "bg-primary text-white" : "hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300"
+                                        currentPage === page ? "bg-primary text-white" : "hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-600 dark:text-slate-300"
                                     )}
                                 >
                                     {page}

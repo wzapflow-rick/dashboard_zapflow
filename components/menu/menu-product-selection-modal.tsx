@@ -322,7 +322,7 @@ export default function MenuProductSelectionModal({
                     animate={{ y: 0 }}
                     exit={{ y: '100%' }}
                     transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                    className="bg-white dark:bg-[#121212] w-full max-w-lg h-full sm:h-auto sm:max-h-[90vh] sm:rounded-3xl overflow-hidden flex flex-col shadow-2xl"
+                    className="bg-white dark:bg-[#121212] w-full max-w-lg h-full sm:h-auto sm:max-h-[90vh] sm:rounded-2xl overflow-hidden flex flex-col shadow-2xl"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header do Modal */}
@@ -441,7 +441,7 @@ export default function MenuProductSelectionModal({
                                                         <h3 className="font-bold text-slate-900 dark:text-white">
                                                             {grupo.nome} {min > 0 && <span className="text-rose-500">*</span>}
                                                         </h3>
-                                                        <div className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider ${isDone ? 'bg-green-100 text-green-600 dark:bg-green-900/30' : 'bg-slate-100 text-slate-500 dark:bg-slate-800'}`}>
+                                                        <div className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider ${isDone ? 'bg-green-100 text-green-600 dark:bg-green-900/30' : 'bg-slate-100 text-slate-500 dark:bg-zinc-900'}`}>
                                                             {isFractional ? `${Math.round(fraction * 100)}% selecionado` : `${selCount}/${max === 999 ? '∞' : max}`}
                                                         </div>
                                                     </div>
@@ -526,7 +526,7 @@ export default function MenuProductSelectionModal({
 
                                     <div className="space-y-3">
                                         {availableUpsells.map((upsell) => (
-                                            <div key={upsell.id} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-3 flex items-center gap-4 shadow-sm">
+                                            <div key={upsell.id} className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800/60 p-3 flex items-center gap-4 shadow-sm">
                                                 <div className="relative size-16 rounded-xl overflow-hidden shrink-0">
                                                     <Image src={upsell.imagem || '/images/produto-placeholder.svg'} alt={upsell.nome} fill className="object-cover" />
                                                 </div>
@@ -609,7 +609,7 @@ export default function MenuProductSelectionModal({
                     </div>
                     
                     {/* Preço Flutuante no Mobile */}
-                    <div className="absolute top-4 left-4 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg border border-white/20 dark:border-slate-700/30 z-20 sm:hidden">
+                    <div className="absolute top-4 left-4 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg border border-white/20 dark:border-zinc-800/30 z-20 sm:hidden">
                         <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">{fmt(finalPrice)}</span>
                     </div>
                 </motion.div>

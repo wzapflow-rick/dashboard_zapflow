@@ -260,8 +260,8 @@ export default function SubscriptionPage() {
                 <div 
                   key={plan.id} 
                   className={cn(
-                    "bg-white dark:bg-slate-800 rounded-3xl border p-6 md:p-8 flex flex-col relative overflow-hidden",
-                    'popular' in plan && plan.popular ? "border-primary ring-4 ring-primary/5" : "border-slate-200 dark:border-slate-700"
+                    "bg-white dark:bg-zinc-900 rounded-2xl border p-6 md:p-8 flex flex-col relative overflow-hidden",
+                    'popular' in plan && plan.popular ? "border-primary ring-4 ring-primary/5" : "border-slate-200 dark:border-zinc-800/60"
                   )}
                 >
                   {'popular' in plan && plan.popular && (
@@ -306,7 +306,7 @@ export default function SubscriptionPage() {
                       className={cn(
                         "w-full py-3 md:py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2",
                         isCurrent 
-                          ? "bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-default" 
+                          ? "bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-slate-500 cursor-default" 
                           : "bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20"
                       )}
                     >
@@ -326,7 +326,7 @@ export default function SubscriptionPage() {
                       <button 
                         onClick={() => handlePayWithPix(plan.id as SubscriptionPlanId)}
                         disabled={isProcessing}
-                        className="w-full py-3 md:py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 border-2 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+                        className="w-full py-3 md:py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 border-2 border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-zinc-800"
                       >
                         <QrCode className="size-5" />
                         Pagar com PIX
@@ -340,8 +340,8 @@ export default function SubscriptionPage() {
 
           {/* Payment Methods */}
           {subscription && subscription.cartao_ultimos_digitos && (
-            <section className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+            <section className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800/60 shadow-sm overflow-hidden">
+              <div className="p-6 border-b border-slate-100 dark:border-zinc-800/60 flex justify-between items-center">
                 <h4 className="font-bold text-slate-800 dark:text-white">Métodos de Pagamento</h4>
                 <button 
                   onClick={() => setShowCardModal(true)}
@@ -351,9 +351,9 @@ export default function SubscriptionPage() {
                 </button>
               </div>
               <div className="p-6">
-                <div className="flex items-center justify-between p-4 border border-slate-200 dark:border-slate-700 rounded-xl">
+                <div className="flex items-center justify-between p-4 border border-slate-200 dark:border-zinc-800/60 rounded-xl">
                   <div className="flex items-center gap-4">
-                    <div className="size-12 bg-slate-50 dark:bg-slate-700 rounded-lg flex items-center justify-center border border-slate-100 dark:border-slate-600">
+                    <div className="size-12 bg-slate-50 dark:bg-zinc-800 rounded-lg flex items-center justify-center border border-slate-100 dark:border-zinc-700">
                       <CreditCard className="size-6 text-slate-400" />
                     </div>
                     <div>
@@ -371,16 +371,16 @@ export default function SubscriptionPage() {
 
           {/* Invoices History */}
           {invoices.length > 0 && (
-            <section className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center gap-3">
+            <section className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800/60 shadow-sm overflow-hidden">
+              <div className="p-6 border-b border-slate-100 dark:border-zinc-800/60 flex items-center gap-3">
                 <Receipt className="size-5 text-slate-400" />
                 <h4 className="font-bold text-slate-800 dark:text-white">Histórico de Faturas</h4>
               </div>
-              <div className="divide-y divide-slate-100 dark:divide-slate-700">
+              <div className="divide-y divide-slate-100 dark:divide-zinc-800/60">
                 {invoices.map((invoice) => (
                   <div key={invoice.id} className="p-4 md:p-6 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="size-10 bg-slate-50 dark:bg-slate-700 rounded-lg flex items-center justify-center">
+                      <div className="size-10 bg-slate-50 dark:bg-zinc-800 rounded-lg flex items-center justify-center">
                         <Calendar className="size-5 text-slate-400" />
                       </div>
                       <div>
@@ -413,7 +413,7 @@ export default function SubscriptionPage() {
         {showChangePlanModal && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60" onClick={() => setShowChangePlanModal(false)} />
-            <div className="relative bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <div className="relative bg-white dark:bg-zinc-900 rounded-2xl p-6 max-w-md w-full shadow-2xl">
               <button onClick={() => setShowChangePlanModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
                 <X className="size-5" />
               </button>
@@ -439,7 +439,7 @@ export default function SubscriptionPage() {
               <div className="flex gap-3">
                 <button 
                   onClick={() => setShowChangePlanModal(false)}
-                  className="flex-1 py-3 rounded-xl font-bold border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+                  className="flex-1 py-3 rounded-xl font-bold border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-zinc-800"
                 >
                   Cancelar
                 </button>
@@ -458,7 +458,7 @@ export default function SubscriptionPage() {
         {showCancelModal && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60" onClick={() => setShowCancelModal(false)} />
-            <div className="relative bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <div className="relative bg-white dark:bg-zinc-900 rounded-2xl p-6 max-w-md w-full shadow-2xl">
               <button onClick={() => setShowCancelModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
                 <X className="size-5" />
               </button>
@@ -474,7 +474,7 @@ export default function SubscriptionPage() {
               <div className="flex gap-3">
                 <button 
                   onClick={() => setShowCancelModal(false)}
-                  className="flex-1 py-3 rounded-xl font-bold border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+                  className="flex-1 py-3 rounded-xl font-bold border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-zinc-800"
                 >
                   Manter Assinatura
                 </button>
@@ -493,7 +493,7 @@ export default function SubscriptionPage() {
         {showPixModal && pixData && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60" onClick={() => setShowPixModal(false)} />
-            <div className="relative bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <div className="relative bg-white dark:bg-zinc-900 rounded-2xl p-6 max-w-md w-full shadow-2xl">
               <button onClick={() => setShowPixModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
                 <X className="size-5" />
               </button>
@@ -516,7 +516,7 @@ export default function SubscriptionPage() {
 
               <button
                 onClick={handleCopyPix}
-                className="w-full py-3 rounded-xl font-bold border-2 border-dashed border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center justify-center gap-2 mb-4"
+                className="w-full py-3 rounded-xl font-bold border-2 border-dashed border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-zinc-800 flex items-center justify-center gap-2 mb-4"
               >
                 {pixCopied ? (
                   <>

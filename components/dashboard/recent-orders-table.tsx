@@ -25,10 +25,10 @@ export function RecentOrdersTable({ orders, onOpenModal }: RecentOrdersTableProp
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="relative bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-slate-200/50 dark:border-slate-700/50 shadow-lg shadow-slate-200/50 dark:shadow-black/20 overflow-hidden"
+            className="relative bg-white/70 dark:bg-zinc-950/50 backdrop-blur-xl rounded-2xl border border-slate-200/50 dark:border-zinc-800/50 shadow-lg shadow-slate-200/50 dark:shadow-black/20 overflow-hidden"
         >
             {/* Header */}
-            <div className="p-6 border-b border-slate-200/50 dark:border-slate-700/50 flex justify-between items-center bg-gradient-to-r from-transparent via-primary/[0.02] to-transparent">
+            <div className="p-6 border-b border-slate-200/50 dark:border-zinc-800/50 flex justify-between items-center bg-gradient-to-r from-transparent via-primary/[0.02] to-transparent">
                 <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-primary/10 dark:bg-primary/20">
                         <ShoppingBag className="size-4 text-primary" />
@@ -53,7 +53,7 @@ export function RecentOrdersTable({ orders, onOpenModal }: RecentOrdersTableProp
             {/* Table */}
             <div className="overflow-x-auto no-scrollbar">
                 <table className="w-full text-left min-w-[700px]">
-                    <thead className="bg-slate-50/80 dark:bg-slate-800/50 text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wider font-semibold">
+                    <thead className="bg-slate-50/80 dark:bg-zinc-900/50 text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wider font-semibold">
                         <tr>
                             <th className="px-6 py-4">ID Pedido</th>
                             <th className="px-6 py-4">Cliente</th>
@@ -63,7 +63,7 @@ export function RecentOrdersTable({ orders, onOpenModal }: RecentOrdersTableProp
                             <th className="px-6 py-4 text-right">Acoes</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/60">
                         {orders.map((order, index) => (
                             <motion.tr 
                                 key={order.id} 

@@ -223,7 +223,7 @@ export function TipsCarousel() {
       <div 
         className={cn(
           "relative overflow-hidden rounded-2xl border bg-gradient-to-br p-6",
-          "bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm",
+          "bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm",
           config.border
         )}
         onMouseEnter={() => setIsAutoPlaying(false)}
@@ -249,7 +249,7 @@ export function TipsCarousel() {
               {/* Icon */}
               <div className={cn(
                 "size-12 rounded-xl flex items-center justify-center shrink-0",
-                "bg-white/80 dark:bg-slate-900/80 shadow-sm"
+                "bg-white/80 dark:bg-zinc-950/80 shadow-sm"
               )}>
                 <Icon className={cn("size-6", config.text)} />
               </div>
@@ -259,7 +259,7 @@ export function TipsCarousel() {
                 <div className="flex items-center gap-2 mb-1">
                   <span className={cn(
                     "text-xs font-medium px-2 py-0.5 rounded-full",
-                    "bg-white/80 dark:bg-slate-900/80",
+                    "bg-white/80 dark:bg-zinc-950/80",
                     config.text
                   )}>
                     {config.label}
@@ -294,13 +294,13 @@ export function TipsCarousel() {
         <div className="absolute bottom-4 right-4 flex items-center gap-2">
           <button
             onClick={goToPrevious}
-            className="size-8 rounded-lg bg-white/80 dark:bg-slate-900/80 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-900 transition-colors shadow-sm"
+            className="size-8 rounded-lg bg-white/80 dark:bg-zinc-950/80 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-zinc-950 transition-colors shadow-sm"
           >
             <ChevronLeft className="size-4" />
           </button>
           <button
             onClick={goToNext}
-            className="size-8 rounded-lg bg-white/80 dark:bg-slate-900/80 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-900 transition-colors shadow-sm"
+            className="size-8 rounded-lg bg-white/80 dark:bg-zinc-950/80 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-zinc-950 transition-colors shadow-sm"
           >
             <ChevronRight className="size-4" />
           </button>
@@ -319,7 +319,7 @@ export function TipsCarousel() {
                 "size-1.5 rounded-full transition-all",
                 idx === currentIndex % 5
                   ? "w-4 bg-primary"
-                  : "bg-slate-300 dark:bg-slate-600 hover:bg-slate-400 dark:hover:bg-slate-500"
+                  : "bg-slate-300 dark:bg-zinc-700 hover:bg-slate-400 dark:hover:bg-zinc-600"
               )}
             />
           ))}

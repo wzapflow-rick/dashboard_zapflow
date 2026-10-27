@@ -99,7 +99,7 @@ function InsightsHeading({
           <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-500 dark:text-slate-400">{description}</p>
         </div>
       </div>
-      <span className="w-fit rounded-full border border-slate-200/70 bg-white/70 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/50 dark:text-slate-300">
+      <span className="w-fit rounded-full border border-slate-200/70 bg-white/70 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm dark:border-zinc-800/50 dark:bg-zinc-950/50 dark:text-slate-300">
         {scope}
       </span>
     </header>
@@ -127,14 +127,14 @@ function MetricCard({
         'rounded-2xl border p-4 shadow-sm backdrop-blur-xl',
         destaque
           ? 'border-primary/30 bg-primary/[0.07] shadow-primary/5'
-          : 'border-slate-200/70 bg-white/75 shadow-slate-200/30 dark:border-slate-700/50 dark:bg-slate-900/50 dark:shadow-black/20',
+          : 'border-slate-200/70 bg-white/75 shadow-slate-200/30 dark:border-zinc-800/50 dark:bg-zinc-950/50 dark:shadow-black/20',
       )}
     >
       <div className="mb-2 flex items-center gap-2">
         <div
           className={cn(
             'flex size-8 items-center justify-center rounded-lg',
-            destaque ? 'bg-primary/15 text-primary' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300',
+            destaque ? 'bg-primary/15 text-primary' : 'bg-slate-100 text-slate-500 dark:bg-zinc-900 dark:text-slate-300',
           )}
         >
           <Icon className="size-4" aria-hidden="true" />
@@ -160,7 +160,7 @@ function InsightsSkeleton() {
     <div className="flex flex-col gap-6 text-slate-900 dark:text-white" role="status" aria-busy="true">
       <span className="sr-only">Carregando inteligência ZapFlash...</span>
 
-      <div className="flex min-h-64 flex-col justify-between gap-6 rounded-3xl border border-current/10 p-6 sm:p-8">
+      <div className="flex min-h-64 flex-col justify-between gap-6 rounded-2xl border border-current/10 p-6 sm:p-8">
         <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex w-full flex-1 flex-col gap-3">
             <Skeleton className="h-6 w-36 rounded-full" />
@@ -193,7 +193,7 @@ function InsightsSkeleton() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         {[0, 1].map((item) => (
-          <div key={item} className="flex min-h-40 flex-col gap-3 rounded-3xl border border-current/10 p-6">
+          <div key={item} className="flex min-h-40 flex-col gap-3 rounded-2xl border border-current/10 p-6">
             <div className="flex items-center gap-2">
               <Skeleton className="size-5" />
               <Skeleton className="h-5 w-36" />
@@ -273,7 +273,7 @@ export function ZapflowInsightsClient({ initialData, operationContent }: Zapflow
             scope="Hoje + semana"
           />
           <div className="text-slate-900 dark:text-white" role="status" aria-label="Carregando tendências do negócio">
-            <Skeleton className="h-52 rounded-3xl" />
+            <Skeleton className="h-52 rounded-2xl" />
           </div>
         </section>
       </>
@@ -292,7 +292,7 @@ export function ZapflowInsightsClient({ initialData, operationContent }: Zapflow
             icon={Sparkles}
             scope="Hoje + últimos 7 dias"
           />
-          <div className="rounded-3xl border border-slate-200/70 bg-white/75 p-8 text-center shadow-sm dark:border-slate-700/50 dark:bg-slate-900/50">
+          <div className="rounded-2xl border border-slate-200/70 bg-white/75 p-8 text-center shadow-sm dark:border-zinc-800/50 dark:bg-zinc-950/50">
             <AlertTriangle className="mx-auto mb-3 size-8 text-amber-500 dark:text-amber-400" aria-hidden="true" />
             <p className="text-slate-800 dark:text-slate-200">Não foi possível carregar os insights agora.</p>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{data?.error || 'Tente atualizar em instantes.'}</p>
@@ -333,7 +333,7 @@ export function ZapflowInsightsClient({ initialData, operationContent }: Zapflow
         <motion.div
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/[0.10] via-white/80 to-slate-50/60 p-6 shadow-lg shadow-primary/5 dark:via-slate-900/60 dark:to-slate-900/20 sm:p-8"
+          className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/[0.10] via-white/80 to-slate-50/60 p-6 shadow-lg shadow-primary/5 dark:via-zinc-950/60 dark:to-zinc-950/20 sm:p-8"
         >
           <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex-1">
@@ -354,7 +354,7 @@ export function ZapflowInsightsClient({ initialData, operationContent }: Zapflow
             </div>
           </div>
 
-          <div className="mt-6 flex flex-col justify-between gap-3 border-t border-slate-200/70 pt-4 dark:border-slate-700/50 sm:flex-row sm:items-center">
+          <div className="mt-6 flex flex-col justify-between gap-3 border-t border-slate-200/70 pt-4 dark:border-zinc-800/50 sm:flex-row sm:items-center">
             <span className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
               <Sparkles className="size-3.5 text-primary" aria-hidden="true" />
               {data.doCache ? 'Análise diária em cache' : 'Análise recém-gerada'}
@@ -365,7 +365,7 @@ export function ZapflowInsightsClient({ initialData, operationContent }: Zapflow
               type="button"
               onClick={() => carregar(true)}
               disabled={atualizando}
-              className="flex w-fit items-center gap-2 rounded-xl border border-slate-200/70 bg-white/60 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:border-primary/30 hover:text-primary disabled:opacity-50 dark:border-slate-700/50 dark:bg-slate-900/40 dark:text-slate-200 dark:hover:text-primary"
+              className="flex w-fit items-center gap-2 rounded-xl border border-slate-200/70 bg-white/60 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:border-primary/30 hover:text-primary disabled:opacity-50 dark:border-zinc-800/50 dark:bg-zinc-950/40 dark:text-slate-200 dark:hover:text-primary"
             >
               {atualizando ? (
           <MorphingInfinity className="size-4" aria-hidden="true" />
@@ -388,7 +388,7 @@ export function ZapflowInsightsClient({ initialData, operationContent }: Zapflow
           <motion.article
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-3xl border border-primary/20 bg-primary/[0.07] p-6"
+            className="rounded-2xl border border-primary/20 bg-primary/[0.07] p-6"
           >
             <div className="mb-2 flex items-center gap-2">
               <Trophy className="size-5 text-primary" aria-hidden="true" />
@@ -401,7 +401,7 @@ export function ZapflowInsightsClient({ initialData, operationContent }: Zapflow
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
-            className="relative overflow-hidden rounded-3xl border border-slate-200/70 bg-white/75 p-6 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/50"
+            className="relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white/75 p-6 shadow-sm dark:border-zinc-800/50 dark:bg-zinc-950/50"
           >
             <div className="mb-2 flex items-center gap-2">
               <Flame className="size-5 text-amber-500 dark:text-amber-400" aria-hidden="true" />
@@ -442,7 +442,7 @@ export function ZapflowInsightsClient({ initialData, operationContent }: Zapflow
                       ? 'border-red-300/60 bg-red-50/80 dark:border-red-500/30 dark:bg-red-500/[0.06]'
                       : alerta.gravidade === 'media'
                         ? 'border-amber-300/60 bg-amber-50/80 dark:border-amber-500/30 dark:bg-amber-500/[0.06]'
-                        : 'border-slate-200/70 bg-white/75 dark:border-slate-700/50 dark:bg-slate-900/50',
+                        : 'border-slate-200/70 bg-white/75 dark:border-zinc-800/50 dark:bg-zinc-950/50',
                   )}
                 >
                   <p className="font-semibold text-slate-900 dark:text-white">{alerta.titulo}</p>
@@ -470,7 +470,7 @@ export function ZapflowInsightsClient({ initialData, operationContent }: Zapflow
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="flex flex-col rounded-2xl border border-slate-200/70 bg-white/75 p-5 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/50"
+                    className="flex flex-col rounded-2xl border border-slate-200/70 bg-white/75 p-5 shadow-sm dark:border-zinc-800/50 dark:bg-zinc-950/50"
                   >
                     <div className="mb-2 flex items-center gap-2">
                       <div className="flex size-8 items-center justify-center rounded-lg bg-primary/15 text-primary">
@@ -508,7 +508,7 @@ export function ZapflowInsightsClient({ initialData, operationContent }: Zapflow
         />
 
         <div className="grid gap-4 lg:grid-cols-2">
-          <article className="rounded-3xl border border-slate-200/70 bg-white/75 p-6 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/50">
+          <article className="rounded-2xl border border-slate-200/70 bg-white/75 p-6 shadow-sm dark:border-zinc-800/50 dark:bg-zinc-950/50">
             <div className="mb-4 flex items-center gap-2">
               <Star className="size-5 text-amber-500 dark:text-amber-400" aria-hidden="true" />
               <h3 className="font-bold text-slate-900 dark:text-white">Campeões da semana</h3>
@@ -524,7 +524,7 @@ export function ZapflowInsightsClient({ initialData, operationContent }: Zapflow
                         'flex size-6 items-center justify-center rounded-full text-xs font-bold',
                         index === 0
                           ? 'bg-amber-100 text-amber-700 dark:bg-amber-400/20 dark:text-amber-400'
-                          : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400',
+                          : 'bg-slate-100 text-slate-500 dark:bg-zinc-900 dark:text-slate-400',
                       )}
                     >
                       {index + 1}
@@ -537,14 +537,14 @@ export function ZapflowInsightsClient({ initialData, operationContent }: Zapflow
             )}
           </article>
 
-          <article className="rounded-3xl border border-slate-200/70 bg-white/75 p-6 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/50">
+          <article className="rounded-2xl border border-slate-200/70 bg-white/75 p-6 shadow-sm dark:border-zinc-800/50 dark:bg-zinc-950/50">
             <div className="mb-4 flex items-center gap-2">
               <Users className="size-5 text-primary" aria-hidden="true" />
               <h3 className="font-bold text-slate-900 dark:text-white">Seus clientes</h3>
             </div>
             <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">{ai.analiseClientes}</p>
             <div className="mt-4 grid grid-cols-2 gap-3">
-              <div className="rounded-2xl bg-slate-100/80 p-4 text-center dark:bg-slate-800/60">
+              <div className="rounded-2xl bg-slate-100/80 p-4 text-center dark:bg-zinc-900/60">
                 <p className="text-2xl font-black text-slate-900 dark:text-white">{metrics.clientesUnicosSemana}</p>
                 <p className="text-xs text-slate-500 dark:text-slate-400">Clientes na semana</p>
               </div>
@@ -559,11 +559,11 @@ export function ZapflowInsightsClient({ initialData, operationContent }: Zapflow
         <ComparativosSection initialData={data.comparativos} cacheScope={data.geradoEm} />
 
         {score.fatores.length > 0 && (
-          <article className="rounded-3xl border border-slate-200/70 bg-white/75 p-6 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/50">
+          <article className="rounded-2xl border border-slate-200/70 bg-white/75 p-6 shadow-sm dark:border-zinc-800/50 dark:bg-zinc-950/50">
             <h3 className="mb-4 text-lg font-bold text-slate-900 dark:text-white">O que compõe seu score</h3>
             <div className="flex flex-col gap-2">
               {score.fatores.map((fator, index) => (
-                <div key={`${fator.label}-${index}`} className="flex items-center justify-between rounded-xl bg-slate-100/70 px-4 py-2.5 dark:bg-slate-800/50">
+                <div key={`${fator.label}-${index}`} className="flex items-center justify-between rounded-xl bg-slate-100/70 px-4 py-2.5 dark:bg-zinc-900/50">
                   <span className="text-sm text-slate-600 dark:text-slate-300">{fator.label}</span>
                   <span className={cn('text-sm font-bold', fator.impacto >= 0 ? 'text-primary' : 'text-red-500 dark:text-red-400')}>
                     {fator.impacto >= 0 ? '+' : ''}

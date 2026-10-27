@@ -63,10 +63,10 @@ export default function CancelOrderModal({ isOpen, onClose, onConfirm, orderId }
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-700"
+                    className="relative w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-zinc-800/60"
                 >
                     {/* Header */}
-                    <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700 bg-red-50 dark:bg-red-900/20">
+                    <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-zinc-800/60 bg-red-50 dark:bg-red-900/20">
                         <div className="flex items-center gap-3">
                             <div className="size-10 bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center">
                                 <Ban className="size-5" />
@@ -78,7 +78,7 @@ export default function CancelOrderModal({ isOpen, onClose, onConfirm, orderId }
                         </div>
                         <button
                             onClick={handleClose}
-                            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                            className="p-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
                         >
                             <X className="size-5 text-slate-500 dark:text-slate-400" />
                         </button>
@@ -105,7 +105,7 @@ export default function CancelOrderModal({ isOpen, onClose, onConfirm, orderId }
                                         className={`w-full text-left px-4 py-3 rounded-lg border transition-all ${
                                             selectedReason === reason
                                                 ? 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'
-                                                : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'
+                                                : 'border-slate-200 dark:border-zinc-700 hover:border-slate-300 dark:hover:border-zinc-600'
                                         }`}
                                     >
                                         {reason}
@@ -123,17 +123,17 @@ export default function CancelOrderModal({ isOpen, onClose, onConfirm, orderId }
                                     value={customReason}
                                     onChange={(e) => setCustomReason(e.target.value)}
                                     placeholder="Digite o motivo do cancelamento..."
-                                    className="w-full h-24 px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-red-500/20 dark:text-white resize-none"
+                                    className="w-full h-24 px-4 py-3 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-red-500/20 dark:text-white resize-none"
                                 />
                             </div>
                         )}
                     </div>
 
                     {/* Actions */}
-                    <div className="p-4 border-t border-slate-200 dark:border-slate-700 flex gap-3">
+                    <div className="p-4 border-t border-slate-200 dark:border-zinc-800/60 flex gap-3">
                         <button
                             onClick={handleClose}
-                            className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+                            className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all"
                         >
                             Voltar
                         </button>
@@ -141,7 +141,7 @@ export default function CancelOrderModal({ isOpen, onClose, onConfirm, orderId }
                             onClick={handleSubmit}
                             disabled={!selectedReason || (selectedReason === 'Outro motivo' && !customReason) || isSubmitting}
                             aria-busy={isSubmitting}
-                            className="flex-1 px-4 py-2.5 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                            className="flex-1 px-4 py-2.5 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 disabled:bg-slate-300 dark:disabled:bg-zinc-700 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
                         >
                             {isSubmitting && <MorphingInfinity className="size-4" aria-hidden="true" />}
                             {isSubmitting ? 'Cancelando...' : 'Confirmar Cancelamento'}

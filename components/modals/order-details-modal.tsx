@@ -43,7 +43,7 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] dark:bg-slate-800"
+            className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] dark:bg-zinc-900"
           >
             {/* Header */}
             <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-900 shrink-0">
@@ -66,7 +66,7 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
               {/* Status e Data */}
-              <div className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100 dark:bg-slate-700 dark:border-slate-600">
+              <div className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100 dark:bg-zinc-800 dark:border-zinc-700">
                 <div className="flex items-center gap-3">
                   <Calendar className="size-4 text-slate-400" />
                   <div>
@@ -85,8 +85,8 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
               </div>
 
               {/* Cliente */}
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-4 dark:bg-slate-700 dark:border-slate-600">
-                <div className="size-10 rounded-full bg-white shadow-sm flex items-center justify-center text-primary border border-slate-100 dark:bg-slate-600 dark:border-slate-500">
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-4 dark:bg-zinc-800 dark:border-zinc-700">
+                <div className="size-10 rounded-full bg-white shadow-sm flex items-center justify-center text-primary border border-slate-100 dark:bg-zinc-700 dark:border-zinc-600">
                   <User className="size-5" />
                 </div>
                 <div>
@@ -101,11 +101,11 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
                 <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
                   <Tag className="size-3" /> Itens do Pedido
                 </h4>
-                <div className="bg-white border border-slate-100 rounded-2xl divide-y divide-slate-50 overflow-hidden dark:bg-slate-700 dark:border-slate-600 dark:divide-slate-600">
+                <div className="bg-white border border-slate-100 rounded-2xl divide-y divide-slate-50 overflow-hidden dark:bg-zinc-800 dark:border-zinc-700 dark:divide-zinc-700">
                   {formattedItems.map((item: any, i: number) => (
-                    <div key={i} className="p-4 flex items-center justify-between hover:bg-slate-50/50 transition-colors dark:hover:bg-slate-600/50">
+                    <div key={i} className="p-4 flex items-center justify-between hover:bg-slate-50/50 transition-colors dark:hover:bg-zinc-700/50">
                       <div className="flex items-center gap-3">
-                        <span className="size-7 flex items-center justify-center bg-slate-100 rounded font-black text-xs text-slate-500 dark:bg-slate-600 dark:text-slate-300">{item.quantidade}x</span>
+                        <span className="size-7 flex items-center justify-center bg-slate-100 rounded font-black text-xs text-slate-500 dark:bg-zinc-700 dark:text-slate-300">{item.quantidade}x</span>
                         <div>
                           <p className="text-sm font-bold text-slate-900 dark:text-white">{item.produto}</p>
                           {item.observacao && <p className="text-[10px] text-red-500 font-medium italic">Obs: {item.observacao}</p>}
@@ -119,14 +119,14 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
 
               {/* Extras */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-1 dark:bg-slate-700 dark:border-slate-600">
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-1 dark:bg-zinc-800 dark:border-zinc-700">
                   <p className="text-[10px] font-bold text-slate-400 uppercase">Pagamento</p>
                   <div className="flex items-center gap-2">
                     <CreditCard className="size-4 text-primary" />
                     <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{order.forma_pagamento || 'A combinar'}</span>
                   </div>
                 </div>
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-1 dark:bg-slate-700 dark:border-slate-600">
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-1 dark:bg-zinc-800 dark:border-zinc-700">
                   <p className="text-[10px] font-bold text-slate-400 uppercase">Local</p>
                   <div className="flex items-center gap-2 text-primary">
                     <MapPin className="size-4" />
@@ -144,7 +144,7 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
             </div>
 
             {/* Total e Footer */}
-            <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between shrink-0 dark:border-slate-700 dark:bg-slate-700/50">
+            <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between shrink-0 dark:border-zinc-800/60 dark:bg-zinc-800/50">
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase">Total do Pedido</p>
                 <p className="text-2xl font-black text-slate-900 dark:text-white">R$ {Number(order.valor_total).toFixed(2).replace('.', ',')}</p>

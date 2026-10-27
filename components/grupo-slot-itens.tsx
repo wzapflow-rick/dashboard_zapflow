@@ -108,13 +108,13 @@ export function GrupoSlotItens({ grupo, onClose }: GrupoSlotItensProps) {
                     onClick={onClose}
                 />
                 <motion.div
-                    className="relative bg-white dark:bg-slate-800 rounded-2xl w-full max-w-3xl shadow-xl flex flex-col max-h-[90vh] border border-slate-200 dark:border-slate-700"
+                    className="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-3xl shadow-xl flex flex-col max-h-[90vh] border border-slate-200 dark:border-zinc-800/60"
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                 >
                     {/* Header */}
-                    <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700 flex-shrink-0">
+                    <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-zinc-800/60 flex-shrink-0">
                         <div>
                             <h2 className="text-lg font-semibold text-slate-900 dark:text-zinc-200">{grupo.nome}</h2>
                             <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
@@ -153,7 +153,7 @@ export function GrupoSlotItens({ grupo, onClose }: GrupoSlotItensProps) {
                                     value={busca}
                                     onChange={e => setBusca(e.target.value)}
                                     placeholder="Buscar sabor..."
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors dark:bg-slate-800 dark:text-zinc-200 dark:border-slate-700 dark:placeholder-slate-400"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors dark:bg-zinc-900 dark:text-zinc-200 dark:border-zinc-800/60 dark:placeholder-slate-400"
                                 />
                             </div>
                             {loading ? (
@@ -175,8 +175,8 @@ export function GrupoSlotItens({ grupo, onClose }: GrupoSlotItensProps) {
                                                     className={cn(
                                                         'flex items-center justify-between p-3 rounded-xl border transition-all',
                                                         isVinculado
-                                                            ? 'border-orange-200 bg-orange-50 opacity-60 dark:bg-slate-800 dark:border-slate-700 dark:hover:border-slate-600'
-                                                            : 'border-slate-200 bg-slate-50 hover:border-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:hover:border-slate-600 dark:text-zinc-200 dark:hover:border-slate-60'
+                                                            ? 'border-orange-200 bg-orange-50 opacity-60 dark:bg-zinc-900 dark:border-zinc-800/60 dark:hover:border-zinc-700'
+                                                            : 'border-slate-200 bg-slate-50 hover:border-slate-300 dark:bg-zinc-900 dark:border-zinc-800/60 dark:hover:border-zinc-700 dark:text-zinc-200 dark:hover:border-slate-60'
                                                     )}
                                                 >
                                                     <div className="min-w-0">
@@ -227,7 +227,7 @@ export function GrupoSlotItens({ grupo, onClose }: GrupoSlotItensProps) {
                                         return (
                                             <div
                                                 key={itemId}
-                                                className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:hover:border-slate-600 dark:text-zinc-200"
+                                                className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-slate-50 dark:bg-zinc-900 dark:border-zinc-800/60 dark:hover:border-zinc-700 dark:text-zinc-200"
                                             >
                                                 <div className="min-w-0">
                                                     <p className="text-sm font-medium text-slate-900 truncate dark:text-zinc-200">
@@ -260,7 +260,7 @@ export function GrupoSlotItens({ grupo, onClose }: GrupoSlotItensProps) {
                     <div className="p-4 border-t border-slate-200 flex-shrink-0">
                         <button
                             onClick={onClose}
-                            className="w-full py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300 transition-colors text-sm font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-zinc-200 dark:hover:border-slate-600 dark:hover:text-zinc-200"
+                            className="w-full py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300 transition-colors text-sm font-medium dark:bg-zinc-900 dark:border-zinc-800/60 dark:text-zinc-200 dark:hover:border-zinc-700 dark:hover:text-zinc-200"
                         >
                             Fechar
                         </button>

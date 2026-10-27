@@ -20,7 +20,7 @@ export function TopProductsList({ products }: TopProductsListProps) {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
-            className="relative bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl p-6 rounded-2xl border border-slate-200/50 dark:border-slate-700/50 shadow-lg shadow-slate-200/50 dark:shadow-black/20 overflow-hidden"
+            className="relative bg-white/70 dark:bg-zinc-950/50 backdrop-blur-xl p-6 rounded-2xl border border-slate-200/50 dark:border-zinc-800/50 shadow-lg shadow-slate-200/50 dark:shadow-black/20 overflow-hidden"
         >
             {/* Background decoration */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/5 to-transparent rounded-full -translate-y-1/2 translate-x-1/2" />
@@ -47,7 +47,7 @@ export function TopProductsList({ products }: TopProductsListProps) {
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: index * 0.08 + 0.3 }}
                             whileHover={{ x: 4 }}
-                            className="flex items-center gap-3 group cursor-pointer p-2 -mx-2 rounded-xl hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all duration-200"
+                            className="flex items-center gap-3 group cursor-pointer p-2 -mx-2 rounded-xl hover:bg-slate-100/50 dark:hover:bg-zinc-900/50 transition-all duration-200"
                         >
                             {/* Ranking badge */}
                             <div className={`size-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
@@ -57,12 +57,12 @@ export function TopProductsList({ products }: TopProductsListProps) {
                                         ? 'bg-gradient-to-br from-slate-300 to-slate-400 text-white' 
                                         : index === 2 
                                             ? 'bg-gradient-to-br from-orange-300 to-orange-400 text-white'
-                                            : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                                            : 'bg-slate-100 dark:bg-zinc-900 text-slate-500 dark:text-slate-400'
                             }`}>
                                 {index + 1}
                             </div>
                             
-                            <div className="relative size-11 rounded-xl overflow-hidden shrink-0 ring-2 ring-slate-100 dark:ring-slate-700 group-hover:ring-primary/30 transition-all">
+                            <div className="relative size-11 rounded-xl overflow-hidden shrink-0 ring-2 ring-slate-100 dark:ring-zinc-800/60 group-hover:ring-primary/30 transition-all">
                                 <Image 
                                     src={product.image} 
                                     alt={product.name} 

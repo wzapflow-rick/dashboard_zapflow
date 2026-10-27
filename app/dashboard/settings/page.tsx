@@ -544,8 +544,8 @@ export default function SettingsPage() {
                     className={cn(
                       "flex items-center justify-between px-4 py-3 rounded-xl transition-all whitespace-nowrap lg:w-full",
                       activeSection === section.id
-                        ? "bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 shadow-sm text-primary font-bold"
-                        : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                        ? "bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 shadow-sm text-primary font-bold"
+                        : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800"
                     )}
                   >
                     <div className="flex items-center gap-3">
@@ -558,12 +558,12 @@ export default function SettingsPage() {
               </nav>
             </aside>
 
-            <div className="flex-1 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 sm:p-8 space-y-8 min-w-0">
+            <div className="flex-1 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800/60 shadow-sm p-4 sm:p-8 space-y-8 min-w-0">
               {activeSection === 'general' && (
                 <div className="space-y-6">
-                  <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-slate-100 dark:border-slate-700">
+                  <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-slate-100 dark:border-zinc-800/60">
                     <div className="relative group">
-                      <div className="size-24 rounded-2xl bg-slate-100 dark:bg-slate-700 border-2 border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center overflow-hidden relative">
+                      <div className="size-24 rounded-2xl bg-slate-100 dark:bg-zinc-800 border-2 border-dashed border-slate-300 dark:border-zinc-700 flex items-center justify-center overflow-hidden relative">
                         {logoUrl ? (
                           <Image src={logoUrl} alt="Logo" fill className="object-cover" />
                         ) : (
@@ -591,8 +591,8 @@ export default function SettingsPage() {
 	                  </div>
 
 	                  {/* Banner do Cardápio */}
-	                  <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-slate-100 dark:border-slate-700">
-	                    <div className="relative group w-full sm:w-48 h-24 sm:h-28 rounded-2xl bg-slate-100 dark:bg-slate-700 border-2 border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center overflow-hidden relative">
+	                  <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-slate-100 dark:border-zinc-800/60">
+	                    <div className="relative group w-full sm:w-48 h-24 sm:h-28 rounded-2xl bg-slate-100 dark:bg-zinc-800 border-2 border-dashed border-slate-300 dark:border-zinc-700 flex items-center justify-center overflow-hidden relative">
 	                      {bannerUrl ? (
 	                        <Image src={bannerUrl} alt="Banner" fill className="object-cover" />
 	                      ) : (
@@ -623,59 +623,59 @@ export default function SettingsPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-6">
                       <div className="space-y-1.5">
                         <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Nome da Unidade</label>
-                        <input name="nome_fantasia" type="text" defaultValue={company?.nome_fantasia || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white" />
+                        <input name="nome_fantasia" type="text" defaultValue={company?.nome_fantasia || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white" />
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Responsável (Admin)</label>
-                        <input name="nome_admin" type="text" defaultValue={company?.nome_admin || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white" />
+                        <input name="nome_admin" type="text" defaultValue={company?.nome_admin || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white" />
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Chave PIX</label>
-                        <input name="chave_pix" type="text" defaultValue={company?.chave_pix || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white" />
+                        <input name="chave_pix" type="text" defaultValue={company?.chave_pix || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white" />
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-sm font-bold text-slate-700 dark:text-slate-200">E-mail de Contato</label>
-                        <input name="email" type="email" defaultValue={company?.email || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white" />
+                        <input name="email" type="email" defaultValue={company?.email || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white" />
                       </div>
                       <div className="space-y-1.5 md:col-span-2">
                         <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Responsável Financeiro</label>
-                        <input name="nome_recebedor_pix" type="text" defaultValue={company?.nome_recebedor_pix || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white" />
+                        <input name="nome_recebedor_pix" type="text" defaultValue={company?.nome_recebedor_pix || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white" />
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-sm font-bold text-slate-700 dark:text-slate-200">WhatsApp / Telefone da Loja</label>
-                        <input name="telefone_loja" type="text" defaultValue={company?.telefone_loja || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white placeholder:text-slate-400" placeholder="(00) 00000-0000" />
+                        <input name="telefone_loja" type="text" defaultValue={company?.telefone_loja || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white placeholder:text-slate-400" placeholder="(00) 00000-0000" />
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-sm font-bold text-slate-700 dark:text-slate-200">CNPJ (Opcional)</label>
-                        <input name="cnpj" type="text" defaultValue={company?.cnpj || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white placeholder:text-slate-400" placeholder="00.000.000/0000-00" />
+                        <input name="cnpj" type="text" defaultValue={company?.cnpj || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white placeholder:text-slate-400" placeholder="00.000.000/0000-00" />
                       </div>
                       <div className="space-y-1.5 md:col-span-2">
                         <label className="text-sm font-bold text-slate-700 dark:text-slate-200">
                           Endereço Completo <span className="text-orange-500 text-xs font-normal">(necessario para calcular entrega por raio)</span>
                         </label>
-                        <input name="endereco" type="text" defaultValue={company?.endereco || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white placeholder:text-slate-400" placeholder="Rua, Número, Bairro" />
+                        <input name="endereco" type="text" defaultValue={company?.endereco || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white placeholder:text-slate-400" placeholder="Rua, Número, Bairro" />
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-sm font-bold text-slate-700 dark:text-slate-200">
                           Cidade <span className="text-red-500">*</span>
                         </label>
-                        <input name="cidade" type="text" defaultValue={company?.cidade || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white placeholder:text-slate-400" placeholder="Ex: Aracaju" />
+                        <input name="cidade" type="text" defaultValue={company?.cidade || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white placeholder:text-slate-400" placeholder="Ex: Aracaju" />
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-sm font-bold text-slate-700 dark:text-slate-200">
                           Estado (UF) <span className="text-red-500">*</span>
                         </label>
-                        <input name="estado" type="text" defaultValue={company?.estado || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white placeholder:text-slate-400 uppercase" placeholder="Ex: SE" maxLength={2} />
+                        <input name="estado" type="text" defaultValue={company?.estado || ''} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white placeholder:text-slate-400 uppercase" placeholder="Ex: SE" maxLength={2} />
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Instância Evolution API</label>
-                        <div className="w-full px-4 py-2.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-600 dark:text-slate-400 text-sm">
+                        <div className="w-full px-4 py-2.5 bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl text-slate-600 dark:text-slate-400 text-sm">
                           <strong>Instância:</strong> {company?.instancia_evolution || 'Não configurada'}
                         </div>
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Nicho do Negócio</label>
-                        <select name="nincho" defaultValue={company?.nincho || 'pizzaria'} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white">
+                        <select name="nincho" defaultValue={company?.nincho || 'pizzaria'} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white">
                           <option value="pizzaria">Pizzaria</option>
                           <option value="hamburgueria">Hamburgueria</option>
                           <option value="açaiteria">Açaiteria</option>
@@ -690,7 +690,7 @@ export default function SettingsPage() {
               {activeSection === 'hours' && (
                 <div className="space-y-6">
                   <h3 className="text-lg font-bold text-slate-900 dark:text-white">Horário de Funcionamento</h3>
-                  <div className="divide-y divide-slate-100 dark:divide-slate-700">
+                  <div className="divide-y divide-slate-100 dark:divide-zinc-800/60">
                     {DIAS_SEMANA.map((day: string, idx: number) => {
                       const h = horarios.find(item => item.dia_semana === idx) || { dia_semana: idx, hora_abertura: '09:00', hora_fechamento: '23:30', fechado_o_dia_todo: false };
                       return (
@@ -709,7 +709,7 @@ export default function SettingsPage() {
                                 }
                                 setHorarios(newH);
                               }}
-                              className="size-5 rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary"
+                              className="size-5 rounded border-slate-300 dark:border-zinc-700 text-primary focus:ring-primary"
                             />
                             <span className="font-bold text-slate-700 dark:text-slate-200 min-w-[100px]">{day}</span>
                           </div>
@@ -725,7 +725,7 @@ export default function SettingsPage() {
                                     if (index >= 0) newH[index].hora_abertura = val;
                                     setHorarios(newH);
                                   }}
-                                  className="flex-1 sm:flex-none px-3 py-1.5 bg-slate-100 dark:bg-slate-600 border-none rounded-lg text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-primary/20"
+                                  className="flex-1 sm:flex-none px-3 py-1.5 bg-slate-100 dark:bg-zinc-700 border-none rounded-lg text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-primary/20"
                                 />
                               </div>
                               <span className="text-slate-400 font-bold hidden sm:inline">às</span>
@@ -739,7 +739,7 @@ export default function SettingsPage() {
                                     if (index >= 0) newH[index].hora_fechamento = val;
                                     setHorarios(newH);
                                   }}
-                                  className="flex-1 sm:flex-none px-3 py-1.5 bg-slate-100 dark:bg-slate-600 border-none rounded-lg text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-primary/20"
+                                  className="flex-1 sm:flex-none px-3 py-1.5 bg-slate-100 dark:bg-zinc-700 border-none rounded-lg text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-primary/20"
                                 />
                               </div>
                             </div>
@@ -756,10 +756,10 @@ export default function SettingsPage() {
 
               {activeSection === 'payments' && (
                 <div className="space-y-8">
-                  <div className="p-6 bg-slate-50 dark:bg-slate-700 rounded-2xl border border-slate-100 dark:border-slate-600 space-y-4">
+                  <div className="p-6 bg-slate-50 dark:bg-zinc-800 rounded-2xl border border-slate-100 dark:border-zinc-700 space-y-4">
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
-                        <div className="size-10 bg-white dark:bg-slate-600 rounded-xl shadow-sm flex items-center justify-center text-slate-600 dark:text-slate-300">
+                        <div className="size-10 bg-white dark:bg-zinc-700 rounded-xl shadow-sm flex items-center justify-center text-slate-600 dark:text-slate-300">
                           <PaymentIcon className="size-5" />
                         </div>
                         <div>
@@ -777,7 +777,7 @@ export default function SettingsPage() {
                           disabled={savingPaymentIntegration}
                           onChange={(e) => handleTogglePaymentIntegration(e.target.checked)}
                         />
-                        <div className="w-11 h-6 bg-slate-200 dark:bg-slate-500 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary peer-disabled:opacity-50"></div>
+                        <div className="w-11 h-6 bg-slate-200 dark:bg-zinc-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary peer-disabled:opacity-50"></div>
                       </label>
                     </div>
 
@@ -796,10 +796,10 @@ export default function SettingsPage() {
 
               {activeSection === 'delivery' && (
                 <div className="space-y-8">
-                  <div className="p-6 bg-slate-50 dark:bg-slate-700 rounded-2xl border border-slate-100 dark:border-slate-600 space-y-4">
+                  <div className="p-6 bg-slate-50 dark:bg-zinc-800 rounded-2xl border border-slate-100 dark:border-zinc-700 space-y-4">
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
-                        <div className="size-10 bg-white dark:bg-slate-600 rounded-xl shadow-sm flex items-center justify-center text-slate-600 dark:text-slate-300">
+                        <div className="size-10 bg-white dark:bg-zinc-700 rounded-xl shadow-sm flex items-center justify-center text-slate-600 dark:text-slate-300">
                           <Truck className="size-5" />
                         </div>
                         <div>
@@ -817,7 +817,7 @@ export default function SettingsPage() {
                           disabled={savingDeliveryEnabled}
                           onChange={(event) => handleToggleDelivery(event.target.checked)}
                         />
-                        <div className="w-11 h-6 bg-slate-200 dark:bg-slate-500 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary peer-disabled:opacity-50" />
+                        <div className="w-11 h-6 bg-slate-200 dark:bg-zinc-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary peer-disabled:opacity-50" />
                       </label>
                     </div>
 
@@ -828,10 +828,10 @@ export default function SettingsPage() {
                     )}
                   </div>
 
-                  <div className="p-6 bg-slate-50 dark:bg-slate-700 rounded-2xl border border-slate-100 dark:border-slate-600 space-y-6">
+                  <div className="p-6 bg-slate-50 dark:bg-zinc-800 rounded-2xl border border-slate-100 dark:border-zinc-700 space-y-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="size-10 bg-white dark:bg-slate-600 rounded-xl shadow-sm flex items-center justify-center text-slate-600 dark:text-slate-300">
+                        <div className="size-10 bg-white dark:bg-zinc-700 rounded-xl shadow-sm flex items-center justify-center text-slate-600 dark:text-slate-300">
                           <MapPin className="size-5" />
                         </div>
                         <div>
@@ -846,7 +846,7 @@ export default function SettingsPage() {
                           checked={autoRadius}
                           onChange={() => setAutoRadius(!autoRadius)}
                         />
-                        <div className="w-11 h-6 bg-slate-200 dark:bg-slate-500 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                        <div className="w-11 h-6 bg-slate-200 dark:bg-zinc-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                       </label>
                     </div>
 
@@ -864,7 +864,7 @@ export default function SettingsPage() {
                               <CurrencyInput
                                 defaultValue={valorPorKm}
                                 onValueChange={(val) => setValorPorKm(val)}
-                                className="w-full pr-4 py-2 bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all dark:text-white"
+                                className="w-full pr-4 py-2 bg-white dark:bg-zinc-700 border border-slate-200 dark:border-zinc-600 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all dark:text-white"
                               />
                             </div>
                             <div className="space-y-1.5">
@@ -872,7 +872,7 @@ export default function SettingsPage() {
                               <CurrencyInput
                                 defaultValue={taxaEntregaFixa}
                                 onValueChange={(val) => setTaxaEntregaFixa(val)}
-                                className="w-full pr-4 py-2 bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all dark:text-white"
+                                className="w-full pr-4 py-2 bg-white dark:bg-zinc-700 border border-slate-200 dark:border-zinc-600 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all dark:text-white"
                               />
                             </div>
                             <div className="space-y-1.5">
@@ -883,7 +883,7 @@ export default function SettingsPage() {
                                 step="0.1"
                                 min="0"
                                 defaultValue={company?.raio_maximo_km || 10}
-                                className="w-full px-4 py-2 bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all dark:text-white"
+                                className="w-full px-4 py-2 bg-white dark:bg-zinc-700 border border-slate-200 dark:border-zinc-600 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all dark:text-white"
                                 placeholder="Ex: 10"
                               />
                             </div>
@@ -978,11 +978,11 @@ export default function SettingsPage() {
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
                                   <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Latitude da Loja</label>
-                                  <input name="lat_loja" type="number" step="any" defaultValue={company?.lat_loja || ''} className="w-full px-4 py-2 bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none dark:text-white" placeholder="Ex: -10.9472" />
+                                  <input name="lat_loja" type="number" step="any" defaultValue={company?.lat_loja || ''} className="w-full px-4 py-2 bg-white dark:bg-zinc-700 border border-slate-200 dark:border-zinc-600 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none dark:text-white" placeholder="Ex: -10.9472" />
                                 </div>
                                 <div className="space-y-1.5">
                                   <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Longitude da Loja</label>
-                                  <input name="lng_loja" type="number" step="any" defaultValue={company?.lng_loja || ''} className="w-full px-4 py-2 bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none dark:text-white" placeholder="Ex: -37.0731" />
+                                  <input name="lng_loja" type="number" step="any" defaultValue={company?.lng_loja || ''} className="w-full px-4 py-2 bg-white dark:bg-zinc-700 border border-slate-200 dark:border-zinc-600 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none dark:text-white" placeholder="Ex: -37.0731" />
                                 </div>
                               </div>
                             </form>
@@ -1005,14 +1005,14 @@ export default function SettingsPage() {
                     </div>
 
                     {neighborhoods.length === 0 ? (
-                      <div className="text-center py-12 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl">
+                      <div className="text-center py-12 border-2 border-dashed border-slate-200 dark:border-zinc-800/60 rounded-2xl">
                         <MapPin className="size-8 text-slate-300 mx-auto mb-3" />
                         <p className="text-sm text-slate-500 dark:text-slate-400">Nenhum bairro configurado.</p>
                       </div>
                     ) : (
                       <div className="space-y-3">
                         {neighborhoods.map((n, idx) => (
-                          <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-700 rounded-xl border border-slate-100 dark:border-slate-600">
+                          <div key={idx} className="p-4 bg-slate-50 dark:bg-zinc-800 rounded-xl border border-slate-100 dark:border-zinc-700">
                             <div className="flex flex-col sm:flex-row gap-4">
                               <div className="flex-1 space-y-1">
                                 <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Nome do Bairro</label>
@@ -1024,7 +1024,7 @@ export default function SettingsPage() {
                                     updated[idx].bairro = e.target.value;
                                     setNeighborhoods(updated);
                                   }}
-                                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white" placeholder="Ex: Centro" />
+                                  className="w-full px-3 py-2 bg-slate-50 dark:bg-zinc-700 border border-slate-200 dark:border-zinc-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white" placeholder="Ex: Centro" />
                               </div>
                               <div className="w-full sm:w-32 space-y-1">
                                 <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Taxa (R$)</label>
@@ -1035,7 +1035,7 @@ export default function SettingsPage() {
                                     updated[idx].valor_taxa = val;
                                     setNeighborhoods(updated);
                                   }}
-                                  className="w-full pr-3 py-2 bg-slate-50 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                                  className="w-full pr-3 py-2 bg-slate-50 dark:bg-zinc-700 border border-slate-200 dark:border-zinc-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20" />
                               </div>
                               <div className="w-full sm:w-32 space-y-1">
                                 <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Tempo Est.</label>
@@ -1047,7 +1047,7 @@ export default function SettingsPage() {
                                     updated[idx].tempo_estimado = e.target.value;
                                     setNeighborhoods(updated);
                                   }}
-                                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white" placeholder="Ex: 30-40" />
+                                  className="w-full px-3 py-2 bg-slate-50 dark:bg-zinc-700 border border-slate-200 dark:border-zinc-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white" placeholder="Ex: 30-40" />
                               </div>
                               <div className="flex items-end">
                                 <button onClick={() => removeNeighborhood(n.id)} className="text-slate-300 hover:text-red-500 transition-colors p-2">
@@ -1066,10 +1066,10 @@ export default function SettingsPage() {
               {activeSection === 'generalRules' && (
                 <div className="space-y-6">
                   <h3 className="text-lg font-bold text-slate-900 dark:text-white">Taxas e Regras Gerais</h3>
-                  <div className="p-6 bg-slate-50 dark:bg-slate-700 rounded-2xl border border-slate-100 dark:border-slate-600 space-y-6">
+                  <div className="p-6 bg-slate-50 dark:bg-zinc-800 rounded-2xl border border-slate-100 dark:border-zinc-700 space-y-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="size-10 bg-white dark:bg-slate-600 rounded-xl shadow-sm flex items-center justify-center text-slate-600 dark:text-slate-300">
+                        <div className="size-10 bg-white dark:bg-zinc-700 rounded-xl shadow-sm flex items-center justify-center text-slate-600 dark:text-slate-300">
                           <Package className="size-5" />
                         </div>
                         <div>
@@ -1084,7 +1084,7 @@ export default function SettingsPage() {
                           checked={packagingFeeEnabled}
                           onChange={() => setPackagingFeeEnabled(!packagingFeeEnabled)}
                         />
-                        <div className="w-11 h-6 bg-slate-200 dark:bg-slate-500 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                        <div className="w-11 h-6 bg-slate-200 dark:bg-zinc-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                       </label>
                     </div>
 
@@ -1103,7 +1103,7 @@ export default function SettingsPage() {
                                 <CurrencyInput
                                   defaultValue={valorEmbalagem}
                                   onValueChange={(val) => setValorEmbalagem(val)}
-                                  className="w-full pr-4 py-2 bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all dark:text-white"
+                                  className="w-full pr-4 py-2 bg-white dark:bg-zinc-700 border border-slate-200 dark:border-zinc-600 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all dark:text-white"
                                 />
                               </div>
                             </div>
@@ -1113,10 +1113,10 @@ export default function SettingsPage() {
                     </AnimatePresence>
                   </div>
 
-                  <div className="p-6 bg-slate-50 dark:bg-slate-700 rounded-2xl border border-slate-100 dark:border-slate-600 space-y-6">
+                  <div className="p-6 bg-slate-50 dark:bg-zinc-800 rounded-2xl border border-slate-100 dark:border-zinc-700 space-y-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="size-10 bg-white dark:bg-slate-600 rounded-xl shadow-sm flex items-center justify-center text-slate-600 dark:text-slate-300">
+                        <div className="size-10 bg-white dark:bg-zinc-700 rounded-xl shadow-sm flex items-center justify-center text-slate-600 dark:text-slate-300">
                           <Package className="size-5" />
                         </div>
                         <div>
@@ -1131,15 +1131,15 @@ export default function SettingsPage() {
                           checked={inventoryControlEnabled}
                           onChange={() => setInventoryControlEnabled(!inventoryControlEnabled)}
                         />
-                        <div className="w-11 h-6 bg-slate-200 dark:bg-slate-500 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                        <div className="w-11 h-6 bg-slate-200 dark:bg-zinc-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                       </label>
                     </div>
                   </div>
 
-                  <div className="p-6 bg-slate-50 dark:bg-slate-700 rounded-2xl border border-slate-100 dark:border-slate-600 space-y-6">
+                  <div className="p-6 bg-slate-50 dark:bg-zinc-800 rounded-2xl border border-slate-100 dark:border-zinc-700 space-y-6">
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
-                        <div className="size-10 bg-white dark:bg-slate-600 rounded-xl shadow-sm flex items-center justify-center text-slate-600 dark:text-slate-300">
+                        <div className="size-10 bg-white dark:bg-zinc-700 rounded-xl shadow-sm flex items-center justify-center text-slate-600 dark:text-slate-300">
                           <Zap className="size-5" />
                         </div>
                         <div>
@@ -1159,7 +1159,7 @@ export default function SettingsPage() {
                           disabled={savingMesaDireto}
                           onChange={(e) => handleToggleMesaDireto(e.target.checked)}
                         />
-                        <div className="w-11 h-6 bg-slate-200 dark:bg-slate-500 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary peer-disabled:opacity-50"></div>
+                        <div className="w-11 h-6 bg-slate-200 dark:bg-zinc-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary peer-disabled:opacity-50"></div>
                       </label>
                     </div>
                   </div>
@@ -1190,7 +1190,7 @@ export default function SettingsPage() {
                   </h3>
 
                   {/* Card: receber pedidos no WhatsApp da loja */}
-                  <div className="p-5 border border-slate-200 dark:border-slate-700 rounded-2xl bg-white dark:bg-slate-800/50 space-y-3">
+                  <div className="p-5 border border-slate-200 dark:border-zinc-800/60 rounded-2xl bg-white dark:bg-zinc-900/50 space-y-3">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-start gap-3">
                         <div className="size-11 rounded-xl flex items-center justify-center bg-primary/10 shrink-0">
@@ -1222,13 +1222,13 @@ export default function SettingsPage() {
                           disabled={savingOrderNotify}
                           onChange={(e) => handleToggleOrderNotify(e.target.checked)}
                         />
-                        <div className="w-11 h-6 bg-slate-200 dark:bg-slate-500 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary peer-disabled:opacity-50"></div>
+                        <div className="w-11 h-6 bg-slate-200 dark:bg-zinc-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary peer-disabled:opacity-50"></div>
                       </label>
                     </div>
                   </div>
 
                   {/* Card de Conexao WhatsApp */}
-                  <div className="p-5 border border-slate-200 dark:border-slate-700 rounded-2xl bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 space-y-4">
+                  <div className="p-5 border border-slate-200 dark:border-zinc-800/60 rounded-2xl bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className={cn(
@@ -1276,7 +1276,7 @@ export default function SettingsPage() {
                           className={cn(
                             "px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all",
                             whatsappStatus === 'connected' 
-                              ? "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200"
+                              ? "bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200"
                               : "bg-green-500 text-white hover:bg-green-600 shadow-lg shadow-green-500/20"
                           )}
                         >
@@ -1294,7 +1294,7 @@ export default function SettingsPage() {
                     
                     {instanceName && (
                       <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Instancia: <code className="bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded font-mono">{instanceName}</code>
+                        Instancia: <code className="bg-slate-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded font-mono">{instanceName}</code>
                       </p>
                     )}
 
@@ -1335,7 +1335,7 @@ export default function SettingsPage() {
                   </div>
 
                   {/* Card de Teste */}
-                  <div className="p-4 border border-slate-200 dark:border-slate-600 rounded-xl space-y-4">
+                  <div className="p-4 border border-slate-200 dark:border-zinc-700 rounded-xl space-y-4">
                     <div>
                       <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Testar Conexao</p>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Envie uma mensagem de teste para verificar se o WhatsApp esta funcionando</p>
@@ -1346,7 +1346,7 @@ export default function SettingsPage() {
                         type="tel"
                         placeholder="Numero com DDD (ex: 79998618874)"
                         id="test-phone"
-                        className="flex-1 px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
+                        className="flex-1 px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
                       />
               <button
                 onClick={async () => {
@@ -1403,7 +1403,7 @@ export default function SettingsPage() {
                         type="password"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white"
+                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white"
                         placeholder="Mínimo 6 caracteres"
                       />
                     </div>
@@ -1413,7 +1413,7 @@ export default function SettingsPage() {
                         type="password"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white"
+                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white"
                         placeholder="Repita a nova senha"
                       />
                     </div>
@@ -1442,7 +1442,7 @@ export default function SettingsPage() {
                 }}
                 disabled={isChangingPassword}
                 aria-busy={isChangingPassword}
-                className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-slate-900 dark:bg-slate-700 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-all disabled:cursor-wait disabled:opacity-60"
+                className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-slate-900 dark:bg-zinc-800 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-all disabled:cursor-wait disabled:opacity-60"
               >
                 {isChangingPassword && <MorphingInfinity className="size-4" aria-hidden="true" />}
                 {isChangingPassword ? 'Alterando...' : 'Alterar Senha'}
@@ -1489,7 +1489,7 @@ export default function SettingsPage() {
                         }}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-primary"></div>
+                      <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer dark:bg-zinc-800 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-zinc-700 peer-checked:bg-primary"></div>
                       {savingBotToggle && <MorphingInfinity className="ms-3 size-4 text-primary" aria-hidden="true" />}
                       <span className={cn('text-sm font-bold text-slate-700 dark:text-slate-300', !savingBotToggle && 'ms-3')}>
                         {savingBotToggle ? 'Salvando...' : botConfig?.bot_ativo ? 'Ativo' : 'Inativo'}
@@ -1516,7 +1516,7 @@ export default function SettingsPage() {
                     <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200">Mensagens de Saudacao</h4>
                     
                     {/* Mensagem 1 */}
-                    <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl space-y-3">
+                    <div className="p-4 bg-slate-50 dark:bg-zinc-800/50 rounded-xl space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className="size-6 bg-primary text-white rounded-lg flex items-center justify-center text-xs font-bold">1</span>
@@ -1529,7 +1529,7 @@ export default function SettingsPage() {
                             onChange={(e) => setBotConfig(prev => prev ? { ...prev, mensagem_1_ativa: e.target.checked } : null)}
                             className="sr-only peer"
                           />
-                          <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-600 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-500 peer-checked:bg-primary"></div>
+                          <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-zinc-600 peer-checked:bg-primary"></div>
                         </label>
                       </div>
                       <textarea
@@ -1537,12 +1537,12 @@ export default function SettingsPage() {
                         onChange={(e) => setBotConfig(prev => prev ? { ...prev, mensagem_1_texto: e.target.value } : null)}
                         placeholder="Ex: Ola! Bem-vindo(a) ao nosso estabelecimento!"
                         rows={2}
-                        className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm dark:text-white resize-none"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm dark:text-white resize-none"
                       />
                     </div>
 
                     {/* Mensagem 2 */}
-                    <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl space-y-3">
+                    <div className="p-4 bg-slate-50 dark:bg-zinc-800/50 rounded-xl space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className="size-6 bg-primary text-white rounded-lg flex items-center justify-center text-xs font-bold">2</span>
@@ -1555,7 +1555,7 @@ export default function SettingsPage() {
                             onChange={(e) => setBotConfig(prev => prev ? { ...prev, mensagem_2_ativa: e.target.checked } : null)}
                             className="sr-only peer"
                           />
-                          <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-600 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-500 peer-checked:bg-primary"></div>
+                          <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-zinc-600 peer-checked:bg-primary"></div>
                         </label>
                       </div>
                       <textarea
@@ -1563,12 +1563,12 @@ export default function SettingsPage() {
                         onChange={(e) => setBotConfig(prev => prev ? { ...prev, mensagem_2_texto: e.target.value } : null)}
                         placeholder="Ex: Temos um cardapio digital completo para voce!"
                         rows={2}
-                        className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm dark:text-white resize-none"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm dark:text-white resize-none"
                       />
                     </div>
 
                     {/* Mensagem 3 */}
-                    <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl space-y-3">
+                    <div className="p-4 bg-slate-50 dark:bg-zinc-800/50 rounded-xl space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className="size-6 bg-primary text-white rounded-lg flex items-center justify-center text-xs font-bold">3</span>
@@ -1581,7 +1581,7 @@ export default function SettingsPage() {
                             onChange={(e) => setBotConfig(prev => prev ? { ...prev, mensagem_3_ativa: e.target.checked } : null)}
                             className="sr-only peer"
                           />
-                          <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-600 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-500 peer-checked:bg-primary"></div>
+                          <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-zinc-600 peer-checked:bg-primary"></div>
                         </label>
                       </div>
                       <textarea
@@ -1589,13 +1589,13 @@ export default function SettingsPage() {
                         onChange={(e) => setBotConfig(prev => prev ? { ...prev, mensagem_3_texto: e.target.value } : null)}
                         placeholder="Ex: Acesse nosso cardapio: {LINK_CARDAPIO}"
                         rows={2}
-                        className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm dark:text-white resize-none"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm dark:text-white resize-none"
                       />
                     </div>
                   </div>
 
                   {/* Configuracoes Adicionais */}
-                  <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                  <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-zinc-800/60">
                     <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200">Configuracoes Adicionais</h4>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1607,7 +1607,7 @@ export default function SettingsPage() {
                           max={10}
                           value={botConfig?.delay_entre_mensagens ?? 2}
                           onChange={(e) => setBotConfig(prev => prev ? { ...prev, delay_entre_mensagens: parseInt(e.target.value) || 2 } : null)}
-                          className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white"
+                          className="w-full px-4 py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none dark:text-white"
                         />
                       </div>
                       
@@ -1621,7 +1621,7 @@ export default function SettingsPage() {
                               onChange={(e) => setBotConfig(prev => prev ? { ...prev, respeitar_horario_funcionamento: e.target.checked } : null)}
                               className="sr-only peer"
                             />
-                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-primary"></div>
+                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer dark:bg-zinc-800 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-zinc-700 peer-checked:bg-primary"></div>
                             <span className="ms-3 text-sm text-slate-600 dark:text-slate-400">{botConfig?.respeitar_horario_funcionamento ? 'Sim' : 'Nao'}</span>
                           </label>
                         </div>
@@ -1639,7 +1639,7 @@ export default function SettingsPage() {
                           onChange={(e) => setBotConfig(prev => prev ? { ...prev, mensagem_fora_horario: e.target.value } : null)}
                           placeholder="Ex: Ola! No momento estamos fechados. Acesse nosso cardapio: {LINK_CARDAPIO}"
                           rows={3}
-                          className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-700 rounded-xl focus:ring-2 focus:ring-amber-500/20 outline-none text-sm dark:text-white resize-none"
+                          className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-amber-200 dark:border-amber-700 rounded-xl focus:ring-2 focus:ring-amber-500/20 outline-none text-sm dark:text-white resize-none"
                         />
                       </div>
                     )}

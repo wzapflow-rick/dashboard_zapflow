@@ -110,14 +110,14 @@ export default function RatingsPage() {
                                 placeholder="Buscar..."
                                 value={filter}
                                 onChange={(e) => setFilter(e.target.value)}
-                                className="pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm dark:text-white"
+                                className="pl-10 pr-4 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800/60 rounded-xl text-sm dark:text-white"
                             />
                         </div>
                     </header>
 
                     {/* Stats Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700">
+                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-slate-200 dark:border-zinc-800/60">
                             <div className="flex items-center gap-3 mb-2">
                                 <div className="size-10 bg-violet-100 dark:bg-violet-900/30 rounded-xl flex items-center justify-center">
                                     <Star className="size-5 text-violet-600" />
@@ -127,7 +127,7 @@ export default function RatingsPage() {
                             <p className="text-3xl font-black text-slate-900 dark:text-white">{average?.total_avaliacoes || 0}</p>
                         </div>
 
-                        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700">
+                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-slate-200 dark:border-zinc-800/60">
                             <div className="flex items-center gap-3 mb-2">
                                 <div className="size-10 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center">
                                     <span className="text-xl">🍕</span>
@@ -138,7 +138,7 @@ export default function RatingsPage() {
                             <p className="text-xs text-slate-400 mt-1">{getStarDisplay(Math.round(Number(average?.media_comida || 0)))}</p>
                         </div>
 
-                        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700">
+                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-slate-200 dark:border-zinc-800/60">
                             <div className="flex items-center gap-3 mb-2">
                                 <div className="size-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
                                     <span className="text-xl">🛵</span>
@@ -149,7 +149,7 @@ export default function RatingsPage() {
                             <p className="text-xs text-slate-400 mt-1">{getStarDisplay(Math.round(Number(average?.media_entrega || 0)))}</p>
                         </div>
 
-                        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700">
+                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-slate-200 dark:border-zinc-800/60">
                             <div className="flex items-center gap-3 mb-2">
                                 <div className="size-10 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
                                     <MessageCircle className="size-5 text-green-600" />
@@ -162,7 +162,7 @@ export default function RatingsPage() {
 
                     {/* Ratings List */}
                     {filteredRatings.length === 0 ? (
-                        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-12 text-center">
+                        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800/60 p-12 text-center">
                             <Star className="size-12 text-slate-300 mx-auto mb-4" />
                             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Nenhuma avaliação ainda</h3>
                             <p className="text-slate-500 dark:text-slate-400">As avaliações aparecerão aqui quando os clientes avaliarem seus pedidos.</p>
@@ -172,7 +172,7 @@ export default function RatingsPage() {
                             {filteredRatings.map((rating) => (
                                 <div
                                     key={rating.id}
-                                    className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700"
+                                    className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-slate-200 dark:border-zinc-800/60"
                                 >
                                     <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                                         <div className="flex-1">
@@ -204,7 +204,7 @@ export default function RatingsPage() {
                                             </div>
 
                                             {rating.comentario && (
-                                                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-3 mt-2">
+                                                <div className="bg-slate-50 dark:bg-zinc-800/50 rounded-xl p-3 mt-2">
                                                     <p className="text-sm text-slate-700 dark:text-slate-300">&quot;{rating.comentario}&quot;</p>
                                                 </div>
                                             )}

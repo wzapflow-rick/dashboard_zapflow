@@ -118,7 +118,7 @@ export default function AcertosPage() {
                     </header>
 
                     {/* Filtro de período */}
-                    <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
+                    <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-slate-200 dark:border-zinc-800/60">
                         <div className="flex items-center gap-4">
                             <Filter className="size-5 text-slate-400" />
                             <div className="flex gap-2">
@@ -132,7 +132,7 @@ export default function AcertosPage() {
                                         onClick={() => handlePeriodoChange(p.value)}
                                         className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors ${periodo === p.value
                                                 ? 'bg-violet-500 text-white'
-                                                : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                                                : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
                                             }`}
                                     >
                                         {p.label}
@@ -144,7 +144,7 @@ export default function AcertosPage() {
 
                     {/* Cards de resumo */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700">
+                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-slate-200 dark:border-zinc-800/60">
                             <div className="flex items-center gap-3 mb-2">
                                 <div className="size-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
                                     <Truck className="size-5 text-blue-600" />
@@ -154,7 +154,7 @@ export default function AcertosPage() {
                             <p className="text-3xl font-black text-slate-900 dark:text-white">{totais.entregas}</p>
                         </div>
 
-                        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700">
+                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-slate-200 dark:border-zinc-800/60">
                             <div className="flex items-center gap-3 mb-2">
                                 <div className="size-10 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center">
                                     <Clock className="size-5 text-amber-600" />
@@ -164,7 +164,7 @@ export default function AcertosPage() {
                             <p className="text-3xl font-black text-amber-600">R$ {totais.valor.toFixed(2)}</p>
                         </div>
 
-                        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700">
+                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-slate-200 dark:border-zinc-800/60">
                             <div className="flex items-center gap-3 mb-2">
                                 <div className="size-10 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
                                     <Check className="size-5 text-green-600" />
@@ -178,10 +178,10 @@ export default function AcertosPage() {
                     </div>
 
                     {/* Lista de entregadores */}
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                    <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800/60 overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full">
-                                <thead className="bg-slate-50 dark:bg-slate-700/50">
+                                <thead className="bg-slate-50 dark:bg-zinc-800/50">
                                     <tr>
                                         <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Entregador</th>
                                         <th className="px-6 py-3 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Veículo</th>
@@ -191,7 +191,7 @@ export default function AcertosPage() {
                                         <th className="px-6 py-3 text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Ação</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                                <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/60">
                                     {entregadores.length === 0 ? (
                                         <tr>
                                             <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
@@ -200,7 +200,7 @@ export default function AcertosPage() {
                                         </tr>
                                     ) : (
                                         entregadores.map((e) => (
-                                            <tr key={e.entregador_id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
+                                            <tr key={e.entregador_id} className="hover:bg-slate-50 dark:hover:bg-zinc-800/30">
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center gap-3">
                                                         <div className="size-10 bg-violet-100 dark:bg-violet-900/30 rounded-full flex items-center justify-center">

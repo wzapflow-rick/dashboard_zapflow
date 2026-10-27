@@ -99,7 +99,7 @@ export function InsightCard({ insight, index }: InsightCardProps) {
       }}
       className={cn(
         "relative p-5 rounded-2xl border backdrop-blur-sm",
-        "bg-white/80 dark:bg-slate-800/80",
+        "bg-white/80 dark:bg-zinc-900/80",
         "shadow-lg hover:shadow-xl transition-shadow duration-300",
         colors.border,
         colors.glow
@@ -177,7 +177,7 @@ export function InsightCardSkeleton({ index }: { index: number }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ delay: index * 0.05 }}
-      className="relative min-h-36 rounded-2xl border border-slate-200 bg-white/80 p-5 text-slate-900 dark:border-slate-700 dark:bg-slate-800/80 dark:text-white"
+      className="relative min-h-36 rounded-2xl border border-slate-200 bg-white/80 p-5 text-slate-900 dark:border-zinc-800/60 dark:bg-zinc-900/80 dark:text-white"
       aria-hidden="true"
     >
       <div className="flex items-start gap-4">
@@ -218,7 +218,7 @@ export function InsightsList({ insights, isLoading }: InsightsListProps) {
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col items-center justify-center py-16 px-4"
       >
-        <div className="size-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
+        <div className="size-16 rounded-2xl bg-slate-100 dark:bg-zinc-900 flex items-center justify-center mb-4">
           <BarChart3 className="size-8 text-slate-400" />
         </div>
         <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">

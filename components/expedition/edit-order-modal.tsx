@@ -191,10 +191,10 @@ export default function EditOrderModal({ isOpen, onClose, order, onSuccess }: Ed
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="relative w-full max-w-lg bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-700"
+            className="relative w-full max-w-lg bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-zinc-800/60"
           >
             {/* Header */}
-            <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-gradient-to-r from-amber-500/10 to-transparent">
+            <div className="p-4 border-b border-slate-100 dark:border-zinc-800/60 flex items-center justify-between bg-gradient-to-r from-amber-500/10 to-transparent">
               <div className="flex items-center gap-3">
                 <div className="size-10 bg-amber-500/10 rounded-lg flex items-center justify-center">
                   <Package className="size-5 text-amber-500" />
@@ -208,7 +208,7 @@ export default function EditOrderModal({ isOpen, onClose, order, onSuccess }: Ed
               </div>
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                className="p-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
               >
                 <X className="size-5 text-slate-400 dark:text-slate-500" />
               </button>
@@ -217,7 +217,7 @@ export default function EditOrderModal({ isOpen, onClose, order, onSuccess }: Ed
             {/* Content */}
             <div className="p-4 space-y-4 max-h-[60vh] overflow-y-auto">
               {/* Lista de Itens */}
-              <div className="bg-slate-50 dark:bg-slate-700 rounded-xl p-4">
+              <div className="bg-slate-50 dark:bg-zinc-800 rounded-xl p-4">
                 <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-3">
                   Itens do Pedido ({items.length})
                 </h3>
@@ -225,7 +225,7 @@ export default function EditOrderModal({ isOpen, onClose, order, onSuccess }: Ed
                   {items.map((item, idx) => (
                     <div 
                       key={`${item.id}-${idx}`} 
-                      className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600"
+                      className="p-3 bg-white dark:bg-zinc-900 rounded-lg border border-slate-200 dark:border-zinc-700"
                     >
                       {/* Mobile: Layout empilhado */}
                       <div className="flex items-start justify-between gap-2 mb-2 sm:mb-0">
@@ -251,7 +251,7 @@ export default function EditOrderModal({ isOpen, onClose, order, onSuccess }: Ed
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleQuantityChange(idx, -1)}
-                            className="size-9 sm:size-8 flex items-center justify-center bg-slate-100 dark:bg-slate-600 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-500 transition-colors"
+                            className="size-9 sm:size-8 flex items-center justify-center bg-slate-100 dark:bg-zinc-700 rounded-lg hover:bg-slate-200 dark:hover:bg-zinc-600 transition-colors"
                           >
                             <Minus className="size-4 text-slate-600 dark:text-slate-300" />
                           </button>
@@ -260,7 +260,7 @@ export default function EditOrderModal({ isOpen, onClose, order, onSuccess }: Ed
                           </span>
                           <button
                             onClick={() => handleQuantityChange(idx, 1)}
-                            className="size-9 sm:size-8 flex items-center justify-center bg-slate-100 dark:bg-slate-600 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-500 transition-colors"
+                            className="size-9 sm:size-8 flex items-center justify-center bg-slate-100 dark:bg-zinc-700 rounded-lg hover:bg-slate-200 dark:hover:bg-zinc-600 transition-colors"
                           >
                             <Plus className="size-4 text-slate-600 dark:text-slate-300" />
                           </button>
@@ -285,7 +285,7 @@ export default function EditOrderModal({ isOpen, onClose, order, onSuccess }: Ed
               </div>
 
               {/* Adicionar Produto */}
-              <div className="bg-slate-50 dark:bg-slate-700 rounded-xl p-4">
+              <div className="bg-slate-50 dark:bg-zinc-800 rounded-xl p-4">
                 <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-3">
                   Adicionar Produto
                 </h3>
@@ -293,7 +293,7 @@ export default function EditOrderModal({ isOpen, onClose, order, onSuccess }: Ed
                 {!showProductSearch ? (
                   <button
                     onClick={() => setShowProductSearch(true)}
-                    className="w-full p-3 border-2 border-dashed border-slate-300 dark:border-slate-500 rounded-lg text-slate-500 dark:text-slate-400 hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-2"
+                    className="w-full p-3 border-2 border-dashed border-slate-300 dark:border-zinc-600 rounded-lg text-slate-500 dark:text-slate-400 hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-2"
                   >
                     <Plus className="size-4" />
                     Adicionar item ao pedido
@@ -308,7 +308,7 @@ export default function EditOrderModal({ isOpen, onClose, order, onSuccess }: Ed
                         onChange={(e) => setSearchTerm(e.target.value)}
                         placeholder="Buscar produto..."
                         autoFocus
-                        className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white placeholder-slate-400"
+                        className="w-full pl-10 pr-4 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400"
                       />
                     </div>
                     
@@ -318,7 +318,7 @@ export default function EditOrderModal({ isOpen, onClose, order, onSuccess }: Ed
                           <button
                             key={product.id}
                             onClick={() => handleAddProduct(product)}
-                            className="w-full p-2 text-left hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-colors flex justify-between items-center"
+                            className="w-full p-2 text-left hover:bg-white dark:hover:bg-zinc-900 rounded-lg transition-colors flex justify-between items-center"
                           >
                             <span className="text-slate-900 dark:text-white">{product.nome}</span>
                             <span className="text-slate-500 dark:text-slate-400">{formatPrice(product.preco)}</span>
@@ -345,7 +345,7 @@ export default function EditOrderModal({ isOpen, onClose, order, onSuccess }: Ed
               </div>
 
               {/* Observacao da edicao */}
-              <div className="bg-slate-50 dark:bg-slate-700 rounded-xl p-4">
+              <div className="bg-slate-50 dark:bg-zinc-800 rounded-xl p-4">
                 <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-3">
                   Motivo da Alteracao (opcional)
                 </h3>
@@ -354,7 +354,7 @@ export default function EditOrderModal({ isOpen, onClose, order, onSuccess }: Ed
                   value={observacao}
                   onChange={(e) => setObservacao(e.target.value)}
                   placeholder="Ex: Cliente pediu para adicionar mais itens"
-                  className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white placeholder-slate-400"
+                  className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400"
                 />
               </div>
 
@@ -378,11 +378,11 @@ export default function EditOrderModal({ isOpen, onClose, order, onSuccess }: Ed
             </div>
 
             {/* Footer */}
-            <div className="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/50 flex gap-3">
+            <div className="p-4 border-t border-slate-100 dark:border-zinc-800/60 bg-slate-50 dark:bg-zinc-800/50 flex gap-3">
               <button
                 onClick={onClose}
                 disabled={isPending}
-                className="flex-1 px-4 py-3 bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl font-medium hover:bg-slate-300 dark:hover:bg-slate-500 transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-3 bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-slate-200 rounded-xl font-medium hover:bg-slate-300 dark:hover:bg-zinc-600 transition-colors disabled:opacity-50"
               >
                 Cancelar
               </button>

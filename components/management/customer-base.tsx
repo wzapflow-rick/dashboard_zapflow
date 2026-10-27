@@ -165,7 +165,7 @@ export default function CustomerBase() {
             placeholder="Buscar por nome ou telefone..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-600 rounded-2xl focus:border-primary/30 focus:outline-none transition-all text-sm font-medium dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
+            className="w-full pl-10 pr-4 py-3 bg-white dark:bg-zinc-900 border-2 border-slate-200 dark:border-zinc-700 rounded-2xl focus:border-primary/30 focus:outline-none transition-all text-sm font-medium dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
           />
         </div>
 
@@ -177,7 +177,7 @@ export default function CustomerBase() {
             }}
             className={cn(
               "px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border-2",
-              !activeFilter && !searchQuery ? "bg-slate-900 dark:bg-slate-700 text-white border-slate-900 dark:border-slate-600" : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-500"
+              !activeFilter && !searchQuery ? "bg-slate-900 dark:bg-zinc-800 text-white border-slate-900 dark:border-zinc-700" : "bg-white dark:bg-zinc-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-zinc-800/60 hover:border-slate-300 dark:hover:border-zinc-600"
             )}
           >
             Todos
@@ -188,7 +188,7 @@ export default function CustomerBase() {
               onClick={() => handleFilterClick(filter)}
               className={cn(
                 "px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border-2",
-                activeFilter === filter ? "bg-primary text-white border-primary" : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-500"
+                activeFilter === filter ? "bg-primary text-white border-primary" : "bg-white dark:bg-zinc-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-zinc-800/60 hover:border-slate-300 dark:hover:border-zinc-600"
               )}
             >
               {filter}
@@ -199,7 +199,7 @@ export default function CustomerBase() {
               type="button"
               disabled
               title="Em breve - filtros por bairro"
-              className="px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border-2 flex items-center gap-2 bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-600 cursor-not-allowed opacity-60"
+              className="px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border-2 flex items-center gap-2 bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-zinc-700 cursor-not-allowed opacity-60"
             >
               <Filter className="size-3" />
               Bairros
@@ -210,11 +210,11 @@ export default function CustomerBase() {
       </div>
 
       {/* Table Section */}
-      <div className="bg-white dark:bg-slate-800 rounded-3xl border-2 border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl border-2 border-slate-100 dark:border-zinc-800/60 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="bg-slate-50/50 border-b-2 border-slate-100 dark:bg-slate-700/50 dark:border-slate-700">
+              <tr className="bg-slate-50/50 border-b-2 border-slate-100 dark:bg-zinc-800/50 dark:border-zinc-800/60">
                 <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest dark:text-slate-500">Rank</th>
                 <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest dark:text-slate-500">Cliente</th>
                 <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest dark:text-slate-500">Estatísticas</th>
@@ -222,7 +222,7 @@ export default function CustomerBase() {
                 <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest dark:text-slate-500">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y-2 divide-slate-50 dark:divide-slate-700/50">
+            <tbody className="divide-y-2 divide-slate-50 dark:divide-zinc-800/50">
               {loading ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-20 text-center">
@@ -236,7 +236,7 @@ export default function CustomerBase() {
                 <tr>
                   <td colSpan={5} className="px-6 py-20 text-center">
                     <div className="max-w-xs mx-auto">
-                      <div className="size-16 bg-slate-50 dark:bg-slate-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                      <div className="size-16 bg-slate-50 dark:bg-zinc-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
                         <Search className="size-8 text-slate-300 dark:text-slate-500" />
                       </div>
                       <h3 className="text-lg font-bold text-slate-900 dark:text-white">Nenhum cliente encontrado</h3>
@@ -246,12 +246,12 @@ export default function CustomerBase() {
                 </tr>
               ) : (
                 filteredCustomers.map((customer: any, index: number) => (
-                  <tr key={customer.id} className="hover:bg-slate-50/50 transition-colors group dark:hover:bg-slate-700/30">
+                  <tr key={customer.id} className="hover:bg-slate-50/50 transition-colors group dark:hover:bg-zinc-800/30">
                     <td className="px-6 py-4">
                       <div className={cn(
                         "size-8 rounded-xl flex items-center justify-center text-xs font-black",
                         index === 0 ? "bg-amber-100 text-amber-600 dark:bg-amber-900/50 dark:text-amber-400" :
-                          index === 1 ? "bg-slate-200 text-slate-600 dark:bg-slate-600 dark:text-slate-300" :
+                          index === 1 ? "bg-slate-200 text-slate-600 dark:bg-zinc-700 dark:text-slate-300" :
                             index === 2 ? "bg-orange-100 text-orange-600 dark:bg-orange-900/50 dark:text-orange-400" : "text-slate-400 dark:text-slate-500"
                       )}>
                         #{index + 1}
@@ -259,7 +259,7 @@ export default function CustomerBase() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="size-10 rounded-2xl bg-slate-100 dark:bg-slate-600 flex items-center justify-center text-slate-400 border-2 border-white dark:border-slate-500 shadow-sm font-bold uppercase overflow-hidden">
+                        <div className="size-10 rounded-2xl bg-slate-100 dark:bg-zinc-700 flex items-center justify-center text-slate-400 border-2 border-white dark:border-zinc-600 shadow-sm font-bold uppercase overflow-hidden">
                           {customer.image ? <Image src={customer.image} alt="" width={40} height={40} /> : (customer.nome?.[0] || 'C')}
                         </div>
                         <div>
@@ -313,7 +313,7 @@ export default function CustomerBase() {
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => openHistory(customer)}
-                          className="p-2.5 bg-white dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 rounded-xl text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary hover:border-primary/30 dark:hover:border-primary/30 hover:bg-primary/5 transition-all"
+                          className="p-2.5 bg-white dark:bg-zinc-800 border-2 border-slate-200 dark:border-zinc-700 rounded-xl text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary hover:border-primary/30 dark:hover:border-primary/30 hover:bg-primary/5 transition-all"
                         >
                           <History className="size-4" />
                         </button>
@@ -321,7 +321,7 @@ export default function CustomerBase() {
                           href={`https://wa.me/${customer.telefone.replace(/\D/g, '')}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="p-2.5 bg-white dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 rounded-xl text-slate-500 dark:text-slate-400 hover:text-green-600 dark:hover:text-green-400 hover:border-green-300 dark:hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all"
+                          className="p-2.5 bg-white dark:bg-zinc-800 border-2 border-slate-200 dark:border-zinc-700 rounded-xl text-slate-500 dark:text-slate-400 hover:text-green-600 dark:hover:text-green-400 hover:border-green-300 dark:hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all"
                         >
                           <Megaphone className="size-4" />
                         </a>
@@ -351,11 +351,11 @@ export default function CustomerBase() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-md bg-white dark:bg-slate-800 h-full shadow-2xl flex flex-col"
+              className="relative w-full max-w-md bg-white dark:bg-zinc-900 h-full shadow-2xl flex flex-col"
             >
-              <div className="p-6 border-b-2 border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
+              <div className="p-6 border-b-2 border-slate-100 dark:border-zinc-800/60 flex justify-between items-center bg-slate-50/50 dark:bg-zinc-950/50">
                 <div className="flex items-center gap-4">
-                  <div className="relative size-14 rounded-2xl bg-slate-200 dark:bg-slate-600 overflow-hidden border-2 border-white dark:border-slate-500 shadow-sm flex items-center justify-center text-slate-400">
+                  <div className="relative size-14 rounded-2xl bg-slate-200 dark:bg-zinc-700 overflow-hidden border-2 border-white dark:border-zinc-600 shadow-sm flex items-center justify-center text-slate-400">
                     {selectedCustomer?.image ? (
                       <Image src={selectedCustomer.image} alt="" fill className="object-cover" referrerPolicy="no-referrer" />
                     ) : (
@@ -367,25 +367,25 @@ export default function CustomerBase() {
                     <p className="text-xs text-slate-500 font-medium dark:text-slate-400">{selectedCustomer?.telefone}</p>
                   </div>
                 </div>
-                <button onClick={() => setIsHistoryOpen(false)} className="p-2.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors">
+                <button onClick={() => setIsHistoryOpen(false)} className="p-2.5 hover:bg-slate-200 dark:hover:bg-zinc-800 rounded-xl transition-colors">
                   <X className="size-5 text-slate-500 dark:text-slate-400" />
                 </button>
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 space-y-6 max-h-[calc(100vh-160px)] custom-scrollbar">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="p-5 bg-slate-50 dark:bg-slate-700 rounded-2xl border-2 border-slate-100 dark:border-slate-600">
+                  <div className="p-5 bg-slate-50 dark:bg-zinc-800 rounded-2xl border-2 border-slate-100 dark:border-zinc-700">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider dark:text-slate-500">Total Pedidos</p>
                     <p className="text-3xl font-black text-slate-900 dark:text-white">{selectedCustomer?.qtd_pedidos || 0}</p>
                   </div>
-                  <div className="p-5 bg-slate-50 dark:bg-slate-700 rounded-2xl border-2 border-slate-100 dark:border-slate-600">
+                  <div className="p-5 bg-slate-50 dark:bg-zinc-800 rounded-2xl border-2 border-slate-100 dark:border-zinc-700">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider dark:text-slate-500">Gasto Total</p>
                     <p className="text-3xl font-black text-primary">R$ {Number(selectedCustomer?.valor_total_gasto || 0).toFixed(2).replace('.', ',')}</p>
                   </div>
                 </div>
 
                 {/* Bot Status Control */}
-                <div className="p-5 bg-white dark:bg-slate-800 rounded-2xl border-2 border-slate-100 dark:border-slate-700 shadow-sm space-y-4">
+                <div className="p-5 bg-white dark:bg-zinc-900 rounded-2xl border-2 border-slate-100 dark:border-zinc-800/60 shadow-sm space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className={cn(
@@ -436,7 +436,7 @@ export default function CustomerBase() {
                         <p className="text-xs font-bold uppercase">Carregando histórico...</p>
                       </div>
                     ) : customerHistory.length === 0 ? (
-                      <div className="py-12 text-center border-2 border-dashed border-slate-100 rounded-2xl dark:border-slate-700">
+                      <div className="py-12 text-center border-2 border-dashed border-slate-100 rounded-2xl dark:border-zinc-800/60">
                         <ShoppingBag className="size-8 text-slate-200 mx-auto mb-2 dark:text-slate-600" />
                         <p className="text-sm font-medium text-slate-400 dark:text-slate-500">Nenhum pedido encontrado</p>
                       </div>
@@ -450,7 +450,7 @@ export default function CustomerBase() {
                           <div
                             key={order.id}
                             onClick={() => openOrderDetails(order)}
-                            className="p-4 rounded-xl border border-slate-100 hover:border-primary/20 hover:bg-primary/5 transition-all group cursor-pointer dark:border-slate-700 dark:hover:border-primary/30 dark:hover:bg-primary/10"
+                            className="p-4 rounded-xl border border-slate-100 hover:border-primary/20 hover:bg-primary/5 transition-all group cursor-pointer dark:border-zinc-800/60 dark:hover:border-primary/30 dark:hover:bg-primary/10"
                           >
                             <div className="flex justify-between items-start mb-2">
                               <div>
@@ -470,7 +470,7 @@ export default function CustomerBase() {
                               </span>
                             </div>
                             <p className="text-sm text-slate-700 font-medium line-clamp-2 dark:text-slate-300">{formattedItems || 'Pedido sem itens'}</p>
-                            <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+                            <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-100 dark:border-zinc-800/60">
                               <span className="text-sm font-bold text-slate-900 dark:text-white">R$ {Number(order.valor_total).toFixed(2).replace('.', ',')}</span>
                               <button className="text-xs font-bold text-primary flex items-center gap-1 group-hover:gap-2 transition-all">
                                 Ver detalhes <ArrowRight className="size-3" />
@@ -484,7 +484,7 @@ export default function CustomerBase() {
                 </div>
               </div>
 
-              <div className="p-6 border-t border-slate-100 shrink-0 dark:border-slate-700">
+              <div className="p-6 border-t border-slate-100 shrink-0 dark:border-zinc-800/60">
                 <button
                   onClick={handleCreateNewOrder}
                   className="w-full py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all flex items-center justify-center gap-2 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"

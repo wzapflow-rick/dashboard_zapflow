@@ -151,7 +151,7 @@ export default function DeliveryHistory() {
 
       {/* Cards de Resumo */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-white border border-slate-200 rounded-xl p-4 dark:bg-slate-800 dark:border-slate-700">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 dark:bg-zinc-900 dark:border-zinc-800/60">
           <div className="flex items-center gap-3">
             <div className="size-10 bg-blue-100 rounded-lg flex items-center justify-center dark:bg-blue-900/30">
               <Package className="size-5 text-blue-600 dark:text-blue-400" />
@@ -163,7 +163,7 @@ export default function DeliveryHistory() {
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-4 dark:bg-slate-800 dark:border-slate-700">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 dark:bg-zinc-900 dark:border-zinc-800/60">
           <div className="flex items-center gap-3">
             <div className="size-10 bg-green-100 rounded-lg flex items-center justify-center dark:bg-green-900/30">
               <DollarSign className="size-5 text-green-600 dark:text-green-400" />
@@ -175,7 +175,7 @@ export default function DeliveryHistory() {
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-4 dark:bg-slate-800 dark:border-slate-700">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 dark:bg-zinc-900 dark:border-zinc-800/60">
           <div className="flex items-center gap-3">
             <div className="size-10 bg-amber-100 rounded-lg flex items-center justify-center dark:bg-amber-900/30">
               <Truck className="size-5 text-amber-600 dark:text-amber-400" />
@@ -187,7 +187,7 @@ export default function DeliveryHistory() {
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-4 dark:bg-slate-800 dark:border-slate-700">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 dark:bg-zinc-900 dark:border-zinc-800/60">
           <div className="flex items-center gap-3">
             <div className="size-10 bg-purple-100 rounded-lg flex items-center justify-center dark:bg-purple-900/30">
               <User className="size-5 text-purple-600 dark:text-purple-400" />
@@ -211,7 +211,7 @@ export default function DeliveryHistory() {
               placeholder="Buscar por pedido, entregador, endereço..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none dark:bg-slate-900 dark:border-slate-700 dark:text-slate-200"
+              className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none dark:bg-zinc-950 dark:border-zinc-800/60 dark:text-slate-200"
             />
           </div>
 
@@ -219,7 +219,7 @@ export default function DeliveryHistory() {
           <select
             value={selectedDriver || ''}
             onChange={(e) => setSelectedDriver(e.target.value ? Number(e.target.value) : null)}
-            className="px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none dark:bg-slate-900 dark:border-slate-700 dark:text-slate-200"
+            className="px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none dark:bg-zinc-950 dark:border-zinc-800/60 dark:text-slate-200"
           >
             <option value="">Todos entregadores</option>
             {drivers.map((d) => (
@@ -231,7 +231,7 @@ export default function DeliveryHistory() {
           <select
             value={selectedPeriod}
             onChange={(e) => setSelectedPeriod(e.target.value as any)}
-            className="px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none dark:bg-slate-900 dark:border-slate-700 dark:text-slate-200"
+            className="px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none dark:bg-zinc-950 dark:border-zinc-800/60 dark:text-slate-200"
           >
             <option value="today">Hoje</option>
             <option value="week">Últimos 7 dias</option>
@@ -242,7 +242,7 @@ export default function DeliveryHistory() {
       </div>
 
       {/* Lista de Entregas */}
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden dark:bg-slate-800 dark:border-slate-700">
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden dark:bg-zinc-900 dark:border-zinc-800/60">
         {filteredDeliveries.length === 0 ? (
           <div className="p-8 text-center">
             <Package className="size-12 text-slate-300 mx-auto mb-3 dark:text-slate-600" />
@@ -252,7 +252,7 @@ export default function DeliveryHistory() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-slate-500 dark:bg-slate-900/50 dark:text-slate-400">
+              <thead className="bg-slate-50 text-slate-500 dark:bg-zinc-950/50 dark:text-slate-400">
                 <tr>
                   <th className="text-left px-4 py-3 font-medium">Pedido</th>
                   <th className="text-left px-4 py-3 font-medium">Entregador</th>
@@ -262,9 +262,9 @@ export default function DeliveryHistory() {
                   <th className="text-right px-4 py-3 font-medium">Comissão</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+              <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/60">
                 {filteredDeliveries.map((delivery) => (
-                  <tr key={delivery.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700 last:border-0 transition-colors">
+                  <tr key={delivery.id} className="hover:bg-slate-50 dark:hover:bg-zinc-800/50 border-b border-slate-100 dark:border-zinc-800/60 last:border-0 transition-colors">
                     <td className="px-4 py-3">
                       <span className="font-bold text-slate-900 dark:text-white">#{delivery.pedido_id}</span>
                     </td>
@@ -298,7 +298,7 @@ export default function DeliveryHistory() {
 
       {/* Resumo por Entregador */}
       {filteredDeliveries.length > 0 && (
-        <div className="bg-white border border-slate-200 rounded-xl p-4 dark:bg-slate-800 dark:border-slate-700">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 dark:bg-zinc-900 dark:border-zinc-800/60">
           <h4 className="font-bold text-slate-900 dark:text-white mb-4">Resumo por Entregador</h4>
           <div className="space-y-3">
             {(() => {
@@ -321,7 +321,7 @@ export default function DeliveryHistory() {
               return Array.from(summary.entries())
                 .sort((a, b) => b[1].entregas - a[1].entregas)
                 .map(([id, data]) => (
-                  <div key={id} className="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-700 last:border-0">
+                  <div key={id} className="flex items-center justify-between py-2 border-b border-slate-100 dark:border-zinc-800/60 last:border-0">
                     <div className="flex items-center gap-3">
                       <div className="size-10 bg-purple-100 rounded-full flex items-center justify-center dark:bg-purple-900/30">
                         <User className="size-5 text-purple-600 dark:text-purple-400" />

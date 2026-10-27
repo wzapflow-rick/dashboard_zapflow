@@ -329,27 +329,27 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="relative w-full max-w-5xl h-[95dvh] md:h-[85vh] bg-white rounded-t-[32px] md:rounded-[32px] shadow-2xl overflow-hidden flex flex-col md:flex-row dark:bg-slate-800"
+                    className="relative w-full max-w-5xl h-[95dvh] md:h-[85vh] bg-white rounded-t-[32px] md:rounded-[32px] shadow-2xl overflow-hidden flex flex-col md:flex-row dark:bg-zinc-900"
                 >
                     {/* Lista de Produtos */}
-                    <div className="flex-1 flex flex-col min-w-0 border-r border-slate-100 dark:border-slate-700 min-h-0">
-                        <header className="p-4 md:p-6 border-b border-slate-100 flex items-center justify-between dark:border-slate-700 shrink-0">
+                    <div className="flex-1 flex flex-col min-w-0 border-r border-slate-100 dark:border-zinc-800/60 min-h-0">
+                        <header className="p-4 md:p-6 border-b border-slate-100 flex items-center justify-between dark:border-zinc-800/60 shrink-0">
                             <div>
                                 <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight dark:text-white">Novo Pedido</h2>
                                 <p className="text-xs md:text-sm text-slate-500 font-bold uppercase tracking-wider dark:text-slate-400">Criacao Manual</p>
                             </div>
-                            <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors md:hidden dark:hover:bg-slate-700">
+                            <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors md:hidden dark:hover:bg-zinc-800">
                                 <X className="size-6 text-slate-400" />
                             </button>
                         </header>
 
-                        <div className="p-3 md:p-4 bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
+                        <div className="p-3 md:p-4 bg-slate-50/50 dark:bg-zinc-950/50 shrink-0">
                             <div className="relative">
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 size-5" />
                                 <input
                                     type="text"
                                     placeholder="Buscar produto..."
-                                    className="w-full h-11 md:h-12 pl-12 pr-4 bg-white border-2 border-slate-100 rounded-2xl text-sm font-bold focus:border-primary/30 outline-none transition-all dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:placeholder:text-slate-400"
+                                    className="w-full h-11 md:h-12 pl-12 pr-4 bg-white border-2 border-slate-100 rounded-2xl text-sm font-bold focus:border-primary/30 outline-none transition-all dark:bg-zinc-800 dark:border-zinc-700 dark:text-white dark:placeholder:text-slate-400"
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                 />
@@ -361,7 +361,7 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                                     className={`px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors ${
                                         selectedCategory === null
                                             ? 'bg-primary text-white'
-                                            : 'bg-slate-200 text-slate-600 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-400 dark:hover:bg-slate-600'
+                                            : 'bg-slate-200 text-slate-600 hover:bg-slate-300 dark:bg-zinc-800 dark:text-slate-400 dark:hover:bg-zinc-700'
                                     }`}
                                 >
                                     Todos
@@ -373,7 +373,7 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                                         className={`px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors ${
                                             selectedCategory === cat.id
                                                 ? 'bg-primary text-white'
-                                                : 'bg-slate-200 text-slate-600 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-400 dark:hover:bg-slate-600'
+                                                : 'bg-slate-200 text-slate-600 hover:bg-slate-300 dark:bg-zinc-800 dark:text-slate-400 dark:hover:bg-zinc-700'
                                         }`}
                                     >
                                         {cat.nome}
@@ -402,7 +402,7 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                                                     <button
                                                         key={p.id}
                                                         onClick={() => addToCart(p)}
-                                                        className="group p-4 bg-white border-2 border-slate-100 rounded-2xl text-left hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all active:scale-[0.98] flex flex-col justify-between gap-3 dark:bg-slate-700 dark:border-slate-600"
+                                                        className="group p-4 bg-white border-2 border-slate-100 rounded-2xl text-left hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all active:scale-[0.98] flex flex-col justify-between gap-3 dark:bg-zinc-800 dark:border-zinc-700"
                                                     >
                                                         <div>
                                                             <h4 className="font-black text-slate-900 group-hover:text-primary transition-colors line-clamp-1 dark:text-white dark:group-hover:text-primary">{p.nome}</h4>
@@ -411,7 +411,7 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                                                             </span>
                                                         </div>
                                                         <div className="flex items-center justify-end mt-auto">
-                                                            <div className="size-8 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400 group-hover:bg-primary group-hover:text-white transition-all dark:bg-slate-600 dark:text-slate-300">
+                                                            <div className="size-8 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400 group-hover:bg-primary group-hover:text-white transition-all dark:bg-zinc-700 dark:text-slate-300">
                                                                 <Plus className="size-5" />
                                                             </div>
                                                         </div>
@@ -463,15 +463,15 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                     </div>
 
                     {/* Carrinho e Cliente */}
-                    <div className="w-full md:w-[380px] bg-slate-50 flex flex-col shrink-0 dark:bg-slate-900 max-h-[40vh] md:max-h-none min-h-0">
-                        <div className="p-4 md:p-6 bg-white border-b border-slate-100 hidden md:flex items-center justify-between dark:bg-slate-800 dark:border-slate-700 shrink-0">
+                    <div className="w-full md:w-[380px] bg-slate-50 flex flex-col shrink-0 dark:bg-zinc-950 max-h-[40vh] md:max-h-none min-h-0">
+                        <div className="p-4 md:p-6 bg-white border-b border-slate-100 hidden md:flex items-center justify-between dark:bg-zinc-900 dark:border-zinc-800/60 shrink-0">
                             <div className="flex items-center gap-3">
                                 <div className="size-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
                                     <ShoppingCart className="size-5" />
                                 </div>
                                 <h3 className="font-black text-slate-900 dark:text-white">Carrinho</h3>
                             </div>
-                            <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors dark:hover:bg-slate-700">
+                            <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors dark:hover:bg-zinc-800">
                                 <X className="size-6 text-slate-400" />
                             </button>
                         </div>
@@ -481,27 +481,27 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                             <div className="space-y-3">
                                 <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1 dark:text-slate-500">Itens Selecionados</h4>
                                 {cart.length === 0 ? (
-                                    <div className="py-10 text-center space-y-2 border-2 border-dashed border-slate-200 rounded-2xl bg-white dark:bg-slate-800 dark:border-slate-600">
-                                        <div className="size-12 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mx-auto dark:bg-slate-700">
+                                    <div className="py-10 text-center space-y-2 border-2 border-dashed border-slate-200 rounded-2xl bg-white dark:bg-zinc-900 dark:border-zinc-700">
+                                        <div className="size-12 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mx-auto dark:bg-zinc-800">
                                             <ShoppingCart className="size-6" />
                                         </div>
                                         <p className="text-xs font-bold text-slate-400 dark:text-slate-500">Nenhum item adicionado</p>
                                     </div>
                                 ) : (
                                     cart.map(item => (
-                                        <div key={item.id} className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between gap-3 dark:bg-slate-800 dark:border-slate-700">
+                                        <div key={item.id} className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between gap-3 dark:bg-zinc-900 dark:border-zinc-800/60">
                                             <div className="min-w-0">
                                                 <p className="text-sm font-black text-slate-900 line-clamp-1 dark:text-white">{item.nome}</p>
                                                 <p className="text-xs font-bold text-primary italic">
                                                     {(item.preco * item.quantidade).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                                 </p>
                                             </div>
-                                            <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-xl shrink-0 dark:bg-slate-700">
-                                                <button onClick={() => removeFromCart(item.id)} className="size-7 flex items-center justify-center bg-white rounded-lg text-slate-400 hover:text-red-500 transition-colors shadow-sm dark:bg-slate-600 dark:text-slate-300">
+                                            <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-xl shrink-0 dark:bg-zinc-800">
+                                                <button onClick={() => removeFromCart(item.id)} className="size-7 flex items-center justify-center bg-white rounded-lg text-slate-400 hover:text-red-500 transition-colors shadow-sm dark:bg-zinc-700 dark:text-slate-300">
                                                     <Minus className="size-4" />
                                                 </button>
                                                 <span className="w-6 text-center text-xs font-black text-slate-900 dark:text-white">{item.quantidade}</span>
-                                                <button onClick={() => addToCart(item)} className="size-7 flex items-center justify-center bg-white rounded-lg text-slate-400 hover:text-primary transition-colors shadow-sm dark:bg-slate-600 dark:text-slate-300">
+                                                <button onClick={() => addToCart(item)} className="size-7 flex items-center justify-center bg-white rounded-lg text-slate-400 hover:text-primary transition-colors shadow-sm dark:bg-zinc-700 dark:text-slate-300">
                                                     <Plus className="size-4" />
                                                 </button>
                                             </div>
@@ -513,7 +513,7 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                             {/* Informações do Cliente */}
                             <div className="space-y-4">
                                 <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1 dark:text-slate-500">Dados do Cliente</h4>
-                                <div className="space-y-3 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm dark:bg-slate-800 dark:border-slate-700">
+                                <div className="space-y-3 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm dark:bg-zinc-900 dark:border-zinc-800/60">
                                     <div className="space-y-1.5 px-1">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 dark:text-slate-500">Nome Completo</label>
                                         <div className="relative">
@@ -521,7 +521,7 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                                             <input
                                                 type="text"
                                                 placeholder="Ex: João Silva"
-                                                className="w-full h-11 pl-10 bg-slate-50 border-2 border-slate-50 rounded-xl text-sm font-bold outline-none focus:border-primary/20 transition-all dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:placeholder:text-slate-400"
+                                                className="w-full h-11 pl-10 bg-slate-50 border-2 border-slate-50 rounded-xl text-sm font-bold outline-none focus:border-primary/20 transition-all dark:bg-zinc-800 dark:border-zinc-700 dark:text-white dark:placeholder:text-slate-400"
                                                 value={clienteNome}
                                                 onChange={(e) => setClienteNome(e.target.value)}
                                             />
@@ -534,7 +534,7 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                                             <input
                                                 type="text"
                                                 placeholder="(79) 99999-9999"
-                                                className="w-full h-11 pl-10 bg-slate-50 border-2 border-slate-50 rounded-xl text-sm font-bold outline-none focus:border-primary/20 transition-all dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:placeholder:text-slate-400"
+                                                className="w-full h-11 pl-10 bg-slate-50 border-2 border-slate-50 rounded-xl text-sm font-bold outline-none focus:border-primary/20 transition-all dark:bg-zinc-800 dark:border-zinc-700 dark:text-white dark:placeholder:text-slate-400"
                                                 value={clienteTelefone}
                                                 onChange={(e) => setClienteTelefone(e.target.value)}
                                             />
@@ -560,7 +560,7 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                         </div>
 
                         {/* Footer de Resumo */}
-                        <div className="p-4 md:p-6 bg-white border-t border-slate-100 space-y-3 md:space-y-4 dark:bg-slate-800 dark:border-slate-700 shrink-0">
+                        <div className="p-4 md:p-6 bg-white border-t border-slate-100 space-y-3 md:space-y-4 dark:bg-zinc-900 dark:border-zinc-800/60 shrink-0">
                             <div className="flex items-center justify-between">
                                 <span className="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-widest dark:text-slate-500">Total</span>
                                 <span className="text-xl md:text-2xl font-black text-slate-900 dark:text-white">
@@ -594,10 +594,10 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] dark:bg-slate-800"
+                        className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] dark:bg-zinc-900"
                     >
                         {/* Header */}
-                        <div className="p-6 border-b border-slate-100 flex items-start justify-between gap-4 bg-gradient-to-r from-amber-50 to-orange-50 shrink-0 dark:border-slate-700 dark:from-amber-900/30 dark:to-orange-900/30">
+                        <div className="p-6 border-b border-slate-100 flex items-start justify-between gap-4 bg-gradient-to-r from-amber-50 to-orange-50 shrink-0 dark:border-zinc-800/60 dark:from-amber-900/30 dark:to-orange-900/30">
                             <div>
                                 <h2 className="text-xl font-bold text-slate-900 dark:text-white">{selectedComposite.nome}</h2>
                                 {selectedComposite.descricao && (
@@ -611,7 +611,7 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                             </div>
                             <button
                                 onClick={() => setIsCompositeModalOpen(false)}
-                                className="p-2 hover:bg-slate-100 rounded-full transition-colors shrink-0 dark:hover:bg-slate-700"
+                                className="p-2 hover:bg-slate-100 rounded-full transition-colors shrink-0 dark:hover:bg-zinc-800"
                             >
                                 <X className="size-5 text-slate-500 dark:text-slate-400" />
                             </button>
@@ -634,8 +634,8 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                                             className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${isSelected
                                                 ? 'border-amber-400 bg-amber-50 ring-1 ring-amber-200 dark:border-amber-500 dark:bg-amber-900/30 dark:ring-amber-600'
                                                 : canAdd
-                                                    ? 'border-slate-100 bg-slate-50 hover:border-amber-200 hover:bg-amber-50/40 dark:border-slate-600 dark:bg-slate-700 dark:hover:border-amber-500 dark:hover:bg-amber-900/20'
-                                                    : 'border-slate-100 bg-slate-50 opacity-40 cursor-not-allowed dark:border-slate-600 dark:bg-slate-800'
+                                                    ? 'border-slate-100 bg-slate-50 hover:border-amber-200 hover:bg-amber-50/40 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-amber-500 dark:hover:bg-amber-900/20'
+                                                    : 'border-slate-100 bg-slate-50 opacity-40 cursor-not-allowed dark:border-zinc-700 dark:bg-zinc-900'
                                                 }`}
                                         >
                                             <div className="flex-1 text-left">
@@ -650,7 +650,7 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                                             </div>
                                             <div className={`size-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${isSelected
                                                 ? 'bg-amber-500 border-amber-500'
-                                                : 'border-slate-300 bg-white dark:bg-slate-600 dark:border-slate-500'
+                                                : 'border-slate-300 bg-white dark:bg-zinc-700 dark:border-zinc-600'
                                                 }`}>
                                                 {isSelected && <Check className="size-3.5 text-white stroke-[3]" />}
                                             </div>
@@ -661,11 +661,11 @@ export default function OrderCreatorModal({ isOpen, onClose, onSuccess }: OrderC
                         </div>
 
                         {/* Footer */}
-                        <div className="p-6 bg-slate-50 border-t border-slate-100 shrink-0 dark:bg-slate-700 dark:border-slate-600">
+                        <div className="p-6 bg-slate-50 border-t border-slate-100 shrink-0 dark:bg-zinc-800 dark:border-zinc-700">
                             <button
                                 disabled={selectedItems.length < selectedComposite.minimo}
                                 onClick={handleAddCompositeToCart}
-                                className="w-full bg-amber-500 hover:bg-amber-600 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98] dark:disabled:bg-slate-600 dark:disabled:text-slate-400"
+                                className="w-full bg-amber-500 hover:bg-amber-600 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98] dark:disabled:bg-zinc-700 dark:disabled:text-slate-400"
                             >
                                 <Plus className="size-5" />
                                 {selectedItems.length >= selectedComposite.minimo

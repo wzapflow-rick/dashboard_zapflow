@@ -146,14 +146,14 @@ function ReportsContent() {
             </div>
 
             {/* Date Range Selector */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
+            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800/60 p-4">
                 <div className="flex flex-wrap items-center gap-4">
                     <div className="flex gap-2">
                         {quickRanges.map((range) => (
                             <button
                                 key={range.label}
                                 onClick={() => handleQuickRange(range.days)}
-                                className="px-3 py-1.5 text-sm font-medium rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-zinc-200 transition-colors"
+                                className="px-3 py-1.5 text-sm font-medium rounded-lg bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 transition-colors"
                             >
                                 {range.label}
                             </button>
@@ -164,14 +164,14 @@ function ReportsContent() {
                             type="date"
                             value={dateRange.start}
                             onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                            className="px-3 py-1.5 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-zinc-200 rounded-lg text-sm"
+                            className="px-3 py-1.5 border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-200 rounded-lg text-sm"
                         />
                         <span className="text-slate-400 dark:text-slate-500">até</span>
                         <input
                             type="date"
                             value={dateRange.end}
                             onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                            className="px-3 py-1.5 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-zinc-200 rounded-lg text-sm"
+                            className="px-3 py-1.5 border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-200 rounded-lg text-sm"
                         />
                     </div>
                 </div>
@@ -186,7 +186,7 @@ function ReportsContent() {
                 <>
                     {/* Main Metrics */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
+                        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800/60 p-4">
                             <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 mb-2">
                                 <DollarSign className="size-4" />
                                 <span className="text-sm font-medium">Faturamento</span>
@@ -195,7 +195,7 @@ function ReportsContent() {
                             <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{report.quantidadePedidos} pedidos</p>
                         </div>
 
-                        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
+                        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800/60 p-4">
                             <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 mb-2">
                                 <TrendingUp className="size-4" />
                                 <span className="text-sm font-medium">Média/Pedido</span>
@@ -204,7 +204,7 @@ function ReportsContent() {
                             <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">por pedido</p>
                         </div>
 
-                        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
+                        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800/60 p-4">
                             <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 mb-2">
                                 <ShoppingBag className="size-4" />
                                 <span className="text-sm font-medium">Descontos</span>
@@ -213,7 +213,7 @@ function ReportsContent() {
                             <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">total concedidos</p>
                         </div>
 
-                        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
+                        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800/60 p-4">
                             <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 mb-2">
                                 <Truck className="size-4" />
                                 <span className="text-sm font-medium">Taxas Entrega</span>
@@ -225,7 +225,7 @@ function ReportsContent() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Top Produtos */}
-                        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
+                        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800/60 p-4">
                             <h3 className="font-bold text-slate-900 dark:text-zinc-200 mb-4 flex items-center gap-2">
                                 <BarChart3 className="size-5 text-primary" />
                                 Produtos Mais Vendidos
@@ -247,7 +247,7 @@ function ReportsContent() {
                         </div>
 
                         {/* Pagamentos */}
-                        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
+                        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800/60 p-4">
                             <h3 className="font-bold text-slate-900 dark:text-zinc-200 mb-4 flex items-center gap-2">
                                 <CreditCard className="size-5 text-primary" />
                                 Forma de Pagamento
@@ -272,7 +272,7 @@ function ReportsContent() {
                         </div>
 
                         {/* Tipo de Entrega */}
-                        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
+                        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800/60 p-4">
                             <h3 className="font-bold text-slate-900 dark:text-zinc-200 mb-4 flex items-center gap-2">
                                 <Truck className="size-5 text-primary" />
                                 Tipo de Entrega
@@ -296,7 +296,7 @@ function ReportsContent() {
                         </div>
 
                         {/* Status dos Pedidos */}
-                        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
+                        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800/60 p-4">
                             <h3 className="font-bold text-slate-900 dark:text-zinc-200 mb-4 flex items-center gap-2">
                                 <PieChart className="size-5 text-primary" />
                                 Status dos Pedidos
@@ -313,7 +313,7 @@ function ReportsContent() {
                     </div>
 
                     {/* Comparativo Mensal */}
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
+                    <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800/60 p-4">
                         <h3 className="font-bold text-slate-900 dark:text-zinc-200 mb-4 flex items-center gap-2">
                             <Calendar className="size-5 text-primary" />
                             Evolução Mensal (Últimos 6 meses)

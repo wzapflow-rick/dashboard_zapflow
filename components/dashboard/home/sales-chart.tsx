@@ -28,7 +28,7 @@ export function SalesChart({ data }: { data: number[] }) {
                   isPeak ? 'bg-brand' : 'bg-primary/55 group-hover:bg-primary',
                 )}
               />
-              <div className="pointer-events-none absolute -top-9 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-lg bg-slate-900 px-2 py-1 text-[11px] font-medium text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 dark:bg-slate-700">
+              <div className="pointer-events-none absolute -top-9 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-lg bg-slate-900 px-2 py-1 text-[11px] font-medium text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 dark:bg-zinc-800">
                 <span className={cn('font-bold', isPeak ? 'text-brand' : 'text-primary')}>{value}</span> às {index}h
               </div>
             </div>

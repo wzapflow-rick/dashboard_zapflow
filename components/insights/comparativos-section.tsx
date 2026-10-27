@@ -92,7 +92,7 @@ export function ComparativosSection({
           </span>
 
           <div
-            className="flex flex-1 rounded-xl border border-slate-200/70 bg-white/70 p-1 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/60 sm:flex-none"
+            className="flex flex-1 rounded-xl border border-slate-200/70 bg-white/70 p-1 shadow-sm dark:border-zinc-800/60 dark:bg-zinc-950/60 sm:flex-none"
             role="group"
             aria-label="Período dos comparativos"
           >
@@ -108,7 +108,7 @@ export function ComparativosSection({
                     'inline-flex flex-1 items-center justify-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors sm:flex-none',
                     selecionado
                       ? 'bg-primary text-slate-950 shadow-sm'
-                      : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100',
+                      : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-zinc-900 dark:hover:text-slate-100',
                   )}
                 >
                   {selecionado && atualizando ? (

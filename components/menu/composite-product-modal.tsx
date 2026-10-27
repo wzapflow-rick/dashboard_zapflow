@@ -197,9 +197,9 @@ export default function CompositeProductModal({
                     animate={{ y: 0 }}
                     exit={{ y: "100%" }}
                     transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                    className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh]"
+                    className="relative w-full max-w-2xl bg-white dark:bg-zinc-950 rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh]"
                 >
-                    <div className="p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 shrink-0">
+                    <div className="p-5 sm:p-6 border-b border-slate-100 dark:border-zinc-800/60 flex items-center justify-between bg-white dark:bg-zinc-950 shrink-0">
                         <div>
                             <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">{product.nome}</h2>
                             <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 uppercase tracking-wider font-bold">
@@ -207,7 +207,7 @@ export default function CompositeProductModal({
                                  step === 'additions' ? 'Turbine seu pedido com adicionais' : 'Alguma observação?'}
                             </p>
                         </div>
-                        <button onClick={onClose} className="p-2 bg-slate-50 dark:bg-slate-800 rounded-full text-slate-400">
+                        <button onClick={onClose} className="p-2 bg-slate-50 dark:bg-zinc-900 rounded-full text-slate-400">
                             <X className="size-5" />
                         </button>
                     </div>
@@ -223,14 +223,14 @@ export default function CompositeProductModal({
                                             onClick={() => toggleFlavor(flavor)}
                                             className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all ${isSelected
                                                     ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20'
-                                                    : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800'
+                                                    : 'border-slate-100 dark:border-zinc-800/60 bg-white dark:bg-zinc-900'
                                                 }`}
                                         >
                                             <div className="text-left">
                                                 <p className="font-bold text-slate-800 dark:text-slate-200 text-sm">{flavor.nome}</p>
                                                 <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">{fmt(flavor.preco)}</p>
                                             </div>
-                                            <div className={`size-5 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected ? 'bg-amber-500 border-amber-500' : 'border-slate-200 dark:border-slate-700'
+                                            <div className={`size-5 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected ? 'bg-amber-500 border-amber-500' : 'border-slate-200 dark:border-zinc-800/60'
                                                 }`}>
                                                 {isSelected && <Check className="size-3 text-white" />}
                                             </div>
@@ -246,7 +246,7 @@ export default function CompositeProductModal({
                                     <div key={group.id} className="space-y-3">
                                         <div className="flex items-center justify-between">
                                             <h3 className="font-bold text-slate-900 dark:text-white text-sm uppercase tracking-tight">{group.nome}</h3>
-                                            <span className="text-[9px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-1 rounded-md uppercase">
+                                            <span className="text-[9px] font-bold bg-slate-100 dark:bg-zinc-900 text-slate-500 dark:text-slate-400 px-2 py-1 rounded-md uppercase">
                                                 Até {group.maximo || 99} itens
                                             </span>
                                         </div>
@@ -259,11 +259,11 @@ export default function CompositeProductModal({
                                                         onClick={() => toggleAddition(group, item)}
                                                         className={`flex items-center justify-between p-3.5 rounded-xl border-2 transition-all ${isSelected
                                                                 ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20'
-                                                                : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800'
+                                                                : 'border-slate-100 dark:border-zinc-800/60 bg-white dark:bg-zinc-900'
                                                             }`}
                                                     >
                                                         <div className="flex items-center gap-3">
-                                                            <div className={`size-5 rounded border-2 flex items-center justify-center transition-colors ${isSelected ? 'bg-amber-500 border-amber-500' : 'border-slate-200 dark:border-slate-700'
+                                                            <div className={`size-5 rounded border-2 flex items-center justify-center transition-colors ${isSelected ? 'bg-amber-500 border-amber-500' : 'border-slate-200 dark:border-zinc-800/60'
                                                                 }`}>
                                                                 {isSelected && <Check className="size-3 text-white" />}
                                                             </div>
@@ -288,13 +288,13 @@ export default function CompositeProductModal({
                                     value={observacao}
                                     onChange={(e) => setObservacao(e.target.value)}
                                     placeholder="Ex: Sem cebola, capricha no queijo..."
-                                    className="w-full h-32 p-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 resize-none dark:text-white"
+                                    className="w-full h-32 p-4 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800/60 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 resize-none dark:text-white"
                                 />
                             </div>
                         )}
                     </div>
 
-                    <div className="shrink-0 p-5 sm:p-6 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 pb-8 sm:pb-6">
+                    <div className="shrink-0 p-5 sm:p-6 border-t border-slate-100 dark:border-zinc-800/60 bg-white dark:bg-zinc-950 pb-8 sm:pb-6">
                         <div className="flex items-center justify-between mb-4">
                             <div>
                                 <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Total estimado</p>
@@ -304,7 +304,7 @@ export default function CompositeProductModal({
                                 {step !== 'flavors' && (
                                     <button
                                         onClick={prevStep}
-                                        className="p-3 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-50 transition-colors"
+                                        className="p-3 bg-white dark:bg-zinc-900 border-2 border-slate-100 dark:border-zinc-800/60 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-50 transition-colors"
                                     >
                                         <ChevronLeft className="size-6" />
                                     </button>

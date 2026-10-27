@@ -351,7 +351,7 @@ export default function CampaignsPanel() {
 
                     {/* Metric Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-slate-200 dark:border-zinc-800/60 shadow-sm">
                             <div className="flex items-center gap-3">
                                 <div className="size-11 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center text-green-600 dark:text-green-400">
                                     <Send className="size-5" />
@@ -362,7 +362,7 @@ export default function CampaignsPanel() {
                                 </div>
                             </div>
                         </div>
-                        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-slate-200 dark:border-zinc-800/60 shadow-sm">
                             <div className="flex items-center gap-3">
                                 <div className="size-11 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400">
                                     <Users className="size-5" />
@@ -373,7 +373,7 @@ export default function CampaignsPanel() {
                                 </div>
                             </div>
                         </div>
-                        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-slate-200 dark:border-zinc-800/60 shadow-sm">
                             <div className="flex items-center gap-3">
                                 <div className="size-11 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center text-red-600 dark:text-red-400">
                                     <AlertCircle className="size-5" />
@@ -398,7 +398,7 @@ export default function CampaignsPanel() {
                                 <MorphingInfinity className="size-8 text-violet-500" />
                             </div>
                         ) : campanhas.length === 0 ? (
-                            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-12 text-center">
+                            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800/60 p-12 text-center">
                                 <Megaphone className="size-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
                                 <p className="text-slate-500 dark:text-slate-400">Nenhuma campanha configurada ainda.</p>
                                 <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">Clique em &quot;Nova campanha&quot; para começar.</p>
@@ -412,7 +412,7 @@ export default function CampaignsPanel() {
                                     return (
                                         <div
                                             key={c.id}
-                                            className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm"
+                                            className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800/60 p-6 shadow-sm"
                                         >
                                             <div className="flex items-start justify-between mb-3">
                                                 <div className="flex items-center gap-3">
@@ -420,7 +420,7 @@ export default function CampaignsPanel() {
                                                         onClick={() => handleToggle(c.id, !c.ativo)}
                                                         className={cn(
                                                             "relative w-11 h-6 rounded-full transition-colors",
-                                                            c.ativo ? "bg-violet-600" : "bg-slate-300 dark:bg-slate-600"
+                                                            c.ativo ? "bg-violet-600" : "bg-slate-300 dark:bg-zinc-700"
                                                         )}
                                                     >
                                                         <span className={cn(
@@ -438,13 +438,13 @@ export default function CampaignsPanel() {
                                                 <div className="flex items-center gap-1">
                                                     <button
                                                         onClick={() => openModal(c)}
-                                                        className="p-1.5 text-slate-400 hover:text-violet-500 transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+                                                        className="p-1.5 text-slate-400 hover:text-violet-500 transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800"
                                                     >
                                                         <Edit className="size-4" />
                                                     </button>
                                                     <button
                                                         onClick={() => setDeleteConfirm(c.id)}
-                                                        className="p-1.5 text-slate-400 hover:text-red-500 transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+                                                        className="p-1.5 text-slate-400 hover:text-red-500 transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800"
                                                     >
                                                         <Trash2 className="size-4" />
                                                     </button>
@@ -497,7 +497,7 @@ export default function CampaignsPanel() {
                                     placeholder="Buscar cliente ou telefone..."
                                     value={filtroBusca}
                                     onChange={(e) => setFiltroBusca(e.target.value)}
-                                    className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
+                                    className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
                                 />
                             </div>
 
@@ -505,7 +505,7 @@ export default function CampaignsPanel() {
                             <select
                                 value={filtroCampanha ?? ''}
                                 onChange={(e) => setFiltroCampanha(e.target.value ? Number(e.target.value) : null)}
-                                className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
+                                className="px-3 py-2 text-sm border border-slate-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
                             >
                                 <option value="">Todas as campanhas</option>
                                 {campanhas.map(c => (
@@ -517,7 +517,7 @@ export default function CampaignsPanel() {
                             <select
                                 value={filtroStatus}
                                 onChange={(e) => setFiltroStatus(e.target.value)}
-                                className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
+                                className="px-3 py-2 text-sm border border-slate-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
                             >
                                 <option value="todos">Todos os status</option>
                                 <option value="enviado">Enviado</option>
@@ -533,17 +533,17 @@ export default function CampaignsPanel() {
                                         setFiltroCampanha(null);
                                         setFiltroBusca('');
                                     }}
-                                    className="px-3 py-2 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors"
+                                    className="px-3 py-2 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-xl transition-colors"
                                 >
                                     Limpar filtros
                                 </button>
                             )}
                         </div>
 
-                        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800/60 shadow-sm overflow-hidden">
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
-                                    <thead className="bg-slate-50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-600">
+                                    <thead className="bg-slate-50 dark:bg-zinc-800/50 border-b border-slate-200 dark:border-zinc-700">
                                         <tr>
                                             <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-300">Data/Hora</th>
                                             <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-300">Campanha</th>
@@ -554,7 +554,7 @@ export default function CampaignsPanel() {
                                             <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-300">Mensagem</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                                    <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/60">
                                         {paginatedDisparos.length === 0 ? (
                                             <tr>
                                                 <td colSpan={7} className="px-4 py-8 text-center text-slate-400 dark:text-slate-500">
@@ -568,7 +568,7 @@ export default function CampaignsPanel() {
                                             paginatedDisparos.map((d) => {
                                                 const campanha = campanhas.find(c => c.id === d.campanha_id);
                                                 return (
-                                                    <tr key={d.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
+                                                    <tr key={d.id} className="hover:bg-slate-50 dark:hover:bg-zinc-800/30">
                                                         <td className="px-4 py-3 text-slate-600 dark:text-slate-300 whitespace-nowrap">
                                                             {formatDate(d.enviado_em)}
                                                         </td>
@@ -601,7 +601,7 @@ export default function CampaignsPanel() {
                             </div>
 
                             {pageCount > 1 && (
-                                <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 dark:border-slate-600">
+                                <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 dark:border-zinc-700">
                                     <p className="text-xs text-slate-500 dark:text-slate-400">
                                         Página {disparoPage} de {pageCount}
                                     </p>
@@ -609,14 +609,14 @@ export default function CampaignsPanel() {
                                         <button
                                             onClick={() => setDisparoPage(p => Math.max(1, p - 1))}
                                             disabled={disparoPage === 1}
-                                            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                                            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed"
                                         >
                                             <ChevronLeft className="size-4" />
                                         </button>
                                         <button
                                             onClick={() => setDisparoPage(p => Math.min(pageCount, p + 1))}
                                             disabled={disparoPage === pageCount}
-                                            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                                            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed"
                                         >
                                             <ChevronRight className="size-4" />
                                         </button>
@@ -642,13 +642,13 @@ export default function CampaignsPanel() {
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.95, y: 16 }}
                                 onClick={(e) => e.stopPropagation()}
-                                className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+                                className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
                             >
-                                <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                                <div className="p-6 border-b border-slate-200 dark:border-zinc-800/60 flex items-center justify-between">
                                     <h2 className="text-xl font-bold text-slate-900 dark:text-white">
                                         {editingCampanha ? 'Editar campanha' : 'Nova campanha'}
                                     </h2>
-                                    <button onClick={closeModal} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                                    <button onClick={closeModal} className="p-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-colors">
                                         <X className="size-5 text-slate-400" />
                                     </button>
                                 </div>
@@ -664,7 +664,7 @@ export default function CampaignsPanel() {
                                                     type="text"
                                                     value={formData.nome}
                                                     onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
-                                                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
+                                                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
                                                     placeholder="Ex: Reengajamento 7 dias"
                                                 />
                                             </div>
@@ -673,7 +673,7 @@ export default function CampaignsPanel() {
                                                 <select
                                                     value={formData.tipo}
                                                     onChange={(e) => setFormData(prev => ({ ...prev, tipo: e.target.value as CampanhaTipo }))}
-                                                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
+                                                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
                                                 >
                                                     {TIPOS.map(t => (
                                                         <option key={t.value} value={t.value}>{t.label}</option>
@@ -695,7 +695,7 @@ export default function CampaignsPanel() {
                                                     min={1}
                                                     value={formData.gatilho_dias || 7}
                                                     onChange={(e) => setFormData(prev => ({ ...prev, gatilho_dias: parseInt(e.target.value) || 7 }))}
-                                                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
+                                                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
                                                 />
                                             </div>
                                         )}
@@ -708,7 +708,7 @@ export default function CampaignsPanel() {
                                                         type="time"
                                                         value={formData.horario_envio || '10:00'}
                                                         onChange={(e) => setFormData(prev => ({ ...prev, horario_envio: e.target.value }))}
-                                                        className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
+                                                        className="w-full px-3 py-2.5 border border-slate-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
                                                     />
                                                 </div>
                                                 <div>
@@ -731,7 +731,7 @@ export default function CampaignsPanel() {
                                                                         "px-2.5 py-1 text-xs font-medium rounded-lg border transition-colors",
                                                                         selected
                                                                             ? "bg-violet-600 text-white border-violet-600"
-                                                                            : "bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-violet-300"
+                                                                            : "bg-white dark:bg-zinc-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-zinc-700 hover:border-violet-300"
                                                                     )}
                                                                 >
                                                                     {d.label}
@@ -749,7 +749,7 @@ export default function CampaignsPanel() {
                                                 <select
                                                     value={formData.gatilho_dias || 60}
                                                     onChange={(e) => setFormData(prev => ({ ...prev, gatilho_dias: parseInt(e.target.value) }))}
-                                                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
+                                                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
                                                 >
                                                     <option value={30}>30 minutos</option>
                                                     <option value={60}>60 minutos</option>
@@ -764,7 +764,7 @@ export default function CampaignsPanel() {
                                                 <select
                                                     value={formData.gatilho_dias || 0}
                                                     onChange={(e) => setFormData(prev => ({ ...prev, gatilho_dias: parseInt(e.target.value) }))}
-                                                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
+                                                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
                                                 >
                                                     <option value={0}>Ao abrir a loja</option>
                                                     <option value={1}>1 hora antes de fechar</option>
@@ -779,7 +779,7 @@ export default function CampaignsPanel() {
                                                 <select
                                                     value={formData.gatilho_dias || 0}
                                                     onChange={(e) => setFormData(prev => ({ ...prev, gatilho_dias: parseInt(e.target.value) }))}
-                                                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
+                                                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
                                                 >
                                                     <option value={0}>Aniversário do cliente</option>
                                                     <option value={1}>Dia das Mães</option>
@@ -804,7 +804,7 @@ export default function CampaignsPanel() {
                                                     max={10}
                                                     value={formData.max_envios_semana}
                                                     onChange={(e) => setFormData(prev => ({ ...prev, max_envios_semana: parseInt(e.target.value) || 2 }))}
-                                                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
+                                                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
                                                 />
                                             </div>
                                             {(formData.tipo === 'cupom' || formData.tipo === 'data_especial' || formData.tipo === 'produto_destaque') && (
@@ -816,7 +816,7 @@ export default function CampaignsPanel() {
                                                         max={100}
                                                         value={formData.desconto_percentual || 0}
                                                         onChange={(e) => setFormData(prev => ({ ...prev, desconto_percentual: parseInt(e.target.value) || 0 }))}
-                                                        className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
+                                                        className="w-full px-3 py-2.5 border border-slate-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
                                                     />
                                                 </div>
                                             )}
@@ -828,7 +828,7 @@ export default function CampaignsPanel() {
                                         <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3">Mensagens (variantes)</h3>
 
                                         {/* Tabs */}
-                                        <div className="flex gap-1 mb-4 bg-slate-100 dark:bg-slate-700 rounded-xl p-1">
+                                        <div className="flex gap-1 mb-4 bg-slate-100 dark:bg-zinc-800 rounded-xl p-1">
                                             {[1, 2, 3, 4].map(tab => (
                                                 <button
                                                     key={tab}
@@ -836,7 +836,7 @@ export default function CampaignsPanel() {
                                                     className={cn(
                                                         "flex-1 py-2 text-sm font-medium rounded-lg transition-colors",
                                                         activeTab === tab
-                                                            ? "bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm"
+                                                            ? "bg-white dark:bg-zinc-700 text-slate-900 dark:text-white shadow-sm"
                                                             : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
                                                     )}
                                                 >
@@ -851,7 +851,7 @@ export default function CampaignsPanel() {
                                             value={(formData[`variante_${activeTab}` as 'variante_1' | 'variante_2' | 'variante_3' | 'variante_4'] || '')}
                                             onChange={(e) => setFormData(prev => ({ ...prev, [`variante_${activeTab}`]: e.target.value }))}
                                             rows={5}
-                                            className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none resize-none"
+                                            className="w-full px-3 py-2.5 border border-slate-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none resize-none"
                                             placeholder={`Escreva a mensagem da variante ${activeTab}...`}
                                         />
 
@@ -875,10 +875,10 @@ export default function CampaignsPanel() {
                                 </div>
 
                                 {/* Modal footer */}
-                                <div className="p-6 border-t border-slate-200 dark:border-slate-700 flex items-center justify-end gap-3">
+                                <div className="p-6 border-t border-slate-200 dark:border-zinc-800/60 flex items-center justify-end gap-3">
                                     <button
                                         onClick={closeModal}
-                                        className="px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors"
+                                        className="px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-xl transition-colors"
                                     >
                                         Cancelar
                                     </button>
@@ -918,7 +918,7 @@ export default function CampaignsPanel() {
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.95 }}
-                                className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6 max-w-sm w-full"
+                                className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl p-6 max-w-sm w-full"
                             >
                                 <div className="flex items-center gap-3 mb-4">
                                     <div className="size-10 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center text-red-600 dark:text-red-400">
@@ -932,7 +932,7 @@ export default function CampaignsPanel() {
                                 <div className="flex items-center justify-end gap-3">
                                     <button
                                         onClick={() => setDeleteConfirm(null)}
-                                        className="px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors"
+                                        className="px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-xl transition-colors"
                                     >
                                         Cancelar
                                     </button>

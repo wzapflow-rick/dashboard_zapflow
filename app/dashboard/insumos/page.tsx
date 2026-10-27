@@ -5,7 +5,7 @@ import InsumosManagement from '@/components/insumos/insumos-management';
 
 export default function InsumosPage() {
     return (
-        <div className="dark:bg-slate-800">
+        <div className="dark:bg-zinc-900">
             <InsumosManagement />
         </div>
     );
