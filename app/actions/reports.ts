@@ -1,18 +1,24 @@
 'use server';
 
 import { getMe } from '@/lib/session-server';
+import { cache } from 'react';
 import { pg } from '@/lib/postgres';
+
+// Relatório e comparativo mensal leem a mesma tabela; no render do servidor
+// eles rodam na mesma requisição, então a consulta é feita uma única vez.
+const loadEmpresaOrders = cache(async (empresaId: string) => {
+    const ordersData = await pg.list('pedidos', {
+        where: { empresa_id: empresaId },
+        limit: 10000,
+    });
+    return ordersData.list || [];
+});
 
 export async function getSalesReport(startDate: string, endDate: string) {
     const user = await getMe();
     if (!user?.empresaId) throw new Error('Não autorizado');
 
-    const ordersData = await pg.list('pedidos', {
-        where: { empresa_id: user.empresaId },
-        limit: 10000,
-    });
-
-    const allOrders = ordersData.list || [];
+    const allOrders = await loadEmpresaOrders(String(user.empresaId));
 
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -126,12 +132,7 @@ export async function getMonthlyComparison() {
     const user = await getMe();
     if (!user?.empresaId) throw new Error('Não autorizado');
 
-    const ordersData = await pg.list('pedidos', {
-        where: { empresa_id: user.empresaId },
-        limit: 10000,
-    });
-
-    const allOrders = ordersData.list || [];
+    const allOrders = await loadEmpresaOrders(String(user.empresaId));
 
     const now = new Date();
     const meses: { inicio: Date; fim: Date; nome: string }[] = [];
