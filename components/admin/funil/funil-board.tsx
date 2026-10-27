@@ -109,7 +109,7 @@ export function FunilBoard() {
         <button
           onClick={load}
           disabled={loading}
-          className="flex items-center gap-2 bg-[#1e3a5f] hover:bg-[#2a4a6f] text-white px-3 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50"
+          className="flex items-center gap-2 bg-[#27272a] hover:bg-[#2a4a6f] text-white px-3 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50"
         >
           {loading ? <MorphingInfinity className="size-4" /> : <RefreshCw className="size-4" />}
           <span className="hidden sm:inline">Atualizar</span>
@@ -139,16 +139,16 @@ export function FunilBoard() {
                 setDragId(null);
               }}
               className={`flex-shrink-0 w-72 rounded-2xl border bg-[#0b1729] transition-colors ${
-                isOver ? `${meta.ring} bg-[#0f1f35]` : 'border-[#1e3a5f]'
+                isOver ? `${meta.ring} bg-[#111113]` : 'border-[#27272a]'
               }`}
             >
-              <div className="flex items-center justify-between px-4 py-3 border-b border-[#1e3a5f]">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-[#27272a]">
                 <div className="flex items-center gap-2">
                   <span className={`size-2.5 rounded-full ${meta.dot}`} />
                   <meta.icon className="size-4 text-slate-300" />
                   <span className="font-semibold text-white text-sm">{meta.label}</span>
                 </div>
-                <span className="text-xs text-slate-400 bg-[#1e3a5f] rounded-full px-2 py-0.5">
+                <span className="text-xs text-slate-400 bg-[#27272a] rounded-full px-2 py-0.5">
                   {cards.length}
                 </span>
               </div>
@@ -163,7 +163,7 @@ export function FunilBoard() {
                       draggable
                       onDragStart={() => setDragId(contato.id)}
                       onDragEnd={() => setDragId(null)}
-                      className={`group rounded-xl border border-[#1e3a5f] bg-[#0f1f35] p-3 cursor-grab active:cursor-grabbing hover:border-[#2a4a6f] transition-all ${
+                      className={`group rounded-xl border border-[#27272a] bg-[#111113] p-3 cursor-grab active:cursor-grabbing hover:border-[#2a4a6f] transition-all ${
                         dragId === contato.id ? 'opacity-50' : ''
                       }`}
                     >
@@ -197,7 +197,7 @@ export function FunilBoard() {
                           aria-label={`Mover ${contato.nome || contato.telefone} para outro estagio`}
                           value={contato.estagio}
                           onChange={(e) => mover(contato, e.target.value as FunilEstagio)}
-                          className="flex-1 bg-[#0b1729] border border-[#1e3a5f] rounded-md text-xs text-slate-300 px-2 py-1 focus:outline-none focus:border-orange-500"
+                          className="flex-1 bg-[#0b1729] border border-[#27272a] rounded-md text-xs text-slate-300 px-2 py-1 focus:outline-none focus:border-orange-500"
                         >
                           {FUNIL_ESTAGIOS.map((e) => (
                             <option key={e} value={e}>

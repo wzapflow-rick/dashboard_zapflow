@@ -22,6 +22,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
 import { LojaToggle } from '@/components/layout/loja-toggle';
+import { WhatsappStatusBadge } from '@/components/layout/whatsapp-status-badge';
 import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 
 function playNewOrderSound() {
@@ -181,7 +182,7 @@ export function Header() {
     return (
         <header className="h-16 sticky top-0 z-40">
             {/* Glassmorphism background */}
-            <div className="absolute inset-0 bg-white/70 dark:bg-[#0a1628]/80 backdrop-blur-xl border-b border-white/20 dark:border-white/5" />
+            <div className="absolute inset-0 bg-white/70 dark:bg-[#09090b]/80 backdrop-blur-xl border-b border-white/20 dark:border-white/5" />
             
             {/* Gradient accent line - acento de marca (âmbar) */}
             <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-brand/40 to-transparent" />
@@ -233,6 +234,7 @@ export function Header() {
 
                 <div className="flex items-center gap-2 sm:gap-3">
                     {/* Botao Fechar / Abrir a Loja (apenas lojista) */}
+                    {!isCozinheiro && <WhatsappStatusBadge className="hidden md:inline-flex" />}
                     {!isCozinheiro && <LojaToggle />}
 
                     {/* Pending orders badge */}
@@ -304,7 +306,7 @@ export function Header() {
                                     transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                                 >
                                     {/* Glass background */}
-                                    <div className="absolute inset-0 bg-white/90 dark:bg-[#0f1f35]/95 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-2xl shadow-2xl shadow-black/10 dark:shadow-black/30" />
+                                    <div className="absolute inset-0 bg-white/90 dark:bg-[#111113]/95 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-2xl shadow-2xl shadow-black/10 dark:shadow-black/30" />
                                     
                                     <div className="relative">
                                         {/* Header */}
@@ -433,7 +435,7 @@ export function Header() {
                                         {user?.nome?.charAt(0)?.toUpperCase() || 'Z'}
                                     </div>
                                 )}
-                                <div className="absolute -bottom-0.5 -right-0.5 size-3 bg-emerald-500 rounded-full border-2 border-white dark:border-[#0a1628]" />
+                                <div className="absolute -bottom-0.5 -right-0.5 size-3 bg-emerald-500 rounded-full border-2 border-white dark:border-[#09090b]" />
                             </div>
                             
                             <div className="text-left hidden lg:block">
@@ -464,7 +466,7 @@ export function Header() {
                                     transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                                 >
                                     {/* Glass background */}
-                                    <div className="absolute inset-0 bg-white/90 dark:bg-[#0f1f35]/95 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-2xl shadow-2xl shadow-black/10 dark:shadow-black/30" />
+                                    <div className="absolute inset-0 bg-white/90 dark:bg-[#111113]/95 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-2xl shadow-2xl shadow-black/10 dark:shadow-black/30" />
                                     
                                     <div className="relative">
                                         {/* User info */}

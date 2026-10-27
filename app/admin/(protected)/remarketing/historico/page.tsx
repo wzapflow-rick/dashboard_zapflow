@@ -83,7 +83,7 @@ export default function HistoricoPage() {
         <button
           onClick={() => loadHistorico(1)}
           disabled={loading}
-          className="flex items-center justify-center gap-2 bg-[#162438] hover:bg-[#1e3a5f] text-white px-4 py-2.5 rounded-lg font-medium transition-all w-full sm:w-auto"
+          className="flex items-center justify-center gap-2 bg-[#18181b] hover:bg-[#27272a] text-white px-4 py-2.5 rounded-lg font-medium transition-all w-full sm:w-auto"
         >
           {loading ? (
           <MorphingInfinity className="size-5" aria-hidden="true" />
@@ -100,7 +100,7 @@ export default function HistoricoPage() {
         <select
           value={tipoFilter}
           onChange={(e) => setTipoFilter(e.target.value)}
-          className="bg-[#0f1f35] border border-[#1e3a5f] rounded-lg px-4 py-2 text-white focus:outline-none focus:border-orange-500"
+          className="bg-[#111113] border border-[#27272a] rounded-lg px-4 py-2 text-white focus:outline-none focus:border-orange-500"
         >
           <option value="">Todos os tipos</option>
           {Object.entries(TIPO_CONFIG).map(([key, config]) => (
@@ -110,7 +110,7 @@ export default function HistoricoPage() {
       </div>
 
       {/* Lista */}
-      <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl overflow-hidden">
+      <div className="bg-[#111113] border border-[#27272a] rounded-xl overflow-hidden">
         {loading ? (
           <div className="flex justify-center py-12">
             <MorphingInfinity className="size-8 text-orange-500" />
@@ -121,12 +121,12 @@ export default function HistoricoPage() {
             <p>Nenhum registro encontrado</p>
           </div>
         ) : (
-          <div className="divide-y divide-[#1e3a5f]/50">
+          <div className="divide-y divide-[#27272a]/50">
             {filteredHistorico.map((item) => {
               const tipoConfig = getTipoConfig(item.tipo);
               const TipoIcon = tipoConfig.icon;
               return (
-                <div key={item.id} className="p-4 hover:bg-[#162438]/50">
+                <div key={item.id} className="p-4 hover:bg-[#18181b]/50">
                   <div className="flex items-start gap-4">
                     {/* Icon */}
                     <div className={cn(
@@ -203,12 +203,12 @@ export default function HistoricoPage() {
 
         {/* Paginacao */}
         {pagination.totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-[#1e3a5f] flex items-center justify-center">
+          <div className="px-6 py-4 border-t border-[#27272a] flex items-center justify-center">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => loadHistorico(pagination.page - 1)}
                 disabled={pagination.page <= 1}
-                className="p-2 hover:bg-[#1e3a5f] rounded-lg text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-2 hover:bg-[#27272a] rounded-lg text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ChevronLeft className="size-5" />
               </button>
@@ -218,7 +218,7 @@ export default function HistoricoPage() {
               <button
                 onClick={() => loadHistorico(pagination.page + 1)}
                 disabled={pagination.page >= pagination.totalPages}
-                className="p-2 hover:bg-[#1e3a5f] rounded-lg text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-2 hover:bg-[#27272a] rounded-lg text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ChevronRight className="size-5" />
               </button>

@@ -75,7 +75,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Assinaturas por Plano */}
-      <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl p-6">
+      <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6">
         <h2 className="text-lg font-semibold text-white mb-4">Assinaturas por Plano</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <PlanCard 
@@ -100,7 +100,7 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <a 
           href="/admin/empresas"
-          className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl p-6 hover:border-orange-500/50 transition-colors group"
+          className="bg-[#111113] border border-[#27272a] rounded-xl p-6 hover:border-orange-500/50 transition-colors group"
         >
           <div className="flex items-center gap-4">
             <div className="size-12 bg-blue-500/10 rounded-lg flex items-center justify-center">
@@ -117,7 +117,7 @@ export default function AdminDashboardPage() {
 
         <a 
           href="/admin/assinaturas"
-          className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl p-6 hover:border-orange-500/50 transition-colors group"
+          className="bg-[#111113] border border-[#27272a] rounded-xl p-6 hover:border-orange-500/50 transition-colors group"
         >
           <div className="flex items-center gap-4">
             <div className="size-12 bg-green-500/10 rounded-lg flex items-center justify-center">
@@ -155,7 +155,7 @@ function StatCard({
   };
 
   return (
-    <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl p-6">
+    <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-slate-400 text-sm">{title}</p>

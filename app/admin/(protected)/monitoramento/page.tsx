@@ -63,7 +63,7 @@ function SummaryBadges({ summary }: { summary: Record<string, unknown> | null })
                     {badges.map(([k, v]) => (
                         <span
                             key={k}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#0a1628] border border-[#1e3a5f] text-xs text-slate-300"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#09090b] border border-[#27272a] text-xs text-slate-300"
                         >
                             <span className="text-slate-500">{k}:</span>
                             <span className="font-semibold text-white">{String(v)}</span>
@@ -147,7 +147,7 @@ function CronCard({ cron, onChanged }: { cron: CronStatus; onChanged: () => void
     }
 
     return (
-        <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-2xl p-6">
+        <div className="bg-[#111113] border border-[#27272a] rounded-2xl p-6">
             <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div className="flex items-start gap-3">
                     <div className={`mt-0.5 ${statusColor}`}>
@@ -175,7 +175,7 @@ function CronCard({ cron, onChanged }: { cron: CronStatus; onChanged: () => void
             </div>
 
             {/* Detalhes do ultimo disparo */}
-            <div className="mt-5 pt-5 border-t border-[#1e3a5f]/60 grid sm:grid-cols-2 gap-4">
+            <div className="mt-5 pt-5 border-t border-[#27272a]/60 grid sm:grid-cols-2 gap-4">
                 <div>
                     <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">Data e hora</p>
                     <p className="text-sm text-white">{formatDateTime(last?.created_at)}</p>
@@ -222,7 +222,7 @@ function CronCard({ cron, onChanged }: { cron: CronStatus; onChanged: () => void
                         history.map((h, i) => (
                             <div
                                 key={i}
-                                className="flex items-center justify-between gap-4 flex-wrap bg-[#0a1628] border border-[#1e3a5f]/60 rounded-lg px-3 py-2"
+                                className="flex items-center justify-between gap-4 flex-wrap bg-[#09090b] border border-[#27272a]/60 rounded-lg px-3 py-2"
                             >
                                 <div className="flex items-center gap-2">
                                     {h.status === 'error' ? (
@@ -277,7 +277,7 @@ export default function MonitoramentoPage() {
                 <button
                     onClick={load}
                     disabled={loading}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#0f1f35] border border-[#1e3a5f] hover:border-orange-500/50 text-slate-300 hover:text-white text-sm font-medium transition-all"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#111113] border border-[#27272a] hover:border-orange-500/50 text-slate-300 hover:text-white text-sm font-medium transition-all"
                 >
                     {loading ? (
           <MorphingInfinity className="size-4" aria-hidden="true" />
@@ -298,7 +298,7 @@ export default function MonitoramentoPage() {
                         <CronCard key={cron.jobName} cron={cron} onChanged={load} />
                     ))}
 
-                    <div className="flex items-start gap-3 p-4 bg-[#0f1f35] border border-[#1e3a5f] rounded-xl text-sm text-slate-400">
+                    <div className="flex items-start gap-3 p-4 bg-[#111113] border border-[#27272a] rounded-xl text-sm text-slate-400">
                         <AlertTriangle className="size-5 text-amber-400 shrink-0 mt-0.5" />
                         <p>
                             Os disparos automáticos dependem do agendamento no crontab da VPS (1x ao dia). O status{' '}

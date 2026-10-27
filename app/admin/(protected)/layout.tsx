@@ -14,7 +14,7 @@ export default async function AdminProtectedLayout({
   }
 
   return (
-    <div className="min-h-screen bg-[#0a1628]">
+    <div className="min-h-screen bg-[#09090b]">
       <AdminSidebar username={session.username} />
       <main className="lg:ml-64 pt-20 lg:pt-0 p-4 lg:p-8 min-h-screen">
         {children}

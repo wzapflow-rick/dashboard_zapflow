@@ -30,10 +30,10 @@ function AccordionItem({ title, icon, children, defaultOpen = false }: Accordion
   const [isOpen, setIsOpen] = useState(defaultOpen);
   
   return (
-    <div className="border border-[#1e3a5f] rounded-xl overflow-hidden">
+    <div className="border border-[#27272a] rounded-xl overflow-hidden">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center gap-3 p-4 bg-[#0f1f35] hover:bg-[#162438] transition-colors text-left"
+        className="w-full flex items-center gap-3 p-4 bg-[#111113] hover:bg-[#18181b] transition-colors text-left"
       >
         <span className="text-orange-400">{icon}</span>
         <span className="flex-1 font-medium text-white">{title}</span>
@@ -44,7 +44,7 @@ function AccordionItem({ title, icon, children, defaultOpen = false }: Accordion
         )}
       </button>
       {isOpen && (
-        <div className="p-4 bg-[#0a1628] border-t border-[#1e3a5f]">
+        <div className="p-4 bg-[#09090b] border-t border-[#27272a]">
           {children}
         </div>
       )}
@@ -174,18 +174,18 @@ export default function AjudaPage() {
             </li>
           </ol>
           
-          <div className="mt-4 p-4 bg-[#0f1f35] rounded-lg border border-[#1e3a5f]">
+          <div className="mt-4 p-4 bg-[#111113] rounded-lg border border-[#27272a]">
             <p className="text-sm text-slate-400 mb-2">Variaveis disponiveis:</p>
             <div className="flex flex-wrap gap-2 text-sm">
-              <code className="px-2 py-1 bg-[#1e3a5f] text-orange-400 rounded">{'{{nome}}'}</code>
+              <code className="px-2 py-1 bg-[#27272a] text-orange-400 rounded">{'{{nome}}'}</code>
               <span className="text-slate-500">= nome do cliente</span>
             </div>
             <div className="flex flex-wrap gap-2 text-sm mt-2">
-              <code className="px-2 py-1 bg-[#1e3a5f] text-orange-400 rounded">{'{{telefone}}'}</code>
+              <code className="px-2 py-1 bg-[#27272a] text-orange-400 rounded">{'{{telefone}}'}</code>
               <span className="text-slate-500">= telefone do cliente</span>
             </div>
             <div className="flex flex-wrap gap-2 text-sm mt-2">
-              <code className="px-2 py-1 bg-[#1e3a5f] text-orange-400 rounded">{'{{dias_ausente}}'}</code>
+              <code className="px-2 py-1 bg-[#27272a] text-orange-400 rounded">{'{{dias_ausente}}'}</code>
               <span className="text-slate-500">= dias sem interacao</span>
             </div>
           </div>
@@ -287,14 +287,14 @@ export default function AjudaPage() {
       </div>
 
       {/* Problemas Comuns */}
-      <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-xl p-6">
+      <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6">
         <div className="flex items-center gap-3 mb-4">
           <AlertTriangle className="size-5 text-yellow-400" />
           <h2 className="text-lg font-semibold text-white">Problemas Comuns</h2>
         </div>
         
         <div className="space-y-4">
-          <div className="flex gap-4 p-3 bg-[#0a1628] rounded-lg">
+          <div className="flex gap-4 p-3 bg-[#09090b] rounded-lg">
             <AlertTriangle className="size-5 text-red-400 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-white font-medium">&quot;Instancia desconectada&quot;</p>
@@ -302,7 +302,7 @@ export default function AjudaPage() {
             </div>
           </div>
           
-          <div className="flex gap-4 p-3 bg-[#0a1628] rounded-lg">
+          <div className="flex gap-4 p-3 bg-[#09090b] rounded-lg">
             <AlertTriangle className="size-5 text-yellow-400 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-white font-medium">&quot;Nenhum item na fila&quot;</p>
@@ -310,7 +310,7 @@ export default function AjudaPage() {
             </div>
           </div>
           
-          <div className="flex gap-4 p-3 bg-[#0a1628] rounded-lg">
+          <div className="flex gap-4 p-3 bg-[#09090b] rounded-lg">
             <AlertTriangle className="size-5 text-yellow-400 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-white font-medium">&quot;Nenhuma categoria ativa&quot;</p>
@@ -318,7 +318,7 @@ export default function AjudaPage() {
             </div>
           </div>
           
-          <div className="flex gap-4 p-3 bg-[#0a1628] rounded-lg">
+          <div className="flex gap-4 p-3 bg-[#09090b] rounded-lg">
             <AlertTriangle className="size-5 text-orange-400 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-white font-medium">Mensagem nao chegou</p>

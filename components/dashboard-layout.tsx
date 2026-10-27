@@ -1,7 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Sidebar } from './layout/sidebar';
+import { AppSidebar } from './layout/app-sidebar';
+import { cn } from '@/lib/utils';
 import { Header } from './layout/header';
 import { DashboardDock } from './layout/dashboard-dock';
 import { PaymentAlert } from './dashboard/payment-alert';
@@ -86,7 +87,7 @@ export function useSidebar() {
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { isOpen } = useSidebar();
+  const { isOpen, setIsOpen } = useSidebar();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -118,7 +119,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Se houve erro, mostra tela de erro
   if (error) {
     return (
-      <div className="flex min-h-screen bg-background-light dark:bg-[#0a1628] items-center justify-center p-4">
+      <div className="flex min-h-screen bg-background-light dark:bg-[#09090b] items-center justify-center p-4">
         <div className="text-center max-w-md">
           <AlertTriangle className="size-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
@@ -140,21 +141,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="flex min-h-screen bg-background-light dark:bg-[#0a1628]">
+    <div className="flex min-h-screen bg-background-light dark:bg-[#09090b]">
       {!isLoading && !isCozinheiro && (
-        <div hidden aria-hidden="true">
-          <Sidebar
-            isOpen={isOpen}
-            isMobileMenuOpen={isMobileMenuOpen}
-            setIsMobileMenuOpen={setIsMobileMenuOpen}
-            user={user}
-          />
-        </div>
+        <AppSidebar user={user} collapsed={!isOpen} onToggle={() => setIsOpen(!isOpen)} />
       )}
 
       <main className="flex min-h-screen min-w-0 flex-1 flex-col">
         <Header />
-        <div className="min-w-0 flex-1 p-4 pb-32 sm:p-6 sm:pb-36 lg:p-8 lg:pb-40 dark:bg-[#0a1628]">
+        <div className="min-w-0 flex-1 p-4 pb-32 sm:p-6 sm:pb-36 lg:p-8 dark:bg-[#09090b]">
           {user?.empresaId && <PaymentAlert empresaId={user.empresaId} />}
           {user && (
             <TrialWarningBanner 
@@ -169,7 +163,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </main>
 
-      {!isLoading && <DashboardDock user={user} />}
+      {!isLoading && (
+        <div className={cn(!isCozinheiro && 'lg:hidden')}>
+          <DashboardDock user={user} />
+        </div>
+      )}
 
       {/* Indicador global de status offline */}
       <OfflineIndicator className="bottom-28 lg:bottom-4" />

@@ -144,13 +144,13 @@ export function CadenciasEditor() {
           .filter((c) => c.estagio === estagio)
           .sort((a, b) => a.passo_ordem - b.passo_ordem);
         return (
-          <section key={estagio} className="rounded-2xl border border-[#1e3a5f] bg-[#0b1729]">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-[#1e3a5f]">
+          <section key={estagio} className="rounded-2xl border border-[#27272a] bg-[#0b1729]">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[#27272a]">
               <h3 className="font-semibold text-white">{ESTAGIO_LABEL[estagio]}</h3>
               <button
                 onClick={() => adicionarPasso(estagio)}
                 disabled={savingId === `novo-${estagio}`}
-                className="flex items-center gap-1.5 text-sm bg-[#1e3a5f] hover:bg-[#2a4a6f] text-white px-3 py-1.5 rounded-lg transition-all disabled:opacity-50"
+                className="flex items-center gap-1.5 text-sm bg-[#27272a] hover:bg-[#2a4a6f] text-white px-3 py-1.5 rounded-lg transition-all disabled:opacity-50"
               >
                 {savingId === `novo-${estagio}` ? (
                   <MorphingInfinity className="size-4" />
@@ -168,7 +168,7 @@ export function CadenciasEditor() {
                 passos.map((cad) => (
                   <div
                     key={cad.id}
-                    className="rounded-xl border border-[#1e3a5f] bg-[#0f1f35] p-3 grid grid-cols-1 md:grid-cols-12 gap-3 items-end"
+                    className="rounded-xl border border-[#27272a] bg-[#111113] p-3 grid grid-cols-1 md:grid-cols-12 gap-3 items-end"
                   >
                     {/* Rotulo */}
                     <div className="md:col-span-3">
@@ -176,7 +176,7 @@ export function CadenciasEditor() {
                       <input
                         value={cad.rotulo || ''}
                         onChange={(e) => atualizarLocal(cad.id, { rotulo: e.target.value })}
-                        className="w-full bg-[#0b1729] border border-[#1e3a5f] rounded-lg text-sm text-white px-2.5 py-1.5 focus:outline-none focus:border-orange-500"
+                        className="w-full bg-[#0b1729] border border-[#27272a] rounded-lg text-sm text-white px-2.5 py-1.5 focus:outline-none focus:border-orange-500"
                       />
                     </div>
 
@@ -192,7 +192,7 @@ export function CadenciasEditor() {
                           onChange={(e) =>
                             atualizarLocal(cad.id, { offset_horas: Number(e.target.value) })
                           }
-                          className="w-full bg-[#0b1729] border border-[#1e3a5f] rounded-lg text-sm text-white px-2.5 py-1.5 focus:outline-none focus:border-orange-500"
+                          className="w-full bg-[#0b1729] border border-[#27272a] rounded-lg text-sm text-white px-2.5 py-1.5 focus:outline-none focus:border-orange-500"
                         />
                       </div>
                       <p className="text-[10px] text-slate-600 mt-1">{formatarOffset(cad.offset_horas)}</p>
@@ -208,7 +208,7 @@ export function CadenciasEditor() {
                             mensagem_id: e.target.value ? Number(e.target.value) : null,
                           })
                         }
-                        className="w-full bg-[#0b1729] border border-[#1e3a5f] rounded-lg text-sm text-white px-2.5 py-1.5 focus:outline-none focus:border-orange-500"
+                        className="w-full bg-[#0b1729] border border-[#27272a] rounded-lg text-sm text-white px-2.5 py-1.5 focus:outline-none focus:border-orange-500"
                       >
                         <option value="">Selecione...</option>
                         {mensagens.map((m) => (
@@ -258,7 +258,7 @@ export function CadenciasEditor() {
                         onClick={() => remover(cad.id)}
                         disabled={savingId === cad.id}
                         aria-label="Remover passo"
-                        className="flex items-center justify-center bg-[#1e3a5f] hover:bg-red-600/80 text-slate-300 hover:text-white px-2.5 py-1.5 rounded-lg transition-all disabled:opacity-50"
+                        className="flex items-center justify-center bg-[#27272a] hover:bg-red-600/80 text-slate-300 hover:text-white px-2.5 py-1.5 rounded-lg transition-all disabled:opacity-50"
                       >
                         <Trash2 className="size-4" />
                       </button>

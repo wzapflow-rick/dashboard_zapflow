@@ -87,7 +87,7 @@ export function ZapflowChat() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.96 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-40 right-4 z-40 flex h-[calc(100dvh-11rem)] max-h-[520px] w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-white/95 shadow-2xl backdrop-blur-xl dark:border-slate-700/60 dark:bg-[#0f1f35]/95 lg:bottom-24 lg:right-6 lg:h-[520px] lg:w-[calc(100vw-3rem)]"
+            className="fixed bottom-40 right-4 z-40 flex h-[calc(100dvh-11rem)] max-h-[520px] w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-white/95 shadow-2xl backdrop-blur-xl dark:border-slate-700/60 dark:bg-[#111113]/95 lg:bottom-24 lg:right-6 lg:h-[520px] lg:w-[calc(100vw-3rem)]"
           >
             <header className="flex items-center gap-3 border-b border-slate-200/70 bg-slate-50/80 p-4 dark:border-slate-700/50 dark:bg-white/[0.03]">
               <div className="flex size-9 items-center justify-center rounded-full bg-primary/15">

@@ -192,8 +192,8 @@ export default function CategoriasPage() {
             <MorphingInfinity className="size-8 text-orange-500" />
           </div>
         ) : categorias.length === 0 ? (
-          <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-2xl text-center py-16 px-4">
-            <div className="w-16 h-16 bg-[#1e3a5f] rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <div className="bg-[#111113] border border-[#27272a] rounded-2xl text-center py-16 px-4">
+            <div className="w-16 h-16 bg-[#27272a] rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Target className="size-8 text-slate-400" />
             </div>
             <p className="text-lg font-medium text-white mb-2">Nenhuma categoria cadastrada</p>
@@ -215,7 +215,7 @@ export default function CategoriasPage() {
               <div
                 key={categoria.id}
                 className={cn(
-                  "bg-[#0f1f35] border border-[#1e3a5f] rounded-2xl p-5 transition-all hover:border-[#2a4a6f]",
+                  "bg-[#111113] border border-[#27272a] rounded-2xl p-5 transition-all hover:border-[#2a4a6f]",
                   !categoria.ativo && "opacity-60"
                 )}
               >
@@ -282,7 +282,7 @@ export default function CategoriasPage() {
                     <button
                       onClick={() => openEditModal(categoria)}
                       disabled={isDeleting}
-                      className="p-2.5 hover:bg-[#1e3a5f] rounded-xl text-slate-400 hover:text-white transition-colors disabled:opacity-50"
+                      className="p-2.5 hover:bg-[#27272a] rounded-xl text-slate-400 hover:text-white transition-colors disabled:opacity-50"
                       title="Editar"
                     >
                       <Edit2 className="size-4" />
@@ -310,8 +310,8 @@ export default function CategoriasPage() {
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#0f1f35] border border-[#1e3a5f] rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="flex items-center justify-between p-6 border-b border-[#1e3a5f]">
+          <div className="bg-[#111113] border border-[#27272a] rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-[#27272a]">
               <h2 className="text-xl font-bold text-white">
                 {editingCategoria ? 'Editar Categoria' : 'Nova Categoria'}
               </h2>
@@ -334,7 +334,7 @@ export default function CategoriasPage() {
                   type="text"
                   value={formData.nome}
                   onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                  className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500"
+                  className="w-full bg-[#09090b] border border-[#27272a] rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500"
                   placeholder="Ex: Cliente Inativo"
                 />
               </div>
@@ -344,7 +344,7 @@ export default function CategoriasPage() {
                 <textarea
                   value={formData.descricao}
                   onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                  className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 resize-none"
+                  className="w-full bg-[#09090b] border border-[#27272a] rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 resize-none"
                   rows={2}
                   placeholder="Descricao opcional"
                 />
@@ -360,7 +360,7 @@ export default function CategoriasPage() {
                       onClick={() => setFormData({ ...formData, cor: color })}
                       className={cn(
                         "size-9 rounded-xl transition-all",
-                        formData.cor === color && "ring-2 ring-white ring-offset-2 ring-offset-[#0f1f35] scale-110"
+                        formData.cor === color && "ring-2 ring-white ring-offset-2 ring-offset-[#111113] scale-110"
                       )}
                       style={{ backgroundColor: color }}
                     />
@@ -373,7 +373,7 @@ export default function CategoriasPage() {
                 <select
                   value={formData.prioridade}
                   onChange={(e) => setFormData({ ...formData, prioridade: parseInt(e.target.value) })}
-                  className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500"
+                  className="w-full bg-[#09090b] border border-[#27272a] rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500"
                 >
                   {PRIORIDADES.map((p) => (
                     <option key={p.value} value={p.value}>{p.label}</option>
@@ -391,7 +391,7 @@ export default function CategoriasPage() {
                   max="720"
                   value={formData.cooldown_horas}
                   onChange={(e) => setFormData({ ...formData, cooldown_horas: parseInt(e.target.value) || 24 })}
-                  className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500"
+                  className="w-full bg-[#09090b] border border-[#27272a] rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500"
                 />
               </div>
 
@@ -447,7 +447,7 @@ export default function CategoriasPage() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-3 border border-[#1e3a5f] rounded-xl text-slate-300 hover:bg-[#1e3a5f] transition-colors font-medium"
+                  className="flex-1 px-4 py-3 border border-[#27272a] rounded-xl text-slate-300 hover:bg-[#27272a] transition-colors font-medium"
                 >
                   Cancelar
                 </button>

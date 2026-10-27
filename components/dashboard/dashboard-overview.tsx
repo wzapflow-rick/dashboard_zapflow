@@ -13,6 +13,7 @@ import { MetricStrip } from './home/metric-strip';
 import { AIConsultant } from './home/ai-consultant';
 import { QuickActions } from './home/quick-actions';
 import { SectionHeader } from './home/section-header';
+import { ControlCenter } from './home/control-center';
 import { OperationsOverview } from './home/operations-overview';
 import { RecentOrders } from './home/recent-orders';
 
@@ -213,6 +214,8 @@ export default function DashboardOverview() {
       </AnimatePresence>
 
       <MetricStrip stats={stats} lowPower={lowPower} />
+
+      <ControlCenter />
 
       <AIConsultant />
 
