@@ -3,7 +3,7 @@ import { Check } from 'lucide-react';
 import { CtaLink } from './cta-link';
 import { display } from './content';
 
-const assurances = ['Zero comissão por pedido', 'Pix e cartão', 'Link e QR Code'];
+const assurances = ['7 dias grátis', 'Sem cartão de crédito', 'Zero comissão por pedido'];
 
 export function Hero() {
   return (

@@ -34,8 +34,9 @@ export function FinalCta() {
           Seu próximo pedido pode chegar pelo seu próprio cardápio.
         </h2>
         <p className="mx-auto mt-4 max-w-xl text-lg text-zinc-300">
-          Cadastre seus pratos, compartilhe o link e comece a receber pedidos no WhatsApp.
-        </p>
+            Cadastre seus pratos, compartilhe o link e comece a receber pedidos no WhatsApp.
+          </p>
+          <p className="mt-2 text-sm text-zinc-400">7 dias grátis, sem cartão de crédito.</p>
         <CtaLink size="lg" className="mt-9">
           Criar meu cardápio
         </CtaLink>

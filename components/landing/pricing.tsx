@@ -12,7 +12,7 @@ export function Pricing() {
           <h2 className={`${display} text-balance text-4xl font-bold tracking-[-0.02em] text-zinc-50 sm:text-5xl`}>
             Mensalidade fixa. Nenhum centavo por pedido.
           </h2>
-          <p className="mt-4 text-lg text-zinc-400">Escolha pelo tamanho da sua operação e mude quando crescer.</p>
+          <p className="mt-4 text-lg text-zinc-400">Comece com 7 dias grátis, sem cartão de crédito. Escolha pelo tamanho da sua operação e mude quando crescer.</p>
         </div>
 
         <div className="mt-14 grid gap-5 lg:grid-cols-3 lg:items-stretch">
