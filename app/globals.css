@@ -140,6 +140,11 @@
   .dashboard-dock-safe {
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
   }
+
+  /* Floats above the mobile dock (~4.75rem tall) with a clear gap. */
+  .dashboard-fab-safe {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 6rem);
+  }
   
   /* Custom scrollbar for sidebar */
   .custom-scrollbar::-webkit-scrollbar {

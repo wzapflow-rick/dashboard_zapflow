@@ -17,7 +17,7 @@ export function Dock({ children, className, ...props }: DockProps) {
   return (
     <div
       className={cn(
-        'relative flex items-end gap-1.5 rounded-[1.75rem] border border-border-dark bg-surface-dark/95 p-2 text-text-secondary shadow-2xl backdrop-blur-xl sm:gap-3 sm:rounded-[3rem] sm:px-4 sm:py-3',
+        'relative flex items-center gap-1 rounded-[1.75rem] border border-border-dark bg-surface-dark/95 p-1.5 text-text-secondary shadow-2xl backdrop-blur-xl sm:gap-3 sm:rounded-[3rem] sm:px-4 sm:py-3',
         className,
       )}
       {...props}
@@ -54,8 +54,8 @@ export function DockItem({
   const highlighted = active || expanded;
   const DisplayIcon = expanded && ExpandedIcon ? ExpandedIcon : Icon;
   const className = cn(
-    'group relative flex min-w-12 flex-col items-center justify-center gap-0.5 rounded-2xl px-0.5 py-1 text-text-secondary outline-none transition-colors hover:text-text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-dark sm:min-w-14 sm:p-0',
-    highlighted && 'text-primary',
+    'group relative flex h-14 min-w-14 flex-col items-center justify-center gap-1 rounded-2xl px-1.5 text-zinc-500 outline-none transition-colors hover:text-zinc-200 focus-visible:ring-2 focus-visible:ring-primary sm:h-auto sm:min-w-14 sm:p-0',
+    highlighted && 'bg-emerald-500/10 text-emerald-500 hover:text-emerald-400 sm:bg-transparent',
   );
   const interactionTransition = reduceMotion
     ? { duration: 0 }
@@ -65,30 +65,13 @@ export function DockItem({
     <>
       <span
         className={cn(
-          'relative grid size-10 place-items-center rounded-xl border border-border-dark bg-surface-elevated shadow-lg transition-colors group-hover:border-primary/40 group-hover:bg-primary/10 sm:size-14 sm:rounded-2xl',
-          highlighted && 'border-primary/40',
-          expanded && !active && 'bg-primary/15',
+          'relative grid place-items-center transition-colors sm:size-14 sm:rounded-2xl sm:border sm:border-border-dark sm:bg-surface-elevated sm:group-hover:border-emerald-500/40 sm:group-hover:bg-emerald-500/10',
+          highlighted && 'sm:border-emerald-500/40 sm:bg-emerald-500/10',
         )}
       >
-        {active && (
-          <span
-            className="absolute inset-0 rounded-[inherit] border border-primary/40 bg-primary/15 shadow-lg shadow-primary/10"
-            aria-hidden="true"
-          />
-        )}
-
-        <span className="relative grid place-items-center">
-          <DisplayIcon className="size-5 sm:size-6" strokeWidth={2.1} />
-        </span>
-
-        {active && (
-          <span
-            className="absolute -bottom-1 size-1.5 rounded-full bg-primary"
-            aria-hidden="true"
-          />
-        )}
+        <DisplayIcon className="size-5 sm:size-6" strokeWidth={2} aria-hidden="true" />
       </span>
-      <span className="max-w-14 truncate text-[10px] font-medium leading-4 sm:hidden">{label}</span>
+      <span className="max-w-16 truncate text-[10px] font-medium leading-none sm:hidden">{label}</span>
       <span
         role="tooltip"
         className="pointer-events-none absolute bottom-[calc(100%+0.75rem)] hidden rounded-lg border border-border-dark bg-surface-dark px-2 py-1 text-xs font-medium whitespace-nowrap text-text-primary opacity-0 shadow-lg transition-all group-hover:-translate-y-1 group-hover:opacity-100 group-focus-visible:-translate-y-1 group-focus-visible:opacity-100 sm:block"

@@ -68,13 +68,12 @@ export function ZapflowChat() {
         onClick={() => setAberto((current) => !current)}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className="fixed bottom-24 right-4 z-40 flex size-14 items-center justify-center rounded-full bg-primary text-slate-950 shadow-lg shadow-primary/30 lg:bottom-6 lg:right-6"
-        style={{ boxShadow: '0 0 24px rgba(34,197,94,0.35)' }}
+        className="dashboard-fab-safe fixed right-4 z-[70] flex size-12 items-center justify-center rounded-2xl border border-emerald-500/40 bg-zinc-900/95 text-emerald-500 shadow-lg shadow-black/30 backdrop-blur-md transition-colors hover:border-emerald-500/70 hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 lg:right-6"
         aria-label={aberto ? 'Fechar chat com o ZapFlash' : 'Abrir chat com o ZapFlash'}
         aria-expanded={aberto}
         aria-controls="zapflow-chat-panel"
       >
-        {aberto ? <X className="size-6" aria-hidden="true" /> : <MessageCircle className="size-6" aria-hidden="true" />}
+        {aberto ? <X className="size-5" strokeWidth={2} aria-hidden="true" /> : <MessageCircle className="size-5" strokeWidth={2} aria-hidden="true" />}
       </motion.button>
 
       <AnimatePresence>
