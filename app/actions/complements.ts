@@ -1,5 +1,7 @@
 'use server';
 
+import type { ProdutoInsumo } from './insumos';
+
 import { getMe } from '@/lib/session-server';
 import { getReceitaDoProduto } from './insumos';
 import { pg } from '@/lib/postgres';
@@ -152,9 +154,9 @@ export async function updateGruposDoProduto(produtoId: number, grupoIds: number[
 
 // --- FICHA TÉCNICA DO COMPLEMENTO (COMPLEMENTO_INSUMO) ---
 
-export async function getReceitaDoComplemento(complementoId: number) {
+export async function getReceitaDoComplemento(complementoId: number): Promise<ProdutoInsumo[]> {
     try {
-        const data = await pg.list(PRODUTO_INSUMOS_TABLE, {
+        const data = await pg.list<ProdutoInsumo>(PRODUTO_INSUMOS_TABLE, {
             where: { complemento_id: complementoId },
         });
         return data.list || [];
@@ -227,12 +229,12 @@ export async function bulkCreateComplements(grupoId: number, products: any[], fa
 
 // --- INSUMOS FIXOS DO GRUPO ---
 
-export async function getInsumosDoGrupo(grupoId: number) {
+export async function getInsumosDoGrupo(grupoId: number): Promise<ProdutoInsumo[]> {
     try {
-        const data = await pg.list(PRODUTO_INSUMOS_TABLE, {
+        const data = await pg.list<ProdutoInsumo>(PRODUTO_INSUMOS_TABLE, {
             where: { grupo_id: grupoId },
         });
-        return (data.list || []).map((i: any) => ({ ...i, id: i.id }));
+        return data.list || [];
     } catch (e) {
         console.error('getInsumosDoGrupo error:', e);
         return [];

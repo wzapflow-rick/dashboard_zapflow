@@ -23,17 +23,17 @@ export interface ProdutoInsumo {
     quantidade_necessaria: number;
 }
 
-export async function getInsumos() {
+export async function getInsumos(): Promise<Insumo[]> {
     try {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        const data = await pg.list(INSUMOS_TABLE, {
+        const data = await pg.list<Insumo>(INSUMOS_TABLE, {
             where: { empresa_id: user.empresaId },
             sort: '-id',
             limit: 1000,
         });
-        return (data.list || []).map((item: any) => ({ ...item, id: item.id }));
+        return data.list || [];
     } catch (error) {
         console.error('API Error:', error);
         throw new Error('Failed to fetch insumos');
@@ -97,13 +97,13 @@ export async function deleteInsumo(id: number | string) {
 // RECEITAS (PRODUTO_INSUMO)
 // ==========================================
 
-export async function getReceitaDoProduto(produtoId: number | string) {
+export async function getReceitaDoProduto(produtoId: number | string): Promise<ProdutoInsumo[]> {
     try {
-        const data = await pg.list(PRODUTO_INSUMOS_TABLE, {
+        const data = await pg.list<ProdutoInsumo>(PRODUTO_INSUMOS_TABLE, {
             where: { produto_id: produtoId },
             limit: 1000,
         });
-        return (data.list || []).map((item: any) => ({ ...item, id: item.id }));
+        return data.list || [];
     } catch (error) {
         console.error('API Error:', error);
         return [];

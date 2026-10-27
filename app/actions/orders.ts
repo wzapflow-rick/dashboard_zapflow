@@ -20,6 +20,59 @@ import {
   EMPRESAS_TABLE,
 } from '@/lib/tables';
 import { RATE_LIMIT } from '@/lib/constants';
+import { getErrorMessage } from '@/lib/errors';
+import {
+  type ClienteRow,
+  type ComplementoPedido,
+  type EmpresaEstoqueRow,
+  type EntregadorRow,
+  type PedidoItem,
+  type PedidoRow,
+  isControleEstoqueAtivo,
+  parsePedidoItens,
+} from '@/lib/types/domain';
+import type { Insumo } from './insumos';
+
+export interface OrderWithClient {
+    id: number;
+    status: string;
+    valor_total: PedidoRow['valor_total'];
+    criado_em: PedidoRow['criado_em'];
+    telefone_cliente: string | null;
+    endereco_entrega: string;
+    bairro_entrega: string;
+    tipo_entrega: string;
+    entregador_id: PedidoRow['entregador_id'];
+    itens: PedidoRow['itens'];
+    cupom_id: PedidoRow['cupom_id'];
+    canal: string;
+    nome_cliente: string | null;
+    is_recorrente: boolean;
+    entregador_nome: string | null;
+    entregador_telefone: string | null;
+    entregador_veiculo: string | null;
+}
+
+export interface FaltaInsumo {
+    insumoId: number;
+    nome: string;
+    necessario: number;
+    disponivel: number;
+    faltando: number;
+    unidade: string;
+}
+
+function groupComplementsByGrupo(complements: ComplementoPedido[]): Map<number, ComplementoPedido[]> {
+    const groups = new Map<number, ComplementoPedido[]>();
+    for (const c of complements) {
+        if (!c.id) continue;
+        const gId = Number(c.grupo_id) || 0;
+        const list = groups.get(gId) ?? [];
+        list.push(c);
+        groups.set(gId, list);
+    }
+    return groups;
+}
 
 interface NecessidadeInsumo {
     nome: string;
@@ -57,12 +110,12 @@ export async function getPendingOrderIds(): Promise<number[]> {
     }
 }
 
-export async function getOrders() {
+export async function getOrders(): Promise<OrderWithClient[]> {
     try {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        const ordersData = await pg.list(PEDIDOS_TABLE, {
+        const ordersData = await pg.list<PedidoRow>(PEDIDOS_TABLE, {
             where: { empresa_id: user.empresaId },
             sort: '-id',
             limit: 1000,
@@ -71,15 +124,15 @@ export async function getOrders() {
 
         if (orders.length === 0) return [];
 
-        const clientsData = await pg.list(CLIENTES_TABLE, {
+        const clientsData = await pg.list<ClienteRow>(CLIENTES_TABLE, {
             where: { empresa_id: user.empresaId },
             limit: 1000,
         });
         const clients = clientsData.list || [];
 
-        let drivers: any[] = [];
+        let drivers: EntregadorRow[] = [];
         try {
-            const driversData = await pg.list(ENTREGADORES_TABLE, {
+            const driversData = await pg.list<EntregadorRow>(ENTREGADORES_TABLE, {
                 where: { empresa_id: user.empresaId },
                 limit: 1000,
             });
@@ -88,17 +141,17 @@ export async function getOrders() {
             drivers = [];
         }
 
-        const clientsByPhone: Record<string, any> = {};
-        clients.forEach((c: any) => {
+        const clientsByPhone: Record<string, ClienteRow> = {};
+        clients.forEach((c) => {
             if (c.telefone) clientsByPhone[String(c.telefone)] = c;
         });
 
-        const driversById: Record<string, any> = {};
-        drivers.forEach((d: any) => {
+        const driversById: Record<string, EntregadorRow> = {};
+        drivers.forEach((d) => {
             if (d.id) driversById[String(d.id)] = d;
         });
 
-        return orders.map((order: any) => {
+        return orders.map((order): OrderWithClient => {
             const phone = order.telefone_cliente ? String(order.telefone_cliente) : '';
             const client = clientsByPhone[phone] || null;
             const driverId = order.entregador_id ? String(order.entregador_id) : '';
@@ -151,13 +204,13 @@ export async function createManualOrder(data: {
             criado_em: new Date().toISOString(),
         };
 
-        const result = await pg.create(PEDIDOS_TABLE, payload);
+        const result = await pg.create<PedidoRow>(PEDIDOS_TABLE, payload);
 
         revalidatePath('/dashboard/expedition');
         return result;
-    } catch (error: any) {
+    } catch (error) {
         console.error('Erro ao criar pedido manual:', error);
-        throw new Error(error.message || 'Failed to create manual order');
+        throw new Error(getErrorMessage(error, 'Failed to create manual order'));
     }
 }
 
@@ -167,7 +220,7 @@ export async function updateOrderStatus(id: number, status: string, motivo?: str
 
         const validated = OrderStatusSchema.safeParse({ orderId: id, status });
         if (!validated.success) {
-            const errorMsg = validated.error.issues.map((issue: any) => issue.message).join(', ');
+            const errorMsg = validated.error.issues.map((issue) => issue.message).join(', ');
             throw new Error(`Dados inválidos: ${errorMsg}`);
         }
 
@@ -184,14 +237,14 @@ export async function updateOrderStatus(id: number, status: string, motivo?: str
             }
         }
 
-        const orderData = await pg.findById(PEDIDOS_TABLE, id) as any;
+        const orderData = await pg.findById<PedidoRow>(PEDIDOS_TABLE, id);
 
         if (!orderData || Number(orderData.empresa_id) !== Number(user.empresaId)) {
             logger.securityAccessDenied(user.empresaId, `order:${id}`, 'UPDATE_STATUS');
             throw new Error('Acesso negado: Pedido não pertence a esta empresa');
         }
 
-        const updatePayload: any = { id, status };
+        const updatePayload: { id: number; status: string; observacoes?: string } = { id, status };
 
         if (status === 'cancelado' && motivo) {
             const nowStr = new Date().toLocaleString('pt-BR');
@@ -203,9 +256,9 @@ export async function updateOrderStatus(id: number, status: string, motivo?: str
         if (status === 'finalizado') {
             try {
                 if (orderData.telefone_cliente) {
-                    const client = await pg.findOne(CLIENTES_TABLE, {
+                    const client = await pg.findOne<ClienteRow>(CLIENTES_TABLE, {
                         where: { empresa_id: user.empresaId, telefone: orderData.telefone_cliente },
-                    }) as any;
+                    });
 
                     if (client) {
                         const nowIso = new Date().toISOString();
@@ -214,8 +267,9 @@ export async function updateOrderStatus(id: number, status: string, motivo?: str
                                 id: client.id,
                                 ultima_compra: nowIso,
                             });
-                        } catch (updateErr: any) {
-                            if (updateErr.message?.includes('date') || updateErr.message?.includes('time')) {
+                        } catch (updateErr) {
+                            const updateMsg = getErrorMessage(updateErr, '');
+                            if (updateMsg.includes('date') || updateMsg.includes('time')) {
                                 console.warn('[Orders] Formato de data invalido, ignorando atualizacao');
                             } else {
                                 throw updateErr;
@@ -228,7 +282,7 @@ export async function updateOrderStatus(id: number, status: string, motivo?: str
             }
         }
 
-        const result = await pg.update(PEDIDOS_TABLE, updatePayload);
+        const result = await pg.update<PedidoRow>(PEDIDOS_TABLE, updatePayload);
 
         if (status === 'finalizado') {
             deduzirInsumosDoPedido(id).catch(err => console.error('Falha na dedução:', err));
@@ -251,7 +305,7 @@ export async function updateOrderStatus(id: number, status: string, motivo?: str
         }
 
         if (orderData.telefone_cliente) {
-            sendOrderStatusMessage(orderData.telefone_cliente, id, status, user.empresaId, orderData.tipo_entrega)
+            sendOrderStatusMessage(orderData.telefone_cliente, id, status, user.empresaId, orderData.tipo_entrega ?? undefined)
                 .catch(err => console.error('Falha ao enviar WhatsApp:', err));
         }
 
@@ -265,9 +319,9 @@ export async function updateOrderStatus(id: number, status: string, motivo?: str
         revalidatePath('/dashboard/expedition');
         revalidatePath('/dashboard/customers');
         return result;
-    } catch (error: any) {
+    } catch (error) {
         console.error('API Error:', error);
-        throw new Error(error.message || 'Failed to update order status');
+        throw new Error(getErrorMessage(error, 'Failed to update order status'));
     }
 }
 
@@ -276,23 +330,19 @@ export async function deduzirInsumosDoPedido(orderId: number) {
         const user = await getMe();
         if (!user?.empresaId) return;
 
-        const company = await pg.findById(EMPRESAS_TABLE, user.empresaId) as any;
+        const company = await pg.findById<EmpresaEstoqueRow>(EMPRESAS_TABLE, user.empresaId);
 
-        const isEstoqueAtivo = company?.controle_estoque === true ||
-            company?.controle_estoque === 1 ||
-            String(company?.controle_estoque).toLowerCase() === 'true';
-
-        if (!isEstoqueAtivo) {
+        if (!isControleEstoqueAtivo(company)) {
             console.log(`Controle de estoque desativado para empresa ${user.empresaId}. Pulando dedução.`);
             return;
         }
 
-        const order = await pg.findById(PEDIDOS_TABLE, orderId) as any;
+        const order = await pg.findById<PedidoRow>(PEDIDOS_TABLE, orderId);
 
         if (!order?.itens) return;
 
-        const itens = typeof order.itens === 'string' ? JSON.parse(order.itens) : order.itens;
-        if (!Array.isArray(itens)) return;
+        const itens: PedidoItem[] = parsePedidoItens(order.itens);
+        if (itens.length === 0) return;
 
         console.log(`Iniciando dedução de estoque para pedido ${orderId}. Itens:`, itens.length);
 
@@ -307,9 +357,9 @@ export async function deduzirInsumosDoPedido(orderId: number) {
 
             const receitaProduto = await getReceitaDoProduto(produtoId);
             if (receitaProduto && receitaProduto.length > 0) {
-                const basePromises = receitaProduto.map((r: any) => {
+                const basePromises = receitaProduto.map((r) => {
                     const totalADeduzir = Number(r.quantidade_necessaria) * quantidadeVendida;
-                    return atualizarEstoqueInsumo(r.insumo_id, -totalADeduzir);
+                    return atualizarEstoqueInsumo(Number(r.insumo_id), -totalADeduzir);
                 });
                 await Promise.all(basePromises);
             }
@@ -317,22 +367,15 @@ export async function deduzirInsumosDoPedido(orderId: number) {
             if (item.isComposite) {
                 const complements = item.complements || [];
                 if (Array.isArray(complements) && complements.length > 0) {
-                    const groups = new Map<number, any[]>();
-                    complements.forEach((c: any) => {
-                        if (c.id) {
-                            const gId = c.grupo_id || 0;
-                            if (!groups.has(gId)) groups.set(gId, []);
-                            groups.get(gId)?.push(c);
-                        }
-                    });
+                    const groups = groupComplementsByGrupo(complements);
 
                     for (const [gId, itemsInGroup] of groups.entries()) {
                         if (gId > 0) {
                             const insumosDoGrupo = await getInsumosDoGrupo(gId);
                             if (insumosDoGrupo.length > 0) {
-                                const grupoFixoPromises = insumosDoGrupo.map((r: any) => {
+                                const grupoFixoPromises = insumosDoGrupo.map((r) => {
                                     const totalADeduzir = Number(r.quantidade_necessaria) * quantidadeVendida;
-                                    return atualizarEstoqueInsumo(r.insumo_id, -totalADeduzir);
+                                    return atualizarEstoqueInsumo(Number(r.insumo_id), -totalADeduzir);
                                 });
                                 await Promise.all(grupoFixoPromises);
                             }
@@ -347,9 +390,9 @@ export async function deduzirInsumosDoPedido(orderId: number) {
                                 proportion = isProportional ? (1 / itemsInGroup.length) : 1;
                             }
 
-                            const receitaItemBase = await getReceitaDoItemBase(itemBase.id);
+                            const receitaItemBase = await getReceitaDoItemBase(Number(itemBase.id));
                             if (receitaItemBase && receitaItemBase.length > 0) {
-                                const itemPromises = receitaItemBase.map((r: any) => {
+                                const itemPromises = receitaItemBase.map((r) => {
                                     const totalADeduzir = Number(r.quantidade) * proportion * quantidadeVendida;
                                     return atualizarEstoqueInsumo(r.insumo, -totalADeduzir);
                                 });
@@ -361,22 +404,15 @@ export async function deduzirInsumosDoPedido(orderId: number) {
             } else {
                 const complements = item.complements || item.adicionais || [];
                 if (Array.isArray(complements) && complements.length > 0) {
-                    const groups = new Map<number, any[]>();
-                    complements.forEach((c: any) => {
-                        if (c.id) {
-                            const gId = c.grupo_id || 0;
-                            if (!groups.has(gId)) groups.set(gId, []);
-                            groups.get(gId)?.push(c);
-                        }
-                    });
+                    const groups = groupComplementsByGrupo(complements);
 
                     for (const [gId, itemsInGroup] of groups.entries()) {
                         if (gId > 0) {
                             const insumosDoGrupo = await getInsumosDoGrupo(gId);
                             if (insumosDoGrupo.length > 0) {
-                                const grupoFixoPromises = insumosDoGrupo.map((r: any) => {
+                                const grupoFixoPromises = insumosDoGrupo.map((r) => {
                                     const totalADeduzir = Number(r.quantidade_necessaria) * quantidadeVendida;
-                                    return atualizarEstoqueInsumo(r.insumo_id, -totalADeduzir);
+                                    return atualizarEstoqueInsumo(Number(r.insumo_id), -totalADeduzir);
                                 });
                                 await Promise.all(grupoFixoPromises);
                             }
@@ -392,11 +428,11 @@ export async function deduzirInsumosDoPedido(orderId: number) {
                                 proportion = isProportional ? (1 / itemsInGroup.length) : 1;
                             }
 
-                            const receitaComp = await getReceitaDoComplemento(comp.id);
+                            const receitaComp = await getReceitaDoComplemento(Number(comp.id));
                             if (receitaComp && receitaComp.length > 0) {
-                                const compPromises = receitaComp.map((r: any) => {
+                                const compPromises = receitaComp.map((r) => {
                                     const totalADeduzir = Number(r.quantidade_necessaria) * proportion * quantidadeVendida;
-                                    return atualizarEstoqueInsumo(r.insumo_id, -totalADeduzir);
+                                    return atualizarEstoqueInsumo(Number(r.insumo_id), -totalADeduzir);
                                 });
                                 await Promise.all(compPromises);
                             }
@@ -418,17 +454,13 @@ export async function verificarEstoqueDoPedido(orderId: number) {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        const company = await pg.findById(EMPRESAS_TABLE, user.empresaId) as any;
+        const company = await pg.findById<EmpresaEstoqueRow>(EMPRESAS_TABLE, user.empresaId);
 
-        const isEstoqueAtivo = company?.controle_estoque === true ||
-            company?.controle_estoque === 1 ||
-            String(company?.controle_estoque).toLowerCase() === 'true';
-
-        if (!isEstoqueAtivo) {
+        if (!isControleEstoqueAtivo(company)) {
             return { hasEnough: true, shortages: [] };
         }
 
-        const order = await pg.findById(PEDIDOS_TABLE, orderId) as any;
+        const order = await pg.findById<PedidoRow>(PEDIDOS_TABLE, orderId);
 
         if (!order?.itens) return {
             hasEnough: true,
@@ -436,11 +468,11 @@ export async function verificarEstoqueDoPedido(orderId: number) {
             cliente: { nome: order?.cliente_nome, telefone: order?.telefone_cliente }
         };
 
-        const itens = typeof order.itens === 'string' ? JSON.parse(order.itens) : order.itens;
-        if (!Array.isArray(itens)) return { hasEnough: true, shortages: [] };
+        const itens = parsePedidoItens(order.itens);
+        if (itens.length === 0) return { hasEnough: true, shortages: [] };
 
         const currentInsumos = await getInsumos();
-        const insumosMap = new Map<number, any>(currentInsumos.map((i: any) => [Number(i.id), i]));
+        const insumosMap = new Map<number, Insumo>(currentInsumos.map((i) => [Number(i.id), i]));
 
         const necessidades = new Map<number, NecessidadeInsumo>();
 
@@ -451,7 +483,7 @@ export async function verificarEstoqueDoPedido(orderId: number) {
 
             const receitaProduto = await getReceitaDoProduto(produtoId);
             for (const r of receitaProduto) {
-                const insumo = insumosMap.get(Number(r.insumo_id)) as any;
+                const insumo = insumosMap.get(Number(r.insumo_id));
                 if (!insumo) continue;
 
                 const totalPreciso = Number(r.quantidade_necessaria) * quantidadeVendida;
@@ -468,9 +500,9 @@ export async function verificarEstoqueDoPedido(orderId: number) {
             if (Array.isArray(complements)) {
                 for (const comp of complements) {
                     if (!comp.id) continue;
-                    const receitaComp = await getReceitaDoComplemento(comp.id);
+                    const receitaComp = await getReceitaDoComplemento(Number(comp.id));
                     for (const r of receitaComp) {
-                        const insumo = insumosMap.get(Number(r.insumo_id)) as any;
+                        const insumo = insumosMap.get(Number(r.insumo_id));
                         if (!insumo) continue;
                         const totalPreciso = Number(r.quantidade_necessaria) * quantidadeVendida;
                         const prev = necessidades.get(Number(r.insumo_id)) || {
@@ -485,7 +517,7 @@ export async function verificarEstoqueDoPedido(orderId: number) {
             }
         }
 
-        const shortages: any[] = [];
+        const shortages: FaltaInsumo[] = [];
         necessidades.forEach((need, insumoId) => {
             if (need.total > need.disponivel) {
                 shortages.push({
@@ -515,16 +547,16 @@ export async function getOrderById(id: number) {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        const order = await pg.findById(PEDIDOS_TABLE, id) as any;
+        const order = await pg.findById<PedidoRow>(PEDIDOS_TABLE, id);
 
         if (!order || Number(order.empresa_id) !== Number(user.empresaId)) {
             throw new Error('Pedido não encontrado ou acesso negado');
         }
 
         return order;
-    } catch (error: any) {
+    } catch (error) {
         console.error('Erro ao buscar pedido:', error);
-        throw new Error(error.message || 'Falha ao buscar pedido');
+        throw new Error(getErrorMessage(error, 'Falha ao buscar pedido'));
     }
 }
 
@@ -534,7 +566,7 @@ export async function getOrdersForReport(startDate: string, endDate: string) {
         if (!user?.empresaId) throw new Error('Não autorizado');
 
         // Para filtros de data complexos, usamos raw query
-        const data = await pg.raw(`
+        const data = await pg.raw<PedidoRow>(`
             SELECT * FROM pedidos 
             WHERE empresa_id = $1 
             AND criado_em >= $2 
@@ -543,9 +575,9 @@ export async function getOrdersForReport(startDate: string, endDate: string) {
         `, [user.empresaId, startDate, endDate]);
 
         return data;
-    } catch (error: any) {
+    } catch (error) {
         console.error('Erro ao buscar pedidos para relatório:', error);
-        throw new Error(error.message || 'Falha ao buscar relatório');
+        throw new Error(getErrorMessage(error, 'Falha ao buscar relatório'));
     }
 }
 
@@ -554,14 +586,14 @@ export async function getOrdersForReport(startDate: string, endDate: string) {
  */
 export async function updateOrderItems(
     orderId: number, 
-    newItems: any[], 
+    newItems: PedidoItem[], 
     novoTotal: number,
     observacao?: string
 ) {
     try {
         const user = await requireRole(['admin', 'gerente', 'atendente']);
 
-        const orderData = await pg.findById(PEDIDOS_TABLE, orderId) as any;
+        const orderData = await pg.findById<PedidoRow>(PEDIDOS_TABLE, orderId);
 
         if (!orderData || Number(orderData.empresa_id) !== Number(user.empresaId)) {
             logger.securityAccessDenied(user.empresaId, `order:${orderId}`, 'UPDATE_ITEMS');
@@ -577,7 +609,7 @@ export async function updateOrderItems(
         }
 
         const itensStr = JSON.stringify(newItems);
-        const updatePayload: any = { 
+        const updatePayload: { id: number; itens: string; valor_total: number; observacoes?: string } = { 
             id: orderId, 
             itens: itensStr,
             valor_total: novoTotal
@@ -602,9 +634,9 @@ export async function updateOrderItems(
         revalidatePath('/dashboard/expedition');
 
         return { success: true, order: result };
-    } catch (error: any) {
+    } catch (error) {
         console.error('Erro ao atualizar itens do pedido:', error);
-        throw new Error(error.message || 'Falha ao atualizar pedido');
+        throw new Error(getErrorMessage(error, 'Falha ao atualizar pedido'));
     }
 }
 
@@ -627,23 +659,16 @@ export async function addExtraValueToOrder(
             throw new Error('Valor deve ser maior que zero');
         }
 
-        const orderData = await pg.findById(PEDIDOS_TABLE, orderId) as any;
+        const orderData = await pg.findById<PedidoRow>(PEDIDOS_TABLE, orderId);
 
         if (!orderData || Number(orderData.empresa_id) !== Number(user.empresaId)) {
             logger.securityAccessDenied(user.empresaId, `order:${orderId}`, 'ADD_EXTRA_VALUE');
             throw new Error('Acesso negado: Pedido não pertence a esta empresa');
         }
 
-        let itensAtuais: any[] = [];
-        try {
-            itensAtuais = typeof orderData.itens === 'string' 
-                ? JSON.parse(orderData.itens) 
-                : (orderData.itens || []);
-        } catch {
-            itensAtuais = [];
-        }
+        const itensAtuais = parsePedidoItens(orderData.itens);
 
-        const novoItem = {
+        const novoItem: PedidoItem = {
             id: `extra_${Date.now()}`,
             produto: nome.trim(),
             nome: nome.trim(),
@@ -674,8 +699,8 @@ export async function addExtraValueToOrder(
             novoTotal,
             itemAdicionado: novoItem,
         };
-    } catch (error: any) {
+    } catch (error) {
         console.error('Erro ao adicionar valor extra:', error);
-        throw new Error(error.message || 'Falha ao adicionar valor extra');
+        throw new Error(getErrorMessage(error, 'Falha ao adicionar valor extra'));
     }
 }
