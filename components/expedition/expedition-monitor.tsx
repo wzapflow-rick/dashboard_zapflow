@@ -260,7 +260,11 @@ export default function ExpeditionMonitor() {
         const validation = await verificarEstoqueDoPedido(orderId);
         if (!validation.hasEnough) {
           setStockShortages(validation.shortages);
-          setStockClient(validation.cliente || null);
+          setStockClient(
+            validation.cliente
+              ? { nome: validation.cliente.nome ?? '', telefone: validation.cliente.telefone ?? '' }
+              : null,
+          );
           setPendingMove({ id: orderId, nextStatus });
           setIsStockModalOpen(true);
           return;

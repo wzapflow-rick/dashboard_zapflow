@@ -1271,8 +1271,11 @@ export default function SettingsPage() {
                       
                       {whatsappStatus !== 'checking' && whatsappStatus !== 'connecting' && (
                         <button
+                          type="button"
                           onClick={handleConnectWhatsApp}
                           disabled={loadingQr}
+                          aria-busy={loadingQr}
+                          data-testid="whatsapp-connect-qr"
                           className={cn(
                             "px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all",
                             whatsappStatus === 'connected' 

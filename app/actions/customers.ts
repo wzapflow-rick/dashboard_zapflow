@@ -6,6 +6,21 @@ import { CustomerUpsertSchema } from '@/lib/validations';
 import { logAction } from '@/lib/audit';
 import { pg } from '@/lib/postgres';
 import { CLIENTES_TABLE, PEDIDOS_TABLE, LOYALTY_POINTS_TABLE } from '@/lib/tables';
+import type { ClienteRow, Id, LoyaltyPointsRow, PedidoRow } from '@/lib/types/domain';
+import { getErrorMessage } from '@/lib/errors';
+
+export interface CustomerWithStats {
+    id: number;
+    nome: string;
+    telefone: string;
+    bairro_entrega: string;
+    endereco_completo: string;
+    qtd_pedidos: number;
+    valor_total_gasto: number;
+    pontos_fidelidade: number;
+    empresa_id: Id;
+    criado_em: string | null;
+}
 
 const customerUpsertAttempts = new Map<string, { count: number; lastAttempt: number }>();
 const MAX_CUSTOMER_ATTEMPTS = 10;
@@ -17,16 +32,16 @@ export async function getCustomers() {
         if (!user?.empresaId) throw new Error('Não autorizado');
 
         const [clientsData, ordersData, pointsData] = await Promise.all([
-            pg.list(CLIENTES_TABLE, {
+            pg.list<ClienteRow>(CLIENTES_TABLE, {
                 where: { empresa_id: user.empresaId },
                 sort: '-id',
                 limit: 1000,
             }),
-            pg.list(PEDIDOS_TABLE, {
+            pg.list<PedidoRow>(PEDIDOS_TABLE, {
                 where: { empresa_id: user.empresaId },
                 limit: 1000,
             }),
-            pg.list(LOYALTY_POINTS_TABLE, {
+            pg.list<LoyaltyPointsRow>(LOYALTY_POINTS_TABLE, {
                 where: { empresa_id: user.empresaId },
                 limit: 1000,
             }),
@@ -36,26 +51,26 @@ export async function getCustomers() {
         const allOrders = ordersData.list || [];
         const pointsList = pointsData.list || [];
 
-        const ordersByPhone: Record<string, any[]> = {};
-        allOrders.forEach((order: any) => {
+        const ordersByPhone: Record<string, PedidoRow[]> = {};
+        allOrders.forEach((order) => {
             const phone = String(order.telefone_cliente || '');
             if (!ordersByPhone[phone]) ordersByPhone[phone] = [];
             ordersByPhone[phone].push(order);
         });
 
         const pointsByPhone: Record<string, number> = {};
-        pointsList.forEach((p: any) => {
-            const pontos = (p.pontos_acumulados || 0) - (p.pontos_gastos || 0);
+        pointsList.forEach((p) => {
+            const pontos = Number(p.pontos_acumulados || 0) - Number(p.pontos_gastos || 0);
             pointsByPhone[String(p.cliente_telefone || '')] = pontos;
         });
 
-        return clients.map((client: any) => {
+        return clients.map((client): CustomerWithStats => {
             const phone = String(client.telefone || '');
             const history = ordersByPhone[phone] || [];
-            const totalSpent = history.reduce((sum: number, o: any) => sum + Number(o.valor_total || 0), 0);
+            const totalSpent = history.reduce((sum, o) => sum + Number(o.valor_total || 0), 0);
             const pontos = pointsByPhone[phone] || 0;
 
-            return JSON.parse(JSON.stringify({
+            return {
                 id: client.id,
                 nome: client.nome || 'Sem Nome',
                 telefone: phone || 'N/A',
@@ -65,8 +80,8 @@ export async function getCustomers() {
                 valor_total_gasto: totalSpent,
                 pontos_fidelidade: pontos,
                 empresa_id: client.empresa_id,
-                criado_em: client.criado_em || null,
-            }));
+                criado_em: client.criado_em ? new Date(client.criado_em).toISOString() : null,
+            };
         });
     } catch (error) {
         console.error('API Error:', error);
@@ -79,7 +94,7 @@ export async function getCustomerHistory(phone: string) {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
-        const data = await pg.list(PEDIDOS_TABLE, {
+        const data = await pg.list<PedidoRow>(PEDIDOS_TABLE, {
             where: { empresa_id: user.empresaId, telefone_cliente: phone },
             sort: '-id',
             limit: 100,
@@ -91,14 +106,14 @@ export async function getCustomerHistory(phone: string) {
     }
 }
 
-export async function upsertCustomer(customerData: any) {
+export async function upsertCustomer(customerData: unknown) {
     try {
         const user = await getMe();
         if (!user?.empresaId) throw new Error('Não autorizado');
 
         const validated = CustomerUpsertSchema.safeParse(customerData);
         if (!validated.success) {
-            const errorMsg = validated.error.issues.map((issue: any) => issue.message).join(', ');
+            const errorMsg = validated.error.issues.map((issue) => issue.message).join(', ');
             throw new Error(`Dados inválidos: ${errorMsg}`);
         }
 
@@ -117,9 +132,9 @@ export async function upsertCustomer(customerData: any) {
             }
         }
 
-        const existingCustomer = await pg.findOne(CLIENTES_TABLE, {
+        const existingCustomer = await pg.findOne<ClienteRow>(CLIENTES_TABLE, {
             where: { empresa_id: user.empresaId, telefone },
-        }) as any;
+        });
 
         if (existingCustomer) {
             await pg.update(CLIENTES_TABLE, {
@@ -149,8 +164,8 @@ export async function upsertCustomer(customerData: any) {
         revalidatePath('/dashboard/expedition');
 
         return { success: true };
-    } catch (error: any) {
+    } catch (error) {
         console.error('API Error (upsertCustomer):', error);
-        throw new Error(error.message || 'Falha ao processar registro do cliente');
+        throw new Error(getErrorMessage(error, 'Falha ao processar registro do cliente'));
     }
 }

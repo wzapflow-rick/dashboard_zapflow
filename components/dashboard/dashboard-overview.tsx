@@ -16,6 +16,7 @@ import { SectionHeader } from './home/section-header';
 import { ControlCenter } from './home/control-center';
 import { OperationsOverview } from './home/operations-overview';
 import { RecentOrders } from './home/recent-orders';
+import { SectionBoundary } from '@/components/ui/section-boundary';
 
 const OrderDetailsModal = dynamic(() => import('@/components/modals/order-details-modal'), {
   ssr: false,
@@ -213,27 +214,39 @@ export default function DashboardOverview() {
         )}
       </AnimatePresence>
 
-      <MetricStrip stats={stats} lowPower={lowPower} />
+      <SectionBoundary name="as métricas">
+        <MetricStrip stats={stats} lowPower={lowPower} />
+      </SectionBoundary>
 
-      <ControlCenter />
+      <SectionBoundary name="o controle rápido">
+        <ControlCenter />
+      </SectionBoundary>
 
-      <AIConsultant />
+      <SectionBoundary name="o consultor de IA">
+        <AIConsultant />
+      </SectionBoundary>
 
       <section className="flex flex-col gap-4" aria-label="Ações rápidas">
         <SectionHeader
           title="O que você pode fazer agora"
           description="Ações rápidas para crescer o seu negócio."
         />
-        <QuickActions lowPower={lowPower} />
+        <SectionBoundary name="as ações rápidas">
+          <QuickActions lowPower={lowPower} />
+        </SectionBoundary>
       </section>
 
-      <OperationsOverview
-        chartData={dashboardData?.chartData || []}
-        topProducts={dashboardData?.topProducts || []}
-        pedidosCount={pedidosCount}
-      />
+      <SectionBoundary name="a visão da operação">
+        <OperationsOverview
+          chartData={dashboardData?.chartData || []}
+          topProducts={dashboardData?.topProducts || []}
+          pedidosCount={pedidosCount}
+        />
+      </SectionBoundary>
 
-      <RecentOrders orders={orders} onOpenModal={handleOpenModal} />
+      <SectionBoundary name="os pedidos recentes">
+        <RecentOrders orders={orders} onOpenModal={handleOpenModal} />
+      </SectionBoundary>
 
       {isModalOpen && (
         <OrderDetailsModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} order={selectedOrder} />

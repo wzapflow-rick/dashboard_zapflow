@@ -1,8 +1,16 @@
 'use client';
 
-
-import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { AlertTriangle, Home, RotateCcw } from 'lucide-react';
+import { MorphingInfinity } from '@/components/ui/morphing-infinity';
+
+const STALE_DEPLOY_PATTERNS = ['failed to find server action', 'older or newer deployment'];
+
+function isStaleDeployError(error: Error) {
+  const message = error?.message?.toLowerCase() ?? '';
+  return STALE_DEPLOY_PATTERNS.some((pattern) => message.includes(pattern));
+}
 
 export default function DashboardError({
   error,
@@ -11,72 +19,61 @@ export default function DashboardError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  const [isReloading, setIsReloading] = useState(false);
+  const [retrying, setRetrying] = useState(false);
 
   useEffect(() => {
     console.error('[Dashboard Error]', error);
-    
-    // Detecta erro de Server Action desatualizada (deploy novo)
-    const isStaleDeployError = 
-      error?.message?.includes('Failed to find Server Action') ||
-      error?.message?.includes('failed to find server action') ||
-      error?.message?.includes('older or newer deployment');
-    
-    if (isStaleDeployError) {
-      console.log('[Dashboard Error] Deploy desatualizado detectado, recarregando...');
-      window.location.reload();
-      return;
-    }
+    // Após um deploy novo, Server Actions antigas deixam de existir: só um reload resolve.
+    if (isStaleDeployError(error)) window.location.reload();
   }, [error]);
 
-  const handleReload = () => {
-    setIsReloading(true);
-    window.location.reload();
+  const handleRetry = () => {
+    setRetrying(true);
+    // reset() re-renderiza o segmento sem perder o estado do layout; se falhar de novo, o boundary volta.
+    reset();
+    setTimeout(() => setRetrying(false), 600);
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 flex items-center justify-center p-4">
-      <div className="max-w-md w-full text-center space-y-6">
-        <div className="mx-auto w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center">
-          <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-        </div>
-        
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Ops! Algo deu errado
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400">
-            Nao foi possivel carregar esta pagina. Isso pode ser um problema temporario de conexao.
+    <div className="flex min-h-96 items-center justify-center p-4" data-testid="dashboard-error">
+      <div className="flex w-full max-w-md flex-col items-center gap-6 text-center">
+        <span className="flex size-14 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
+          <AlertTriangle className="size-7" aria-hidden="true" />
+        </span>
+
+        <div className="flex flex-col gap-2">
+          <h1 className="text-balance text-2xl font-semibold text-foreground">Algo deu errado nesta página</h1>
+          <p className="text-pretty text-sm leading-relaxed text-muted-foreground">
+            Pode ser uma instabilidade temporária de conexão. Seus dados estão seguros.
           </p>
+          {error.digest && (
+            <p className="font-mono text-xs text-muted-foreground/70">Código: {error.digest}</p>
+          )}
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <button 
-            onClick={handleReload}
-            disabled={isReloading}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+        <div className="flex w-full flex-col justify-center gap-3 sm:flex-row">
+          <button
+            type="button"
+            onClick={handleRetry}
+            disabled={retrying}
+            data-testid="dashboard-error-retry"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            {isReloading ? (
+            {retrying ? (
               <MorphingInfinity className="size-4" aria-hidden="true" />
             ) : (
-              <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
+              <RotateCcw className="size-4" aria-hidden="true" />
             )}
-            {isReloading ? 'Recarregando...' : 'Tentar novamente'}
+            {retrying ? 'Tentando...' : 'Tentar novamente'}
           </button>
-          
-          <button 
-            onClick={() => window.location.href = '/dashboard'}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-slate-300 dark:border-zinc-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-900 transition-colors"
+          <Link
+            href="/dashboard"
+            data-testid="dashboard-error-home"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-            </svg>
-            Voltar ao inicio
-          </button>
+            <Home className="size-4" aria-hidden="true" />
+            Voltar ao início
+          </Link>
         </div>
       </div>
     </div>

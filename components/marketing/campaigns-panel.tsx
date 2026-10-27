@@ -9,7 +9,7 @@ SETUP NECESSÁRIO:
 3. No N8N, configurar o webhook com a mesma chave
 */
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useTransition, useDeferredValue } from 'react';
 import { Megaphone, Plus, Edit, Trash2, X, Send, AlertCircle, Users, TrendingUp, ChevronLeft, ChevronRight, Check, Clock, CalendarDays, Filter, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
@@ -103,9 +103,10 @@ export default function CampaignsPanel() {
         loadData();
     }, []);
 
-    async function loadData() {
+    // silent: revalida em segundo plano após mutações, sem trocar a tela pelo skeleton
+    async function loadData({ silent = false }: { silent?: boolean } = {}) {
         try {
-            setLoading(true);
+            if (!silent) setLoading(true);
             const [campanhasData, disparosData, statsData] = await Promise.all([
                 getCampanhas(),
                 getDisparos(),
@@ -171,7 +172,7 @@ export default function CampaignsPanel() {
                 if (result.success) {
                     toast.success('Campanha atualizada!');
                     closeModal();
-                    await loadData();
+                    await loadData({ silent: true });
                 } else {
                     toast.error(result.error || 'Erro ao atualizar');
                 }
@@ -180,7 +181,7 @@ export default function CampaignsPanel() {
                 if (result.success) {
                     toast.success('Campanha criada!');
                     closeModal();
-                    await loadData();
+                    await loadData({ silent: true });
                 } else {
                     toast.error(result.error || 'Erro ao criar');
                 }
@@ -197,7 +198,7 @@ export default function CampaignsPanel() {
             const result = await toggleCampanha(id, ativo);
             if (result.success) {
                 toast.success(ativo ? 'Campanha ativada' : 'Campanha desativada');
-                await loadData();
+                await loadData({ silent: true });
             } else {
                 toast.error(result.error || 'Erro ao alternar');
             }
@@ -212,7 +213,7 @@ export default function CampaignsPanel() {
             if (result.success) {
                 toast.success('Campanha excluída');
                 setDeleteConfirm(null);
-                await loadData();
+                await loadData({ silent: true });
             } else {
                 toast.error(result.error || 'Erro ao excluir');
             }
@@ -242,22 +243,23 @@ export default function CampaignsPanel() {
     const getTipoInfo = (tipo: CampanhaTipo) => TIPOS.find(t => t.value === tipo) || TIPOS[0];
 
     // Disparos filtrados
+    const buscaDeferred = useDeferredValue(filtroBusca);
     const filteredDisparos = useMemo(() => {
+        const busca = buscaDeferred.toLowerCase();
         return disparos.filter(d => {
             // Filtro por status
             if (filtroStatus !== 'todos' && d.status !== filtroStatus) return false;
             // Filtro por campanha
             if (filtroCampanha !== null && d.campanha_id !== filtroCampanha) return false;
             // Filtro por busca (nome do cliente ou telefone)
-            if (filtroBusca) {
-                const busca = filtroBusca.toLowerCase();
+            if (busca) {
                 const nomeMatch = d.cliente_nome?.toLowerCase().includes(busca);
                 const telefoneMatch = d.telefone?.includes(busca);
                 if (!nomeMatch && !telefoneMatch) return false;
             }
             return true;
         });
-    }, [disparos, filtroStatus, filtroCampanha, filtroBusca]);
+    }, [disparos, filtroStatus, filtroCampanha, buscaDeferred]);
 
     const pageCount = Math.max(1, Math.ceil(filteredDisparos.length / DISPAROS_PER_PAGE));
     const paginatedDisparos = filteredDisparos.slice(
@@ -265,10 +267,6 @@ export default function CampaignsPanel() {
         disparoPage * DISPAROS_PER_PAGE
     );
 
-    // Reset pagina quando filtros mudam
-    useEffect(() => {
-        queueMicrotask(() => setDisparoPage(1));
-    }, [filtroStatus, filtroCampanha, filtroBusca]);
 
     const taxaErro = stats.total_enviados + stats.total_erros > 0
         ? ((stats.total_erros / (stats.total_enviados + stats.total_erros)) * 100).toFixed(1)
@@ -285,10 +283,10 @@ export default function CampaignsPanel() {
 
     const truncate = (str: string, len: number) => str.length > len ? str.substring(0, len) + '...' : str;
 
-    const [disparando, setDisparando] = useState(false);
+    const [disparando, startDisparo] = useTransition();
 
-    async function handleDispararManual() {
-        setDisparando(true);
+    function handleDispararManual() {
+        startDisparo(async () => {
         try {
             const result = await dispararCampanhasManual();
 
@@ -306,16 +304,15 @@ export default function CampaignsPanel() {
                 } else {
                     toast.success(`Campanhas disparadas! Enviados: ${result.enviados}, Erros: ${result.erros}`);
                 }
-                loadData();
+                await loadData({ silent: true });
             } else {
                 toast.error(result.error || 'Erro ao disparar campanhas');
             }
         } catch (error) {
             console.error('Erro no disparo:', error);
             toast.error('Erro ao disparar campanhas');
-        } finally {
-            setDisparando(false);
         }
+        });
     }
 
     return (
@@ -328,8 +325,11 @@ export default function CampaignsPanel() {
                         </div>
                         <div className="grid w-full grid-cols-2 gap-3 sm:flex sm:w-auto sm:items-center">
                             <button
+                                type="button"
                                 onClick={handleDispararManual}
                                 disabled={disparando || campanhas.filter(c => c.ativo).length === 0}
+                                aria-busy={disparando}
+                                data-testid="campaign-dispatch-manual"
                                 className="flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-border-dark bg-surface-dark px-4 py-2.5 text-sm font-semibold text-text-secondary shadow-sm transition-all hover:border-primary/40 hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background-dark active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-border-dark disabled:hover:bg-surface-dark disabled:hover:text-text-secondary"
                             >
                                 {disparando ? (
@@ -496,7 +496,7 @@ export default function CampaignsPanel() {
                                     type="text"
                                     placeholder="Buscar cliente ou telefone..."
                                     value={filtroBusca}
-                                    onChange={(e) => setFiltroBusca(e.target.value)}
+                                    onChange={(e) => { setFiltroBusca(e.target.value); setDisparoPage(1); }}
                                     className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
                                 />
                             </div>
@@ -504,7 +504,7 @@ export default function CampaignsPanel() {
                             {/* Filtro por campanha */}
                             <select
                                 value={filtroCampanha ?? ''}
-                                onChange={(e) => setFiltroCampanha(e.target.value ? Number(e.target.value) : null)}
+                                onChange={(e) => { setFiltroCampanha(e.target.value ? Number(e.target.value) : null); setDisparoPage(1); }}
                                 className="px-3 py-2 text-sm border border-slate-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
                             >
                                 <option value="">Todas as campanhas</option>
@@ -516,7 +516,7 @@ export default function CampaignsPanel() {
                             {/* Filtro por status */}
                             <select
                                 value={filtroStatus}
-                                onChange={(e) => setFiltroStatus(e.target.value)}
+                                onChange={(e) => { setFiltroStatus(e.target.value); setDisparoPage(1); }}
                                 className="px-3 py-2 text-sm border border-slate-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
                             >
                                 <option value="todos">Todos os status</option>
@@ -532,6 +532,7 @@ export default function CampaignsPanel() {
                                         setFiltroStatus('todos');
                                         setFiltroCampanha(null);
                                         setFiltroBusca('');
+                                        setDisparoPage(1);
                                     }}
                                     className="px-3 py-2 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-xl transition-colors"
                                 >
@@ -883,8 +884,11 @@ export default function CampaignsPanel() {
                                         Cancelar
                                     </button>
                                     <button
+                                        type="button"
                                         onClick={handleSave}
                                         disabled={saving}
+                                        aria-busy={saving}
+                                        data-testid="campaign-save"
                                         className="px-6 py-2.5 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {saving ? (

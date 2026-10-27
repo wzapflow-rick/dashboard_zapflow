@@ -82,7 +82,12 @@ export default function MenuManagement({ hideCategoryButton }: { hideCategoryBut
     // Carregar a receita em segundo plano
     try {
       const receita = await getReceitaDoProduto(product.id);
-      setEditingProductInsumos(receita || []);
+      setEditingProductInsumos(
+        (receita || []).map((r) => ({
+          insumo_id: Number(r.insumo_id),
+          quantidade_necessaria: Number(r.quantidade_necessaria),
+        })),
+      );
     } catch (error) {
       console.error('Erro ao carregar receita:', error);
       // Não bloqueia o usuário

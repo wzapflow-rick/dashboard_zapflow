@@ -129,7 +129,10 @@ export default function QrCodeGenerator({ empresaId, empresaNome, slug }: QrCode
                                 className="flex-1 px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm dark:text-white"
                             />
                             <button
+                                type="button"
                                 onClick={copyLink}
+                                aria-label={copied ? 'Link copiado' : 'Copiar link do cardápio'}
+                                data-testid="qr-menu-copy-link"
                                 className="p-2 bg-slate-100 dark:bg-zinc-800 rounded-xl hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors"
                             >
                                 {copied ? <Check className="size-5 text-green-500" /> : <Copy className="size-5 text-slate-600 dark:text-slate-300" />}
@@ -139,8 +142,10 @@ export default function QrCodeGenerator({ empresaId, empresaNome, slug }: QrCode
 
                     <div className="flex gap-3">
                         <button
+                            type="button"
                             onClick={downloadPdf}
                             disabled={loading}
+                            data-testid="qr-menu-download"
                             aria-busy={loading}
                             className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-violet-500 hover:bg-violet-600 text-white font-bold rounded-xl transition-colors disabled:cursor-wait disabled:opacity-60"
                         >
