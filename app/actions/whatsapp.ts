@@ -541,6 +541,29 @@ export async function sendPaymentReminder(
     return sendWhatsAppMessage(phone, message);
 }
 
+/**
+ * Aviso de fim do periodo de teste (trial) com bloqueio do acesso.
+ * Diferente da cobranca: o cliente nunca pagou, entao nao falamos em "atraso".
+ */
+export async function sendTrialExpiredMessage(
+    phone: string,
+    nome: string,
+    empresaId: number
+): Promise<boolean> {
+    const link = `${BASE_URL}/dashboard/subscription?pay=true&empresa=${empresaId}`;
+    const message = `Olá ${nome}!
+
+Seu período de teste do ZapFlash terminou e o acesso ao painel e ao cardápio foi pausado.
+
+Seus produtos e configurações continuam salvos. Para voltar a vender agora mesmo, escolha seu plano:
+${link}
+
+Qualquer dúvida, é só responder esta mensagem.
+Equipe ZapFlash`;
+
+    return sendWhatsAppMessage(phone, message);
+}
+
 // ============================================================
 // LEMBRETE DE RENOVACAO (antes da cobranca - cartao/assinatura)
 // ============================================================

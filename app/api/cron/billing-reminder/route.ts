@@ -11,9 +11,9 @@ const CRON_SECRET = process.env.CRON_SECRET;
 // Janelas de aviso (em dias antes do vencimento). O lembrete e enviado 1x/dia
 // dentro da janela ate o dia do vencimento (0):
 //   - Cliente PAGANTE (valor > 0): dos 7 dias ate o vencimento
-//   - Conta de TESTE  (valor = 0): dos 3 dias ate o fim do teste
+//   - Conta de TESTE  (valor = 0): apenas 1 dia antes do fim do teste
 const DIAS_AVISO_PAGANTE = 7;
-const DIAS_AVISO_TESTE = 3;
+const DIAS_AVISO_TESTE = 1;
 
 /**
  * Aceita autenticacao por:
@@ -71,10 +71,11 @@ async function handleBillingReminder(request: NextRequest) {
              WHERE a.data_proxima_cobranca IS NOT NULL
                AND (a.status IS NULL OR a.status IN ('active', 'authorized', 'ativo'))
                AND COALESCE(e.bloqueado, false) = false
+               AND COALESCE(e.conta_teste, false) = false
                AND (a.data_proxima_cobranca - CURRENT_DATE) >= 0
                AND (
-                     -- Conta de teste (gratuita): janela de 3 dias
-                     (COALESCE(a.valor, 0) <= 0 AND (a.data_proxima_cobranca - CURRENT_DATE) <= $1)
+                     -- Conta de teste (gratuita): somente na vespera do fim do teste
+                     (COALESCE(a.valor, 0) <= 0 AND (a.data_proxima_cobranca - CURRENT_DATE) = $1)
                      -- Cliente pagante: janela de 7 dias
                   OR (COALESCE(a.valor, 0) > 0  AND (a.data_proxima_cobranca - CURRENT_DATE) <= $2)
                    )

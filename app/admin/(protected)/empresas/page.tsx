@@ -24,6 +24,8 @@ interface Empresa {
   plano: string;
   assinatura_plano?: string;
   assinatura_status: string;
+  assinatura_valor?: string | number | null;
+  conta_teste?: boolean;
   data_proxima_cobranca: string;
   created_at: string;
 }
@@ -120,6 +122,24 @@ export default function EmpresasAdminPage() {
     return new Date(date).toLocaleDateString('pt-BR');
   };
 
+  const getTipoBadge = (empresa: Empresa) => {
+    if (empresa.conta_teste) {
+      return <span className="px-2 py-1 rounded-full text-xs bg-slate-500/10 text-slate-400">Conta teste</span>;
+    }
+    if (!empresa.assinatura_status) return null;
+
+    const isTrial = Number(empresa.assinatura_valor ?? 0) <= 0;
+    if (!isTrial) {
+      return <span className="px-2 py-1 rounded-full text-xs bg-emerald-500/10 text-emerald-400">Pagante</span>;
+    }
+
+    const venceu = empresa.data_proxima_cobranca && new Date(empresa.data_proxima_cobranca) < new Date();
+    if (empresa.assinatura_status === 'expired' || venceu) {
+      return <span className="px-2 py-1 rounded-full text-xs bg-red-500/10 text-red-400">Trial expirado</span>;
+    }
+    return <span className="px-2 py-1 rounded-full text-xs bg-sky-500/10 text-sky-400">Trial ativo</span>;
+  };
+
   const getStatusBadge = (status: string, dataVencimento: string) => {
     if (status !== 'authorized') {
       return <span className="px-2 py-1 rounded-full text-xs bg-red-500/10 text-red-400">Inativo</span>;
@@ -190,6 +210,7 @@ export default function EmpresasAdminPage() {
                 {getStatusBadge(empresa.assinatura_status, empresa.data_proxima_cobranca)}
               </div>
               <div className="flex flex-wrap gap-2 text-sm">
+                {getTipoBadge(empresa)}
                 <span className="px-2 py-1 rounded-full text-xs bg-blue-500/10 text-blue-400 uppercase">
                   {empresa.assinatura_plano || empresa.plano || 'Sem plano'}
                 </span>
@@ -276,7 +297,10 @@ export default function EmpresasAdminPage() {
                         </span>
                       </td>
                     <td className="px-6 py-4">
-                      {getStatusBadge(empresa.assinatura_status, empresa.data_proxima_cobranca)}
+                      <div className="flex flex-wrap items-center gap-2">
+                        {getTipoBadge(empresa)}
+                        {getStatusBadge(empresa.assinatura_status, empresa.data_proxima_cobranca)}
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-slate-300">
                       {formatDate(empresa.data_proxima_cobranca)}
