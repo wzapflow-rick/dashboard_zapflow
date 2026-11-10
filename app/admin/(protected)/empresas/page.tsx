@@ -134,7 +134,7 @@ export default function EmpresasAdminPage() {
     }
 
     const venceu = empresa.data_proxima_cobranca && new Date(empresa.data_proxima_cobranca) < new Date();
-    if (empresa.assinatura_status === 'expired' || venceu) {
+    if (empresa.assinatura_status !== 'authorized' || venceu) {
       return <span className="px-2 py-1 rounded-full text-xs bg-red-500/10 text-red-400">Trial expirado</span>;
     }
     return <span className="px-2 py-1 rounded-full text-xs bg-sky-500/10 text-sky-400">Trial ativo</span>;

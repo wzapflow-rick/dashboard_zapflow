@@ -115,7 +115,7 @@ async function handleCheckPayments(request: NextRequest) {
         console.log(`[Cron] Trial expirado: bloqueando empresa ${empresaId} (${diasAtraso} dias apos o fim do teste)`);
         await blockCompany(empresaId);
         await pg.query(
-          `UPDATE assinaturas SET status = 'expired', updated_at = NOW() WHERE id = $1`,
+          `UPDATE assinaturas SET status = 'cancelled', updated_at = NOW() WHERE id = $1`,
           [empresa.assinatura_id]
         );
 
