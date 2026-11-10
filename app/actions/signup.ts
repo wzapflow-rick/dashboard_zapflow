@@ -12,6 +12,7 @@ import { cookies } from 'next/headers';
 import { v4 as uuidv4 } from 'uuid';
 import { setupEvolutionInstance } from './evolution';
 import { notifyNewCompany, notifyError } from '@/lib/discord';
+import { registrarLeadDoCadastro } from '@/lib/funil-leads';
 
 // Helper para hash de senha
 function hashPassword(password: string): string {
@@ -459,6 +460,8 @@ export async function createPendingSignup(data: {
       status: 'pending',
       expira_em: expiraEm.toISOString(),
     });
+    
+    await registrarLeadDoCadastro({ telefone: data.telefone, nome: data.nome });
     
     return signup;
   } catch (error) {

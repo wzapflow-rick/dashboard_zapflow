@@ -124,6 +124,7 @@ async function handleRequest(cronKey: string | null, authHeader: string | null) 
     // Dados da empresa (telefone do dono)
     const empresa = await pg.findById<Empresa>(EMPRESAS_TABLE, ass.empresa_id);
     if (!empresa) continue;
+    if ((empresa as { conta_teste?: boolean }).conta_teste) continue;
 
     const telefone = normalizarTelefone(empresa.telefone_loja);
     if (!telefone) continue;

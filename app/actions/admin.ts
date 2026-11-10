@@ -13,23 +13,28 @@ export async function getAdminStats() {
     console.log('[Admin] Buscando stats...');
     
     // Total de empresas
-    const empresasResult = await db.query('SELECT COUNT(*)::int as total FROM empresas');
+    const empresasResult = await db.query(
+      'SELECT COUNT(*)::int as total FROM empresas WHERE NOT COALESCE(conta_teste, false)'
+    );
     const totalEmpresas = empresasResult.rows[0]?.total || 0;
     console.log('[Admin] Total empresas:', totalEmpresas);
 
     // Total de assinaturas ativas
-    const assinaturasResult = await db.query(
-      "SELECT COUNT(*)::int as total FROM assinaturas WHERE status = 'authorized'"
-    );
+    const assinaturasResult = await db.query(`
+      SELECT COUNT(*)::int as total FROM assinaturas a
+      JOIN empresas e ON e.id = a.empresa_id
+      WHERE a.status = 'authorized' AND NOT COALESCE(e.conta_teste, false)
+    `);
     const assinaturasAtivas = assinaturasResult.rows[0]?.total || 0;
     console.log('[Admin] Assinaturas ativas:', assinaturasAtivas);
 
     // Assinaturas por plano
     const planoResult = await db.query(`
-      SELECT LOWER(plano) as plano, COUNT(*)::int as total 
-      FROM assinaturas 
-      WHERE status = 'authorized'
-      GROUP BY LOWER(plano)
+      SELECT LOWER(a.plano) as plano, COUNT(*)::int as total 
+      FROM assinaturas a
+      JOIN empresas e ON e.id = a.empresa_id
+      WHERE a.status = 'authorized' AND NOT COALESCE(e.conta_teste, false)
+      GROUP BY LOWER(a.plano)
     `);
     console.log('[Admin] Planos encontrados:', planoResult.rows);
     
@@ -47,10 +52,12 @@ export async function getAdminStats() {
     // Assinaturas vencendo em 7 dias
     const vencendoResult = await db.query(`
       SELECT COUNT(*)::int as total 
-      FROM assinaturas 
-      WHERE status = 'authorized'
-      AND data_proxima_cobranca <= NOW() + INTERVAL '7 days'
-      AND data_proxima_cobranca > NOW()
+      FROM assinaturas a
+      JOIN empresas e ON e.id = a.empresa_id
+      WHERE a.status = 'authorized'
+      AND NOT COALESCE(e.conta_teste, false)
+      AND a.data_proxima_cobranca <= NOW() + INTERVAL '7 days'
+      AND a.data_proxima_cobranca > NOW()
     `);
     const vencendoEm7Dias = vencendoResult.rows[0]?.total || 0;
 
@@ -59,6 +66,7 @@ export async function getAdminStats() {
       SELECT COUNT(*)::int as total 
       FROM empresas 
       WHERE created_at >= NOW() - INTERVAL '7 days'
+      AND NOT COALESCE(conta_teste, false)
     `);
     const empresasRecentes = recentesResult.rows[0]?.total || 0;
 
