@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pg } from '@/lib/postgres';
-import crypto from 'crypto';
 import {
   getAssinaturaByMpSubscriptionId,
   createAssinatura,
@@ -8,78 +7,57 @@ import {
 } from '@/lib/assinaturas';
 import { notifyPayment } from '@/lib/discord';
 import { unblockCompany } from '@/app/actions/billing';
+import { validateMercadoPagoSignature } from '@/lib/mercadopago-signature';
 
 const MP_ACCESS_TOKEN_FALLBACK = process.env.MP_ACCESS_TOKEN || '';
 const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET || '';
 
-/**
- * Valida a assinatura do webhook do MercadoPago
- * Retorna true se valido, false se invalido
- * Se MP_WEBHOOK_SECRET nao estiver configurado, pula a validacao (modo desenvolvimento)
- */
 function validateWebhookSignature(
   xSignature: string | null,
   xRequestId: string | null,
   dataId: string | null
-): { valid: boolean; reason?: string } {
-  // Se nao tiver secret configurado, pular validacao (modo dev)
-  if (!MP_WEBHOOK_SECRET) {
-    console.log('[Webhook] MP_WEBHOOK_SECRET nao configurado, pulando validacao de assinatura');
-    return { valid: true, reason: 'no_secret_configured' };
+) {
+  return validateMercadoPagoSignature({
+    secret: MP_WEBHOOK_SECRET,
+    isProduction: process.env.NODE_ENV === 'production',
+    xSignature,
+    xRequestId,
+    dataId,
+  });
+}
+
+// ============================================================
+// IDEMPOTENCIA
+// ============================================================
+
+/** Pagamento ja aplicado a assinatura da empresa (reentrega do mesmo evento). */
+async function isSubscriptionPaymentProcessed(empresaId: number, paymentId: string): Promise<boolean> {
+  try {
+    const result = await pg.query(
+      `SELECT 1 FROM assinaturas
+        WHERE empresa_id = $1 AND mp_subscription_id = $2 AND status = 'authorized'
+        LIMIT 1`,
+      [empresaId, paymentId]
+    );
+    return result.rows.length > 0;
+  } catch (error) {
+    console.error('[Webhook] Falha na checagem de idempotencia (assinatura):', (error as Error)?.message);
+    return false;
   }
+}
 
-  // Se nao tiver x-signature, rejeitar
-  if (!xSignature) {
-    return { valid: false, reason: 'missing_x_signature_header' };
+/** Signup PIX ja registrado para este pagamento ou token. */
+async function isSignupPaymentProcessed(paymentId: string, token: string): Promise<boolean> {
+  try {
+    const result = await pg.query(
+      'SELECT 1 FROM pending_signups WHERE mp_payment_id = $1 OR token = $2 LIMIT 1',
+      [paymentId, token]
+    );
+    return result.rows.length > 0;
+  } catch (error) {
+    console.error('[Webhook] Falha na checagem de idempotencia (signup):', (error as Error)?.message);
+    return false;
   }
-
-  // Extrair ts e hash do header x-signature
-  // Formato: ts=1704908010,v1=618c85345248dd820d5fd456117c2ab2ef8eda45a0282ff693eac24131a5e839
-  const parts = xSignature.split(',');
-  let ts: string | null = null;
-  let hash: string | null = null;
-
-  for (const part of parts) {
-    const [key, value] = part.split('=');
-    if (key?.trim() === 'ts') {
-      ts = value?.trim();
-    } else if (key?.trim() === 'v1') {
-      hash = value?.trim();
-    }
-  }
-
-  if (!ts || !hash) {
-    return { valid: false, reason: 'invalid_x_signature_format' };
-  }
-
-  // Montar o manifest para validacao
-  // Formato: id:[data.id];request-id:[x-request-id];ts:[ts];
-  // IMPORTANTE: o MercadoPago exige que data.id alfanumerico seja em MINUSCULAS.
-  let manifest = '';
-  if (dataId) {
-    manifest += `id:${dataId.toLowerCase()};`;
-  }
-  if (xRequestId) {
-    manifest += `request-id:${xRequestId};`;
-  }
-  manifest += `ts:${ts};`;
-
-  // Gerar HMAC SHA256
-  const hmac = crypto.createHmac('sha256', MP_WEBHOOK_SECRET);
-  hmac.update(manifest);
-  const calculatedHash = hmac.digest('hex');
-
-  // Comparar hashes
-  if (calculatedHash === hash) {
-    return { valid: true };
-  }
-
-  console.error('[Webhook] Assinatura invalida');
-  console.error('[Webhook] Manifest:', manifest);
-  console.error('[Webhook] Hash recebido:', hash);
-  console.error('[Webhook] Hash calculado:', calculatedHash);
-
-  return { valid: false, reason: 'signature_mismatch' };
 }
 
 interface MPPaymentData {
@@ -148,7 +126,6 @@ async function handleSubscriptionEvent(subscriptionId: string) {
     }
 
     const subData = await mpResponse.json();
-    console.log('[Webhook] Subscription data:', JSON.stringify(subData));
 
     // Extrai empresa_id do external_reference (formato: empresa_ID_plano)
     const externalRef = subData.external_reference || '';
@@ -261,6 +238,11 @@ async function handleSubscriptionPayment(paymentId: string) {
       const planMatch = externalRef.match(/sub_\d+_(\w+)_/);
       const plano = planMatch ? planMatch[1] : 'start';
       
+      if (await isSubscriptionPaymentProcessed(empresaId, String(paymentData.id))) {
+        console.log(`[Webhook] Pagamento ${paymentData.id} ja processado para empresa ${empresaId} — ignorado`);
+        return true;
+      }
+
       console.log(`[Webhook] Pagamento aprovado para empresa ${empresaId}, plano: ${plano}`);
       
       const hoje = new Date();
@@ -356,10 +338,7 @@ async function handleSubscriptionPayment(paymentId: string) {
 // ============================================================
 
 export async function POST(req: NextRequest) {
-  console.log('[Webhook] POST iniciado');
-  
   try {
-    console.log('[Webhook] Recebendo notificacao...');
     
     // Extrair headers para validacao de assinatura
     const xSignature = req.headers.get('x-signature');
@@ -373,7 +352,6 @@ export async function POST(req: NextRequest) {
       url.searchParams.get('data_id') ||
       url.searchParams.get('id');
     
-    // Ler o body como texto primeiro para debug
     const bodyText = await req.text();
     
     // Parsear o JSON
@@ -381,7 +359,7 @@ export async function POST(req: NextRequest) {
     try {
       body = JSON.parse(bodyText);
     } catch (parseError) {
-      console.error('[Webhook] Erro ao parsear JSON:', parseError);
+      console.error('[Webhook] Body invalido (JSON malformado)');
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
     }
     
@@ -393,20 +371,16 @@ export async function POST(req: NextRequest) {
       body?.id?.toString() ||
       null;
 
-    console.log('[Webhook] data.id resolvido para o manifest:', dataId);
-    
     // Validar assinatura do webhook
     const signatureValidation = validateWebhookSignature(xSignature, xRequestId, dataId);
     if (!signatureValidation.valid) {
-      console.error('[Webhook] Assinatura invalida:', signatureValidation.reason);
-      return NextResponse.json(
-        { error: 'Invalid webhook signature', reason: signatureValidation.reason },
-        { status: 401 }
-      );
+      if (signatureValidation.reason === 'secret_not_configured') {
+        console.error('[Webhook] MP_WEBHOOK_SECRET ausente em producao — notificacao rejeitada');
+        return NextResponse.json({ error: 'Webhook not configured' }, { status: 503 });
+      }
+      console.warn('[Webhook] Notificacao rejeitada:', signatureValidation.reason);
+      return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 });
     }
-    
-    console.log('[Webhook] Assinatura validada com sucesso');
-    console.log('[Webhook] Body:', JSON.stringify(body));
 
     const topic = body.topic || body.action || body.type;
     
@@ -419,14 +393,13 @@ export async function POST(req: NextRequest) {
       resourceId = parts[parts.length - 1];
     }
     
-    console.log(`[v0] DEBUG - topic: ${topic}, resourceId: ${resourceId}`);
 
     if (!resourceId) {
-      console.log('[MercadoPago Webhook] ID do recurso nao encontrado, body:', JSON.stringify(body));
+      console.log('[Webhook] ID do recurso nao encontrado — notificacao ignorada');
       return NextResponse.json({ received: true });
     }
     
-    console.log(`[v0] Processando evento - topic: ${topic}`);
+    console.log(`[Webhook] Evento recebido - topic: ${topic}, id: ${resourceId}`);
 
     // ============================================================
     // EVENTOS DE SUBSCRIPTION (preapproval)
@@ -441,7 +414,6 @@ export async function POST(req: NextRequest) {
     // ============================================================
     if (topic === 'payment' || topic === 'payment.created' || topic === 'payment.updated') {
       const paymentId = String(resourceId);
-      console.log(`[v0] Webhook payment recebido: paymentId=${paymentId}`);
       
       // ============================================================
       // PRIMEIRO: Verificar se e pagamento PIX de SIGNUP
@@ -455,22 +427,19 @@ export async function POST(req: NextRequest) {
           const paymentCheck = await mpCheckResponse.json();
           const externalRef = paymentCheck.external_reference || '';
           
-          console.log(`[v0] DEBUG - paymentCheck.status: ${paymentCheck.status}`);
-          console.log(`[v0] DEBUG - externalRef: ${externalRef}`);
-          
           // Se external_reference e JSON e pagamento aprovado, e signup PIX
           if (externalRef.startsWith('{') && paymentCheck.status === 'approved') {
-            console.log('[v0] Detectado pagamento PIX de signup!');
-            
             try {
               const signupData = JSON.parse(externalRef);
-              console.log('[v0] signupData:', JSON.stringify(signupData));
-              
+
               if (signupData.token && signupData.email && signupData.tipo === 'pix') {
+                if (await isSignupPaymentProcessed(String(paymentCheck.id), String(signupData.token))) {
+                  console.log(`[Webhook] Signup PIX do pagamento ${paymentCheck.id} ja processado — ignorado`);
+                  return NextResponse.json({ received: true, processed: 'pix_signup_duplicate' });
+                }
                 const { createPendingSignup } = await import('@/app/actions/signup');
                 const { sendWelcomeSignupMessage } = await import('@/app/actions/whatsapp');
                 
-                console.log('[v0] Criando pending signup...');
                 await createPendingSignup({
                   token: signupData.token,
                   email: signupData.email,
@@ -480,10 +449,9 @@ export async function POST(req: NextRequest) {
                   mp_payment_id: String(paymentCheck.id),
                 });
                 
-                console.log('[v0] Enviando WhatsApp para:', signupData.telefone);
                 await sendWelcomeSignupMessage(signupData.telefone, signupData.nome, signupData.token);
-                
-                console.log('[v0] PIX signup processado com sucesso!');
+
+                console.log(`[Webhook] Signup PIX processado (pagamento ${paymentCheck.id})`);
                 return NextResponse.json({ received: true, processed: 'pix_signup' });
               }
               
@@ -493,11 +461,15 @@ export async function POST(req: NextRequest) {
                 signupData.plano &&
                 (signupData.tipo === 'pix_mensal' || signupData.tipo === 'checkout_mensal')
               ) {
-                console.log(`[v0] Detectado pagamento mensal (${signupData.tipo}) para empresa:`, signupData.empresaId);
-                
+                console.log(`[Webhook] Pagamento mensal (${signupData.tipo}) para empresa ${signupData.empresaId}`);
+
                 try {
                   const empresaId = signupData.empresaId;
                   const plano = signupData.plano;
+                  if (await isSubscriptionPaymentProcessed(Number(empresaId), String(paymentCheck.id))) {
+                    console.log(`[Webhook] Pagamento ${paymentCheck.id} ja processado — ignorado`);
+                    return NextResponse.json({ received: true, processed: `${signupData.tipo}_duplicate` });
+                  }
                   const hoje = new Date();
                   const proximaCobranca = new Date(hoje);
                   proximaCobranca.setMonth(proximaCobranca.getMonth() + 1);
@@ -522,7 +494,7 @@ export async function POST(req: NextRequest) {
                       WHERE empresa_id = $4
                     `, [plano, String(paymentCheck.id), proximaCobranca.toISOString(), empresaId, paymentCheck.transaction_amount || 0]);
                     
-                    console.log('[v0] Assinatura atualizada para empresa:', empresaId);
+                    console.log('[Webhook] Assinatura atualizada para empresa:', empresaId);
                   } else {
                     // Cria nova assinatura
                     await pg.query(`
@@ -546,16 +518,16 @@ export async function POST(req: NextRequest) {
                       'PIX'
                     ]);
                     
-                    console.log('[v0] Nova assinatura criada para empresa:', empresaId);
+                    console.log('[Webhook] Nova assinatura criada para empresa:', empresaId);
                   }
 
                   // Pagamento aprovado: liberar acesso (desbloqueia se estava
                   // bloqueada por inadimplencia e alinha plano/vencimento).
                   try {
                     await unblockCompany(empresaId, plano);
-                    console.log('[v0] Empresa desbloqueada apos pagamento mensal:', empresaId);
+                    console.log('[Webhook] Empresa desbloqueada apos pagamento mensal:', empresaId);
                   } catch (unblockError) {
-                    console.error('[v0] Erro ao desbloquear empresa (mensal):', unblockError);
+                    console.error('[Webhook] Erro ao desbloquear empresa (mensal):', unblockError);
                   }
 
                   // Aviso de pagamento no Discord
@@ -574,21 +546,21 @@ export async function POST(req: NextRequest) {
                       metodoPagamento: paymentCheck.payment_type_id || 'PIX',
                     });
                   } catch (discordError) {
-                    console.error('[v0] Erro ao notificar Discord (mensal):', discordError);
+                    console.error('[Webhook] Erro ao notificar Discord (mensal):', discordError);
                   }
 
                   return NextResponse.json({ received: true, processed: signupData.tipo });
                 } catch (pixError) {
-                  console.error('[v0] Erro ao processar PIX mensal:', pixError);
+                  console.error('[Webhook] Erro ao processar PIX mensal:', pixError);
                 }
               }
             } catch (parseError) {
-              console.log('[v0] Erro ao processar signup PIX:', parseError);
+              console.error('[Webhook] external_reference invalido no pagamento', paymentCheck.id);
             }
           }
         }
       } catch (checkError) {
-        console.log('[v0] Erro ao verificar pagamento:', checkError);
+        console.error('[Webhook] Erro ao verificar pagamento:', (checkError as Error)?.message);
       }
       
       // Verifica se e pagamento de subscription
@@ -631,31 +603,26 @@ export async function POST(req: NextRequest) {
       }
 
       const paymentData = await mpResponse.json() as MPPaymentData;
-      console.log(`[MercadoPago Webhook] Pagamento ${paymentId}: status=${paymentData.status}, external_reference=${paymentData.external_reference}`);
+      console.log(`[Webhook] Pagamento ${paymentId}: status=${paymentData.status}`);
 
       // ============================================================
       // VERIFICAR SE E UM PAGAMENTO PIX DE SIGNUP (external_reference e JSON)
       // ============================================================
       const externalRef = paymentData.external_reference || '';
       
-      console.log('[v0] DEBUG - externalRef:', externalRef);
-      console.log('[v0] DEBUG - status:', paymentData.status);
-      console.log('[v0] DEBUG - startsWithBracket:', externalRef.startsWith('{'));
-      
       if (externalRef.startsWith('{') && paymentData.status === 'approved') {
-        console.log('[v0] DEBUG - Entrou no bloco PIX signup');
         try {
           const signupData = JSON.parse(externalRef);
-          console.log('[v0] DEBUG - signupData parsed:', JSON.stringify(signupData));
-          
+
           if (signupData.token && signupData.email && signupData.tipo === 'pix') {
-            console.log('[v0] Pagamento PIX de signup detectado:', signupData.email);
+            if (await isSignupPaymentProcessed(String(paymentData.id), String(signupData.token))) {
+              return NextResponse.json({ received: true, processed: 'pix_signup_duplicate' });
+            }
             
             // Importar funcoes necessarias
             const { createPendingSignup } = await import('@/app/actions/signup');
             const { sendWelcomeSignupMessage } = await import('@/app/actions/whatsapp');
             
-            console.log('[v0] DEBUG - Criando pending signup...');
             // Criar pending signup
             await createPendingSignup({
               token: signupData.token,
@@ -665,20 +632,14 @@ export async function POST(req: NextRequest) {
               plano: signupData.plano,
               mp_payment_id: String(paymentData.id),
             });
-            console.log('[v0] DEBUG - Pending signup criado');
-            
-            console.log('[v0] DEBUG - Enviando WhatsApp para:', signupData.telefone);
             // Enviar WhatsApp com link de ativacao
-            const whatsappResult = await sendWelcomeSignupMessage(signupData.telefone, signupData.nome, signupData.token);
-            console.log('[v0] DEBUG - WhatsApp enviado, resultado:', whatsappResult);
-            
-            console.log('[v0] PIX signup processado com sucesso:', signupData.email);
+            await sendWelcomeSignupMessage(signupData.telefone, signupData.nome, signupData.token);
+
+            console.log(`[Webhook] Signup PIX processado (pagamento ${paymentData.id})`);
             return NextResponse.json({ received: true, processed: 'pix_signup' });
-          } else {
-            console.log('[v0] DEBUG - Condicao nao atendida: token=', !!signupData.token, 'email=', !!signupData.email, 'tipo=', signupData.tipo);
           }
-        } catch (parseError) {
-          console.log('[v0] DEBUG - Erro ao parsear JSON:', parseError);
+        } catch {
+          console.error('[Webhook] external_reference invalido no pagamento', paymentData.id);
         }
       }
 
@@ -700,6 +661,12 @@ export async function POST(req: NextRequest) {
       }
 
       // Verificar se o pagamento foi aprovado
+      const statusPagamentoAtual = (order as OrderData & { status_pagamento?: string }).status_pagamento;
+      if (paymentData.status === 'approved' && statusPagamentoAtual === 'aprovado') {
+        console.log(`[Webhook] Pedido ${orderId} ja aprovado — notificacao duplicada ignorada`);
+        return NextResponse.json({ received: true, processed: 'order_duplicate' });
+      }
+
       if (paymentData.status === 'approved') {
         // IMPORTANTE: Atualiza AMBOS os campos:
         // - status_pagamento: 'aprovado' (para controle interno)
@@ -743,7 +710,7 @@ export async function POST(req: NextRequest) {
     // ============================================================
     if (topic === 'merchant_order' || topic === 'topic_merchant_order_wh') {
       const orderId = String(resourceId);
-      console.log(`[v0] Webhook merchant_order recebido: orderId=${orderId}`);
+      console.log(`[Webhook] Webhook merchant_order recebido: orderId=${orderId}`);
       
       try {
         // Buscar detalhes da merchant order
@@ -753,8 +720,7 @@ export async function POST(req: NextRequest) {
         
         if (moResponse.ok) {
           const merchantOrder = await moResponse.json();
-          console.log('[v0] Merchant order status:', merchantOrder.status);
-          console.log('[v0] Merchant order external_reference:', merchantOrder.external_reference);
+          console.log(`[Webhook] Merchant order ${orderId}: status=${merchantOrder.status}`);
           
           // Verificar se a order esta closed (paga)
           if (merchantOrder.status === 'closed' && merchantOrder.payments?.length > 0) {
@@ -762,7 +728,6 @@ export async function POST(req: NextRequest) {
             
             if (approvedPayment) {
               const externalRef = merchantOrder.external_reference || '';
-              console.log('[v0] Pagamento aprovado encontrado, external_reference:', externalRef);
               
               // Verificar se e PIX mensal
               if (externalRef.startsWith('{')) {
@@ -774,10 +739,13 @@ export async function POST(req: NextRequest) {
                     signupData.plano &&
                     (signupData.tipo === 'pix_mensal' || signupData.tipo === 'checkout_mensal')
                   ) {
-                    console.log(`[v0] Processando pagamento mensal (${signupData.tipo}) via merchant_order para empresa:`, signupData.empresaId);
+                    console.log(`[Webhook] Processando pagamento mensal (${signupData.tipo}) via merchant_order para empresa:`, signupData.empresaId);
                     
                     const empresaId = signupData.empresaId;
                     const plano = signupData.plano;
+                    if (await isSubscriptionPaymentProcessed(Number(empresaId), String(approvedPayment.id))) {
+                      return NextResponse.json({ received: true, processed: `${signupData.tipo}_duplicate` });
+                    }
                     const hoje = new Date();
                     const proximaCobranca = new Date(hoje);
                     proximaCobranca.setMonth(proximaCobranca.getMonth() + 1);
@@ -802,7 +770,7 @@ export async function POST(req: NextRequest) {
                         WHERE empresa_id = $4
                       `, [plano, String(approvedPayment.id), proximaCobranca.toISOString(), empresaId, approvedPayment.transaction_amount || 0]);
                       
-                      console.log('[v0] Assinatura atualizada via merchant_order para empresa:', empresaId);
+                      console.log('[Webhook] Assinatura atualizada via merchant_order para empresa:', empresaId);
                     } else {
                       // Cria nova assinatura
                       await pg.query(`
@@ -826,7 +794,7 @@ export async function POST(req: NextRequest) {
                         'PIX'
                       ]);
                       
-                      console.log('[v0] Nova assinatura criada via merchant_order para empresa:', empresaId);
+                      console.log('[Webhook] Nova assinatura criada via merchant_order para empresa:', empresaId);
                     }
 
                     // Pagamento aprovado: liberar acesso (desbloqueia se estava
@@ -835,9 +803,9 @@ export async function POST(req: NextRequest) {
                     // Mercado Pago entregar apenas a notificacao de merchant_order.
                     try {
                       await unblockCompany(empresaId, plano);
-                      console.log('[v0] Empresa desbloqueada apos pagamento mensal (merchant_order):', empresaId);
+                      console.log('[Webhook] Empresa desbloqueada apos pagamento mensal (merchant_order):', empresaId);
                     } catch (unblockError) {
-                      console.error('[v0] Erro ao desbloquear empresa (merchant_order):', unblockError);
+                      console.error('[Webhook] Erro ao desbloquear empresa (merchant_order):', unblockError);
                     }
 
                     // Aviso de pagamento no Discord
@@ -856,7 +824,7 @@ export async function POST(req: NextRequest) {
                         metodoPagamento: signupData.tipo === 'pix_mensal' ? 'PIX' : 'Checkout',
                       });
                     } catch (discordError) {
-                      console.error('[v0] Erro ao notificar Discord (merchant_order):', discordError);
+                      console.error('[Webhook] Erro ao notificar Discord (merchant_order):', discordError);
                     }
 
                     return NextResponse.json({ received: true, processed: `${signupData.tipo}_merchant_order` });
@@ -864,7 +832,9 @@ export async function POST(req: NextRequest) {
                   
                   // PIX de signup
                   if (signupData.token && signupData.email && signupData.tipo === 'pix') {
-                    console.log('[v0] Processando PIX signup via merchant_order');
+                    if (await isSignupPaymentProcessed(String(approvedPayment.id), String(signupData.token))) {
+                      return NextResponse.json({ received: true, processed: 'pix_signup_duplicate' });
+                    }
                     
                     const { createPendingSignup } = await import('@/app/actions/signup');
                     const { sendWelcomeSignupMessage } = await import('@/app/actions/whatsapp');
@@ -880,18 +850,18 @@ export async function POST(req: NextRequest) {
                     
                     await sendWelcomeSignupMessage(signupData.telefone, signupData.nome, signupData.token);
                     
-                    console.log('[v0] PIX signup processado via merchant_order');
+                    console.log('[Webhook] PIX signup processado via merchant_order');
                     return NextResponse.json({ received: true, processed: 'pix_signup_merchant_order' });
                   }
                 } catch (parseError) {
-                  console.log('[v0] Erro ao parsear external_reference:', parseError);
+                  console.error('[Webhook] external_reference invalido na merchant order', orderId);
                 }
               }
             }
           }
         }
       } catch (moError) {
-        console.error('[v0] Erro ao processar merchant_order:', moError);
+        console.error('[Webhook] Erro ao processar merchant_order:', moError);
       }
       
       return NextResponse.json({ received: true });
@@ -901,7 +871,7 @@ export async function POST(req: NextRequest) {
     console.log(`[MercadoPago Webhook] Topic ignorado: ${topic}`);
     return NextResponse.json({ received: true, ignored: topic });
   } catch (error: any) {
-    console.error('[MercadoPago Webhook] Erro:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('[Webhook] Erro interno:', error?.message);
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
 }

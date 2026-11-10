@@ -1,6 +1,7 @@
 'use server';
 
 import { pg } from '@/lib/postgres';
+import { requireAdminSession } from '@/lib/admin-session';
 import {
   REMARKETING_CONTATOS_TABLE,
   REMARKETING_MENSAGENS_TABLE,
@@ -31,6 +32,7 @@ export async function getFunilContatos(): Promise<{
   estagios?: Record<FunilEstagio, FunilContato[]>;
   error?: string;
 }> {
+  await requireAdminSession();
   try {
     const contatos = await pg.raw<FunilContato>(`
       SELECT id, remote_jid, telefone, nome, foto_url, estagio, estagio_desde,
@@ -124,6 +126,7 @@ export async function moverContatoEstagio(
   estagio: FunilEstagio,
   ordem = 0,
 ): Promise<{ success: boolean; error?: string }> {
+  await requireAdminSession();
   try {
     if (!FUNIL_ESTAGIOS.includes(estagio)) {
       return { success: false, error: 'Estagio invalido' };
@@ -191,6 +194,7 @@ export async function getCadencias(): Promise<{
   cadencias?: Cadencia[];
   error?: string;
 }> {
+  await requireAdminSession();
   try {
     const cadencias = await pg.raw<Cadencia>(`
       SELECT c.*,
@@ -219,6 +223,7 @@ export async function upsertCadencia(data: {
   modo?: 'auto' | 'aprovacao';
   ativo?: boolean;
 }): Promise<{ success: boolean; cadencia?: Cadencia; error?: string }> {
+  await requireAdminSession();
   try {
     const payload = {
       estagio: data.estagio,
@@ -249,6 +254,7 @@ export async function upsertCadencia(data: {
 }
 
 export async function deleteCadencia(id: number): Promise<{ success: boolean; error?: string }> {
+  await requireAdminSession();
   try {
     await pg.delete(REMARKETING_CADENCIAS_TABLE, id);
     return { success: true };
@@ -267,6 +273,7 @@ export async function getFilaAprovacao(): Promise<{
   itens?: FilaAprovacaoItem[];
   error?: string;
 }> {
+  await requireAdminSession();
   try {
     const itens = await pg.raw<FilaAprovacaoItem>(`
       SELECT f.id, f.contato_id, f.mensagem_id, f.conteudo_final, f.tipo_midia,
@@ -290,6 +297,7 @@ export async function getFilaAprovacao(): Promise<{
  * Aprova um envio: libera o item para o cron processar (status -> pendente).
  */
 export async function aprovarEnvio(filaId: number): Promise<{ success: boolean; error?: string }> {
+  await requireAdminSession();
   try {
     await pg.raw(`
       UPDATE "${REMARKETING_FILA_TABLE}"
@@ -314,6 +322,7 @@ export async function aprovarEnvio(filaId: number): Promise<{ success: boolean; 
  * Rejeita um envio: cancela o item da fila e o registro de cadencia.
  */
 export async function rejeitarEnvio(filaId: number): Promise<{ success: boolean; error?: string }> {
+  await requireAdminSession();
   try {
     await pg.update(REMARKETING_FILA_TABLE, filaId, { status: 'cancelado' });
 
@@ -345,6 +354,7 @@ export async function getMensagensFunil(): Promise<{
   mensagens?: { id: number; nome: string; conteudo: string }[];
   error?: string;
 }> {
+  await requireAdminSession();
   try {
     const mensagens = await pg.raw<{ id: number; nome: string; conteudo: string }>(`
       SELECT id, nome, conteudo
