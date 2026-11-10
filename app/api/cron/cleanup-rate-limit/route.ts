@@ -5,8 +5,13 @@ const CRON_SECRET = process.env.CRON_SECRET;
 
 export async function GET(req: NextRequest) {
   // Verificar autorizacao do cron
+  if (!CRON_SECRET) {
+    console.warn('[Cron] CRON_SECRET nao configurado — negando acesso por seguranca');
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   const authHeader = req.headers.get('authorization');
-  if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
+  const cronKey = req.headers.get('x-cron-key');
+  if (authHeader !== `Bearer ${CRON_SECRET}` && cronKey !== CRON_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
