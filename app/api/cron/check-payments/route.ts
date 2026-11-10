@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pg } from '@/lib/postgres';
 import { blockCompany, updatePaymentStatus } from '@/app/actions/billing';
-import { sendPaymentReminder } from '@/app/actions/whatsapp';
+import { sendPaymentReminder, sendTrialExpiredMessage } from '@/app/actions/whatsapp';
 import { logCronRun } from '@/lib/cron-logger';
 
 // Protege o endpoint com uma chave secreta
@@ -40,6 +40,9 @@ async function handleCheckPayments(request: NextRequest) {
     // Alinhado com o texto do painel e a sequencia de avisos (dias 1-4 avisam,
     // dia 5 bloqueia).
     const DIAS_PARA_BLOQUEIO = 5;
+    // Trial (assinatura com valor 0): sem avisos de cobranca; bloqueia 2 dias
+    // apos o fim do teste. O aviso de vespera sai pelo cron billing-reminder.
+    const DIAS_PARA_BLOQUEIO_TRIAL = 2;
 
     // Buscar empresas com pagamento PIX ou cartao que ja passaram do vencimento.
     // A data de referencia e a `data_proxima_cobranca` da assinatura mais recente
@@ -49,18 +52,25 @@ async function handleCheckPayments(request: NextRequest) {
     const result = await pg.query(`
       SELECT
         e.*,
+        a.id AS assinatura_id,
         a.plano AS assinatura_plano,
         a.valor AS assinatura_valor,
+        (a.id IS NOT NULL AND COALESCE(a.valor, 0) <= 0) AS is_trial,
         COALESCE(a.data_proxima_cobranca::date, e.data_vencimento::date) AS vencimento_efetivo
       FROM empresas e
       LEFT JOIN LATERAL (
-        SELECT data_proxima_cobranca, plano, valor
+        SELECT id, data_proxima_cobranca, plano, valor
         FROM assinaturas
         WHERE empresa_id = e.id
         ORDER BY id DESC
         LIMIT 1
       ) a ON true
-      WHERE e.tipo_pagamento IN ('pix', 'cartao')
+      WHERE (
+          e.tipo_pagamento IN ('pix', 'cartao')
+          -- Trial pode nao ter tipo_pagamento definido
+          OR (a.id IS NOT NULL AND COALESCE(a.valor, 0) <= 0)
+        )
+        AND COALESCE(e.conta_teste, false) = false
         -- Plano efetivo: prioriza o da assinatura (fonte da verdade) e cai no
         -- da empresa. IS DISTINCT FROM trata NULL corretamente (NULL entra),
         -- evitando excluir silenciosamente quem tem plano nao preenchido.
@@ -76,6 +86,7 @@ async function handleCheckPayments(request: NextRequest) {
     let processed = 0;
     let blocked = 0;
     let notified = 0;
+    let trialsExpirados = 0;
     
     for (const empresa of empresas) {
       const empresaId = empresa.id as number;
@@ -96,6 +107,31 @@ async function handleCheckPayments(request: NextRequest) {
         continue;
       }
       
+      if (empresa.is_trial) {
+        if (diasAtraso < DIAS_PARA_BLOQUEIO_TRIAL) {
+          continue;
+        }
+
+        console.log(`[Cron] Trial expirado: bloqueando empresa ${empresaId} (${diasAtraso} dias apos o fim do teste)`);
+        await blockCompany(empresaId);
+        await pg.query(
+          `UPDATE assinaturas SET status = 'cancelled', updated_at = NOW() WHERE id = $1`,
+          [empresa.assinatura_id]
+        );
+
+        const telefoneTrial = (empresa.telefone_loja || empresa.telefone) as string | undefined;
+        if (telefoneTrial) {
+          const nome = (empresa.nome_fantasia || empresa.nome_admin || 'Cliente') as string;
+          const enviado = await sendTrialExpiredMessage(telefoneTrial, nome, empresaId);
+          if (enviado) notified++;
+          else console.warn(`[Cron] Falha ao enviar aviso de fim de trial para empresa ${empresaId}`);
+        }
+
+        trialsExpirados++;
+        blocked++;
+        continue;
+      }
+
       // Calcular dias de inadimplencia
       const diasInadimplente = Math.max(0, diasAtraso);
       const ultimoAviso = (empresa.ultimo_aviso_enviado as number) || 0;
@@ -155,7 +191,7 @@ async function handleCheckPayments(request: NextRequest) {
     
     console.log(`[Cron] Finalizado: ${processed} processadas, ${notified} notificadas, ${blocked} bloqueadas`);
     
-    const summary = { processed, notified, blocked, total: empresas.length };
+    const summary = { processed, notified, blocked, trialsExpirados, total: empresas.length };
 
     await logCronRun({
       jobName: 'check-payments',

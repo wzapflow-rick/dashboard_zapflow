@@ -114,9 +114,16 @@ export async function getEmpresas(page = 1, limit = 20, search = '') {
     const offset = (page - 1) * limit;
     
     let query = `
-      SELECT e.*, a.plano as assinatura_plano, a.status as assinatura_status, a.data_proxima_cobranca
+      SELECT e.*, a.plano as assinatura_plano, a.status as assinatura_status,
+             a.valor as assinatura_valor, a.data_proxima_cobranca
       FROM empresas e
-      LEFT JOIN assinaturas a ON e.id = a.empresa_id AND a.status = 'authorized'
+      LEFT JOIN LATERAL (
+        SELECT plano, status, valor, data_proxima_cobranca
+        FROM assinaturas
+        WHERE empresa_id = e.id
+        ORDER BY id DESC
+        LIMIT 1
+      ) a ON true
     `;
     
     const params: any[] = [];
