@@ -1,6 +1,7 @@
 'use server';
 
 import { pg } from '@/lib/postgres';
+import { getPlatformMpAccessToken } from '@/lib/mercadopago-token';
 import db from '@/lib/db';
 import { 
   SUBSCRIPTION_PLANS,
@@ -19,7 +20,7 @@ function hashPassword(password: string): string {
   return bcrypt.hashSync(password, 10);
 }
 
-const MP_ACCESS_TOKEN = process.env.MERCADOPAGO_ACCESS_TOKEN || '';
+const MP_ACCESS_TOKEN = getPlatformMpAccessToken();
 
 // ============================================================
 // TIPOS
