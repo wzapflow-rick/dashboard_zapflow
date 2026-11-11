@@ -189,9 +189,21 @@ async function handleCheckPayments(request: NextRequest) {
       processed++;
     }
     
-    console.log(`[Cron] Finalizado: ${processed} processadas, ${notified} notificadas, ${blocked} bloqueadas`);
+    let cadastrosExpirados = 0;
+    try {
+      const expirados = await pg.query(
+        `UPDATE pending_signups SET status = 'expired'
+         WHERE status = 'pending' AND expira_em < NOW()
+         RETURNING id`
+      );
+      cadastrosExpirados = expirados.rows.length;
+    } catch (expError) {
+      console.error('[Cron] Erro ao expirar cadastros pendentes:', expError);
+    }
+
+    console.log(`[Cron] Finalizado: ${processed} processadas, ${notified} notificadas, ${blocked} bloqueadas, ${cadastrosExpirados} cadastros expirados`);
     
-    const summary = { processed, notified, blocked, trialsExpirados, total: empresas.length };
+    const summary = { processed, notified, blocked, trialsExpirados, cadastrosExpirados, total: empresas.length };
 
     await logCronRun({
       jobName: 'check-payments',
