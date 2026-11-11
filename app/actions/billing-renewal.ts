@@ -1,9 +1,10 @@
 'use server';
 
 import { pg } from '@/lib/postgres';
+import { getPlatformMpAccessToken } from '@/lib/mercadopago-token';
 import { SUBSCRIPTION_PLANS, normalizePlanName } from '@/lib/constants';
 
-const MP_ACCESS_TOKEN = process.env.MERCADOPAGO_ACCESS_TOKEN || '';
+const MP_ACCESS_TOKEN = getPlatformMpAccessToken();
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://cardapio.wzapflow.com.br';
 
 /**

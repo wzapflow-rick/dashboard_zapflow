@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pg } from '@/lib/postgres';
+import { getPlatformMpAccessToken, fetchPlatformPayment } from '@/lib/mercadopago-token';
 import {
   getAssinaturaByMpSubscriptionId,
   createAssinatura,
@@ -9,7 +10,7 @@ import { notifyPayment } from '@/lib/discord';
 import { unblockCompany } from '@/app/actions/billing';
 import { validateMercadoPagoSignature } from '@/lib/mercadopago-signature';
 
-const MP_ACCESS_TOKEN_FALLBACK = process.env.MP_ACCESS_TOKEN || '';
+const MP_ACCESS_TOKEN_FALLBACK = getPlatformMpAccessToken();
 const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET || '';
 
 function validateWebhookSignature(
@@ -197,18 +198,12 @@ async function handleSubscriptionPayment(paymentId: string) {
   console.log(`[Webhook] Processando pagamento de subscription: ${paymentId}`);
   
   try {
-    const mpResponse = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-      headers: {
-        'Authorization': `Bearer ${MP_ACCESS_TOKEN_FALLBACK}`,
-      },
-    });
+    const paymentData = await fetchPlatformPayment(paymentId);
 
-    if (!mpResponse.ok) {
-      console.error('[Webhook] Erro ao buscar pagamento:', mpResponse.status);
+    if (!paymentData) {
+      console.error('[Webhook] Pagamento de subscription não encontrado:', paymentId);
       return;
     }
-
-    const paymentData = await mpResponse.json();
     
     // Verifica se e pagamento de subscription
     const externalRef = paymentData.external_reference || '';
@@ -419,13 +414,13 @@ export async function POST(req: NextRequest) {
       // PRIMEIRO: Verificar se e pagamento PIX de SIGNUP
       // ============================================================
       try {
-        const mpCheckResponse = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-          headers: { 'Authorization': `Bearer ${MP_ACCESS_TOKEN_FALLBACK}` },
-        });
-        
-        if (mpCheckResponse.ok) {
-          const paymentCheck = await mpCheckResponse.json();
+        const paymentCheck = await fetchPlatformPayment(paymentId);
+
+        if (paymentCheck) {
           const externalRef = paymentCheck.external_reference || '';
+          console.log(
+            `[Webhook] Pagamento ${paymentId} status=${paymentCheck.status} ref=${externalRef.slice(0, 80)}`
+          );
           
           // Se external_reference e JSON e pagamento aprovado, e signup PIX
           if (externalRef.startsWith('{') && paymentCheck.status === 'approved') {

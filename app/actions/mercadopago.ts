@@ -1,8 +1,9 @@
 'use server';
 
 import { pg } from '@/lib/postgres';
+import { getPlatformMpAccessToken } from '@/lib/mercadopago-token';
 
-const MP_ACCESS_TOKEN_FALLBACK = process.env.MP_ACCESS_TOKEN || '';
+const MP_ACCESS_TOKEN_FALLBACK = getPlatformMpAccessToken();
 const MP_PUBLIC_KEY_FALLBACK = process.env.MP_PUBLIC_KEY || '';
 
 interface PedidoData {
