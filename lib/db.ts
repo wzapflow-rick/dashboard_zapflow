@@ -1,9 +1,18 @@
+import type { Pool } from 'pg';
 import { getPool } from '@/lib/postgres';
 
 // Reaproveita o MESMO pool singleton de lib/postgres.ts. Antes este arquivo
 // criava um segundo Pool independente, dobrando as conexões abertas contra o
 // banco. Agora ambos compartilham uma única instância por processo.
-const pool = getPool();
+// O pool é resolvido sob demanda (Proxy) para não exigir DATABASE_URL durante
+// o build da Vercel, que importa os módulos ao coletar dados das páginas.
+const pool = new Proxy({} as Pool, {
+  get(_target, prop) {
+    const real = getPool();
+    const value = Reflect.get(real, prop, real);
+    return typeof value === 'function' ? value.bind(real) : value;
+  },
+});
 
 // Funcao helper para queries com retry
 export async function query(text: string, params?: any[], retries = 2): Promise<any> {
