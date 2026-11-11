@@ -278,9 +278,9 @@ export async function createEmpresa(data: {
         
         // Criar pending_signup para ativacao
         await db.query(`
-          INSERT INTO pending_signups (token, email, nome, telefone, plano, empresa_id, created_at, expires_at)
-          VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW() + INTERVAL '7 days')
-        `, [token, data.email, data.nome, data.telefone, data.plano || 'parceria', empresaId]);
+          INSERT INTO pending_signups (token, email, nome, telefone, plano, status, criado_em, expira_em)
+          VALUES ($1, $2, $3, $4, $5, 'pending', NOW(), NOW() + INTERVAL '7 days')
+        `, [token, data.email, data.nome, data.telefone, data.plano || 'parceria']);
         
         // Enviar link de ativacao via WhatsApp
         const { sendWelcomeSignupMessage } = await import('./whatsapp');

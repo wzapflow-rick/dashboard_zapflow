@@ -529,6 +529,52 @@ export async function completeSignup(token: string, password: string) {
     }
     
     const hashedPassword = hashPassword(password);
+
+    // Empresas criadas pelo painel admin com link de ativacao ja existem, so
+    // falta a senha. Nesse caso apenas ativamos a conta, sem criar outra.
+    const existente = await db.query(
+      `SELECT id FROM empresas
+       WHERE lower(email) = lower($1) AND senha_hash IS NULL
+       ORDER BY id DESC LIMIT 1`,
+      [signup.email]
+    );
+    const empresaExistenteId = existente.rows[0]?.id as number | undefined;
+
+    if (empresaExistenteId) {
+      await db.query(
+        `UPDATE empresas SET senha_hash = $1, login = $2, updated_at = NOW() WHERE id = $3`,
+        [hashedPassword, signup.email, empresaExistenteId]
+      );
+      await pg.update('pending_signups', signup.id, { status: 'completed' });
+
+      const session = await encrypt({
+        userId: empresaExistenteId,
+        email: signup.email,
+        empresaId: empresaExistenteId,
+        nome: signup.nome,
+        onboarded: false,
+        controle_estoque: false,
+        role: 'admin',
+        source: 'empresa',
+        bloqueado: false,
+      });
+      const cookieStore = await cookies();
+      cookieStore.set('session', session, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24,
+        path: '/',
+      });
+
+      return {
+        success: true,
+        empresaId: empresaExistenteId,
+        email: signup.email,
+        nome: signup.nome,
+        plano: signup.plano,
+      };
+    }
     
     const empresa = await pg.create('empresas', {
       email: signup.email,
