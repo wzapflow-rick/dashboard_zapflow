@@ -70,7 +70,12 @@ async function handleCheckPayments(request: NextRequest) {
           -- Trial pode nao ter tipo_pagamento definido
           OR (a.id IS NOT NULL AND COALESCE(a.valor, 0) <= 0)
         )
-        AND COALESCE(e.conta_teste, false) = false
+        -- Contas de teste ficam fora da cobranca, mas trials de teste (ex.: Demo
+        -- de Cardapio) continuam expirando para nao ficarem no ar para sempre.
+        AND (
+          COALESCE(e.conta_teste, false) = false
+          OR (a.id IS NOT NULL AND COALESCE(a.valor, 0) <= 0)
+        )
         -- Plano efetivo: prioriza o da assinatura (fonte da verdade) e cai no
         -- da empresa. IS DISTINCT FROM trata NULL corretamente (NULL entra),
         -- evitando excluir silenciosamente quem tem plano nao preenchido.
@@ -120,7 +125,7 @@ async function handleCheckPayments(request: NextRequest) {
         );
 
         const telefoneTrial = (empresa.telefone_loja || empresa.telefone) as string | undefined;
-        if (telefoneTrial) {
+        if (telefoneTrial && !empresa.conta_teste) {
           const nome = (empresa.nome_fantasia || empresa.nome_admin || 'Cliente') as string;
           const enviado = await sendTrialExpiredMessage(telefoneTrial, nome, empresaId);
           if (enviado) notified++;

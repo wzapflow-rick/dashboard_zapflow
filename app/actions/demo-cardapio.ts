@@ -153,8 +153,8 @@ export async function criarDemoCardapio(input: {
 
         // 1. Cria a empresa (trial). telefone_loja recebe o telefone do prospect, se houver.
         const empresaResult = await db.query(
-            `INSERT INTO empresas (nome_fantasia, telefone_loja, nome_admin, ativo, created_at, updated_at)
-             VALUES ($1, $2, $3, TRUE, NOW(), NOW())
+  `INSERT INTO empresas (nome_fantasia, telefone_loja, nome_admin, ativo, conta_teste, created_at, updated_at)
+  VALUES ($1, $2, $3, TRUE, TRUE, NOW(), NOW())
              RETURNING id`,
             [nomeLoja, input.telefone || null, nomeLoja]
         );
