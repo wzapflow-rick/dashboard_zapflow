@@ -66,9 +66,14 @@ interface Empresa {
   telefone_loja: string | null;
 }
 
-/** Remove caracteres nao numericos do telefone. */
+/**
+ * Normaliza para o formato do WhatsApp (55 + DDD + numero).
+ * telefone_loja costuma vir sem o 55, o que gerava remote_jid invalido.
+ */
 function normalizarTelefone(tel: string | null): string {
-  return (tel || '').replace(/\D/g, '');
+  const digitos = (tel || '').replace(/\D/g, '');
+  if (digitos.length === 10 || digitos.length === 11) return `55${digitos}`;
+  return digitos;
 }
 
 /** Substitui variaveis {{nome}} / {{telefone}} no template. */
@@ -110,13 +115,14 @@ async function handleRequest(cronKey: string | null, authHeader: string | null) 
   const assinaturas = await listAssinaturasAtivas();
 
   for (const ass of assinaturas) {
-    // Trial = assinatura gratuita (valor 0). Os trials sao criados com valor 0
-    // e cartao_bandeira 'TRIA' (signup-trial) ou 'Trial' (concessao via admin).
-    // Clientes pagantes tem valor > 0. Usamos o valor como sinal principal e a
-    // bandeira como fallback para cobrir os dois fluxos de criacao.
+    // listAssinaturasAtivas vem ordenada por created_at DESC: a primeira de cada
+    // empresa e a vigente; as demais sao historico e nao devem sobrescrever o marco.
+    if (marcoPorEmpresa.has(ass.empresa_id)) continue;
+
+    // Trial = assinatura gratuita (valor 0), mesma regra do check-payments.
+    // A bandeira 'Trial' nao serve de sinal: pagantes migrados do trial a mantem.
     const valorNum = Number(ass.valor) || 0;
-    const bandeira = (ass.cartao_bandeira || '').toUpperCase();
-    const ehTrial = valorNum <= 0 || bandeira === 'TRIA' || bandeira === 'TRIAL';
+    const ehTrial = valorNum <= 0;
     const estagio: 'trial' | 'cliente' = ehTrial ? 'trial' : 'cliente';
     const dataInicio = ass.data_inicio ? new Date(ass.data_inicio).getTime() : agora;
     marcoPorEmpresa.set(ass.empresa_id, { dataInicio, estagio });
@@ -133,10 +139,12 @@ async function handleRequest(cronKey: string | null, authHeader: string | null) 
     const remoteJid = `${telefone}@s.whatsapp.net`;
 
     // Procura contato ja vinculado a empresa, ou pelo telefone
+    // Compara pelos 11 ultimos digitos: contatos antigos podem estar com ou sem o 55
     const existente = await pg.raw<Contato>(`
       SELECT id, estagio, empresa_id FROM "${REMARKETING_CONTATOS_TABLE}"
-      WHERE empresa_id = $1 OR telefone = $2
-      ORDER BY (empresa_id = $1) DESC
+      WHERE empresa_id = $1
+         OR right(regexp_replace(telefone, '\\D', '', 'g'), 11) = right($2, 11)
+      ORDER BY (empresa_id = $1) DESC NULLS LAST
       LIMIT 1
     `, [ass.empresa_id, telefone]);
 
@@ -177,6 +185,23 @@ async function handleRequest(cronKey: string | null, authHeader: string | null) 
         contatosSincronizados++;
       }
     }
+  }
+
+  // Trial/cliente sem assinatura vigente (trial expirado, cancelado) vai para
+  // 'perdido': sai das cadencias de trial/cliente e nao recebe reativacao.
+  // listAssinaturasAtivas devolve [] em caso de erro; sem essa guarda, uma falha
+  // de consulta rebaixaria todos os clientes para 'perdido'.
+  if (assinaturas.length > 0) {
+    const empresasVigentes = Array.from(marcoPorEmpresa.keys());
+    const perdidos = await pg.raw<{ id: number }>(`
+      UPDATE "${REMARKETING_CONTATOS_TABLE}"
+      SET estagio = 'perdido', estagio_desde = NOW(), updated_at = NOW()
+      WHERE estagio IN ('trial', 'cliente')
+        AND empresa_id IS NOT NULL
+        AND NOT (empresa_id = ANY($1::int[]))
+      RETURNING id
+    `, [empresasVigentes]);
+    contatosSincronizados += perdidos.length;
   }
 
   // ----------------------------------------------------------------
