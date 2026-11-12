@@ -3,12 +3,12 @@ import { pg } from '@/lib/postgres';
 import { listAssinaturasAtivas } from '@/lib/assinaturas';
 import {
   aplicarRodapeOptOut,
-  ehPrimeiroContato,
   podeReceberAutomacao,
   sqlFiltroElegivel,
   type ContatoElegibilidade,
 } from '@/lib/crm-consentimento';
 import { registrarInteracao } from '@/lib/crm-interacoes';
+import { listarContatosTravados } from '@/lib/crm-trava-envio';
 import {
   REMARKETING_CONFIG_TABLE,
   REMARKETING_CONTATOS_TABLE,
@@ -283,8 +283,10 @@ async function handleRequest(cronKey: string | null, authHeader: string | null) 
   // ----------------------------------------------------------------
   let enfileiradosAuto = 0;
   let enfileiradosAprovacao = 0;
+  const contatosTravados = await listarContatosTravados();
 
   for (const contato of contatos) {
+    if (contatosTravados.has(contato.id)) continue;
     const cads = cadenciasPorEstagio.get(contato.estagio);
     if (!cads || cads.length === 0) continue;
 
@@ -350,8 +352,11 @@ async function handleRequest(cronKey: string | null, authHeader: string | null) 
       if (cad.modo === 'auto') enfileiradosAuto++;
       else enfileiradosAprovacao++;
 
-      // Sem consentimento: apenas um primeiro contato; o resto so apos resposta.
-      if (ehPrimeiroContato(contato)) break;
+      // Trava unica: um item por contato por vez; o proximo passo devido entra
+      // numa rodada futura, respeitando o intervalo minimo. Isso tambem cobre o
+      // primeiro contato sem consentimento (o resto so apos resposta).
+      contatosTravados.add(contato.id);
+      break;
     }
   }
 

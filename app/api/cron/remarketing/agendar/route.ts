@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { sqlLivreParaEnvio } from '@/lib/crm-trava-envio';
 import { pg } from '@/lib/postgres';
 import {
   REMARKETING_CONFIG_TABLE,
@@ -129,11 +130,7 @@ async function handleRequest(cronKey: string | null) {
           c.ultima_msg_remarketing IS NULL
           OR c.ultima_msg_remarketing < NOW() - INTERVAL '${categoria.cooldown_horas} hours'
         )
-        AND NOT EXISTS (
-          SELECT 1 FROM "${REMARKETING_FILA_TABLE}" f
-          WHERE f.contato_id = c.id 
-            AND f.status IN ('pendente', 'enviando')
-        )
+        AND ${sqlLivreParaEnvio('c')}
       ORDER BY c.ultima_msg_remarketing NULLS FIRST
       LIMIT $2
     `, [categoria.id, limiteRestante - totalAgendados]);
