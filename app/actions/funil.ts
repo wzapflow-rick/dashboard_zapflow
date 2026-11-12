@@ -3,6 +3,11 @@
 import { pg } from '@/lib/postgres';
 import { requireAdminSession } from '@/lib/admin-session';
 import {
+  DESCRICAO_MOTIVO_BLOQUEIO,
+  motivoBloqueioEnvio,
+  type ContatoElegibilidade,
+} from '@/lib/crm-consentimento';
+import {
   REMARKETING_CONTATOS_TABLE,
   REMARKETING_MENSAGENS_TABLE,
   REMARKETING_FILA_TABLE,
@@ -299,6 +304,17 @@ export async function getFilaAprovacao(): Promise<{
 export async function aprovarEnvio(filaId: number): Promise<{ success: boolean; error?: string }> {
   await requireAdminSession();
   try {
+    const [contato] = await pg.raw<ContatoElegibilidade>(`
+      SELECT c.ativo, c.bloqueado, c.opt_out_em, c.consentimento_status
+      FROM "${REMARKETING_FILA_TABLE}" f
+      JOIN "${REMARKETING_CONTATOS_TABLE}" c ON c.id = f.contato_id
+      WHERE f.id = $1
+    `, [filaId]);
+    const motivo = motivoBloqueioEnvio(contato);
+    if (motivo) {
+      return { success: false, error: DESCRICAO_MOTIVO_BLOQUEIO[motivo] };
+    }
+
     await pg.raw(`
       UPDATE "${REMARKETING_FILA_TABLE}"
       SET status = 'pendente', agendado_para = NOW()

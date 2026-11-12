@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { pg } from '@/lib/postgres';
 import { avaliarRespostaEvolution } from '@/lib/whatsapp-jid';
+import { motivoBloqueioEnvio, type ContatoElegibilidade } from '@/lib/crm-consentimento';
 import {
   REMARKETING_CONFIG_TABLE,
   REMARKETING_CONTATOS_TABLE,
@@ -30,7 +31,7 @@ interface FilaItem {
   max_tentativas: number;
 }
 
-interface Contato {
+interface Contato extends ContatoElegibilidade {
   remote_jid: string;
   nome: string | null;
   telefone: string;
@@ -177,6 +178,16 @@ async function handleRequest(cronKey: string | null) {
         tentativas: item.tentativas + 1,
       });
       totalErros++;
+      continue;
+    }
+
+    // Revalida no momento do envio: opt-out pode ter chegado depois do agendamento.
+    const motivoBloqueio = motivoBloqueioEnvio(contato);
+    if (motivoBloqueio) {
+      await pg.update(REMARKETING_FILA_TABLE, item.id, {
+        status: 'cancelado',
+        erro: motivoBloqueio,
+      });
       continue;
     }
     

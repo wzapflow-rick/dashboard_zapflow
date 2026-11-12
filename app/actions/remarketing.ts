@@ -5,6 +5,12 @@ import { requireAdminSession } from '@/lib/admin-session';
 import { pg } from '@/lib/postgres';
 import { resolverJidWhatsApp, avaliarRespostaEvolution } from '@/lib/whatsapp-jid';
 import {
+  DESCRICAO_MOTIVO_BLOQUEIO,
+  motivoBloqueioEnvio,
+  type ContatoElegibilidade,
+  type MotivoBloqueioEnvio,
+} from '@/lib/crm-consentimento';
+import {
   REMARKETING_CONFIG_TABLE,
   REMARKETING_CATEGORIAS_TABLE,
   REMARKETING_TIPOS_DOR_TABLE,
@@ -115,6 +121,9 @@ export interface RemarketingContato {
   dados_extras: Record<string, unknown> | null;
   ativo: boolean;
   bloqueado: boolean;
+  consentimento_status?: 'concedido' | 'pendente' | 'revogado';
+  consentimento_origem?: string | null;
+  opt_out_em?: string | null;
   created_at: string;
   updated_at: string;
   // Joined
@@ -601,12 +610,20 @@ export async function importarContato(data: {
     }
     
     // Check if already exists
-    const existing = await pg.findOne<RemarketingContato>(REMARKETING_CONTATOS_TABLE, {
-      where: { remote_jid: data.remote_jid }
-    });
+    // Dedup pelo JID ou pelos 11 ultimos digitos: evita criar um contato "limpo"
+    // para um numero que ja pediu SAIR com outro formato de telefone.
+    const encontrados = await pg.raw<RemarketingContato>(
+      `SELECT * FROM "${REMARKETING_CONTATOS_TABLE}"
+        WHERE remote_jid = $1
+           OR (length($2) >= 10 AND right(regexp_replace(telefone, '\\D', '', 'g'), 11) = right($2, 11))
+        ORDER BY (opt_out_em IS NOT NULL) DESC, id ASC
+        LIMIT 1`,
+      [data.remote_jid, telefone],
+    );
+    const existing = encontrados[0];
     
     if (existing) {
-      // Update existing
+      // Atualiza apenas dados cadastrais; bloqueio, opt-out e consentimento sao preservados.
       const contato = await pg.update<RemarketingContato>(REMARKETING_CONTATOS_TABLE, existing.id, {
         nome: data.nome || existing.nome,
         foto_url: data.foto_url || existing.foto_url,
@@ -780,6 +797,58 @@ export async function getFila(page = 1, limit = 50, status?: string): Promise<{
   }
 }
 
+async function motivoBloqueioContato(contatoId: number): Promise<MotivoBloqueioEnvio | null> {
+  const [contato] = await pg.raw<ContatoElegibilidade>(
+    `SELECT ativo, bloqueado, opt_out_em, consentimento_status
+       FROM "${REMARKETING_CONTATOS_TABLE}" WHERE id = $1`,
+    [contatoId],
+  );
+  return motivoBloqueioEnvio(contato);
+}
+
+/**
+ * Registra consentimento comprovado de um contato (ex.: lead que pediu
+ * contato pelo site). Nunca reativa quem pediu descadastro: opt-out so e
+ * revertido se o proprio contato voltar a pedir contato.
+ */
+export async function registrarConsentimento(
+  contatoId: number,
+  origem: string,
+): Promise<{ success: boolean; error?: string }> {
+  const sessao = await requireAdminSession();
+  const origemLimpa = origem.trim().slice(0, 120);
+  if (!origemLimpa) {
+    return { success: false, error: 'Informe a origem do consentimento' };
+  }
+  try {
+    const atualizados = await pg.raw<{ id: number }>(
+      `UPDATE "${REMARKETING_CONTATOS_TABLE}"
+          SET consentimento_status = 'concedido',
+              consentimento_base_legal = 'consentimento',
+              consentimento_origem = $2,
+              consentimento_em = NOW(),
+              updated_at = NOW()
+        WHERE id = $1 AND opt_out_em IS NULL
+        RETURNING id`,
+      [contatoId, origemLimpa],
+    );
+    if (atualizados.length === 0) {
+      return { success: false, error: 'Contato inexistente ou com descadastro ativo' };
+    }
+    await pg.create(REMARKETING_HISTORICO_TABLE, {
+      contato_id: contatoId,
+      tipo: 'consentimento_registrado',
+      descricao: `Consentimento registrado manualmente (${origemLimpa})`,
+      dados: JSON.stringify({ origem: origemLimpa, admin: sessao.username }),
+      created_at: new Date().toISOString(),
+    });
+    return { success: true };
+  } catch (error) {
+    console.error('[Remarketing] Erro ao registrar consentimento:', error);
+    return { success: false, error: 'Erro ao registrar consentimento' };
+  }
+}
+
 export async function addToFila(data: {
   contato_id: number;
   mensagem_id?: number;
@@ -793,6 +862,10 @@ export async function addToFila(data: {
 }): Promise<{ success: boolean; item?: RemarketingFilaItem; error?: string }> {
   await requireAdminSession();
   try {
+    const motivo = await motivoBloqueioContato(data.contato_id);
+    if (motivo) {
+      return { success: false, error: DESCRICAO_MOTIVO_BLOQUEIO[motivo] };
+    }
     const item = await pg.create<RemarketingFilaItem>(REMARKETING_FILA_TABLE, {
       contato_id: data.contato_id,
       mensagem_id: data.mensagem_id || null,
@@ -864,6 +937,15 @@ export async function processarFilaItem(id: number): Promise<{ success: boolean;
     
     if (item.status !== 'pendente' && item.status !== 'erro') {
       return { success: false, error: 'Item ja foi processado ou cancelado' };
+    }
+
+    const motivoBloqueio = await motivoBloqueioContato(item.contato_id);
+    if (motivoBloqueio) {
+      await pg.update(REMARKETING_FILA_TABLE, id, {
+        status: 'cancelado',
+        erro: DESCRICAO_MOTIVO_BLOQUEIO[motivoBloqueio],
+      });
+      return { success: false, error: DESCRICAO_MOTIVO_BLOQUEIO[motivoBloqueio] };
     }
     
     // Buscar config

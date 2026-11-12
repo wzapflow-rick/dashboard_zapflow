@@ -10,12 +10,19 @@ import {
   REMARKETING_FILA_TABLE,
   REMARKETING_HISTORICO_TABLE,
 } from '@/lib/tables';
+import {
+  aplicarRodapeOptOut,
+  podeReceberAutomacao,
+  sqlFiltroElegivel,
+  type ContatoElegibilidade,
+} from '@/lib/crm-consentimento';
 
-interface Contato {
+interface Contato extends ContatoElegibilidade {
   id: number;
   nome: string | null;
   telefone: string;
   ultima_msg_remarketing: string | null;
+  estagio?: string | null;
 }
 
 interface Categoria {
@@ -110,13 +117,13 @@ async function handleRequest(cronKey: string | null) {
     if (totalAgendados >= limiteRestante) break;
     
     // Buscar contatos da categoria que podem receber mensagem (respeitando cooldown)
-    const contatos = await pg.raw<Contato>(`
-      SELECT c.id, c.nome, c.telefone, c.ultima_msg_remarketing
+    const contatosBrutos = await pg.raw<Contato>(`
+      SELECT c.id, c.nome, c.telefone, c.ultima_msg_remarketing, c.estagio,
+             c.ativo, c.bloqueado, c.opt_out_em, c.consentimento_status
       FROM "${REMARKETING_CONTATOS_TABLE}" c
       INNER JOIN "${REMARKETING_CONTATOS_CATEGORIAS_TABLE}" cc ON cc.contato_id = c.id
       WHERE cc.categoria_id = $1
-        AND c.ativo = true
-        AND c.bloqueado = false
+        AND ${sqlFiltroElegivel('c')}
         AND (
           c.ultima_msg_remarketing IS NULL
           OR c.ultima_msg_remarketing < NOW() - INTERVAL '${categoria.cooldown_horas} hours'
@@ -129,6 +136,7 @@ async function handleRequest(cronKey: string | null) {
       ORDER BY c.ultima_msg_remarketing NULLS FIRST
       LIMIT $2
     `, [categoria.id, limiteRestante - totalAgendados]);
+    const contatos = contatosBrutos.filter(podeReceberAutomacao);
     
     let mensagemUsada: string | null = null;
     
@@ -184,6 +192,7 @@ async function handleRequest(cronKey: string | null) {
       } else {
         conteudoFinal = conteudoFinal.replace(/\{\{dias_ausente\}\}/g, '');
       }
+      conteudoFinal = aplicarRodapeOptOut(conteudoFinal, contato.estagio);
       
       // Adicionar na fila
       await pg.create(REMARKETING_FILA_TABLE, {

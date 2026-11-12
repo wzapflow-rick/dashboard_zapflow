@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { pg } from '@/lib/postgres';
 import { notifyWhatsAppConnected, notifyWhatsAppDisconnected, notifyError } from '@/lib/discord';
 import { getStatusLoja, type Horario } from '@/lib/horarios';
+import { CRM_INSTANCE, tratarMensagemCrm } from '@/lib/crm-consentimento';
 
 const EVO_API_URL = process.env.EVOLUTION_API_URL || 'https://evo.wzapflow.com.br';
 const EVO_API_KEY = process.env.EVOLUTION_API_KEY || '';
@@ -592,6 +593,12 @@ export async function POST(req: NextRequest) {
     // Ignora mensagens de grupo
     if (data.key?.remoteJid?.includes('@g.us')) {
       return NextResponse.json({ received: true, ignored: 'group' });
+    }
+
+    // Instancia central da ZapFlash: alimenta somente o CRM, nunca o bot dos restaurantes.
+    if (instanceName === CRM_INSTANCE) {
+      const crm = await tratarMensagemCrm(data, instanceName);
+      return NextResponse.json(crm.body, { status: crm.httpStatus });
     }
     
     const phone = resolveSenderPhone(data.key);

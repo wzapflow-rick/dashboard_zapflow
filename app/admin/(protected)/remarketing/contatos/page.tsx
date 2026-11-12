@@ -3,7 +3,7 @@
 
 import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import { useEffect, useState } from 'react';
-import { Users, Search, RefreshCw, Download, Plus, X, Tag, Target, ChevronLeft, ChevronRight, Phone, Calendar, MessageSquare, Ban, Check, Trash2, UserPlus } from 'lucide-react';
+import { Users, Search, RefreshCw, Download, Plus, X, Tag, Target, ChevronLeft, ChevronRight, Phone, Calendar, MessageSquare, Ban, Check, Trash2, UserPlus, ShieldCheck } from 'lucide-react';
 import { 
   getContatos, 
   getEtiquetas,
@@ -16,6 +16,7 @@ import {
   removeEtiquetaFromContato,
   addCategoriaToContato,
   removeCategoriaFromContato,
+  registrarConsentimento,
   getConfig,
   type RemarketingContato,
   type RemarketingEtiqueta,
@@ -230,6 +231,19 @@ export default function ContatosPage() {
     const key = `block-${contato.id}`;
     setActionLoading(key, true);
     await updateContato(contato.id, { bloqueado: !contato.bloqueado });
+    await loadContatos(pagination.page);
+    setActionLoading(key, false);
+  };
+
+  const handleRegistrarConsentimento = async (contato: RemarketingContato) => {
+    const origem = prompt(
+      `Como ${contato.nome || contato.telefone} autorizou o contato? (ex.: formulario do site, pediu pelo WhatsApp)`
+    );
+    if (!origem?.trim()) return;
+    const key = `consent-${contato.id}`;
+    setActionLoading(key, true);
+    const res = await registrarConsentimento(contato.id, origem);
+    if (!res.success) alert(res.error || 'Erro ao registrar consentimento');
     await loadContatos(pagination.page);
     setActionLoading(key, false);
   };
@@ -475,6 +489,18 @@ export default function ContatosPage() {
                           Bloqueado
                         </span>
                       )}
+                      {contato.opt_out_em ? (
+                        <span
+                          className="px-2 py-0.5 rounded-md text-xs bg-orange-500/10 text-orange-400 font-medium"
+                          title={`Pediu descadastro em ${formatDate(contato.opt_out_em)}`}
+                        >
+                          Descadastrado
+                        </span>
+                      ) : contato.consentimento_status === 'pendente' ? (
+                        <span className="px-2 py-0.5 rounded-md text-xs bg-slate-500/10 text-slate-400 font-medium">
+                          Sem consentimento
+                        </span>
+                      ) : null}
                     </div>
                     <p className="text-sm text-slate-400 flex items-center gap-1.5 mt-0.5">
                       <Phone className="size-3" />
@@ -533,6 +559,21 @@ export default function ContatosPage() {
                   
                   {/* Actions */}
                   <div className="flex items-center gap-1">
+                    {!contato.opt_out_em && contato.consentimento_status === 'pendente' && (
+                      <button
+                        onClick={() => handleRegistrarConsentimento(contato)}
+                        disabled={loadingActions.has(`consent-${contato.id}`)}
+                        className="p-2.5 hover:bg-green-500/10 rounded-xl text-slate-400 hover:text-green-400 transition-colors disabled:opacity-50"
+                        title="Registrar consentimento"
+                        aria-label="Registrar consentimento"
+                      >
+                        {loadingActions.has(`consent-${contato.id}`) ? (
+                          <MorphingInfinity className="size-4" />
+                        ) : (
+                          <ShieldCheck className="size-4" />
+                        )}
+                      </button>
+                    )}
                     <button
                       onClick={() => openEtiquetasModal(contato)}
                       className="p-2.5 hover:bg-[#27272a] rounded-xl text-slate-400 hover:text-white transition-colors"

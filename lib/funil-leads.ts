@@ -41,6 +41,10 @@ export async function registrarLeadDoCadastro(data: {
       score: 70,
       ativo: true,
       bloqueado: false,
+      consentimento_status: 'concedido',
+      consentimento_base_legal: 'relacao_contratual',
+      consentimento_origem: data.origem || 'signup_pendente',
+      consentimento_em: agora,
       created_at: agora,
       updated_at: agora,
     });

@@ -2,6 +2,12 @@ import { NextResponse } from 'next/server';
 import { pg } from '@/lib/postgres';
 import { listAssinaturasAtivas } from '@/lib/assinaturas';
 import {
+  aplicarRodapeOptOut,
+  podeReceberAutomacao,
+  sqlFiltroElegivel,
+  type ContatoElegibilidade,
+} from '@/lib/crm-consentimento';
+import {
   REMARKETING_CONFIG_TABLE,
   REMARKETING_CONTATOS_TABLE,
   REMARKETING_MENSAGENS_TABLE,
@@ -32,7 +38,7 @@ interface Config {
   ativo: boolean;
 }
 
-interface Contato {
+interface Contato extends ContatoElegibilidade {
   id: number;
   remote_jid: string;
   telefone: string;
@@ -162,6 +168,10 @@ async function handleRequest(cronKey: string | null, authHeader: string | null) 
         score: 0,
         ativo: true,
         bloqueado: false,
+        consentimento_status: 'concedido',
+        consentimento_base_legal: 'relacao_contratual',
+        consentimento_origem: 'assinatura',
+        consentimento_em: new Date().toISOString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
@@ -226,12 +236,14 @@ async function handleRequest(cronKey: string | null, authHeader: string | null) 
     cadenciasPorEstagio.set(c.estagio, arr);
   }
 
-  const contatos = await pg.raw<Contato>(`
-    SELECT id, remote_jid, telefone, nome, estagio, estagio_desde, empresa_id, ativo, bloqueado
-    FROM "${REMARKETING_CONTATOS_TABLE}"
-    WHERE ativo = true AND bloqueado = false
-      AND estagio IN ('lead_quente','lead_morno','lead_frio','trial','cliente')
+  const contatosBrutos = await pg.raw<Contato>(`
+    SELECT c.id, c.remote_jid, c.telefone, c.nome, c.estagio, c.estagio_desde, c.empresa_id,
+           c.ativo, c.bloqueado, c.opt_out_em, c.consentimento_status
+    FROM "${REMARKETING_CONTATOS_TABLE}" c
+    WHERE ${sqlFiltroElegivel('c')}
+      AND c.estagio IN ('lead_quente','lead_morno','lead_frio','trial','cliente')
   `);
+  const contatos = contatosBrutos.filter(podeReceberAutomacao);
 
   // Envios ja registrados (anti-duplicidade)
   const enviosExistentes = await pg.raw<{ contato_id: number; cadencia_id: number; passo_ordem: number }>(`
@@ -272,7 +284,10 @@ async function handleRequest(cronKey: string | null, authHeader: string | null) 
 
       if (!cad.msg_conteudo) continue; // cadencia sem mensagem associada
 
-      const conteudoFinal = aplicarVariaveis(cad.msg_conteudo, contato);
+      const conteudoFinal = aplicarRodapeOptOut(
+        aplicarVariaveis(cad.msg_conteudo, contato),
+        contato.estagio,
+      );
       const statusFila = cad.modo === 'auto' ? 'pendente' : STATUS_AGUARDANDO_APROVACAO;
 
       // Cria item na fila
