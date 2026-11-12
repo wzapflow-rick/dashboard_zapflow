@@ -99,18 +99,19 @@ export async function getComercialStats(): Promise<
       contar(
         `SELECT COUNT(*)::int AS total FROM assinaturas a
            JOIN empresas e ON e.id = a.empresa_id
-          WHERE a.status = 'trialing' AND a.trial_end_date > NOW()
+          WHERE a.status = 'trialing' AND a.data_proxima_cobranca > NOW()
             AND NOT COALESCE(e.conta_teste, false)`
       ),
+      // No trial, data_proxima_cobranca e o fim do periodo de teste (ver signup).
       pg.raw<TrialVencendo>(
-        `SELECT a.empresa_id, e.nome, a.trial_end_date
+        `SELECT a.empresa_id, e.nome, a.data_proxima_cobranca AS trial_end_date
            FROM assinaturas a
            JOIN empresas e ON e.id = a.empresa_id
           WHERE a.status = 'trialing'
-            AND a.trial_end_date > NOW()
-            AND a.trial_end_date <= NOW() + INTERVAL '3 days'
+            AND a.data_proxima_cobranca > NOW()
+            AND a.data_proxima_cobranca <= NOW() + INTERVAL '3 days'
             AND NOT COALESCE(e.conta_teste, false)
-          ORDER BY a.trial_end_date ASC
+          ORDER BY a.data_proxima_cobranca ASC
           LIMIT 10`
       ),
       pg.raw<{ total: string | null }>(
