@@ -66,6 +66,33 @@ export async function getPublicMenu(slug: string) {
             }
         }
 
+        // TENTATIVA 3b: compara só letras/números, sem acentos — os links são gerados
+        // removendo apóstrofos, acentos e símbolos (ex.: "Milet's Burguer" -> milets-burguer)
+        if (!empresa) {
+            const slugKey = slug
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9]/g, '');
+            if (slugKey) {
+                const empresasNormalizadas = await pg.raw<any>(
+                    `SELECT * FROM "${EMPRESAS_TABLE}"
+                     WHERE regexp_replace(
+                             translate(lower(COALESCE(nome_fantasia, '')),
+                               'áàâãäéèêëíìîïóòôõöúùûüçñ',
+                               'aaaaaeeeeiiiiooooouuuucn'),
+                             '[^a-z0-9]', '', 'g') = $1
+                     ORDER BY id ASC
+                     LIMIT 1`,
+                    [slugKey]
+                );
+                if (empresasNormalizadas.length > 0) {
+                    empresa = empresasNormalizadas[0];
+                    console.log(`[MENU_DEBUG] Empresa encontrada por nome normalizado: ${empresa.nome_fantasia}`);
+                }
+            }
+        }
+
         // TENTATIVA 4: Busca parcial por nome_fantasia
         if (!empresa) {
             const empresasByFantasiaLike = await pg.raw<any>(
