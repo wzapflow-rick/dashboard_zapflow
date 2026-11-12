@@ -3,10 +3,11 @@
 
 import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import { useEffect, useMemo, useState } from 'react';
-import { RefreshCw, Phone, Clock, ArrowRight, GripVertical, Flame, Thermometer, Snowflake, Rocket, CheckCircle2, XCircle } from 'lucide-react';
+import { RefreshCw, Phone, Clock, ArrowRight, GripVertical, Flame, Thermometer, Snowflake, Rocket, CheckCircle2, XCircle, MessageCircleReply, Pause, History } from 'lucide-react';
 import { toast } from 'sonner';
 import { getFunilContatos, moverContatoEstagio } from '@/app/actions/funil';
 import { FUNIL_ESTAGIOS, type FunilContato, type FunilEstagio } from '@/lib/funil-config';
+import { ContatoHistorico } from './contato-historico';
 
 interface EstagioMeta {
   label: string;
@@ -48,6 +49,17 @@ export function FunilBoard() {
   const [loading, setLoading] = useState(true);
   const [dragId, setDragId] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState<FunilEstagio | null>(null);
+  const [historicoId, setHistoricoId] = useState<number | null>(null);
+
+  const contatoHistorico = useMemo(() => {
+    if (historicoId == null || !estagios) return null;
+    return Object.values(estagios).flat().find((c) => c.id === historicoId) ?? null;
+  }, [historicoId, estagios]);
+
+  const aguardandoAtendimento = useMemo(() => {
+    if (!estagios) return 0;
+    return Object.values(estagios).flat().filter((c) => c.atendimento_pendente_em).length;
+  }, [estagios]);
 
   const load = async () => {
     setLoading(true);
@@ -105,6 +117,12 @@ export function FunilBoard() {
       <div className="flex items-center justify-between">
         <p className="text-sm text-slate-400">
           {totalContatos} contato{totalContatos === 1 ? '' : 's'} no funil. Arraste os cards para mudar o estagio.
+          {aguardandoAtendimento > 0 && (
+            <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-300">
+              <MessageCircleReply className="size-3" aria-hidden />
+              {aguardandoAtendimento} aguardando atendimento
+            </span>
+          )}
         </p>
         <button
           onClick={load}
@@ -180,18 +198,42 @@ export function FunilBoard() {
                         </div>
                       </div>
 
+                      {(contato.atendimento_pendente_em || contato.automacao_pausada_em) && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {contato.atendimento_pendente_em ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-medium text-emerald-300">
+                              <MessageCircleReply className="size-3" aria-hidden />
+                              Respondeu
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-300">
+                              <Pause className="size-3" aria-hidden />
+                              Automação pausada
+                            </span>
+                          )}
+                        </div>
+                      )}
+
                       <div className="mt-3 flex items-center justify-between text-xs">
                         <span className="flex items-center gap-1 text-slate-500">
                           <Clock className="size-3" />
                           {formatarTempo(contato.horas_no_estagio)} no estagio
                         </span>
                         <span className={`rounded-full px-2 py-0.5 ${meta.chip}`}>
-                          {formatarProxima(contato.proxima_acao_em)}
+                          {contato.automacao_pausada_em ? 'pausado' : formatarProxima(contato.proxima_acao_em)}
                         </span>
                       </div>
 
                       {/* Fallback de mover (mobile / acessibilidade) */}
                       <div className="mt-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                        <button
+                          type="button"
+                          onClick={() => setHistoricoId(contato.id)}
+                          aria-label={`Ver histórico de ${contato.nome || contato.telefone}`}
+                          className="rounded-md border border-[#27272a] p-1 text-slate-400 hover:border-orange-500 hover:text-white"
+                        >
+                          <History className="size-3.5" />
+                        </button>
                         <ArrowRight className="size-3 text-slate-600" />
                         <select
                           aria-label={`Mover ${contato.nome || contato.telefone} para outro estagio`}
@@ -214,6 +256,14 @@ export function FunilBoard() {
           );
         })}
       </div>
+
+      {contatoHistorico && (
+        <ContatoHistorico
+          contato={contatoHistorico}
+          onClose={() => setHistoricoId(null)}
+          onChanged={load}
+        />
+      )}
     </div>
   );
 }

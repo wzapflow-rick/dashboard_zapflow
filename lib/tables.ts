@@ -199,6 +199,7 @@ export const REMARKETING_FILA_TABLE = 'remarketing_fila';
 /** Tabela de historico de acoes */
 export const REMARKETING_HISTORICO_TABLE = 'remarketing_historico';
 export const REMARKETING_OPT_OUT_EVENTOS_TABLE = 'remarketing_opt_out_eventos';
+export const REMARKETING_INTERACOES_TABLE = 'remarketing_interacoes';
 
 // ============================================================
 // FUNIL / CADENCIAS (sistema de follow-up)

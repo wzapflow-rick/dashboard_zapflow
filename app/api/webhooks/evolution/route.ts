@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { pg } from '@/lib/postgres';
 import { notifyWhatsAppConnected, notifyWhatsAppDisconnected, notifyError } from '@/lib/discord';
 import { getStatusLoja, type Horario } from '@/lib/horarios';
-import { CRM_INSTANCE, tratarMensagemCrm } from '@/lib/crm-consentimento';
+import { CRM_INSTANCE } from '@/lib/crm-consentimento';
+import { tratarMensagemCrm } from '@/lib/crm-entrada';
 
 const EVO_API_URL = process.env.EVOLUTION_API_URL || 'https://evo.wzapflow.com.br';
 const EVO_API_KEY = process.env.EVOLUTION_API_KEY || '';

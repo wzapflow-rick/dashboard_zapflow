@@ -7,6 +7,7 @@ import {
   sqlFiltroElegivel,
   type ContatoElegibilidade,
 } from '@/lib/crm-consentimento';
+import { registrarInteracao } from '@/lib/crm-interacoes';
 import {
   REMARKETING_CONFIG_TABLE,
   REMARKETING_CONTATOS_TABLE,
@@ -192,6 +193,14 @@ async function handleRequest(cronKey: string | null, authHeader: string | null) 
           patch.estagio_desde = new Date(dataInicio).toISOString();
         }
         await pg.update(REMARKETING_CONTATOS_TABLE, contato.id, patch);
+        if (contato.estagio !== estagio) {
+          await registrarInteracao({
+            contatoId: contato.id,
+            tipo: 'estagio_alterado',
+            dados: { de: contato.estagio, para: estagio, motivo: 'assinatura' },
+            autor: 'automacao',
+          });
+        }
         contatosSincronizados++;
       }
     }
@@ -203,14 +212,26 @@ async function handleRequest(cronKey: string | null, authHeader: string | null) 
   // de consulta rebaixaria todos os clientes para 'perdido'.
   if (assinaturas.length > 0) {
     const empresasVigentes = Array.from(marcoPorEmpresa.keys());
-    const perdidos = await pg.raw<{ id: number }>(`
-      UPDATE "${REMARKETING_CONTATOS_TABLE}"
+    const perdidos = await pg.raw<{ id: number; estagio_anterior: string }>(`
+      UPDATE "${REMARKETING_CONTATOS_TABLE}" c
       SET estagio = 'perdido', estagio_desde = NOW(), updated_at = NOW()
-      WHERE estagio IN ('trial', 'cliente')
-        AND empresa_id IS NOT NULL
-        AND NOT (empresa_id = ANY($1::int[]))
-      RETURNING id
+      FROM (
+        SELECT id, estagio AS estagio_anterior FROM "${REMARKETING_CONTATOS_TABLE}"
+        WHERE estagio IN ('trial', 'cliente')
+          AND empresa_id IS NOT NULL
+          AND NOT (empresa_id = ANY($1::int[]))
+      ) antes
+      WHERE c.id = antes.id
+      RETURNING c.id, antes.estagio_anterior
     `, [empresasVigentes]);
+    for (const p of perdidos) {
+      await registrarInteracao({
+        contatoId: p.id,
+        tipo: 'estagio_alterado',
+        dados: { de: p.estagio_anterior, para: 'perdido', motivo: 'sem_assinatura_vigente' },
+        autor: 'automacao',
+      });
+    }
     contatosSincronizados += perdidos.length;
   }
 

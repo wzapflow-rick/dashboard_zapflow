@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { pg } from '@/lib/postgres';
 import { avaliarRespostaEvolution } from '@/lib/whatsapp-jid';
 import { motivoBloqueioEnvio, type ContatoElegibilidade } from '@/lib/crm-consentimento';
+import { registrarInteracao } from '@/lib/crm-interacoes';
 import {
   REMARKETING_CONFIG_TABLE,
   REMARKETING_CONTATOS_TABLE,
@@ -308,6 +309,17 @@ async function handleRequest(cronKey: string | null) {
           descricao: `Mensagem enviada: ${item.conteudo_final.substring(0, 100)}...`,
           dados: JSON.stringify({ fila_id: item.id, tipo_midia: item.tipo_midia }),
           created_at: new Date().toISOString(),
+        });
+
+        await registrarInteracao({
+          contatoId: item.contato_id,
+          tipo: 'mensagem_enviada',
+          direcao: 'saida',
+          instancia: config.instance_name,
+          messageId: responseData?.key?.id ?? null,
+          conteudo: item.conteudo_final,
+          dados: { fila_id: item.id, tipo_midia: item.tipo_midia },
+          autor: 'automacao',
         });
         
         totalEnviados++;

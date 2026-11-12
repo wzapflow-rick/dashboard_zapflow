@@ -34,6 +34,9 @@ export interface FunilContato {
   score: number;
   ativo: boolean;
   bloqueado: boolean;
+  ultima_resposta_em?: string | null;
+  automacao_pausada_em?: string | null;
+  atendimento_pendente_em?: string | null;
   // Computados
   horas_no_estagio?: number;
   proxima_acao?: string | null;

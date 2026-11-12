@@ -8,6 +8,13 @@ import {
   type ContatoElegibilidade,
 } from '@/lib/crm-consentimento';
 import {
+  concluirAtendimentoContato,
+  listarInteracoes,
+  registrarInteracao,
+  retomarAutomacaoContato,
+  type Interacao,
+} from '@/lib/crm-interacoes';
+import {
   REMARKETING_CONTATOS_TABLE,
   REMARKETING_MENSAGENS_TABLE,
   REMARKETING_FILA_TABLE,
@@ -41,7 +48,8 @@ export async function getFunilContatos(): Promise<{
   try {
     const contatos = await pg.raw<FunilContato>(`
       SELECT id, remote_jid, telefone, nome, foto_url, estagio, estagio_desde,
-             empresa_id, kanban_ordem, score, ativo, bloqueado
+             empresa_id, kanban_ordem, score, ativo, bloqueado,
+             ultima_resposta_em, automacao_pausada_em, atendimento_pendente_em
       FROM "${REMARKETING_CONTATOS_TABLE}"
       WHERE ativo = true
       ORDER BY kanban_ordem ASC, estagio_desde DESC NULLS LAST
@@ -131,7 +139,7 @@ export async function moverContatoEstagio(
   estagio: FunilEstagio,
   ordem = 0,
 ): Promise<{ success: boolean; error?: string }> {
-  await requireAdminSession();
+  const session = await requireAdminSession();
   try {
     if (!FUNIL_ESTAGIOS.includes(estagio)) {
       return { success: false, error: 'Estagio invalido' };
@@ -183,10 +191,64 @@ export async function moverContatoEstagio(
       created_at: new Date().toISOString(),
     });
 
+    if (estagioAnterior !== estagio) {
+      await registrarInteracao({
+        contatoId,
+        tipo: 'estagio_alterado',
+        dados: { de: estagioAnterior, para: estagio, motivo: 'manual' },
+        autor: session.username,
+      });
+    }
+
     return { success: true };
   } catch (error) {
     console.error('[Funil] Erro ao mover contato:', error);
     return { success: false, error: 'Erro ao mover contato de estagio' };
+  }
+}
+
+// ============================================================
+// HISTORICO E ATENDIMENTO
+// ============================================================
+
+export async function getInteracoesContato(
+  contatoId: number,
+): Promise<{ success: boolean; interacoes?: Interacao[]; error?: string }> {
+  await requireAdminSession();
+  try {
+    const interacoes = await listarInteracoes(contatoId);
+    return { success: true, interacoes };
+  } catch (error) {
+    console.error('[Funil] Erro ao buscar historico:', error);
+    return { success: false, error: 'Erro ao buscar historico do contato' };
+  }
+}
+
+export async function retomarAutomacao(
+  contatoId: number,
+): Promise<{ success: boolean; passosPulados?: number; error?: string }> {
+  const session = await requireAdminSession();
+  try {
+    const res = await retomarAutomacaoContato(contatoId, session.username);
+    if (!res.retomado) return { success: false, error: 'A automacao deste contato nao esta pausada' };
+    return { success: true, passosPulados: res.passosPulados };
+  } catch (error) {
+    console.error('[Funil] Erro ao retomar automacao:', error);
+    return { success: false, error: 'Erro ao retomar automacao' };
+  }
+}
+
+export async function concluirAtendimento(
+  contatoId: number,
+): Promise<{ success: boolean; error?: string }> {
+  const session = await requireAdminSession();
+  try {
+    const ok = await concluirAtendimentoContato(contatoId, session.username);
+    if (!ok) return { success: false, error: 'Nao ha atendimento pendente para este contato' };
+    return { success: true };
+  } catch (error) {
+    console.error('[Funil] Erro ao concluir atendimento:', error);
+    return { success: false, error: 'Erro ao concluir atendimento' };
   }
 }
 
@@ -305,7 +367,7 @@ export async function aprovarEnvio(filaId: number): Promise<{ success: boolean; 
   await requireAdminSession();
   try {
     const [contato] = await pg.raw<ContatoElegibilidade>(`
-      SELECT c.ativo, c.bloqueado, c.opt_out_em, c.consentimento_status
+      SELECT c.ativo, c.bloqueado, c.opt_out_em, c.consentimento_status, c.automacao_pausada_em
       FROM "${REMARKETING_FILA_TABLE}" f
       JOIN "${REMARKETING_CONTATOS_TABLE}" c ON c.id = f.contato_id
       WHERE f.id = $1

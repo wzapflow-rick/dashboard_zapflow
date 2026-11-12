@@ -14,6 +14,7 @@ import {
   REMARKETING_CADENCIA_ENVIOS_TABLE,
   REMARKETING_HISTORICO_TABLE,
   REMARKETING_OPT_OUT_EVENTOS_TABLE,
+  REMARKETING_INTERACOES_TABLE,
 } from '@/lib/tables';
 
 /** Instancia Evolution da ZapFlash central. Somente ela alimenta o CRM. */
@@ -37,6 +38,7 @@ export type MotivoBloqueioEnvio =
   | 'opt_out'
   | 'bloqueado'
   | 'inativo'
+  | 'pausado_resposta'
   | 'sem_consentimento';
 
 export const DESCRICAO_MOTIVO_BLOQUEIO: Record<MotivoBloqueioEnvio, string> = {
@@ -44,6 +46,7 @@ export const DESCRICAO_MOTIVO_BLOQUEIO: Record<MotivoBloqueioEnvio, string> = {
   opt_out: 'Contato pediu descadastro (opt-out)',
   bloqueado: 'Contato bloqueado',
   inativo: 'Contato inativo',
+  pausado_resposta: 'Automacao pausada: o contato respondeu e aguarda atendimento',
   sem_consentimento: 'Contato sem consentimento registrado',
 };
 
@@ -52,6 +55,7 @@ export interface ContatoElegibilidade {
   bloqueado?: boolean | null;
   opt_out_em?: string | Date | null;
   consentimento_status?: string | null;
+  automacao_pausada_em?: string | Date | null;
 }
 
 // ============================================================
@@ -82,6 +86,7 @@ export function motivoBloqueioEnvio(
   if (contato.opt_out_em || contato.consentimento_status === 'revogado') return 'opt_out';
   if (contato.bloqueado) return 'bloqueado';
   if (contato.ativo === false) return 'inativo';
+  if (contato.automacao_pausada_em) return 'pausado_resposta';
   if (contato.consentimento_status !== 'concedido') return 'sem_consentimento';
   return null;
 }
@@ -92,7 +97,7 @@ export function podeReceberAutomacao(contato: ContatoElegibilidade | null | unde
 
 /** Fragmento SQL equivalente a podeReceberAutomacao, para filtros em lote. */
 export function sqlFiltroElegivel(alias = 'c'): string {
-  return `${alias}.ativo = true AND ${alias}.bloqueado = false AND ${alias}.opt_out_em IS NULL AND ${alias}.consentimento_status = 'concedido'`;
+  return `${alias}.ativo = true AND ${alias}.bloqueado = false AND ${alias}.opt_out_em IS NULL AND ${alias}.automacao_pausada_em IS NULL AND ${alias}.consentimento_status = 'concedido'`;
 }
 
 /** Acrescenta o rodape de descadastro em mensagens comerciais para leads. */
@@ -137,16 +142,53 @@ export interface RegistrarOptOutResultado {
 
 export type EnviarConfirmacaoFn = (remoteJid: string, instancia: string) => Promise<boolean>;
 
-interface ContatoCandidato {
+export interface ContatoCandidato {
   id: number;
   telefone: string | null;
   remote_jid: string | null;
   opt_out_em: string | null;
+  automacao_pausada_em: string | null;
 }
 
-function jidDoTelefone(telefone: string): string {
+type ClienteTransacao = Awaited<ReturnType<typeof pg.getClient>>;
+
+export function jidDoTelefone(telefone: string): string {
   const d = telefone.replace(/\D/g, '');
   return `${d.length <= 11 ? `55${d}` : d}@s.whatsapp.net`;
+}
+
+/** JIDs possiveis do remetente (o recebido e o derivado do telefone). */
+export function jidsDoRemetente(remoteJid: string, telefone: string | null): string[] {
+  return Array.from(
+    new Set([remoteJid, telefone ? jidDoTelefone(telefone) : null].filter(Boolean))
+  ) as string[];
+}
+
+/** Trava por numero: serializa opt-out e respostas simultaneas do mesmo contato. */
+export async function travarRemetente(client: ClienteTransacao, chave: string | null, remoteJid: string) {
+  await client.query('/* crm:lock */ SELECT pg_advisory_xact_lock(hashtext($1))', [
+    `crm_contato:${chave || remoteJid}`,
+  ]);
+}
+
+/** Contatos do remetente (por JID ou DDD + 8 ultimos digitos), travados para atualizacao. */
+export async function buscarContatosDoRemetente(
+  client: ClienteTransacao,
+  jids: string[],
+  chave: string | null
+): Promise<ContatoCandidato[]> {
+  const candidatos = await client.query<ContatoCandidato>(
+    `/* crm:buscar_contatos */
+     SELECT id, telefone, remote_jid, opt_out_em, automacao_pausada_em
+       FROM "${REMARKETING_CONTATOS_TABLE}"
+      WHERE remote_jid = ANY($1::text[])
+         OR ($2::text IS NOT NULL AND right(regexp_replace(telefone, '\\D', '', 'g'), 8) = right($2::text, 8))
+      FOR UPDATE`,
+    [jids, chave]
+  );
+  return candidatos.rows.filter(
+    (c) => (c.remote_jid && jids.includes(c.remote_jid)) || (chave && chaveTelefone(c.telefone) === chave)
+  );
 }
 
 export async function registrarOptOut(
@@ -154,9 +196,7 @@ export async function registrarOptOut(
   enviarConfirmacao: EnviarConfirmacaoFn = enviarConfirmacaoOptOut
 ): Promise<RegistrarOptOutResultado> {
   const chave = chaveTelefone(input.telefone);
-  const jids = Array.from(
-    new Set([input.remoteJid, input.telefone ? jidDoTelefone(input.telefone) : null].filter(Boolean))
-  ) as string[];
+  const jids = jidsDoRemetente(input.remoteJid, input.telefone);
 
   const client = await pg.getClient();
   let resultado: RegistrarOptOutResultado;
@@ -164,10 +204,7 @@ export async function registrarOptOut(
 
   try {
     await client.query('BEGIN');
-    // Serializa eventos simultaneos do mesmo numero (mensagens diferentes).
-    await client.query('/* crm:lock */ SELECT pg_advisory_xact_lock(hashtext($1))', [
-      `crm_opt_out:${chave || input.remoteJid}`,
-    ]);
+    await travarRemetente(client, chave, input.remoteJid);
 
     const evento = await client.query<{ id: number }>(
       `/* crm:inserir_evento */
@@ -198,18 +235,7 @@ export async function registrarOptOut(
     }
     eventoId = evento.rows[0].id;
 
-    const candidatos = await client.query<ContatoCandidato>(
-      `/* crm:buscar_contatos */
-       SELECT id, telefone, remote_jid, opt_out_em
-         FROM "${REMARKETING_CONTATOS_TABLE}"
-        WHERE remote_jid = ANY($1::text[])
-           OR ($2::text IS NOT NULL AND right(regexp_replace(telefone, '\\D', '', 'g'), 8) = right($2::text, 8))
-        FOR UPDATE`,
-      [jids, chave]
-    );
-    const contatos = candidatos.rows.filter(
-      (c) => (c.remote_jid && jids.includes(c.remote_jid)) || (chave && chaveTelefone(c.telefone) === chave)
-    );
+    const contatos = await buscarContatosDoRemetente(client, jids, chave);
 
     let contatoIds = contatos.map((c) => c.id);
     let primeiroOptOut = contatos.every((c) => !c.opt_out_em);
@@ -285,6 +311,20 @@ export async function registrarOptOut(
           }),
         ]
       );
+      await client.query(
+        `/* crm:interacao_opt_out */
+         INSERT INTO "${REMARKETING_INTERACOES_TABLE}"
+           (contato_id, tipo, direcao, instancia, message_id, conteudo, dados)
+         VALUES ($1, 'opt_out', 'entrada', $2, $3, $4, $5)
+         ON CONFLICT DO NOTHING`,
+        [
+          contatoId,
+          input.instancia,
+          input.messageId,
+          input.palavra,
+          JSON.stringify({ fila_cancelados: fila.rows.length, cadencias_canceladas: envios.rows.length }),
+        ]
+      );
     }
 
     await client.query('COMMIT');
@@ -348,66 +388,3 @@ export async function enviarConfirmacaoOptOut(remoteJid: string, instancia: stri
   return avaliacao.success;
 }
 
-// ============================================================
-// ENTRADA PELO WEBHOOK DA INSTANCIA CENTRAL
-// ============================================================
-
-export interface MensagemEvolution {
-  key?: { id?: string; remoteJid?: string; remoteJidAlt?: string; senderPn?: string; fromMe?: boolean };
-  message?: {
-    conversation?: string;
-    extendedTextMessage?: { text?: string };
-  };
-  messageTimestamp?: number | string;
-  senderPn?: string;
-}
-
-function extrairTelefone(data: MensagemEvolution): string | null {
-  const candidatos = [data.key?.senderPn, data.senderPn, data.key?.remoteJidAlt, data.key?.remoteJid];
-  for (const c of candidatos) {
-    if (c && !String(c).endsWith('@lid')) {
-      const d = String(c).split('@')[0].replace(/\D/g, '');
-      if (d.length >= 10 && d.length <= 13) return d;
-    }
-  }
-  return null;
-}
-
-export interface TratarMensagemCrmResultado {
-  httpStatus: number;
-  body: Record<string, unknown>;
-}
-
-/**
- * Trata mensagens recebidas pela instancia central. Nesta etapa, apenas opt-out.
- * Nunca aciona o bot dos restaurantes.
- */
-export async function tratarMensagemCrm(
-  data: MensagemEvolution,
-  instancia: string,
-  enviarConfirmacao?: EnviarConfirmacaoFn
-): Promise<TratarMensagemCrmResultado> {
-  const texto = data.message?.conversation || data.message?.extendedTextMessage?.text || '';
-  const palavra = detectarOptOut(texto);
-  if (!palavra) {
-    return { httpStatus: 200, body: { received: true, crm: 'ignorado' } };
-  }
-
-  const remoteJid = data.key?.remoteJid || '';
-  if (!remoteJid) {
-    return { httpStatus: 200, body: { received: true, crm: 'sem_remetente' } };
-  }
-  const messageId = data.key?.id || `${remoteJid}:${data.messageTimestamp ?? ''}`;
-
-  try {
-    const resultado = await registrarOptOut(
-      { instancia, messageId, remoteJid, telefone: extrairTelefone(data), palavra },
-      enviarConfirmacao
-    );
-    return { httpStatus: 200, body: { received: true, crm: 'opt_out', resultado: resultado.status } };
-  } catch (error) {
-    console.error('[CRM opt-out] Erro ao registrar descadastro:', error);
-    // 500 faz a Evolution reenviar; o UNIQUE (instancia, message_id) evita duplicidade.
-    return { httpStatus: 500, body: { received: false, crm: 'erro_opt_out' } };
-  }
-}
