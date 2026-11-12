@@ -21,8 +21,6 @@ import {
   History,
   Settings,
   HelpCircle,
-  ChevronDown,
-  ChevronRight,
   Activity,
   UtensilsCrossed,
   Radar,
@@ -47,35 +45,47 @@ interface MenuGroup {
   items: MenuItem[];
 }
 
-const menuItems: MenuItem[] = [
-  { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/admin/empresas', label: 'Empresas', icon: Building2 },
-  { href: '/admin/assinaturas', label: 'Assinaturas', icon: CreditCard },
-  { href: '/admin/monitoramento', label: 'Monitoramento', icon: Activity },
-  { href: '/admin/demo', label: 'Demo de Cardápio', icon: UtensilsCrossed },
-  { href: '/admin/captacao', label: 'Captação de Leads', icon: Radar },
-];
-
-const remarketingMenu: MenuGroup = {
-  label: 'Remarketing',
+const comercialMenu: MenuGroup = {
+  label: 'Comercial',
   icon: Target,
   items: [
+    { href: '/admin/dashboard', label: 'Visão geral', icon: LayoutDashboard },
     { href: '/admin/remarketing', label: 'Funil', icon: KanbanSquare },
-    { href: '/admin/remarketing/contatos', label: 'Contatos', icon: Users },
-    { href: '/admin/remarketing/etiquetas', label: 'Etiquetas', icon: Tag },
+    { href: '/admin/remarketing/contatos', label: 'Leads', icon: Users },
+    { href: '/admin/captacao', label: 'Captação de Leads', icon: Radar },
+    { href: '/admin/demo', label: 'Demo de Cardápio', icon: UtensilsCrossed },
+  ],
+};
+
+const automacaoMenu: MenuGroup = {
+  label: 'Automação',
+  icon: MessageSquare,
+  items: [
     { href: '/admin/remarketing/mensagens', label: 'Mensagens', icon: MessageSquare },
+    { href: '/admin/remarketing/etiquetas', label: 'Etiquetas', icon: Tag },
     { href: '/admin/remarketing/fila', label: 'Fila', icon: ListTodo },
-    { href: '/admin/remarketing/historico', label: 'Historico', icon: History },
-    { href: '/admin/remarketing/config', label: 'Configuracoes', icon: Settings },
+    { href: '/admin/remarketing/historico', label: 'Histórico', icon: History },
+    { href: '/admin/remarketing/config', label: 'Configurações', icon: Settings },
     { href: '/admin/remarketing/ajuda', label: 'Ajuda', icon: HelpCircle },
   ],
 };
+
+const sistemaMenu: MenuGroup = {
+  label: 'Sistema',
+  icon: Building2,
+  items: [
+    { href: '/admin/empresas', label: 'Empresas', icon: Building2 },
+    { href: '/admin/assinaturas', label: 'Assinaturas', icon: CreditCard },
+    { href: '/admin/monitoramento', label: 'Monitoramento', icon: Activity },
+  ],
+};
+
+const menuGroups: MenuGroup[] = [comercialMenu, automacaoMenu, sistemaMenu];
 
 export default function AdminSidebar({ username }: AdminSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [remarketingOpen, setRemarketingOpen] = useState(pathname.startsWith('/admin/remarketing'));
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
@@ -92,8 +102,6 @@ export default function AdminSidebar({ username }: AdminSidebarProps) {
   };
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
-
-  const isRemarketingActive = pathname.startsWith('/admin/remarketing');
 
   return (
     <>
@@ -150,73 +158,34 @@ export default function AdminSidebar({ username }: AdminSidebarProps) {
         </div>
 
         {/* Menu */}
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {menuItems.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={closeMobileMenu}
-                className={cn(
-                  'flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200',
-                  isActive
-                    ? 'bg-orange-500/10 text-orange-400 border-l-4 border-orange-500'
-                    : 'text-slate-400 hover:bg-[#18181b] hover:text-white'
-                )}
-              >
-                <item.icon className="size-5" />
-                <span className="font-medium">{item.label}</span>
-              </Link>
-            );
-          })}
-
-          {/* Remarketing Submenu */}
-          <div className="pt-2">
-            <button
-              onClick={() => setRemarketingOpen(!remarketingOpen)}
-              className={cn(
-                'w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-all duration-200',
-                isRemarketingActive
-                  ? 'bg-orange-500/10 text-orange-400'
-                  : 'text-slate-400 hover:bg-[#18181b] hover:text-white'
-              )}
-            >
-              <div className="flex items-center gap-3">
-                <remarketingMenu.icon className="size-5" />
-                <span className="font-medium">{remarketingMenu.label}</span>
-              </div>
-              {remarketingOpen ? (
-                <ChevronDown className="size-4" />
-              ) : (
-                <ChevronRight className="size-4" />
-              )}
-            </button>
-            
-            {remarketingOpen && (
-              <div className="ml-4 mt-1 space-y-1 border-l border-[#27272a]/50 pl-4">
-                {remarketingMenu.items.map((item) => {
-                  const isActive = pathname === item.href;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={closeMobileMenu}
-                      className={cn(
-                        'flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-sm',
-                        isActive
-                          ? 'bg-orange-500/10 text-orange-400'
-                          : 'text-slate-400 hover:bg-[#18181b] hover:text-white'
-                      )}
-                    >
-                      <item.icon className="size-4" />
-                      <span>{item.label}</span>
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+        <nav aria-label="Menu do admin" className="flex-1 p-4 flex flex-col gap-6 overflow-y-auto">
+          {menuGroups.map((group) => (
+            <div key={group.label} className="flex flex-col gap-1">
+              <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                {group.label}
+              </p>
+              {group.items.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={closeMobileMenu}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={cn(
+                      'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm',
+                      isActive
+                        ? 'bg-orange-500/10 text-orange-400 font-medium'
+                        : 'text-slate-400 hover:bg-[#18181b] hover:text-white'
+                    )}
+                  >
+                    <item.icon className="size-4" />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
 
         {/* Footer */}
