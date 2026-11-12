@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server';
 import { pg } from '@/lib/postgres';
 import { avaliarRespostaEvolution } from '@/lib/whatsapp-jid';
-import { motivoBloqueioEnvio, type ContatoElegibilidade } from '@/lib/crm-consentimento';
+import {
+  motivoBloqueioEnvio,
+  ehPrimeiroContato,
+  reservarPrimeiroContato,
+  liberarPrimeiroContato,
+  type ContatoElegibilidade,
+} from '@/lib/crm-consentimento';
 import { registrarInteracao } from '@/lib/crm-interacoes';
 import {
   REMARKETING_CONFIG_TABLE,
@@ -191,6 +197,15 @@ async function handleRequest(cronKey: string | null) {
       });
       continue;
     }
+
+    const primeiroContato = ehPrimeiroContato(contato);
+    if (primeiroContato && !(await reservarPrimeiroContato(item.contato_id))) {
+      await pg.update(REMARKETING_FILA_TABLE, item.id, {
+        status: 'cancelado',
+        erro: 'aguardando_resposta',
+      });
+      continue;
+    }
     
     try {
       // Enviar mensagem via Evolution API
@@ -328,6 +343,7 @@ async function handleRequest(cronKey: string | null) {
         const novasTentativas = item.tentativas + 1;
         const novoStatus = novasTentativas >= item.max_tentativas ? 'erro' : 'pendente';
         
+        if (primeiroContato) await liberarPrimeiroContato(item.contato_id);
         const erroMsg = avaliacao.error || responseData?.message || 'Erro no envio';
         await pg.update(REMARKETING_FILA_TABLE, item.id, {
           status: novoStatus,
@@ -349,6 +365,7 @@ async function handleRequest(cronKey: string | null) {
       }
     } catch (err) {
       // Erro de conexao
+      if (primeiroContato) await liberarPrimeiroContato(item.contato_id).catch(() => {});
       const novasTentativas = item.tentativas + 1;
       const novoStatus = novasTentativas >= item.max_tentativas ? 'erro' : 'pendente';
       

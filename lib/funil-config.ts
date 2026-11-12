@@ -37,6 +37,9 @@ export interface FunilContato {
   ultima_resposta_em?: string | null;
   automacao_pausada_em?: string | null;
   atendimento_pendente_em?: string | null;
+  consentimento_status?: 'concedido' | 'pendente' | 'revogado' | null;
+  contato_inicial_em?: string | null;
+  opt_out_em?: string | null;
   // Computados
   horas_no_estagio?: number;
   proxima_acao?: string | null;

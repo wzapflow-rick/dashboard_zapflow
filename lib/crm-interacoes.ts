@@ -201,6 +201,14 @@ export async function registrarRespostaRecebida(
                                               THEN 'respondeu' ELSE automacao_pausada_motivo END,
               automacao_pausada_em = COALESCE(automacao_pausada_em, NOW()),
               atendimento_pendente_em = COALESCE(atendimento_pendente_em, NOW()),
+              consentimento_status = CASE WHEN consentimento_status = 'pendente'
+                                          THEN 'concedido' ELSE consentimento_status END,
+              consentimento_base_legal = CASE WHEN consentimento_status = 'pendente'
+                                              THEN 'consentimento' ELSE consentimento_base_legal END,
+              consentimento_origem = CASE WHEN consentimento_status = 'pendente'
+                                          THEN 'resposta_whatsapp' ELSE consentimento_origem END,
+              consentimento_em = CASE WHEN consentimento_status = 'pendente'
+                                      THEN NOW() ELSE consentimento_em END,
               updated_at = NOW()
         WHERE id = ANY($1::int[])`,
       [registrados]

@@ -44,6 +44,27 @@ function formatarProxima(iso?: string | null): string {
   return `em ${Math.round(horas / 24)}d`;
 }
 
+const ESTAGIOS_PRIMEIRO_CONTATO: FunilEstagio[] = ['lead_quente', 'lead_morno', 'lead_frio'];
+
+function statusAutomacao(contato: FunilContato, chipPadrao: string): { texto: string; classe: string; dica?: string } {
+  if (contato.opt_out_em || contato.consentimento_status === 'revogado') {
+    return { texto: 'descadastrado', classe: 'bg-red-500/15 text-red-300', dica: 'Pediu para não receber mensagens' };
+  }
+  if (contato.automacao_pausada_em) {
+    return { texto: 'pausado', classe: chipPadrao, dica: 'Respondeu e aguarda atendimento' };
+  }
+  if (contato.consentimento_status === 'pendente') {
+    if (!ESTAGIOS_PRIMEIRO_CONTATO.includes(contato.estagio)) {
+      return { texto: 'sem consentimento', classe: 'bg-slate-500/15 text-slate-300', dica: 'Automação bloqueada até registrar consentimento' };
+    }
+    if (contato.contato_inicial_em) {
+      return { texto: 'aguardando resposta', classe: 'bg-sky-500/15 text-sky-300', dica: '1º contato enviado; só volta a receber se responder' };
+    }
+    return { texto: `1º contato ${formatarProxima(contato.proxima_acao_em)}`, classe: chipPadrao, dica: 'Uma única mensagem por interesse legítimo, com opção de sair' };
+  }
+  return { texto: formatarProxima(contato.proxima_acao_em), classe: chipPadrao };
+}
+
 export function FunilBoard() {
   const [estagios, setEstagios] = useState<Record<FunilEstagio, FunilContato[]> | null>(null);
   const [loading, setLoading] = useState(true);
@@ -219,9 +240,14 @@ export function FunilBoard() {
                           <Clock className="size-3" />
                           {formatarTempo(contato.horas_no_estagio)} no estagio
                         </span>
-                        <span className={`rounded-full px-2 py-0.5 ${meta.chip}`}>
-                          {contato.automacao_pausada_em ? 'pausado' : formatarProxima(contato.proxima_acao_em)}
-                        </span>
+                        {(() => {
+                          const status = statusAutomacao(contato, meta.chip);
+                          return (
+                            <span title={status.dica} className={`rounded-full px-2 py-0.5 whitespace-nowrap ${status.classe}`}>
+                              {status.texto}
+                            </span>
+                          );
+                        })()}
                       </div>
 
                       {/* Fallback de mover (mobile / acessibilidade) */}

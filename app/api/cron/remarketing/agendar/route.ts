@@ -119,7 +119,8 @@ async function handleRequest(cronKey: string | null) {
     // Buscar contatos da categoria que podem receber mensagem (respeitando cooldown)
     const contatosBrutos = await pg.raw<Contato>(`
       SELECT c.id, c.nome, c.telefone, c.ultima_msg_remarketing, c.estagio,
-             c.ativo, c.bloqueado, c.opt_out_em, c.consentimento_status
+             c.ativo, c.bloqueado, c.opt_out_em, c.consentimento_status,
+             c.automacao_pausada_em, c.contato_inicial_em
       FROM "${REMARKETING_CONTATOS_TABLE}" c
       INNER JOIN "${REMARKETING_CONTATOS_CATEGORIAS_TABLE}" cc ON cc.contato_id = c.id
       WHERE cc.categoria_id = $1

@@ -49,7 +49,8 @@ export async function getFunilContatos(): Promise<{
     const contatos = await pg.raw<FunilContato>(`
       SELECT id, remote_jid, telefone, nome, foto_url, estagio, estagio_desde,
              empresa_id, kanban_ordem, score, ativo, bloqueado,
-             ultima_resposta_em, automacao_pausada_em, atendimento_pendente_em
+             ultima_resposta_em, automacao_pausada_em, atendimento_pendente_em,
+             consentimento_status, contato_inicial_em, opt_out_em
       FROM "${REMARKETING_CONTATOS_TABLE}"
       WHERE ativo = true
       ORDER BY kanban_ordem ASC, estagio_desde DESC NULLS LAST

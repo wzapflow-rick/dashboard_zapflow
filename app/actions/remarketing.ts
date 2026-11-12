@@ -746,6 +746,7 @@ export async function removeCategoriaFromContato(contatoId: number, categoriaId:
 export async function getFila(page = 1, limit = 50, status?: string): Promise<{ 
   success: boolean; 
   fila?: RemarketingFilaItem[]; 
+  contagens?: Record<string, number>;
   pagination?: { page: number; limit: number; total: number; totalPages: number };
   error?: string 
 }> {
@@ -780,10 +781,17 @@ export async function getFila(page = 1, limit = 50, status?: string): Promise<{
       ORDER BY f.prioridade ASC, f.agendado_para ASC
       LIMIT ${limit} OFFSET ${offset}
     `, params);
+
+    const contagemRows = await pg.raw<{ status: string; total: string }>(`
+      SELECT status, COUNT(*)::text AS total FROM "${REMARKETING_FILA_TABLE}" GROUP BY status
+    `);
+    const contagens: Record<string, number> = {};
+    for (const r of contagemRows) contagens[r.status] = parseInt(r.total, 10);
     
     return { 
       success: true, 
       fila,
+      contagens,
       pagination: {
         page,
         limit,

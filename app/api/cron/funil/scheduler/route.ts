@@ -3,6 +3,7 @@ import { pg } from '@/lib/postgres';
 import { listAssinaturasAtivas } from '@/lib/assinaturas';
 import {
   aplicarRodapeOptOut,
+  ehPrimeiroContato,
   podeReceberAutomacao,
   sqlFiltroElegivel,
   type ContatoElegibilidade,
@@ -259,7 +260,8 @@ async function handleRequest(cronKey: string | null, authHeader: string | null) 
 
   const contatosBrutos = await pg.raw<Contato>(`
     SELECT c.id, c.remote_jid, c.telefone, c.nome, c.estagio, c.estagio_desde, c.empresa_id,
-           c.ativo, c.bloqueado, c.opt_out_em, c.consentimento_status
+           c.ativo, c.bloqueado, c.opt_out_em, c.consentimento_status,
+           c.automacao_pausada_em, c.contato_inicial_em
     FROM "${REMARKETING_CONTATOS_TABLE}" c
     WHERE ${sqlFiltroElegivel('c')}
       AND c.estagio IN ('lead_quente','lead_morno','lead_frio','trial','cliente')
@@ -347,6 +349,9 @@ async function handleRequest(cronKey: string | null, authHeader: string | null) 
       enviosSet.add(key);
       if (cad.modo === 'auto') enfileiradosAuto++;
       else enfileiradosAprovacao++;
+
+      // Sem consentimento: apenas um primeiro contato; o resto so apos resposta.
+      if (ehPrimeiroContato(contato)) break;
     }
   }
 

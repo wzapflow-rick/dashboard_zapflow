@@ -39,6 +39,7 @@ export type MotivoBloqueioEnvio =
   | 'bloqueado'
   | 'inativo'
   | 'pausado_resposta'
+  | 'aguardando_resposta'
   | 'sem_consentimento';
 
 export const DESCRICAO_MOTIVO_BLOQUEIO: Record<MotivoBloqueioEnvio, string> = {
@@ -47,8 +48,17 @@ export const DESCRICAO_MOTIVO_BLOQUEIO: Record<MotivoBloqueioEnvio, string> = {
   bloqueado: 'Contato bloqueado',
   inativo: 'Contato inativo',
   pausado_resposta: 'Automacao pausada: o contato respondeu e aguarda atendimento',
+  aguardando_resposta: 'Primeiro contato ja enviado: aguardando o lead responder',
   sem_consentimento: 'Contato sem consentimento registrado',
 };
+
+/**
+ * Leads B2B (telefone comercial publico) sem consentimento podem receber UM
+ * primeiro contato com base em interesse legitimo (LGPD art. 7, IX), sempre
+ * com opcao de descadastro. Depois disso so voltam a receber se responderem.
+ */
+export const ESTAGIOS_PRIMEIRO_CONTATO = ['lead_quente', 'lead_morno', 'lead_frio'] as const;
+const ESTAGIOS_PRIMEIRO_CONTATO_SET = new Set<string>(ESTAGIOS_PRIMEIRO_CONTATO);
 
 export interface ContatoElegibilidade {
   ativo?: boolean | null;
@@ -56,6 +66,8 @@ export interface ContatoElegibilidade {
   opt_out_em?: string | Date | null;
   consentimento_status?: string | null;
   automacao_pausada_em?: string | Date | null;
+  estagio?: string | null;
+  contato_inicial_em?: string | Date | null;
 }
 
 // ============================================================
@@ -87,17 +99,59 @@ export function motivoBloqueioEnvio(
   if (contato.bloqueado) return 'bloqueado';
   if (contato.ativo === false) return 'inativo';
   if (contato.automacao_pausada_em) return 'pausado_resposta';
-  if (contato.consentimento_status !== 'concedido') return 'sem_consentimento';
-  return null;
+  if (contato.consentimento_status === 'concedido') return null;
+  if (
+    contato.consentimento_status === 'pendente' &&
+    contato.estagio &&
+    ESTAGIOS_PRIMEIRO_CONTATO_SET.has(contato.estagio)
+  ) {
+    return contato.contato_inicial_em ? 'aguardando_resposta' : null;
+  }
+  return 'sem_consentimento';
 }
 
 export function podeReceberAutomacao(contato: ContatoElegibilidade | null | undefined): boolean {
   return motivoBloqueioEnvio(contato) === null;
 }
 
+/** Contato elegivel apenas pela regra de primeiro contato (sem consentimento ainda). */
+export function ehPrimeiroContato(contato: ContatoElegibilidade | null | undefined): boolean {
+  return !!contato && contato.consentimento_status === 'pendente' && podeReceberAutomacao(contato);
+}
+
 /** Fragmento SQL equivalente a podeReceberAutomacao, para filtros em lote. */
 export function sqlFiltroElegivel(alias = 'c'): string {
-  return `${alias}.ativo = true AND ${alias}.bloqueado = false AND ${alias}.opt_out_em IS NULL AND ${alias}.automacao_pausada_em IS NULL AND ${alias}.consentimento_status = 'concedido'`;
+  const estagios = ESTAGIOS_PRIMEIRO_CONTATO.map((e) => `'${e}'`).join(',');
+  return `${alias}.ativo = true AND ${alias}.bloqueado = false AND ${alias}.opt_out_em IS NULL AND ${alias}.automacao_pausada_em IS NULL AND (${alias}.consentimento_status = 'concedido' OR (${alias}.consentimento_status = 'pendente' AND ${alias}.contato_inicial_em IS NULL AND ${alias}.estagio IN (${estagios})))`;
+}
+
+/**
+ * Reserva atomicamente o unico primeiro contato do lead. Retorna false se outro
+ * item da fila ja reservou (evita enviar duas mensagens ao mesmo lead).
+ */
+export async function reservarPrimeiroContato(contatoId: number): Promise<boolean> {
+  const rows = await pg.raw<{ id: number }>(
+    `/* crm:reservar_primeiro_contato */
+     UPDATE "${REMARKETING_CONTATOS_TABLE}"
+        SET contato_inicial_em = NOW(),
+            consentimento_base_legal = COALESCE(consentimento_base_legal, 'interesse_legitimo'),
+            updated_at = NOW()
+      WHERE id = $1 AND consentimento_status = 'pendente' AND contato_inicial_em IS NULL
+      RETURNING id`,
+    [contatoId]
+  );
+  return rows.length > 0;
+}
+
+/** Desfaz a reserva quando o envio falha, para a proxima tentativa poder enviar. */
+export async function liberarPrimeiroContato(contatoId: number): Promise<void> {
+  await pg.raw(
+    `/* crm:liberar_primeiro_contato */
+     UPDATE "${REMARKETING_CONTATOS_TABLE}"
+        SET contato_inicial_em = NULL, updated_at = NOW()
+      WHERE id = $1 AND consentimento_status = 'pendente'`,
+    [contatoId]
+  );
 }
 
 /** Acrescenta o rodape de descadastro em mensagens comerciais para leads. */

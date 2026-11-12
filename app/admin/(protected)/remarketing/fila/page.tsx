@@ -27,6 +27,7 @@ export default function FilaPage() {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [loadingActions, setLoadingActions] = useState<Set<string>>(new Set());
   const [processingAll, setProcessingAll] = useState(false);
+  const [contagens, setContagens] = useState<Record<string, number>>({});
 
   const setActionLoading = (key: string, isLoading: boolean) => {
     setLoadingActions(prev => {
@@ -43,6 +44,7 @@ export default function FilaPage() {
     if (result.success) {
       setFila(result.fila || []);
       setPagination(result.pagination || { page: 1, limit: 50, total: 0, totalPages: 0 });
+      setContagens(result.contagens || {});
     }
     setLoading(false);
   }
@@ -115,9 +117,10 @@ export default function FilaPage() {
   };
 
   const stats = {
-    pendente: fila.filter(f => f.status === 'pendente').length,
-    enviado: fila.filter(f => f.status === 'enviado').length,
-    erro: fila.filter(f => f.status === 'erro').length,
+    pendente: contagens.pendente ?? 0,
+    enviado: contagens.enviado ?? 0,
+    erro: contagens.erro ?? 0,
+    cancelado: contagens.cancelado ?? 0,
   };
 
   return (
@@ -153,7 +156,7 @@ export default function FilaPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-[#111113] border border-yellow-500/20 rounded-2xl p-5">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-yellow-500/10 rounded-xl">
@@ -184,6 +187,17 @@ export default function FilaPage() {
             <div>
               <p className="text-3xl font-bold text-red-400">{stats.erro}</p>
               <p className="text-sm text-slate-400">Erros</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-[#111113] border border-slate-500/20 rounded-2xl p-5">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-slate-500/10 rounded-xl">
+              <X className="size-6 text-slate-300" />
+            </div>
+            <div>
+              <p className="text-3xl font-bold text-slate-200">{stats.cancelado}</p>
+              <p className="text-sm text-slate-400">Cancelados</p>
             </div>
           </div>
         </div>
