@@ -118,7 +118,8 @@ export default function ConfigPage() {
     
     try {
       const baseUrl = window.location.origin;
-      const response = await fetch(`${baseUrl}/api/cron/remarketing/${endpoint}?key=${formData.api_key_cron}`);
+      const path = endpoint === 'funil' ? '/api/cron/funil/scheduler' : `/api/cron/remarketing/${endpoint}`;
+  const response = await fetch(`${baseUrl}${path}?key=${formData.api_key_cron}`);
       const data = await response.json();
       
       setCronResult({
@@ -374,8 +375,8 @@ export default function ConfigPage() {
           <div className="bg-[#09090b] rounded-lg p-4 font-mono text-sm text-slate-300 overflow-x-auto">
             <p className="text-slate-500"># Classificar contatos a cada 6 horas</p>
             <p>0 */6 * * * curl -X POST -H &quot;x-cron-key: {formData.api_key_cron || 'SUA_CHAVE'}&quot; https://seusite.com/api/cron/remarketing/classificar</p>
-            <p className="mt-2 text-slate-500"># Agendar mensagens a cada hora</p>
-            <p>0 * * * * curl -X POST -H &quot;x-cron-key: {formData.api_key_cron || 'SUA_CHAVE'}&quot; https://seusite.com/api/cron/remarketing/agendar</p>
+            <p className="mt-2 text-slate-500"># Agendar cadências do funil a cada hora</p>
+            <p>0 * * * * curl -X POST -H &quot;x-cron-key: {formData.api_key_cron || 'SUA_CHAVE'}&quot; https://seusite.com/api/cron/funil/scheduler</p>
             <p className="mt-2 text-slate-500"># Processar fila a cada 5 minutos</p>
             <p>*/5 * * * * curl -X POST -H &quot;x-cron-key: {formData.api_key_cron || 'SUA_CHAVE'}&quot; https://seusite.com/api/cron/remarketing/processar</p>
           </div>
@@ -409,16 +410,16 @@ export default function ConfigPage() {
             
             <button
               type="button"
-              onClick={() => executeCron('agendar')}
+              onClick={() => executeCron('funil')}
               disabled={cronRunning !== null}
               className="flex items-center justify-center gap-2 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-400 px-4 py-3 rounded-lg font-medium transition-all disabled:opacity-50"
             >
-              {cronRunning === 'agendar' ? (
+              {cronRunning === 'funil' ? (
                 <MorphingInfinity className="size-5" />
               ) : (
                 <Play className="size-5" />
               )}
-              <span>Agendar</span>
+              <span>Agendar cadências</span>
             </button>
             
             <button
@@ -480,13 +481,13 @@ export default function ConfigPage() {
               Abrir /classificar
             </a>
             <a
-              href={`/api/cron/remarketing/agendar?key=${formData.api_key_cron}`}
+              href={`/api/cron/funil/scheduler?key=${formData.api_key_cron}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300"
             >
               <ExternalLink className="size-3" />
-              Abrir /agendar
+              Abrir /funil/scheduler
             </a>
             <a
               href={`/api/cron/remarketing/processar?key=${formData.api_key_cron}`}

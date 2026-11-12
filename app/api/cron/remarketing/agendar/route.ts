@@ -18,6 +18,8 @@ import {
   type ContatoElegibilidade,
 } from '@/lib/crm-consentimento';
 
+const ENVIO_POR_CATEGORIA_ATIVO = process.env.REMARKETING_ENVIO_POR_CATEGORIA === 'true';
+
 interface Contato extends ContatoElegibilidade {
   id: number;
   nome: string | null;
@@ -76,6 +78,16 @@ async function handleRequest(cronKey: string | null) {
   
   if (cronKey !== config.api_key_cron) {
     return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 });
+  }
+
+  // Etapa 3: as cadências do funil (/api/cron/funil/scheduler) são o único motor de envio.
+  // Categorias seguem existindo como segmentação, mas não agendam mais mensagens.
+  if (!ENVIO_POR_CATEGORIA_ATIVO) {
+    return NextResponse.json({
+      success: true,
+      message: 'Envio por categoria desativado. As mensagens automáticas agora saem pelas cadências do funil.',
+      agendados: 0,
+    });
   }
   
   // Verificar limite diario
