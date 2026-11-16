@@ -51,6 +51,7 @@ export interface OrderWithClient {
     entregador_nome: string | null;
     entregador_telefone: string | null;
     entregador_veiculo: string | null;
+    token_rastreio: string | null;
 }
 
 export interface FaltaInsumo {
@@ -175,6 +176,7 @@ export async function getOrders(): Promise<OrderWithClient[]> {
                 entregador_nome: driver?.nome || null,
                 entregador_telefone: driver?.telefone || null,
                 entregador_veiculo: driver?.veiculo || null,
+                token_rastreio: order.token_rastreio || null,
             };
         });
     } catch (error) {
