@@ -302,7 +302,8 @@ export async function upsertCadencia(data: {
       intervalo_horas: data.intervalo_horas ?? null,
       mensagem_id: data.mensagem_id ?? null,
       modo: data.modo ?? 'aprovacao',
-      ativo: data.ativo ?? true,
+      // Passo sem mensagem nunca envia nada; manter inativo deixa isso visivel.
+      ativo: data.mensagem_id ? (data.ativo ?? true) : false,
     };
 
     let cadencia: Cadencia;
