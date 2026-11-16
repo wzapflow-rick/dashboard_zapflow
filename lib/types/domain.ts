@@ -59,6 +59,7 @@ export interface PedidoRow {
   cupom_id?: Id | null;
   canal?: string | null;
   observacoes?: string | null;
+  token_rastreio?: string | null;
 }
 
 export interface ClienteRow {

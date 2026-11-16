@@ -1,6 +1,7 @@
 'use server';
 
 import { getOrderCreatedMessage, getOwnerNewOrderMessage, getStatusMessage, WhatsAppMessages } from '@/llm/messages';
+import { getTrackingPath } from '@/lib/order-tracking';
 
 const EVO_API_URL = process.env.EVOLUTION_API_URL || 'https://evo.wzapflow.com.br';
 const EVO_API_KEY = process.env.EVOLUTION_API_KEY || '';
@@ -170,7 +171,7 @@ export async function sendOrderCreatedMessage(
     itens?: any[],
     empresaId?: number
 ): Promise<boolean> {
-    const trackUrl = `${BASE_URL}/track/${orderId}`;
+    const trackUrl = `${BASE_URL}${await getTrackingPath(orderId)}`;
     const itensFormatados = itens ? formatItensForWhatsApp(itens) : '';
     const message = getOrderCreatedMessage(orderId, total, trackUrl, !!dataAgendamento, dataAgendamento || undefined, itensFormatados);
 
@@ -231,7 +232,7 @@ export async function sendOrderStatusMessage(
     tipoEntrega?: string
 ): Promise<boolean> {
     const isDelivery = tipoEntrega === 'delivery';
-    const trackUrl = `${BASE_URL}/track/${orderId}`;
+    const trackUrl = `${BASE_URL}${await getTrackingPath(orderId)}`;
     
     const message = getStatusMessage(status, orderId, isDelivery, trackUrl, empresaId);
 

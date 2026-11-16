@@ -441,7 +441,7 @@ export function OrderCard({ order, columnId, onOpenPrintModal, onMoveOrder, onRe
             {isDelivery && !isMesa && (columnId === 'entrega' || columnId === 'preparando') && (
                 <div className="pt-2 border-t border-slate-100 dark:border-zinc-800/60">
                     <a
-                        href={`/track/${order.id}`}
+                        href={`/track/${order.token_rastreio || order.id}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800 rounded-lg text-purple-700 dark:text-purple-300 text-sm font-medium hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors"
