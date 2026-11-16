@@ -191,7 +191,14 @@ export default function TrackOrderPage() {
         </motion.div>
 
         {/* Entregador (se atribuído) */}
-        {order.entregador_id && order.status === 'entrega' && (
+        {order.limitado && (
+          <div className="bg-white rounded-2xl shadow-lg p-6 text-sm text-slate-600 leading-relaxed">
+            Por segurança, este link mostra apenas o status. Para ver endereço, itens e valores, abra o
+            link mais recente que enviamos no seu WhatsApp.
+          </div>
+        )}
+
+        {order.tem_entregador && order.status === 'entrega' && (
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -215,7 +222,7 @@ export default function TrackOrderPage() {
         )}
 
         {/* Endereço */}
-        {order.tipo_entrega === 'delivery' && (
+        {!order.limitado && order.tipo_entrega === 'delivery' && (
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -234,6 +241,7 @@ export default function TrackOrderPage() {
         )}
 
         {/* Resumo do Pedido */}
+        {!order.limitado && (
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -281,6 +289,7 @@ export default function TrackOrderPage() {
             </div>
           </div>
         </motion.div>
+        )}
 
         {/* Informações Adicionais */}
         <motion.div 
@@ -290,12 +299,14 @@ export default function TrackOrderPage() {
           className="bg-white rounded-2xl shadow-lg p-6"
         >
           <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-slate-500">Pagamento</p>
-              <p className="font-bold text-slate-900 capitalize">
-                {order.forma_pagamento || 'Não informado'}
-              </p>
-            </div>
+            {!order.limitado && (
+              <div>
+                <p className="text-slate-500">Pagamento</p>
+                <p className="font-bold text-slate-900 capitalize">
+                  {order.forma_pagamento || 'Não informado'}
+                </p>
+              </div>
+            )}
             <div>
               <p className="text-slate-500">Data do Pedido</p>
               <p className="font-bold text-slate-900">{formatDate(order.criado_em)}</p>
