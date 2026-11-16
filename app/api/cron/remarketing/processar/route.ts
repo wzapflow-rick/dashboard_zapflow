@@ -10,11 +10,37 @@ import {
 } from '@/lib/crm-consentimento';
 import { registrarInteracao } from '@/lib/crm-interacoes';
 import {
+  REMARKETING_CADENCIA_ENVIOS_TABLE,
   REMARKETING_CONFIG_TABLE,
   REMARKETING_CONTATOS_TABLE,
   REMARKETING_FILA_TABLE,
   REMARKETING_HISTORICO_TABLE,
 } from '@/lib/tables';
+
+/**
+ * Reflete o desfecho do item da fila no registro da cadencia. Sem isso o envio
+ * ficava 'agendado' para sempre e, depois da limpeza da fila, nao restava
+ * registro do que realmente saiu.
+ *
+ * Nunca usar 'cancelado' aqui: o scheduler reagenda passos cancelados, o que
+ * geraria um ciclo agenda/cancela a cada execucao. Desfechos finais:
+ * 'enviado', 'erro' (esgotou tentativas) e 'pulado' (contato inelegivel).
+ */
+async function registrarDesfechoCadencia(
+  filaId: number,
+  status: 'enviado' | 'erro' | 'pulado',
+): Promise<void> {
+  try {
+    await pg.raw(
+      `UPDATE "${REMARKETING_CADENCIA_ENVIOS_TABLE}"
+          SET status = $2
+        WHERE fila_id = $1 AND status = 'agendado'`,
+      [filaId, status],
+    );
+  } catch (error) {
+    console.error('[Processar] Falha ao atualizar envio da cadencia:', filaId, error);
+  }
+}
 
 interface Config {
   api_key_cron: string;
@@ -184,6 +210,7 @@ async function handleRequest(cronKey: string | null) {
         erro: 'Contato nao encontrado',
         tentativas: item.tentativas + 1,
       });
+      await registrarDesfechoCadencia(item.id, 'erro');
       totalErros++;
       continue;
     }
@@ -195,6 +222,7 @@ async function handleRequest(cronKey: string | null) {
         status: 'cancelado',
         erro: motivoBloqueio,
       });
+      await registrarDesfechoCadencia(item.id, 'pulado');
       continue;
     }
 
@@ -204,6 +232,7 @@ async function handleRequest(cronKey: string | null) {
         status: 'cancelado',
         erro: 'aguardando_resposta',
       });
+      await registrarDesfechoCadencia(item.id, 'pulado');
       continue;
     }
     
@@ -308,6 +337,7 @@ async function handleRequest(cronKey: string | null) {
           enviado_em: new Date().toISOString(),
           tentativas: item.tentativas + 1,
         });
+        await registrarDesfechoCadencia(item.id, 'enviado');
         
         // Atualizar ultima_msg_remarketing do contato
         await pg.raw(`
@@ -352,6 +382,7 @@ async function handleRequest(cronKey: string | null) {
         });
         
         if (novoStatus === 'erro') {
+          await registrarDesfechoCadencia(item.id, 'erro');
           await pg.create(REMARKETING_HISTORICO_TABLE, {
             contato_id: item.contato_id,
             tipo: 'msg_erro',
@@ -374,6 +405,7 @@ async function handleRequest(cronKey: string | null) {
         erro: 'Erro de conexao com Evolution API',
         tentativas: novasTentativas,
       });
+      if (novoStatus === 'erro') await registrarDesfechoCadencia(item.id, 'erro');
       
       totalErros++;
     }

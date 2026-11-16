@@ -73,10 +73,10 @@ export function CadenciasEditor() {
       intervalo_horas: cad.intervalo_horas,
       mensagem_id: cad.mensagem_id,
       modo: cad.modo,
-      ativo: cad.ativo,
+      ativo: Boolean(cad.mensagem_id),
     });
     if (res.success) {
-      toast.success('Cadencia salva');
+      toast.success(cad.mensagem_id ? 'Cadencia salva' : 'Salva como inativa: escolha uma mensagem para ativar');
       load();
     } else {
       toast.error(res.error || 'Erro ao salvar');
@@ -109,7 +109,7 @@ export function CadenciasEditor() {
       rotulo: `Passo ${proximaOrdem}`,
       offset_horas: 24,
       modo,
-      ativo: true,
+      ativo: false,
     });
     if (res.success) {
       toast.success('Passo adicionado');
@@ -217,6 +217,11 @@ export function CadenciasEditor() {
                           </option>
                         ))}
                       </select>
+                      {!cad.mensagem_id && (
+                        <p className="text-[10px] text-orange-400 mt-1">
+                          Sem mensagem: passo inativo, nada é enviado.
+                        </p>
+                      )}
                     </div>
 
                     {/* Modo */}
