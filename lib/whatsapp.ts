@@ -1,5 +1,3 @@
-'use server';
-
 import { getOrderCreatedMessage, getOwnerNewOrderMessage, getStatusMessage, WhatsAppMessages } from '@/llm/messages';
 import { getTrackingPath } from '@/lib/order-tracking';
 

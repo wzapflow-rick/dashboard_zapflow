@@ -10,7 +10,7 @@ import { logAction } from '@/lib/audit';
 import { incrementCouponUsage } from './coupons';
 import { addPointsForOrder } from './loyalty';
 import { finishDelivery } from './drivers';
-import { sendOrderStatusMessage } from './whatsapp';
+import { sendOrderStatusMessage } from '@/lib/whatsapp';
 import { logger } from '@/lib/logger';
 import { pg } from '@/lib/postgres';
 import {

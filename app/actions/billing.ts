@@ -3,9 +3,15 @@
 import { pg } from '@/lib/postgres';
 import { getPlatformMpAccessToken } from '@/lib/mercadopago-token';
 import { SUBSCRIPTION_PLANS, type SubscriptionPlanId } from '@/lib/constants';
+import { getMe } from '@/lib/session-server';
 
 const MP_ACCESS_TOKEN = getPlatformMpAccessToken();
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://cardapio.wzapflow.com.br';
+
+async function isEmpresaDaSessao(empresaId: number): Promise<boolean> {
+  const user = await getMe();
+  return !!user?.empresaId && Number(user.empresaId) === Number(empresaId);
+}
 
 export interface BillingStatus {
   tipo_pagamento: 'cartao' | 'pix' | null;
@@ -33,6 +39,7 @@ export interface BillingStatus {
  * `assinaturas` (renovacao automatica no cartao).
  */
 export async function getBillingStatus(empresaId: number): Promise<BillingStatus | null> {
+  if (!(await isEmpresaDaSessao(empresaId))) return null;
   try {
     // Uma única query com LEFT JOIN LATERAL pega os dados da empresa + a
     // assinatura mais recente de uma vez (antes eram 2 round-trips).
@@ -84,6 +91,7 @@ export async function getBillingStatus(empresaId: number): Promise<BillingStatus
  * Usa o valor personalizado da assinatura se existir, senao usa o valor padrao do plano
  */
 export async function generatePixPayment(empresaId: number, plano: SubscriptionPlanId) {
+  if (!(await isEmpresaDaSessao(empresaId))) return { success: false, error: 'Não autorizado' };
   try {
     const plan = SUBSCRIPTION_PLANS[plano.toUpperCase() as keyof typeof SUBSCRIPTION_PLANS];
     if (!plan) {
@@ -181,6 +189,7 @@ export async function generatePixPayment(empresaId: number, plano: SubscriptionP
  * Usado pelo botao "Pagar agora" do banner de cobranca.
  */
 export async function generateCheckoutLink(empresaId: number) {
+  if (!(await isEmpresaDaSessao(empresaId))) return { success: false, error: 'Não autorizado' };
   try {
     const empresa = await pg.findById('empresas', empresaId) as any;
     if (!empresa) {
@@ -264,100 +273,3 @@ export async function generateCheckoutLink(empresaId: number) {
   }
 }
 
-/**
- * Atualiza status de pagamento de uma empresa
- */
-export async function updatePaymentStatus(
-  empresaId: number,
-  data: {
-    tipo_pagamento?: 'cartao' | 'pix';
-    data_vencimento?: string;
-    dias_inadimplente?: number;
-    ultimo_aviso_enviado?: number;
-    bloqueado?: boolean;
-    planos?: string;
-  }
-) {
-  try {
-    await pg.update('empresas', { id: empresaId, ...data });
-    return { success: true };
-  } catch (error: any) {
-    console.error('[Billing] Erro ao atualizar status:', error);
-    return { success: false, error: error.message };
-  }
-}
-
-/**
- * Busca empresas com pagamento PIX vencido
- */
-export async function getOverdueCompanies() {
-  try {
-    const today = new Date().toISOString().split('T')[0];
-    
-    const result = await pg.query(
-      `SELECT * FROM empresas WHERE tipo_pagamento = 'pix' AND data_vencimento < $1 AND bloqueado = false LIMIT 100`,
-      [today]
-    );
-
-    return result?.rows || [];
-  } catch (error) {
-    console.error('[Billing] Erro ao buscar empresas inadimplentes:', error);
-    return [];
-  }
-}
-
-/**
- * Calcula proxima data de vencimento (dia 5 do proximo mes)
- */
-export async function calculateNextDueDate(): Promise<string> {
-  const now = new Date();
-  let year = now.getFullYear();
-  let month = now.getMonth() + 1;
-  
-  if (month > 11) {
-    month = 0;
-    year += 1;
-  }
-  
-  const dueDate = new Date(year, month, 5);
-  return dueDate.toISOString().split('T')[0];
-}
-
-/**
- * Bloqueia empresa por inadimplencia
- */
-export async function blockCompany(empresaId: number) {
-  try {
-    await pg.update('empresas', {
-      id: empresaId,
-      bloqueado: true,
-      planos: 'iniciante',
-    });
-    return { success: true };
-  } catch (error: any) {
-    console.error('[Billing] Erro ao bloquear empresa:', error);
-    return { success: false, error: error.message };
-  }
-}
-
-/**
- * Desbloqueia empresa apos pagamento
- */
-export async function unblockCompany(empresaId: number, plano: string) {
-  try {
-    const nextDueDate = await calculateNextDueDate();
-    
-    await pg.update('empresas', {
-      id: empresaId,
-      bloqueado: false,
-      dias_inadimplente: 0,
-      ultimo_aviso_enviado: 0,
-      data_vencimento: nextDueDate,
-      planos: plano,
-    });
-    return { success: true };
-  } catch (error: any) {
-    console.error('[Billing] Erro ao desbloquear empresa:', error);
-    return { success: false, error: error.message };
-  }
-}

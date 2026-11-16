@@ -11,7 +11,7 @@ import bcrypt from 'bcryptjs';
 import { encrypt } from '@/lib/session';
 import { cookies } from 'next/headers';
 import { v4 as uuidv4 } from 'uuid';
-import { setupEvolutionInstance } from './evolution';
+import { setupEvolutionInstance } from '@/lib/evolution';
 import { notifyNewCompany, notifyError } from '@/lib/discord';
 import { registrarLeadDoCadastro } from '@/lib/funil-leads';
 
@@ -386,7 +386,7 @@ export async function createTrialAccount(data: {
     });
     
     try {
-      const { sendWelcomeMessage } = await import('./whatsapp');
+      const { sendWelcomeMessage } = await import('@/lib/whatsapp');
       await sendWelcomeMessage(cleanPhone, nome, email, 'start', senha);
     } catch (waError) {
       console.error('[Signup] Erro ao enviar WhatsApp:', waError);
@@ -683,7 +683,7 @@ export async function completeSignup(token: string, password: string) {
     });
     
     try {
-      const { sendWelcomeMessage } = await import('./whatsapp');
+      const { sendWelcomeMessage } = await import('@/lib/whatsapp');
       await sendWelcomeMessage(signup.telefone, signup.nome, signup.email, signup.plano, password);
     } catch (waError) {
       console.error('[Signup] Erro ao enviar WhatsApp de boas-vindas:', waError);

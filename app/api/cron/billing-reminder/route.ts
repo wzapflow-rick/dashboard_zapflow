@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pg } from '@/lib/postgres';
-import { sendRenewalReminder } from '@/app/actions/whatsapp';
+import { sendRenewalReminder } from '@/lib/whatsapp';
 import { criarLinkPagamentoRenovacao } from '@/app/actions/billing-renewal';
 import { notifyBillingReminder } from '@/lib/discord';
 import { logCronRun } from '@/lib/cron-logger';

@@ -1363,7 +1363,7 @@ export default function SettingsPage() {
                   setIsTestingWhatsApp(true);
                   toast.loading('Enviando mensagem de teste...', { id: 'whatsapp-test' });
                   try {
-                    const { testWhatsApp } = await import('@/app/actions/whatsapp');
+                    const { testWhatsApp } = await import('@/app/actions/whatsapp-test');
                     const result = await testWhatsApp(phone);
                     if (result.success) {
                       toast.success(`Mensagem enviada para ${result.formattedPhone}!`, { id: 'whatsapp-test' });

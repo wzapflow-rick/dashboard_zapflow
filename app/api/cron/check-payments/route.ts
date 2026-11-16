@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pg } from '@/lib/postgres';
-import { blockCompany, updatePaymentStatus } from '@/app/actions/billing';
-import { sendPaymentReminder, sendTrialExpiredMessage } from '@/app/actions/whatsapp';
+import { blockCompany, updatePaymentStatus } from '@/lib/billing-admin';
+import { sendPaymentReminder, sendTrialExpiredMessage } from '@/lib/whatsapp';
 import { logCronRun } from '@/lib/cron-logger';
 
 // Protege o endpoint com uma chave secreta
