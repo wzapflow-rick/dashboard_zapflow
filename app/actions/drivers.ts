@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { getMe } from '@/lib/session-server';
-import { sendWhatsAppMessage, sendWhatsAppMessageWithInstance } from './whatsapp';
+import { sendWhatsAppMessage, sendWhatsAppMessageWithInstance } from '@/lib/whatsapp';
 import { pg } from '@/lib/postgres';
 import {
   ENTREGADORES_TABLE,

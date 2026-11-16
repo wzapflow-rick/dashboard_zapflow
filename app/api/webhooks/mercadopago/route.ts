@@ -7,7 +7,7 @@ import {
   updateAssinaturaByMpSubscriptionId,
 } from '@/lib/assinaturas';
 import { notifyPayment } from '@/lib/discord';
-import { unblockCompany } from '@/app/actions/billing';
+import { unblockCompany } from '@/lib/billing-admin';
 import { validateMercadoPagoSignature } from '@/lib/mercadopago-signature';
 import { logWebhook, type WebhookLogContext } from '@/lib/webhook-logger';
 
@@ -324,7 +324,7 @@ async function applySignupPayment(ref: JsonReference, paymentId: string): Promis
     return 'duplicate';
   }
   const { createPendingSignup } = await import('@/app/actions/signup');
-  const { sendWelcomeSignupMessage } = await import('@/app/actions/whatsapp');
+  const { sendWelcomeSignupMessage } = await import('@/lib/whatsapp');
 
   await createPendingSignup({
     token: ref.token,
@@ -637,7 +637,7 @@ async function handleOrderPayment(paymentId: string, ctx: WebhookLogContext): Pr
     console.log(`[MercadoPago Webhook] Pagamento aprovado para pedido ${orderId} - status atualizado para 'pendente'`);
 
     try {
-      const { sendOrderStatusMessage } = await import('@/app/actions/whatsapp');
+      const { sendOrderStatusMessage } = await import('@/lib/whatsapp');
       if (order.telefone_cliente) {
         await sendOrderStatusMessage(
           order.telefone_cliente,

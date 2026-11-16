@@ -283,7 +283,7 @@ export async function createEmpresa(data: {
         `, [token, data.email, data.nome, data.telefone, data.plano || 'parceria']);
         
         // Enviar link de ativacao via WhatsApp
-        const { sendWelcomeSignupMessage } = await import('./whatsapp');
+        const { sendWelcomeSignupMessage } = await import('@/lib/whatsapp');
         await sendWelcomeSignupMessage(data.telefone, data.nome, token);
         
         console.log('[Admin] Link de ativacao enviado para:', data.telefone);

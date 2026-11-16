@@ -3,9 +3,27 @@
 import { cookies } from 'next/headers';
 import { encrypt, decrypt } from '@/lib/session';
 import { pg } from '@/lib/postgres';
+import { checkRateLimit, clearRateLimitAttempts, getClientIp } from '@/lib/rate-limit';
+
+const DRIVER_LOGIN_ACTION = 'driver_login';
+const CREDENCIAIS_INVALIDAS = 'Email ou senha inválidos';
 
 export async function driverLogin(email: string, password: string) {
     try {
+        const emailKey = `driver:${String(email || '').trim().toLowerCase()}`;
+        const ip = await getClientIp();
+        const ipKey = `driver-ip:${ip}`;
+
+        const [porEmail, porIp] = await Promise.all([
+            checkRateLimit(emailKey, DRIVER_LOGIN_ACTION, { maxAttempts: 5 }),
+            ip !== 'unknown'
+                ? checkRateLimit(ipKey, DRIVER_LOGIN_ACTION, { maxAttempts: 20, blockDurationMs: 60 * 60 * 1000 })
+                : Promise.resolve({ allowed: true, remaining: 0 }),
+        ]);
+        if (!porEmail.allowed || !porIp.allowed) {
+            return { success: false, error: 'Muitas tentativas. Tente novamente mais tarde.' };
+        }
+
         const data = await pg.query(
             `SELECT * FROM entregadores WHERE email = $1 AND ativo = true LIMIT 1`,
             [email]
@@ -13,15 +31,17 @@ export async function driverLogin(email: string, password: string) {
         const driver = data.rows?.[0] as any;
 
         if (!driver) {
-            return { success: false, error: 'Entregador não encontrado' };
+            return { success: false, error: CREDENCIAIS_INVALIDAS };
         }
 
         const cleanPassword = password.replace(/\D/g, '');
         const cleanPhone = (driver.telefone || '').replace(/\D/g, '');
 
-        if (cleanPassword !== cleanPhone) {
-            return { success: false, error: 'Senha incorreta' };
+        if (!cleanPhone || cleanPassword !== cleanPhone) {
+            return { success: false, error: CREDENCIAIS_INVALIDAS };
         }
+
+        await clearRateLimitAttempts(emailKey, DRIVER_LOGIN_ACTION);
 
         const session = await encrypt({
             driverId: driver.id,

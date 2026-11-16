@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { incrementCouponUsage } from './coupons';
 import { deductPointsForOrder } from './loyalty';
-import { sendOrderCreatedMessage, sendOwnerNewOrderMessage } from './whatsapp';
+import { sendOrderCreatedMessage, sendOwnerNewOrderMessage } from '@/lib/whatsapp';
 import { pg } from '@/lib/postgres';
 import { getMe } from '@/lib/session-server';
 

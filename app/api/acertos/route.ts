@@ -1,14 +1,29 @@
 import { NextResponse } from 'next/server';
 import { pg } from '@/lib/postgres';
+import { getMe } from '@/lib/session-server';
+
+const PERFIS_COM_ACESSO = ['admin', 'gerente'];
+
+/** Empresa da sessão, se o usuário logado pode ver/fechar acertos. */
+async function getEmpresaAutorizada(): Promise<number | null> {
+    const user = await getMe();
+    if (!user?.empresaId || !PERFIS_COM_ACESSO.includes(user.role)) return null;
+    return Number(user.empresaId);
+}
 
 export async function GET(request: Request) {
     try {
+        const empresaId = await getEmpresaAutorizada();
+        if (!empresaId) {
+            return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+        }
+
         const { searchParams } = new URL(request.url);
-        const empresaId = searchParams.get('empresaId');
+        const empresaIdSolicitada = searchParams.get('empresaId');
         const periodo = searchParams.get('periodo') || 'hoje';
 
-        if (!empresaId) {
-            return NextResponse.json({ error: 'Empresa não informada' }, { status: 400 });
+        if (empresaIdSolicitada && Number(empresaIdSolicitada) !== empresaId) {
+            return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
         }
 
         const [driversData, ordersData] = await Promise.all([
@@ -86,11 +101,23 @@ export async function GET(request: Request) {
 
 export async function PATCH(request: Request) {
     try {
+        const empresaId = await getEmpresaAutorizada();
+        if (!empresaId) {
+            return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+        }
+
         const body = await request.json();
         const { entregador_id, valor_pago, pago } = body;
 
         if (!entregador_id) {
             return NextResponse.json({ error: 'Dados incompletos' }, { status: 400 });
+        }
+
+        const entregador = await pg.findOne<{ id: number }>('entregadores', {
+            where: { id: Number(entregador_id), empresa_id: empresaId },
+        });
+        if (!entregador) {
+            return NextResponse.json({ error: 'Entregador não encontrado' }, { status: 404 });
         }
 
         const data = await pg.update('entregadores', {

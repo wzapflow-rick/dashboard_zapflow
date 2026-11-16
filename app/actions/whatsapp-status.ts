@@ -2,7 +2,7 @@
 
 import { getMe } from '@/lib/session-server';
 import { pg } from '@/lib/postgres';
-import { getInstanceStatus } from '@/app/actions/evolution';
+import { getInstanceStatus } from '@/lib/evolution';
 
 export type WhatsappConnectionState = 'connected' | 'connecting' | 'disconnected';
 
