@@ -4,6 +4,7 @@ import { notifyWhatsAppConnected, notifyWhatsAppDisconnected, notifyError } from
 import { getStatusLoja, type Horario } from '@/lib/horarios';
 import { CRM_INSTANCE } from '@/lib/crm-consentimento';
 import { tratarMensagemCrm } from '@/lib/crm-entrada';
+import { maskPhoneForLog } from '@/lib/logger';
 
 const EVO_API_URL = process.env.EVOLUTION_API_URL || 'https://evo.wzapflow.com.br';
 const EVO_API_KEY = process.env.EVOLUTION_API_KEY || '';
@@ -94,7 +95,7 @@ async function sendMessage(instanceName: string, phone: string, text: string): P
 
   for (let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++) {
     try {
-      console.log(`[BOT] Enviando mensagem para ${phone} via ${instanceName} (tentativa ${tentativa}/${MAX_TENTATIVAS})`);
+      console.log(`[BOT] Enviando mensagem para ${maskPhoneForLog(phone)} via ${instanceName} (tentativa ${tentativa}/${MAX_TENTATIVAS})`);
 
       // Timeout para nao travar o webhook se a Evolution nao responder
       const controller = new AbortController();
@@ -135,7 +136,7 @@ async function sendMessage(instanceName: string, phone: string, text: string): P
     }
   }
 
-  console.error(`[BOT] Esgotadas as ${MAX_TENTATIVAS} tentativas de envio para ${phone}`);
+  console.error(`[BOT] Esgotadas as ${MAX_TENTATIVAS} tentativas de envio para ${maskPhoneForLog(phone)}`);
   return false;
 }
 
@@ -159,7 +160,7 @@ async function wasRecentlyContacted(empresaId: number, phone: string): Promise<b
   if (cachedTime) {
     const hoursDiff = (now - cachedTime) / (1000 * 60 * 60);
     if (hoursDiff < COOLDOWN_HOURS) {
-      console.log(`[BOT] Cliente ${phone} no cache (${hoursDiff.toFixed(1)}h atras), ignorando`);
+      console.log(`[BOT] Cliente ${maskPhoneForLog(phone)} no cache (${hoursDiff.toFixed(1)}h atras), ignorando`);
       return true;
     }
   }
@@ -182,7 +183,7 @@ async function wasRecentlyContacted(empresaId: number, phone: string): Promise<b
         const hoursDiff = (now - lastContact.getTime()) / (1000 * 60 * 60);
         
         if (hoursDiff < COOLDOWN_HOURS) {
-          console.log(`[BOT] Cliente ${phone} contatado ha ${hoursDiff.toFixed(1)}h (banco), ignorando`);
+          console.log(`[BOT] Cliente ${maskPhoneForLog(phone)} contatado ha ${hoursDiff.toFixed(1)}h (banco), ignorando`);
           recentContactsCache.set(cacheKey, lastContact.getTime());
           return true;
         }
@@ -204,7 +205,7 @@ async function wasRecentlyContacted(empresaId: number, phone: string): Promise<b
         if (lastContactTime) {
           const hoursDiff = (now - lastContactTime) / (1000 * 60 * 60);
           if (hoursDiff < COOLDOWN_HOURS) {
-            console.log(`[BOT] Cliente ${phone} em contatos_recentes (${hoursDiff.toFixed(1)}h), ignorando`);
+            console.log(`[BOT] Cliente ${maskPhoneForLog(phone)} em contatos_recentes (${hoursDiff.toFixed(1)}h), ignorando`);
             recentContactsCache.set(cacheKey, lastContactTime);
             return true;
           }
@@ -231,7 +232,7 @@ async function markAsContacted(empresaId: number, phone: string): Promise<void> 
   
   // 1. Sempre atualiza o cache primeiro (imediato)
   recentContactsCache.set(cacheKey, now);
-  console.log(`[BOT] Cache atualizado para ${phone}`);
+  console.log(`[BOT] Cache atualizado para ${maskPhoneForLog(phone)}`);
   
   // 2. Tenta atualizar na tabela de clientes
   try {
@@ -244,7 +245,7 @@ async function markAsContacted(empresaId: number, phone: string): Promise<void> 
         id: cliente.id,
         ultimo_contato_bot: new Date().toISOString()
       });
-      console.log(`[BOT] Cliente ${phone} marcado no banco (ID: ${cliente.id})`);
+      console.log(`[BOT] Cliente ${maskPhoneForLog(phone)} marcado no banco (ID: ${cliente.id})`);
     }
   } catch (clienteError) {
     console.warn('[BOT] Erro ao atualizar cliente:', clienteError);
@@ -371,7 +372,7 @@ async function releaseSaudacao(empresaId: number, phone: string): Promise<void> 
       `DELETE FROM bot_saudacao_log WHERE empresa_id = $1 AND telefone = $2`,
       [empresaId, phone],
     );
-    console.log(`[BOT] Trava liberada (rollback) para ${phone} apos falha de envio`);
+    console.log(`[BOT] Trava liberada (rollback) para ${maskPhoneForLog(phone)} apos falha de envio`);
   } catch (error) {
     console.warn('[BOT] Nao foi possivel liberar a trava de saudacao:', error);
   }
@@ -610,14 +611,14 @@ export async function POST(req: NextRequest) {
                         data.message?.extendedTextMessage?.text || 
                         '';
     
-    console.log(`[BOT] Mensagem de ${phone}: "${messageText.substring(0, 50)}..."`);
+    console.log(`[BOT] Mensagem de ${maskPhoneForLog(phone)}: "${messageText.substring(0, 50)}..."`);
     console.log(`[BOT] Instancia: ${instanceName}`);
     
     // Ignora mensagens vindas do numero central da ZapFlash (notificacoes internas,
     // como o resumo de novos pedidos enviado ao dono). Sem isso, cada notificacao
     // de pedido dispararia indevidamente o bot de saudacao.
     if (isZapflowCentralPhone(phone)) {
-      console.log(`[BOT] Mensagem do numero central da ZapFlash (${phone}) — ignorando para nao disparar saudacao`);
+      console.log(`[BOT] Mensagem do numero central da ZapFlash (${maskPhoneForLog(phone)}) — ignorando para nao disparar saudacao`);
       return NextResponse.json({ received: true, ignored: 'zapflow_central' });
     }
     
@@ -636,7 +637,7 @@ export async function POST(req: NextRequest) {
     
     // 1. Verificar se ja esta processando (lock ativo)
     if (processingLock.get(lockKey)) {
-      console.log(`[BOT] Requisicao paralela detectada para ${phone}, ignorando`);
+      console.log(`[BOT] Requisicao paralela detectada para ${maskPhoneForLog(phone)}, ignorando`);
       return NextResponse.json({ received: true, ignored: 'parallel_request' });
     }
     
@@ -645,7 +646,7 @@ export async function POST(req: NextRequest) {
     if (cachedTime) {
       const secondsDiff = (Date.now() - cachedTime) / 1000;
       if (secondsDiff < 30) {
-        console.log(`[BOT] Cliente ${phone} no cache (${secondsDiff.toFixed(0)}s atras), ignorando`);
+        console.log(`[BOT] Cliente ${maskPhoneForLog(phone)} no cache (${secondsDiff.toFixed(0)}s atras), ignorando`);
         return NextResponse.json({ received: true, recently_contacted: true });
       }
     }
@@ -653,7 +654,7 @@ export async function POST(req: NextRequest) {
     // 3. ATIVAR LOCK IMEDIATAMENTE - antes de qualquer operacao async
     // Mas NAO preenche o cache ainda - so apos verificacao completa no banco
     processingLock.set(lockKey, true);
-    console.log(`[BOT] Lock ativado para ${phone}`);
+    console.log(`[BOT] Lock ativado para ${maskPhoneForLog(phone)}`);
     
     try {
       // Buscar configuracao do bot
@@ -674,7 +675,7 @@ export async function POST(req: NextRequest) {
       
       // 5. Passou em todas as verificacoes - preenche o cache agora
       recentContactsCache.set(lockKey, Date.now());
-      console.log(`[BOT] Cliente ${phone} liberado para receber saudacao`);
+      console.log(`[BOT] Cliente ${maskPhoneForLog(phone)} liberado para receber saudacao`);
     
       // Verificar horario de funcionamento se configurado
       const respeitar_horario = botConfig.respeitar_horario_funcionamento ?? 
@@ -733,7 +734,7 @@ export async function POST(req: NextRequest) {
       // saudacao. As demais sao bloqueadas aqui, ANTES de qualquer envio.
       const claimed = await tryClaimSaudacao(empresa.id, phone, COOLDOWN_HOURS * 60);
       if (!claimed) {
-        console.log(`[BOT] Saudacao ja reivindicada para ${phone} (trava de seguranca), ignorando duplicata`);
+        console.log(`[BOT] Saudacao ja reivindicada para ${maskPhoneForLog(phone)} (trava de seguranca), ignorando duplicata`);
         return NextResponse.json({ received: true, duplicate_blocked: true });
       }
       
@@ -757,7 +758,7 @@ export async function POST(req: NextRequest) {
       // da trava e limpa o cache para que a proxima mensagem do cliente tente de
       // novo — em vez de deixa-lo bloqueado por 6h sem ter recebido nada.
       if (enviadas === 0) {
-        console.error(`[BOT] Nenhuma mensagem enviada para ${phone} — revertendo trava para permitir nova tentativa`);
+        console.error(`[BOT] Nenhuma mensagem enviada para ${maskPhoneForLog(phone)} — revertendo trava para permitir nova tentativa`);
         await releaseSaudacao(empresa.id, phone);
         recentContactsCache.delete(lockKey);
         return NextResponse.json({ received: true, messages_sent: 0, send_failed: true }, { status: 200 });
@@ -777,7 +778,7 @@ export async function POST(req: NextRequest) {
     } finally {
       // SEMPRE libera o lock de processamento (mas mantem o cache)
       processingLock.delete(lockKey);
-      console.log(`[BOT] Lock liberado para ${phone}`);
+      console.log(`[BOT] Lock liberado para ${maskPhoneForLog(phone)}`);
     }
     
   } catch (error: any) {

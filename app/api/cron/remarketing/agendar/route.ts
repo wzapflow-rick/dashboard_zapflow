@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { sqlLivreParaEnvio } from '@/lib/crm-trava-envio';
 import { pg } from '@/lib/postgres';
+import { cronKeyMatches, getCronKey } from '@/lib/cron-auth';
 import {
   REMARKETING_CONFIG_TABLE,
   REMARKETING_CONTATOS_TABLE,
@@ -76,7 +77,7 @@ async function handleRequest(cronKey: string | null) {
     return NextResponse.json({ error: 'Sistema desativado' }, { status: 400 });
   }
   
-  if (cronKey !== config.api_key_cron) {
+  if (!cronKeyMatches(cronKey, config.api_key_cron)) {
     return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 });
   }
 
@@ -243,13 +244,12 @@ async function handleRequest(cronKey: string | null) {
     success: true,
     message: 'Agendamento concluido',
     agendados: totalAgendados,
-    debug: debugInfo,
   });
 }
 
 export async function POST(request: Request) {
   try {
-    const cronKey = request.headers.get('x-cron-key');
+    const cronKey = getCronKey(request);
     return handleRequest(cronKey);
   } catch (error) {
     console.error('[Cron Agendar] Erro:', error);
@@ -259,8 +259,7 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const cronKey = searchParams.get('key');
+    const cronKey = getCronKey(request);
     return handleRequest(cronKey);
   } catch (error) {
     console.error('[Cron Agendar] Erro:', error);

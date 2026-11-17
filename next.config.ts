@@ -35,18 +35,6 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'upload.wikimedia.org',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'i.pravatar.cc',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
         hostname: 'i.ibb.co',
         port: '',
         pathname: '/**',
@@ -79,10 +67,8 @@ const nextConfig: NextConfig = {
   },
   output: 'standalone',
   transpilePackages: ['motion'],
-  // Gerar um ID unico por deploy para invalidar cache
-  generateBuildId: async () => {
-    return `build-${Date.now()}`;
-  },
+  // Usa o SHA do commit quando disponivel; senao, o Next gera um ID unico por build.
+  generateBuildId: async () => process.env.GIT_COMMIT_SHA || process.env.VERCEL_GIT_COMMIT_SHA || null,
   async headers() {
     const isProduction = process.env.NODE_ENV === 'production';
     return [
@@ -96,9 +82,19 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      // Headers para paginas - cache curto para evitar problemas de Server Actions
+      // Arquivos de public/ (imagens, icones) - cache de 1 dia com revalidacao em segundo plano
       {
-        source: '/:path*',
+        source: '/:file*.:ext(png|jpg|jpeg|webp|avif|svg|ico|gif|woff2)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=86400, stale-while-revalidate=604800',
+          },
+        ],
+      },
+      // Paginas e APIs - sem cache para evitar problemas de Server Actions entre deploys
+      {
+        source: '/((?!_next/static|_next/image|.*\\.(?:png|jpg|jpeg|webp|avif|svg|ico|gif|woff2)$).*)',
         headers: [
           {
             key: 'Cache-Control',
@@ -116,10 +112,6 @@ const nextConfig: NextConfig = {
           {
             key: 'X-Frame-Options',
             value: 'DENY',
-          },
-          {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block',
           },
           {
             key: 'Referrer-Policy',
@@ -151,16 +143,6 @@ const nextConfig: NextConfig = {
         ],
       },
     ];
-  },
-  webpack: (config, { dev }) => {
-    // HMR is disabled in AI Studio via DISABLE_HMR env var.
-    // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
-    if (dev && process.env.DISABLE_HMR === 'true') {
-      config.watchOptions = {
-        ignored: /.*/,
-      };
-    }
-    return config;
   },
 };
 

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { pg } from '@/lib/postgres';
+import { cronKeyMatches, getCronKey } from '@/lib/cron-auth';
 import { avaliarRespostaEvolution } from '@/lib/whatsapp-jid';
 import {
   motivoBloqueioEnvio,
@@ -95,7 +96,7 @@ async function handleRequest(cronKey: string | null) {
     return NextResponse.json({ error: 'Sistema desativado' }, { status: 400 });
   }
   
-  if (cronKey !== config.api_key_cron) {
+  if (!cronKeyMatches(cronKey, config.api_key_cron)) {
     return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 });
   }
   
@@ -434,7 +435,7 @@ async function handleRequest(cronKey: string | null) {
 
 export async function POST(request: Request) {
   try {
-    const cronKey = request.headers.get('x-cron-key');
+    const cronKey = getCronKey(request);
     return handleRequest(cronKey);
   } catch (error) {
     console.error('[Cron Processar] Erro:', error);
@@ -444,8 +445,7 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const cronKey = searchParams.get('key');
+    const cronKey = getCronKey(request);
     return handleRequest(cronKey);
   } catch (error) {
     console.error('[Cron Processar] Erro:', error);

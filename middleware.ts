@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server'
 import { getMeEdge } from './lib/session-edge'
 
 const protectedRoutes = ['/dashboard']
-const authRoutes = ['/login', '/register']
+const authRoutes = ['/login', '/signup', '/register']
 
 const adminOnlyRoutes = ['/dashboard/users', '/dashboard/settings', '/dashboard/subscription', '/dashboard/testes']
 

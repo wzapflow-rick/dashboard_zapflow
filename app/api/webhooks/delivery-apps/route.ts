@@ -66,7 +66,6 @@ export async function POST(request: NextRequest) {
     console.log('[Webhook Delivery] Pedido recebido:', {
       plataforma: body.plataforma,
       pedido_externo_id: body.pedido_externo_id,
-      cliente: body.cliente_nome,
     });
 
     // Validar campos obrigatorios
@@ -100,7 +99,7 @@ export async function POST(request: NextRequest) {
     const empresa = empresaResult.rows?.[0] || empresaResult?.[0];
     
     if (!empresa) {
-      console.log('[Webhook Delivery] Token invalido:', body.empresa_token);
+      console.warn('[Webhook Delivery] Token invalido recebido', { plataforma: body.plataforma });
       return NextResponse.json(
         { error: 'Token de empresa inválido' },
         { status: 401 }

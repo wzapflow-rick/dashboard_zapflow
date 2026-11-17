@@ -126,4 +126,10 @@ function maskEmail(email: string): string {
     return `${local[0]}***${local[local.length - 1]}@${domain}`;
 }
 
+export function maskPhoneForLog(phone: string | null | undefined): string {
+    const digits = String(phone ?? '').replace(/\D/g, '');
+    if (digits.length <= 4) return '****';
+    return `***${digits.slice(-4)}`;
+}
+
 export default logger;
