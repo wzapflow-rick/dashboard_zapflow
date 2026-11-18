@@ -1,8 +1,8 @@
 // ZapFlash Service Worker - Offline First Strategy
 // IMPORTANTE: sempre incremente a versao ao mudar o comportamento de cache/impressao.
 // Isso forca o SW a limpar caches antigos e os aparelhos a rodarem o codigo novo.
-const CACHE_NAME = 'zapflow-v5';
-const OFFLINE_CACHE = 'zapflow-offline-v5';
+const CACHE_NAME = 'zapflow-v6';
+const OFFLINE_CACHE = 'zapflow-offline-v6';
 
 // Recursos estaticos para cache inicial
 const STATIC_ASSETS = [
@@ -370,3 +370,54 @@ async function getSyncQueueCount() {
 }
 
 console.log('[SW] Service Worker loaded');
+
+// ============================================================
+// Web Push: notificacao de novo pedido na barra do celular
+// ============================================================
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (e) {
+    data = { body: event.data ? event.data.text() : '' };
+  }
+
+  const title = data.title || 'ZapFlash';
+  const options = {
+    body: data.body || 'Voce tem uma nova atualizacao',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    tag: data.tag || 'zapflash',
+    renotify: true,
+    requireInteraction: true,
+    vibrate: [200, 100, 200, 100, 300],
+    data: { url: data.url || '/dashboard/expedition' },
+  };
+
+  event.waitUntil(
+    Promise.all([
+      self.registration.showNotification(title, options),
+      // Se o painel estiver aberto, avisa a pagina para tocar o som e mostrar o aviso na hora.
+      self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+        clients.forEach((client) => client.postMessage({ type: 'PUSH_RECEIVED', payload: data }));
+      }),
+    ])
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = new URL(event.notification.data?.url || '/dashboard/expedition', self.location.origin).href;
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if (client.url.startsWith(self.location.origin) && 'focus' in client) {
+          client.navigate(targetUrl).catch(() => {});
+          return client.focus();
+        }
+      }
+      return self.clients.openWindow(targetUrl);
+    })
+  );
+});

@@ -25,6 +25,7 @@ import MercadoPagoConnection from '@/components/management/mercadopago-connectio
 import { CreditCard as PaymentIcon } from 'lucide-react';
 import { getBotConfig, saveBotConfig, getCardapioLink, BotConfig } from '@/app/actions/bot';
 import { createEvolutionInstance, getEvolutionQRCode, getInstanceStatus, configureInstanceWebhook } from '@/app/actions/evolution';
+import { PushNotificationsCard } from '@/components/push-notifications-card';
 
 const sections = [
   { id: 'general', name: 'Geral', icon: Store },
@@ -1184,6 +1185,8 @@ export default function SettingsPage() {
 
               {activeSection === 'notifications' && (
                 <div className="space-y-6">
+                  <PushNotificationsCard />
+
                   <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <Bell className="size-5 text-primary" />
                     Notificacoes WhatsApp

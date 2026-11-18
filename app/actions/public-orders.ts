@@ -1,5 +1,6 @@
 'use server';
 
+import { notifyNewOrder } from '@/lib/push';
 import { revalidatePath } from 'next/cache';
 import { incrementCouponUsage } from './coupons';
 import { deductPointsForOrder } from './loyalty';
@@ -285,6 +286,12 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
         // Best-effort: nunca bloqueia ou derruba a criacao do pedido.
         notifyOwnerNewOrder(dadosEfetivos, order.id, itensFormatados, enderecoCompleto)
             .catch(err => console.error('Erro ao notificar dono sobre novo pedido:', err));
+
+        notifyNewOrder(Number(dadosEfetivos.empresaId), {
+            id: order.id,
+            clienteNome: dadosEfetivos.clienteNome,
+            total: dadosEfetivos.total,
+        });
 
         revalidatePath('/dashboard/expedition');
 

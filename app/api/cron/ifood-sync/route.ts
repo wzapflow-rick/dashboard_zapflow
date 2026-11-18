@@ -1,3 +1,4 @@
+import { notifyNewOrder } from '@/lib/push';
 import { NextResponse } from 'next/server';
 import { pg } from '@/lib/postgres';
 import { EMPRESAS_TABLE, PEDIDOS_TABLE, CLIENTES_TABLE } from '@/lib/tables';
@@ -128,7 +129,7 @@ export async function GET(request: Request) {
                 }
 
                 // Criar pedido
-                await pg.create(PEDIDOS_TABLE, {
+                const novoPedido: any = await pg.create(PEDIDOS_TABLE, {
                   empresa_id: empresa.id,
                   cliente_id: clienteId,
                   origem: 'ifood',
@@ -140,6 +141,13 @@ export async function GET(request: Request) {
                   endereco_entrega: zapflowOrder.endereco ? JSON.stringify(zapflowOrder.endereco) : null,
                   forma_pagamento: zapflowOrder.pagamento,
                   status: 'pendente',
+                });
+
+                notifyNewOrder(Number(empresa.id), {
+                  id: novoPedido.id,
+                  clienteNome: zapflowOrder.cliente_nome,
+                  total: zapflowOrder.valor_total,
+                  origem: 'iFood',
                 });
 
                 newOrders++;

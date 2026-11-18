@@ -1,3 +1,4 @@
+import { notifyNewOrder } from '@/lib/push';
 import { NextRequest, NextResponse } from 'next/server';
 import { pg } from '@/lib/postgres';
 import { PEDIDOS_TABLE, CLIENTES_TABLE, EMPRESAS_TABLE } from '@/lib/tables';
@@ -189,6 +190,13 @@ export async function POST(request: NextRequest) {
     });
 
     console.log('[Webhook Delivery] Pedido criado:', novoPedido.id);
+
+    notifyNewOrder(Number(empresa.id), {
+      id: (novoPedido as any).id,
+      clienteNome: body.cliente_nome,
+      total: body.valor_total,
+      origem: body.plataforma,
+    });
 
     // Notificar no Discord
     await notifyCustom(

@@ -48,6 +48,7 @@
     "swr": "^2.4.1",
     "tailwind-merge": "^3.3.1",
     "uuid": "^14.0.0",
+    "web-push": "^3.6.7",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -62,6 +63,7 @@
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/web-push": "^3.6.4",
     "eslint": "9.39.1",
     "eslint-config-next": "16.0.8",
     "jest": "^30.3.0",

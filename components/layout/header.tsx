@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
+import { toast } from 'sonner';
 import { LojaToggle } from '@/components/layout/loja-toggle';
 import { WhatsappStatusBadge } from '@/components/layout/whatsapp-status-badge';
 import { MorphingInfinity } from '@/components/ui/morphing-infinity';
@@ -120,7 +121,23 @@ export function Header() {
 
         checkOrders();
         const interval = setInterval(checkOrders, 15000);
-        return () => clearInterval(interval);
+
+        // Push chegou com o painel aberto: mostra o aviso e atualiza na hora, sem esperar o próximo ciclo.
+        const onSwMessage = (event: MessageEvent) => {
+            if (event.data?.type !== 'PUSH_RECEIVED') return;
+            const payload = event.data.payload || {};
+            toast.success(payload.title || 'Novo pedido', {
+                description: payload.body,
+                action: { label: 'Ver', onClick: () => { window.location.href = payload.url || '/dashboard/expedition'; } },
+            });
+            checkOrders();
+        };
+        navigator.serviceWorker?.addEventListener('message', onSwMessage);
+
+        return () => {
+            clearInterval(interval);
+            navigator.serviceWorker?.removeEventListener('message', onSwMessage);
+        };
     }, []);
 
     const handleBellClick = () => {
