@@ -54,6 +54,9 @@ function ensureTable(): Promise<void> {
       `)
       .then(() => undefined)
       .catch((error) => {
+        // Em produção o usuário do app não tem CREATE no schema public; a tabela vem da
+        // migração database/migrations/20261118_create_push_subscriptions.sql.
+        if (/permission denied/i.test(String(error?.message))) return;
         tableReady = null;
         throw error;
       });
