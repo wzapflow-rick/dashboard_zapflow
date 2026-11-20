@@ -93,7 +93,7 @@ export async function extractMenuProductsFromImage(formData: FormData) {
           {
             type: 'image',
             image: imageBytes,
-            mimeType: image.type,
+            mediaType: image.type,
           },
         ],
       },
