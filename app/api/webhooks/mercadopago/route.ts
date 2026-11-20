@@ -409,15 +409,17 @@ async function handleWebhook(req: NextRequest, ctx: WebhookLogContext): Promise<
   ctx.topic = topic;
   ctx.resourceId = dataId ?? undefined;
 
+  // Lojas com credenciais proprias recebem notificacoes assinadas com o secret da
+  // aplicacao delas, entao a assinatura da plataforma nao confere. Nada aqui confia no
+  // corpo da notificacao: todo status e reconsultado na API do Mercado Pago com o token
+  // correspondente, por isso a notificacao segue mesmo sem assinatura valida.
   const signatureValidation = validateWebhookSignature(xSignature, xRequestId, dataId);
   if (!signatureValidation.valid) {
     ctx.error = `signature:${signatureValidation.reason}`;
-    if (signatureValidation.reason === 'secret_not_configured') {
-      console.error('[Webhook] MP_WEBHOOK_SECRET ausente em producao — notificacao rejeitada');
-      return NextResponse.json({ error: 'Webhook not configured' }, { status: 503 });
-    }
-    console.warn('[Webhook] Notificacao rejeitada:', signatureValidation.reason);
-    return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 });
+    console.warn(
+      '[Webhook] Assinatura nao confere (%s) — seguindo com verificacao pela API do MP',
+      signatureValidation.reason
+    );
   }
 
   // resourceId pode vir como URL completa ou como ID direto

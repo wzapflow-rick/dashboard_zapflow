@@ -37,7 +37,25 @@ function configureVapid(): boolean {
 // Cria a tabela sob demanda para não depender de uma migração manual no deploy.
 function ensureTable(): Promise<void> {
   if (!tableReady) {
+    // Checa antes de criar: CREATE TABLE IF NOT EXISTS exige permissao de CREATE no schema
+    // mesmo quando a tabela ja existe, e o erro poluia os logs a cada pedido.
     tableReady = pg
+      .query(`SELECT to_regclass('public.push_subscriptions') IS NOT NULL AS existe`)
+      .then((result: any) => {
+        if (result?.rows?.[0]?.existe) return;
+        return createPushTable();
+      })
+      .catch((error) => {
+        if (/permission denied/i.test(String(error?.message))) return;
+        tableReady = null;
+        throw error;
+      });
+  }
+  return tableReady;
+}
+
+function createPushTable(): Promise<void> {
+  return pg
       .raw(`
         CREATE TABLE IF NOT EXISTS push_subscriptions (
           id SERIAL PRIMARY KEY,
@@ -52,16 +70,10 @@ function ensureTable(): Promise<void> {
         );
         CREATE INDEX IF NOT EXISTS idx_push_subscriptions_empresa ON push_subscriptions (empresa_id);
       `)
-      .then(() => undefined)
-      .catch((error) => {
-        // Em produção o usuário do app não tem CREATE no schema public; a tabela vem da
-        // migração database/migrations/20261118_create_push_subscriptions.sql.
-        if (/permission denied/i.test(String(error?.message))) return;
-        tableReady = null;
-        throw error;
-      });
-  }
-  return tableReady;
+      .then(() => undefined);
+  // Em produção o usuário do app não tem CREATE no schema public; a tabela vem da
+  // migração database/migrations/20261118_create_push_subscriptions.sql. O erro de
+  // permissão é tratado no catch de ensureTable.
 }
 
 export async function saveSubscription(
