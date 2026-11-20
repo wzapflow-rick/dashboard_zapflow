@@ -1,20 +1,31 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AlertCircle, ArrowLeft, ImagePlus, LoaderCircle, Plus, Sparkles, Trash2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
-import { extractMenuProductsFromImage, type MenuProductDraft } from '@/app/actions/import-menu-from-image';
-import { upsertCategory, upsertProduct, type Category } from '@/app/actions/products';
+import {
+  extractMenuProductsFromImage,
+  getCompanyMenuCategories,
+  saveMenuProductsForCompany,
+} from '@/app/actions/import-menu-from-image';
+import { type Category } from '@/app/actions/products';
 import { MobileDrawer } from '@/components/ui/mobile-drawer';
 import { isValidImageFile, processImage } from '@/lib/image-utils';
+
+type MenuProductDraft = {
+  nome: string;
+  descricao: string | null;
+  preco: number | null;
+  categoria: string | null;
+};
 
 type DraftRow = MenuProductDraft & { id: string; precoText: string; selecionado: boolean };
 
 interface ImageMenuImportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  categories: Category[];
-  onImported: () => Promise<void>;
+  empresaId: number;
+  empresaNome: string;
 }
 
 function formatPrice(value: number | null): string {
@@ -24,20 +35,36 @@ function formatPrice(value: number | null): string {
 export default function ImageMenuImportModal({
   isOpen,
   onClose,
-  categories,
-  onImported,
+  empresaId,
+  empresaNome,
 }: ImageMenuImportModalProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [rows, setRows] = useState<DraftRow[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [isReading, setIsReading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let active = true;
+    setIsLoadingCategories(true);
+    getCompanyMenuCategories(empresaId)
+      .then((result) => { if (active) setCategories(result); })
+      .catch((error) => {
+        if (active) toast.error(error instanceof Error ? error.message : 'Não foi possível carregar as categorias.');
+      })
+      .finally(() => { if (active) setIsLoadingCategories(false); });
+    return () => { active = false; };
+  }, [empresaId, isOpen]);
 
   const reset = () => {
     setImage(null);
     setPreview(null);
     setRows([]);
+    setCategories([]);
     if (inputRef.current) inputRef.current.value = '';
   };
 
@@ -53,6 +80,7 @@ export default function ImageMenuImportModal({
       toast.error('Use uma imagem JPG, PNG ou WebP de até 10 MB.');
       return;
     }
+    if (preview) URL.revokeObjectURL(preview);
     setImage(file);
     setPreview(URL.createObjectURL(file));
     setRows([]);
@@ -112,58 +140,40 @@ export default function ImageMenuImportModal({
     }
 
     setIsSaving(true);
-    const categoryMap = new Map(
-      categories.map((category) => [category.nome.trim().toLocaleLowerCase('pt-BR'), category]),
-    );
-    let savedCount = 0;
-    let withoutPriceCount = 0;
+    const products = selected.map((row) => {
+      const price = Number(row.precoText.replace(',', '.'));
+      return {
+        nome: row.nome.trim(),
+        descricao: row.descricao?.trim() || '',
+        preco: Number.isFinite(price) && price > 0 ? price : 0,
+        categoria: row.categoria?.trim() || null,
+      };
+    });
 
     try {
-      for (const row of selected) {
-        let categoryId: number | string | null = null;
-        const categoryName = row.categoria?.trim();
-        if (categoryName) {
-          const key = categoryName.toLocaleLowerCase('pt-BR');
-          let category = categoryMap.get(key);
-          if (!category) {
-            category = await upsertCategory({ nome: categoryName }) as Category;
-            categoryMap.set(key, category);
-          }
-          categoryId = category.id;
-        }
-
-        const price = Number(row.precoText.replace(',', '.'));
-        const hasPrice = Number.isFinite(price) && price > 0;
-        await upsertProduct({
-          nome: row.nome.trim(),
-          descricao: row.descricao?.trim() || '',
-          preco: hasPrice ? price : 0,
-          categoria_id: categoryId,
-          categorias: categoryId,
-          disponivel: hasPrice,
-          imagem: '',
-        });
-
-        savedCount += 1;
-        if (!hasPrice) withoutPriceCount += 1;
-        setRows((current) => current.filter((item) => item.id !== row.id));
+      const result = await saveMenuProductsForCompany(empresaId, products);
+      if (result.created > 0) {
+        const savedIds = new Set(selected.slice(0, result.created).map((row) => row.id));
+        setRows((current) => current.filter((row) => !savedIds.has(row.id)));
+      }
+      if (!result.success) {
+        toast.error(
+          result.created > 0
+            ? `${result.error} Revise os itens restantes antes de tentar novamente.`
+            : `Não foi possível cadastrar os produtos: ${result.error}`,
+        );
+        return;
       }
 
-      await onImported();
       toast.success(
-        withoutPriceCount > 0
-          ? `${savedCount} produto(s) cadastrados; ${withoutPriceCount} sem preço ficaram indisponíveis para revisão.`
-          : `${savedCount} produto(s) cadastrados com sucesso.`,
+        result.withoutPrice > 0
+          ? `${result.created} produto(s) cadastrados para ${empresaNome}; ${result.withoutPrice} sem preço ficaram indisponíveis para revisão.`
+          : `${result.created} produto(s) cadastrados para ${empresaNome}.`,
       );
       reset();
       onClose();
     } catch (error) {
-      const detail = error instanceof Error ? error.message : 'erro inesperado';
-      toast.error(
-        savedCount > 0
-          ? `${savedCount} produto(s) foram salvos. O restante parou por: ${detail}`
-          : `Não foi possível cadastrar os produtos: ${detail}`,
-      );
+      toast.error(error instanceof Error ? error.message : 'Não foi possível cadastrar os produtos.');
     } finally {
       setIsSaving(false);
     }
@@ -175,12 +185,12 @@ export default function ImageMenuImportModal({
     <MobileDrawer
       isOpen={isOpen}
       onClose={close}
-      title="Importar cardápio por foto"
+      title={`Importar cardápio • ${empresaNome}`}
       size="full"
     >
       <div className="space-y-5">
         <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-          Envie uma foto nítida do cardápio. A IA preenche os produtos para você revisar antes de cadastrar.
+          Envie uma foto nítida do cardápio de <strong>{empresaNome}</strong>. A IA preenche os produtos para você revisar antes de cadastrar.
         </p>
 
         {rows.length === 0 ? (
@@ -321,6 +331,7 @@ export default function ImageMenuImportModal({
             <datalist id="menu-import-categories">
               {categories.map((category) => <option key={category.id} value={category.nome} />)}
             </datalist>
+            {isLoadingCategories && <p className="text-xs text-slate-500">Carregando categorias da empresa…</p>}
 
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
               <button
