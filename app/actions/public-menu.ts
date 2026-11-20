@@ -9,6 +9,7 @@ import {
     CONFIGURACOES_LOJA_TABLE, 
     LOYALTY_CONFIG_TABLE,
     PRODUTOS_METADADOS_TABLE,
+    PRODUTO_GRUPOS_COMPLEMENTOS_TABLE,
 } from '@/lib/tables';
 import { isPaidPlan } from '@/lib/constants';
 import { getAssinaturaByEmpresaId } from '@/lib/assinaturas';
@@ -148,7 +149,7 @@ async function loadPublicMenu(slug: string) {
         }
 
         // 2. BUSCA DE DADOS EM PARALELO
-        const [configData, categorias, todosProdutos, todosGrupos, todosItens, loyaltyConfig, produtosMetadados, horariosData] = await Promise.all([
+        const [configData, categorias, todosProdutos, todosGrupos, todosItens, loyaltyConfig, produtosMetadados, horariosData, vinculosGrupos] = await Promise.all([
             pg.list(CONFIGURACOES_LOJA_TABLE, { 
                 where: { empresa_id: empresaId } 
             }).catch(() => ({ list: [] })),
@@ -164,6 +165,7 @@ async function loadPublicMenu(slug: string) {
                 [empresaId]
             ).catch(() => []),
             pg.listAll(HORARIOS_TABLE, { where: { empresa_id: empresaId } }).catch(() => []),
+            pg.listAll(PRODUTO_GRUPOS_COMPLEMENTOS_TABLE, { where: { empresa_id: empresaId } }).catch(() => []),
         ]);
 
         const config = configData.list && configData.list.length > 0 ? configData.list[0] : null;
@@ -176,12 +178,21 @@ async function loadPublicMenu(slug: string) {
         for (const g of todosGrupos || []) grupoById.set(Number(g.id), g);
         const itensByGrupo = new Map<number, { id: any; nome: any; preco: number }[]>();
         for (const i of todosItens || []) {
+            if (i.disponivel === false || i.disponivel === 'f' || i.disponivel === 0) continue;
             const item = { id: i.id, nome: i.nome, preco: Number(i.preco ?? 0) };
-            for (const gid of parseIds(i.grupos_ids)) {
+            const gids = i.grupo_id != null ? [Number(i.grupo_id)] : parseIds(i.grupos_ids);
+            for (const gid of gids) {
                 const list = itensByGrupo.get(gid);
                 if (list) list.push(item);
                 else itensByGrupo.set(gid, [item]);
             }
+        }
+        const gruposByProduto = new Map<number, number[]>();
+        for (const v of [...(vinculosGrupos || [])].sort((a: any, b: any) => (Number(a.ordem) || 0) - (Number(b.ordem) || 0))) {
+            const pid = Number(v.produto_id);
+            const list = gruposByProduto.get(pid);
+            if (list) list.push(Number(v.grupo_complemento_id));
+            else gruposByProduto.set(pid, [Number(v.grupo_complemento_id)]);
         }
 
         // Status de funcionamento: respeita os horarios E os overrides manuais do
@@ -235,7 +246,7 @@ async function loadPublicMenu(slug: string) {
                 products: productsInCategory.map((p: any) => {
                     const saborGroups: any[] = [];
                     const additionalGroups: any[] = [];
-                    const groupIds = p.complementos_ids ? (typeof p.complementos_ids === 'string' ? p.complementos_ids.split(',').map(Number) : p.complementos_ids) : [];
+                    const groupIds = gruposByProduto.get(Number(p.id)) ?? parseIds(p.complementos_ids);
                     
                     groupIds.forEach((gid: number) => {
                         const grupo = grupoById.get(Number(gid));

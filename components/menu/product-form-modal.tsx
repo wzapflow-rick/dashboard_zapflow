@@ -12,6 +12,8 @@ import { CurrencyInput } from '@/components/ui/currency-input';
 import { MobileDrawer } from '@/components/ui/mobile-drawer';
 import { toast } from 'sonner';
 import { parseCurrency } from '@/lib/utils';
+import useSWR from 'swr';
+import { getGruposComplementos, getGruposDoProduto } from '@/app/actions/complements';
 
 interface SizeOption {
     nome: string;
@@ -56,6 +58,21 @@ export default function ProductFormModal({
 
     // Recommendations State
     const [selectedRecommendations, setSelectedRecommendations] = useState<number[]>([]);
+
+    // Adicionais (grupos de complementos). null = o usuário ainda não mexeu.
+    const { data: gruposList = [] } = useSWR('grupos-complementos', () => getGruposComplementos());
+    const editingId = editingProduct?.id ? Number(editingProduct.id) : null;
+    const { data: gruposDoProduto } = useSWR(
+        editingId ? ['grupos-do-produto', editingId] : null,
+        () => getGruposDoProduto(editingId as number)
+    );
+    const [selectedGrupos, setSelectedGrupos] = useState<number[] | null>(null);
+    const gruposMarcados = selectedGrupos ?? gruposDoProduto ?? [];
+    const toggleGrupo = (id: number) => {
+        setSelectedGrupos(
+            gruposMarcados.includes(id) ? gruposMarcados.filter((g) => g !== id) : [...gruposMarcados, id]
+        );
+    };
 
     useEffect(() => {
         import('@/app/actions/auth').then(({ getMe }) => {
@@ -193,6 +210,10 @@ export default function ProductFormModal({
 
         // Adicionar recomendações ao formData
         formData.set('recomendacoes', JSON.stringify(selectedRecommendations));
+
+        if (selectedGrupos !== null) {
+            formData.set('grupos_complementos', JSON.stringify(selectedGrupos));
+        }
 
         try {
             await onSubmit(
@@ -507,6 +528,45 @@ export default function ProductFormModal({
                                 </div>
                             </div>
                         </div>
+
+                        {/* Adicionais Section */}
+                        <fieldset className="pt-4 border-t border-slate-100 dark:border-zinc-800/60">
+                            <legend className="sr-only">Adicionais</legend>
+                            <div className="mb-3">
+                                <div className="text-sm font-bold text-slate-900 dark:text-white">Adicionais</div>
+                                <div className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">
+                                    Escolha os grupos de adicionais que o cliente pode adicionar a este produto.
+                                </div>
+                            </div>
+                            {gruposList.length === 0 ? (
+                                <p className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-zinc-800 rounded-xl p-3 border border-slate-100 dark:border-zinc-700">
+                                    Nenhum grupo de adicionais cadastrado. Crie em Cardápio &gt; Complementos.
+                                </p>
+                            ) : (
+                                <div className="flex flex-wrap gap-2">
+                                    {gruposList.map((g: any) => {
+                                        const id = Number(g.id);
+                                        const ativo = gruposMarcados.includes(id);
+                                        return (
+                                            <button
+                                                key={id}
+                                                type="button"
+                                                aria-pressed={ativo}
+                                                onClick={() => toggleGrupo(id)}
+                                                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-bold transition-colors ${
+                                                    ativo
+                                                        ? 'bg-primary/10 border-primary text-primary'
+                                                        : 'bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-slate-300 hover:border-primary/50'
+                                                }`}
+                                            >
+                                                {ativo ? <Check className="size-3.5" aria-hidden="true" /> : <Plus className="size-3.5" aria-hidden="true" />}
+                                                {g.nome}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </fieldset>
 
                         {/* Insumos Section */}
                         {user?.controle_estoque && (

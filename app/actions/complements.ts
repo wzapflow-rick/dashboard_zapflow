@@ -10,6 +10,7 @@ import {
   COMPLEMENTOS_TABLE,
   PRODUTO_GRUPOS_COMPLEMENTOS_TABLE,
   PRODUTO_INSUMOS_TABLE,
+  PRODUTOS_TABLE,
 } from '@/lib/tables';
 
 // --- GRUPOS DE COMPLEMENTOS ---
@@ -109,12 +110,18 @@ export async function deleteItemComplemento(id: number) {
 
 // --- VINCULAÇÃO DE GRUPOS A PRODUTOS ---
 
-export async function getGruposDoProduto(produtoId: number) {
+export async function getGruposDoProduto(produtoId: number): Promise<number[]> {
     try {
-        const data = await pg.list(PRODUTO_GRUPOS_COMPLEMENTOS_TABLE, {
-            where: { produto_id: produtoId },
+        const user = await getMe();
+        if (!user?.empresaId) return [];
+
+        const rows = await pg.listAll<any>(PRODUTO_GRUPOS_COMPLEMENTOS_TABLE, {
+            where: { produto_id: produtoId, empresa_id: user.empresaId },
         });
-        return (data.list || []).map((i: any) => ({ ...i, id: i.id }));
+        return [...rows]
+            .sort((a, b) => (Number(a.ordem) || 0) - (Number(b.ordem) || 0))
+            .map((r) => Number(r.grupo_complemento_id))
+            .filter((id) => Number.isFinite(id));
     } catch (e) {
         console.error('getGruposDoProduto error:', e);
         return [];
@@ -122,33 +129,41 @@ export async function getGruposDoProduto(produtoId: number) {
 }
 
 export async function updateGruposDoProduto(produtoId: number, grupoIds: number[]) {
+    const user = await getMe();
+    if (!user?.empresaId) throw new Error('Não autorizado');
+    const empresaId = user.empresaId;
+
+    const produto = await pg.findOne<any>(PRODUTOS_TABLE, {
+        where: { id: produtoId, empresa_id: empresaId },
+    });
+    if (!produto) throw new Error('Produto não encontrado');
+
+    const uniqueIds = [...new Set(grupoIds.map(Number).filter((id) => Number.isInteger(id) && id > 0))];
+
+    // Só aceita grupos da própria empresa.
+    const gruposEmpresa = await pg.listAll<any>(GRUPOS_COMPLEMENTOS_TABLE, {
+        where: { empresa_id: empresaId },
+    });
+    const gruposValidos = new Set(gruposEmpresa.map((g) => Number(g.id)));
+    const novos = uniqueIds.filter((id) => gruposValidos.has(id));
+
     try {
-        const atuaisData = await pg.list(PRODUTO_GRUPOS_COMPLEMENTOS_TABLE, {
-            where: { produto_id: produtoId },
-        });
-        const atuaisList = atuaisData.list || [];
-
-        const atuaisMap = new Map<number, number>(
-            atuaisList.map((g: any) => [Number(g.grupo_id), g.id])
+        await pg.raw(
+            `DELETE FROM "${PRODUTO_GRUPOS_COMPLEMENTOS_TABLE}" WHERE produto_id = $1 AND empresa_id = $2`,
+            [produtoId, empresaId]
         );
-        const setNovos = new Set(grupoIds);
-
-        for (const [grupo_id, recordId] of atuaisMap.entries()) {
-            if (!setNovos.has(grupo_id)) {
-                await pg.delete(PRODUTO_GRUPOS_COMPLEMENTOS_TABLE, recordId);
-            }
+        for (const [ordem, grupoId] of novos.entries()) {
+            await pg.create(PRODUTO_GRUPOS_COMPLEMENTOS_TABLE, {
+                produto_id: produtoId,
+                grupo_complemento_id: grupoId,
+                empresa_id: empresaId,
+                ordem,
+            });
         }
-
-        for (const grupo_id of grupoIds) {
-            if (!atuaisMap.has(grupo_id)) {
-                await pg.create(PRODUTO_GRUPOS_COMPLEMENTOS_TABLE, { produto_id: produtoId, grupo_id });
-            }
-        }
-
         return { success: true };
     } catch (e) {
         console.error('updateGruposDoProduto error:', e);
-        throw new Error('Erro ao atualizar grupos do produto');
+        throw new Error('Erro ao atualizar adicionais do produto');
     }
 }
 

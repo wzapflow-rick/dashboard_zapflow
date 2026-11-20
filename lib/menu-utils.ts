@@ -4,6 +4,7 @@ import {
   uploadImageAction,
   type Category
 } from '@/app/actions/products';
+import { updateGruposDoProduto } from '@/app/actions/complements';
 import { toast } from 'sonner';
 import { parseCurrency } from '@/lib/utils';
 
@@ -75,6 +76,12 @@ export async function saveProduct(
   // 1. Salva o produto primeiro. Isso garante a validação do DB. 
   // Caso falhe, a imagem não será enviada ao servidor (rollback preventivo).
   let savedProduct = await upsertProduct(productData, selectedInsumos);
+
+  const gruposRaw = formData.get('grupos_complementos');
+  if (gruposRaw !== null && savedProduct?.id) {
+    const grupoIds = (JSON.parse(String(gruposRaw)) as unknown[]).map(Number);
+    await updateGruposDoProduto(Number(savedProduct.id), grupoIds);
+  }
 
   // 2. Com o produto salvo, processa o upload da imagem.
   const file = formData.get('imagem_file') as File;
