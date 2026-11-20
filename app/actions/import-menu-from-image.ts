@@ -1,6 +1,7 @@
 'use server';
 
 import { generateText, Output } from 'ai';
+import { revalidatePath } from 'next/cache';
 import { createOpenAI } from '@ai-sdk/openai';
 import { v2 as cloudinary } from 'cloudinary';
 import { z } from 'zod';
