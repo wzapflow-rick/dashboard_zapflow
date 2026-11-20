@@ -73,7 +73,7 @@ export default function PaymentForm({ pedidoId, total, empresaId, onSuccess, onE
           onSuccess();
           return true;
         } else if (statusResult.status === 'rejected' || statusResult.status === 'cancelled') {
-          const errorMsg = statusResult.statusDetail || 'Pagamento recusado';
+          const errorMsg = translateStatusDetail(statusResult.statusDetail);
           setPaymentState('error');
           setStatusMessage(errorMsg);
           toast.error(errorMsg);
@@ -114,6 +114,15 @@ export default function PaymentForm({ pedidoId, total, empresaId, onSuccess, onE
             setSdkReady(true);
           }
         };
+
+        if (!document.querySelector('script[data-mp-security]')) {
+          const securityScript = document.createElement('script');
+          securityScript.src = 'https://www.mercadopago.com/v2/security.js';
+          securityScript.setAttribute('view', 'checkout');
+          securityScript.setAttribute('data-mp-security', 'true');
+          securityScript.async = true;
+          document.head.appendChild(securityScript);
+        }
 
         if (window.MercadoPago) {
           setupMP();
@@ -188,6 +197,41 @@ export default function PaymentForm({ pedidoId, total, empresaId, onSuccess, onE
     return 'master';
   };
 
+  const detectPaymentMethod = async (cardNumber: string): Promise<{ id: string; issuerId?: string }> => {
+    const bin = cardNumber.replace(/\D/g, '').slice(0, 8);
+    try {
+      const mp = mpInstanceRef.current as unknown as {
+        getPaymentMethods?: (args: { bin: string }) => Promise<{ results?: Array<{ id: string; issuer?: { id?: number | string } }> }>;
+      };
+      const response = await mp?.getPaymentMethods?.({ bin });
+      const method = response?.results?.[0];
+      if (method?.id) {
+        return { id: method.id, issuerId: method.issuer?.id ? String(method.issuer.id) : undefined };
+      }
+    } catch (error) {
+      console.error('[PaymentForm] Erro ao identificar bandeira:', error);
+    }
+    return { id: guessCardBrand(cardNumber) };
+  };
+
+  const translateStatusDetail = (detail?: string) => {
+    const messages: Record<string, string> = {
+      cc_rejected_high_risk: 'Pagamento recusado pelo sistema antifraude do Mercado Pago. Tente outro cartão ou pague com PIX.',
+      cc_rejected_insufficient_amount: 'Saldo ou limite insuficiente.',
+      cc_rejected_bad_filled_security_code: 'CVV inválido. Confira o código de segurança.',
+      cc_rejected_bad_filled_date: 'Data de validade inválida.',
+      cc_rejected_bad_filled_card_number: 'Número do cartão inválido.',
+      cc_rejected_bad_filled_other: 'Confira os dados do cartão.',
+      cc_rejected_call_for_authorize: 'O banco precisa autorizar este pagamento. Ligue para o seu banco e tente novamente.',
+      cc_rejected_card_disabled: 'Cartão desabilitado. Ligue para o seu banco para ativá-lo.',
+      cc_rejected_duplicated_payment: 'Pagamento duplicado. Você já fez um pagamento com esse valor.',
+      cc_rejected_max_attempts: 'Limite de tentativas atingido. Use outro cartão ou PIX.',
+      cc_rejected_blacklist: 'Não foi possível processar este cartão. Use outro cartão ou PIX.',
+      cc_rejected_other_reason: 'O banco recusou o pagamento. Use outro cartão ou PIX.',
+    };
+    return (detail && messages[detail]) || 'Pagamento recusado. Tente outro cartão ou pague com PIX.';
+  };
+
   const processPayment = async () => {
     if (!formData.cardNumber || !formData.cardExpiration || !formData.cardCvv || !formData.cardHolderName || !formData.docNumber) {
       toast.error('Preencha todos os campos');
@@ -204,10 +248,16 @@ export default function PaymentForm({ pedidoId, total, empresaId, onSuccess, onE
         return;
       }
 
+      const method = await detectPaymentMethod(formData.cardNumber);
+      const deviceId = (window as unknown as { MP_DEVICE_SESSION_ID?: string }).MP_DEVICE_SESSION_ID;
+
       const result = await createPayment({
         pedidoId,
-        paymentMethodId: guessCardBrand(formData.cardNumber),
+        paymentMethodId: method.id,
+        issuerId: method.issuerId,
         token,
+        payerDocNumber: formData.docNumber,
+        deviceId,
       });
 
       if (result.success) {
@@ -219,7 +269,7 @@ export default function PaymentForm({ pedidoId, total, empresaId, onSuccess, onE
           else onSuccess();
         } else {
           setPaymentState('error');
-          setStatusMessage(result.statusDetail || 'Pagamento recusado');
+          setStatusMessage(translateStatusDetail(result.statusDetail));
         }
       } else {
         setPaymentState('error');

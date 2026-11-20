@@ -167,6 +167,8 @@ export interface CreatePaymentInput {
     token?: string;
     issuerId?: string;
     installationTerms?: number;
+    payerDocNumber?: string;
+    deviceId?: string;
 }
 
 export interface CreatePaymentResult {
@@ -182,7 +184,7 @@ export interface CreatePaymentResult {
 
 export async function createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult> {
     try {
-        const { pedidoId, paymentMethodId, token, issuerId, installationTerms } = input;
+        const { pedidoId, paymentMethodId, token, issuerId, installationTerms, payerDocNumber, deviceId } = input;
 
         const pedido = await pg.findById('pedidos', pedidoId) as PedidoData;
 
@@ -223,6 +225,18 @@ export async function createPayment(input: CreatePaymentInput): Promise<CreatePa
             },
         };
 
+        const telefoneLimpo = (pedido.telefone_cliente || '').replace(/\D/g, '').replace(/^55/, '');
+        paymentPayload.statement_descriptor = 'ZAPFLOW';
+        paymentPayload.additional_info = {
+            payer: {
+                first_name: firstName,
+                last_name: lastName,
+                ...(telefoneLimpo.length >= 10 && {
+                    phone: { area_code: telefoneLimpo.slice(0, 2), number: telefoneLimpo.slice(2) },
+                }),
+            },
+        };
+
         if (paymentMethodId === 'pix') {
             paymentPayload.payment_method_id = 'pix';
             paymentPayload.installments = 1;
@@ -232,6 +246,10 @@ export async function createPayment(input: CreatePaymentInput): Promise<CreatePa
             paymentPayload.installments = installationTerms || 1;
             if (issuerId) {
                 paymentPayload.issuer_id = issuerId;
+            }
+            const doc = (payerDocNumber || '').replace(/\D/g, '');
+            if (doc.length === 11) {
+                (paymentPayload.payer as Record<string, unknown>).identification = { type: 'CPF', number: doc };
             }
         } else {
             paymentPayload.payment_method_id = paymentMethodId;
@@ -246,6 +264,7 @@ export async function createPayment(input: CreatePaymentInput): Promise<CreatePa
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${accessToken}`,
                 'X-Idempotency-Key': idempotencyKey,
+                ...(deviceId && { 'X-meli-session-id': deviceId }),
             },
             body: JSON.stringify(paymentPayload),
         });
