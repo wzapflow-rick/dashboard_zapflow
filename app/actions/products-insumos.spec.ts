@@ -1,6 +1,7 @@
 const mockPg = {
   list: jest.fn(),
   listAll: jest.fn(),
+  raw: jest.fn().mockResolvedValue([]),
   findOne: jest.fn(),
   create: jest.fn(),
   update: jest.fn(),
@@ -34,6 +35,7 @@ describe('Products and Insumos Actions', () => {
     (getMe as jest.Mock).mockResolvedValue(mockUser);
     (requireAdmin as jest.Mock).mockResolvedValue(mockUser);
     mockPg.listAll.mockResolvedValue([]);
+    mockPg.raw.mockResolvedValue([]);
   });
 
   describe('products', () => {

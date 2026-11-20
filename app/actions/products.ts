@@ -36,7 +36,10 @@ export async function getProducts() {
     const products = data.list || [];
 
     // Buscar metadados dos produtos
-    const metadataList = await pg.listAll(PRODUTOS_METADADOS_TABLE).catch(() => []);
+    const metadataList = await pg.raw<any>(
+      `SELECT * FROM "${PRODUTOS_METADADOS_TABLE}" WHERE produto_id::text IN (SELECT id::text FROM "${PRODUTOS_TABLE}" WHERE empresa_id = $1)`,
+      [user.empresaId]
+    ).catch(() => []);
     
     return products.map((p: any) => {
       const metadata = metadataList.find((m: any) => 

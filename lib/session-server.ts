@@ -1,10 +1,13 @@
 'use server';
 
+import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { decrypt } from './session';
 import { User } from './validations';
 
-export async function getMe(): Promise<User | null> {
+// Uma pagina do dashboard chama getMe varias vezes (layout, pagina e cada
+// action). O cache do React decodifica o JWT uma unica vez por requisicao.
+const readSession = cache(async (): Promise<User | null> => {
     try {
         const cookieStore = await cookies();
         const sessionValue = cookieStore.get('session')?.value;
@@ -13,6 +16,10 @@ export async function getMe(): Promise<User | null> {
     } catch (error) {
         return null;
     }
+});
+
+export async function getMe(): Promise<User | null> {
+    return readSession();
 }
 
 export async function requireAdmin() {

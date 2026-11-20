@@ -82,7 +82,10 @@ export async function getCompanyMenuData(empresaId: number) {
   const [categoryResult, productResult, metadataList] = await Promise.all([
     pg.list(CATEGORIAS_TABLE, { where: { empresa_id: empresaId }, limit: 1000 }),
     pg.list(PRODUTOS_TABLE, { where: { empresa_id: empresaId }, sort: '-id', limit: 1000 }),
-    pg.listAll(PRODUTOS_METADADOS_TABLE).catch(() => []),
+    pg.raw<any>(
+      `SELECT * FROM "${PRODUTOS_METADADOS_TABLE}" WHERE produto_id::text IN (SELECT id::text FROM "${PRODUTOS_TABLE}" WHERE empresa_id = $1)`,
+      [empresaId]
+    ).catch(() => []),
   ]);
 
   const categories = (categoryResult.list || []).map((category: any) => ({

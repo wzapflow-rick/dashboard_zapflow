@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { pg } from '@/lib/postgres';
 import { 
     PRODUTOS_TABLE, 
@@ -14,8 +15,11 @@ import { getAssinaturaByEmpresaId } from '@/lib/assinaturas';
 import { HORARIOS_TABLE } from '@/lib/tables';
 import { getStatusLoja, type Horario } from '@/lib/horarios';
 
-export async function getPublicMenu(slug: string) {
-    console.log(`[MENU_DEBUG] Iniciando busca para slug: ${slug}`);
+// React cache: generateMetadata e a pagina chamam getPublicMenu na mesma
+// requisicao; sem isso todas as queries rodavam 2x por acesso ao cardapio.
+export const getPublicMenu = cache(loadPublicMenu);
+
+async function loadPublicMenu(slug: string) {
     
     try {
         let empresa: any = null;
@@ -29,7 +33,6 @@ export async function getPublicMenu(slug: string) {
         // Converter slug para nome lowercase (vr-pizza-show -> vr pizza show)
         const possibleNameLower = slug.replace(/-/g, ' ');
 
-        console.log(`[MENU_DEBUG] Buscando por slug: "${slug}" ou nome: "${possibleName}"`);
         
         // TENTATIVA 1: Busca exata por coluna slug
         const empresaBySlug = await pg.raw<any>(
@@ -38,7 +41,6 @@ export async function getPublicMenu(slug: string) {
         );
         if (empresaBySlug.length > 0) {
             empresa = empresaBySlug[0];
-            console.log(`[MENU_DEBUG] Empresa encontrada por slug: ${empresa.nome_fantasia}`);
         }
         
         // TENTATIVA 2: Busca exata por instancia_evolution (zapflow_ID)
@@ -49,7 +51,6 @@ export async function getPublicMenu(slug: string) {
             );
             if (empresaByInstance.length > 0) {
                 empresa = empresaByInstance[0];
-                console.log(`[MENU_DEBUG] Empresa encontrada por instancia_evolution: ${empresa.nome_fantasia}`);
             }
         }
 
@@ -62,7 +63,6 @@ export async function getPublicMenu(slug: string) {
             
             if (empresasByFantasia.length > 0) {
                 empresa = empresasByFantasia[0];
-                console.log(`[MENU_DEBUG] Empresa encontrada por nome_fantasia exato: ${empresa.nome_fantasia}`);
             }
         }
 
@@ -75,7 +75,6 @@ export async function getPublicMenu(slug: string) {
             
             if (empresasByFantasiaLike.length > 0) {
                 empresa = empresasByFantasiaLike[0];
-                console.log(`[MENU_DEBUG] Empresa encontrada por nome_fantasia parcial: ${empresa.nome_fantasia}`);
             }
         }
 
@@ -83,7 +82,6 @@ export async function getPublicMenu(slug: string) {
         if (!empresa && /^\d+$/.test(slug)) {
             empresa = await pg.findById(EMPRESAS_TABLE, parseInt(slug));
             if (empresa) {
-                console.log(`[MENU_DEBUG] Empresa encontrada por ID: ${empresa.nome_fantasia}`);
             }
         }
 
@@ -92,7 +90,6 @@ export async function getPublicMenu(slug: string) {
             const todas = await pg.list(EMPRESAS_TABLE, { limit: 2 });
             if (todas.list.length === 1) {
                 empresa = todas.list[0];
-                console.log(`[MENU_DEBUG] Fallback unica empresa: ${empresa.nome_fantasia}`);
             }
         }
 
@@ -104,7 +101,6 @@ export async function getPublicMenu(slug: string) {
         const empresaId = empresa.id;
         empresa.nome = empresa.nome_fantasia || empresa.nome || 'ZapFlash';
         
-        console.log(`[MENU_DEBUG] Empresa: ${empresa.nome} (ID: ${empresaId})`);
         
         // Verificar se empresa tem assinatura ativa na tabela assinaturas (PostgreSQL)
         let hasActiveSubscription = false;
@@ -123,15 +119,11 @@ export async function getPublicMenu(slug: string) {
                 if (isPaidPlan(planoAtivo)) {
                     if (!dataProxima || dataProxima > hoje) {
                         hasActiveSubscription = true;
-                        console.log(`[MENU_DEBUG] Assinatura ativa: ${planoAtivo}, vence em ${dataProxima?.toISOString() || 'N/A'}`);
                     } else {
-                        console.log(`[MENU_DEBUG] Assinatura vencida: ${planoAtivo}, venceu em ${dataProxima.toISOString()}`);
                     }
                 } else {
-                    console.log(`[MENU_DEBUG] Plano ${planoAtivo} nao e um plano pago`);
                 }
             } else {
-                console.log(`[MENU_DEBUG] Nenhuma assinatura ativa encontrada para empresa ${empresaId}`);
             }
         } catch (pgError) {
             console.error(`[MENU_DEBUG] Erro ao verificar assinatura no PostgreSQL:`, pgError);
@@ -144,7 +136,6 @@ export async function getPublicMenu(slug: string) {
         }
         
         if (!hasActiveSubscription) {
-            console.log(`[MENU_DEBUG] Empresa sem plano pago ativo`);
             return {
                 blocked: true,
                 reason: 'no_subscription',
@@ -166,11 +157,32 @@ export async function getPublicMenu(slug: string) {
             pg.listAll(GRUPOS_COMPLEMENTOS_TABLE, { where: { empresa_id: empresaId } }).catch(() => []),
             pg.listAll(COMPLEMENTOS_TABLE, { where: { empresa_id: empresaId } }).catch(() => []),
             pg.findOne(LOYALTY_CONFIG_TABLE, { where: { empresa_id: empresaId } }).catch(() => null),
-            pg.listAll(PRODUTOS_METADADOS_TABLE).catch(() => []),
+            // Antes carregava os metadados de TODAS as empresas a cada acesso.
+            pg.raw<any>(
+                `SELECT * FROM "${PRODUTOS_METADADOS_TABLE}"
+                 WHERE produto_id::text IN (SELECT id::text FROM "${PRODUTOS_TABLE}" WHERE empresa_id = $1)`,
+                [empresaId]
+            ).catch(() => []),
             pg.listAll(HORARIOS_TABLE, { where: { empresa_id: empresaId } }).catch(() => []),
         ]);
 
         const config = configData.list && configData.list.length > 0 ? configData.list[0] : null;
+
+        const parseIds = (raw: unknown): number[] =>
+            raw ? (typeof raw === 'string' ? raw.split(',').map(Number) : (raw as number[])) : [];
+        const metadataByProduto = new Map<number, any>();
+        for (const m of produtosMetadados || []) metadataByProduto.set(Number(m.produto_id), m);
+        const grupoById = new Map<number, any>();
+        for (const g of todosGrupos || []) grupoById.set(Number(g.id), g);
+        const itensByGrupo = new Map<number, { id: any; nome: any; preco: number }[]>();
+        for (const i of todosItens || []) {
+            const item = { id: i.id, nome: i.nome, preco: Number(i.preco ?? 0) };
+            for (const gid of parseIds(i.grupos_ids)) {
+                const list = itensByGrupo.get(gid);
+                if (list) list.push(item);
+                else itensByGrupo.set(gid, [item]);
+            }
+        }
 
         // Status de funcionamento: respeita os horarios E os overrides manuais do
         // lojista - fechamento manual ("Fechar a Loja", expira na proxima abertura)
@@ -226,28 +238,18 @@ export async function getPublicMenu(slug: string) {
                     const groupIds = p.complementos_ids ? (typeof p.complementos_ids === 'string' ? p.complementos_ids.split(',').map(Number) : p.complementos_ids) : [];
                     
                     groupIds.forEach((gid: number) => {
-                        const grupo = todosGrupos.find((g: any) => g.id === gid);
+                        const grupo = grupoById.get(Number(gid));
                         if (grupo) {
-                            const items = todosItens.filter((i: any) => {
-                                const itemGroupIds = i.grupos_ids ? (typeof i.grupos_ids === 'string' ? i.grupos_ids.split(',').map(Number) : i.grupos_ids) : [];
-                                return itemGroupIds.includes(gid);
-                            });
                             const compGroup = {
                                 ...grupo,
-                                items: items.map((i: any) => ({
-                                    id: i.id,
-                                    nome: i.nome,
-                                    preco: Number(i.preco ?? 0)
-                                }))
+                                items: itensByGrupo.get(Number(gid)) ?? []
                             };
                             if (grupo.tipo === 'sabor') saborGroups.push(compGroup);
                             else additionalGroups.push(compGroup);
                         }
                     });
 
-                    const metadata = (produtosMetadados || []).find((m: any) => 
-                        Number(m.produto_id) === Number(p.id)
-                    );
+                    const metadata = metadataByProduto.get(Number(p.id));
                     
                     let recomendacoes = null;
                     let tamanhos = null;
@@ -288,9 +290,7 @@ export async function getPublicMenu(slug: string) {
                     };
                 }),
                 compositeProducts: compositeInCategory.map((p: any) => {
-                    const metadata = (produtosMetadados || []).find((m: any) => 
-                        Number(m.produto_id) === Number(p.id)
-                    );
+                    const metadata = metadataByProduto.get(Number(p.id));
                     
                     let recomendacoes = null;
                     let tamanhos = null;
@@ -346,14 +346,7 @@ export async function getPublicMenu(slug: string) {
             loyaltyConfig,
             allGroups: (todosGrupos || []).map((g: any) => ({
                 ...g,
-                items: (todosItens || []).filter((i: any) => {
-                    const itemGroupIds = i.grupos_ids ? (typeof i.grupos_ids === 'string' ? i.grupos_ids.split(',').map(Number) : i.grupos_ids) : [];
-                    return itemGroupIds.includes(g.id);
-                }).map((i: any) => ({
-                    id: i.id,
-                    nome: i.nome,
-                    preco: Number(i.preco ?? 0)
-                }))
+                items: itensByGrupo.get(Number(g.id)) ?? []
             }))
         };
     } catch (error) {

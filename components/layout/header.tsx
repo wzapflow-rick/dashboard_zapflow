@@ -120,7 +120,15 @@ export function Header() {
         };
 
         checkOrders();
-        const interval = setInterval(checkOrders, 15000);
+        // Pausa o polling com a aba em segundo plano: com varios celulares/abas
+        // abertos, cada um batia no servidor a cada 15s mesmo sem ninguem olhando.
+        const interval = setInterval(() => {
+            if (document.visibilityState === 'visible') checkOrders();
+        }, 15000);
+        const onVisibility = () => {
+            if (document.visibilityState === 'visible') checkOrders();
+        };
+        document.addEventListener('visibilitychange', onVisibility);
 
         // Push chegou com o painel aberto: mostra o aviso e atualiza na hora, sem esperar o próximo ciclo.
         const onSwMessage = (event: MessageEvent) => {
@@ -136,6 +144,7 @@ export function Header() {
 
         return () => {
             clearInterval(interval);
+            document.removeEventListener('visibilitychange', onVisibility);
             navigator.serviceWorker?.removeEventListener('message', onSwMessage);
         };
     }, []);

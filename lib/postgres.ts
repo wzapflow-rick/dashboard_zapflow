@@ -138,9 +138,6 @@ function createPool(): Pool {
     console.error('[PostgreSQL Pool] Erro inesperado no cliente:', err);
   });
 
-  newPool.on('connect', () => {
-    console.log('[PostgreSQL Pool] Nova conexão estabelecida');
-  });
 
   return newPool;
 }
