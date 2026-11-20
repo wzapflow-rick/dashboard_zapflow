@@ -222,6 +222,32 @@ export async function uploadCompanyProductImage(empresaId: number, formData: For
  * Atualiza produtos selecionados e cria itens que ainda não existem.
  * Produtos ausentes da foto permanecem intactos.
  */
+/**
+ * Exclui um produto somente quando ele pertence à empresa selecionada.
+ */
+export async function deleteMenuProductForCompany(empresaId: number, productId: number) {
+  await requireAdminSession();
+  await findCompany(empresaId);
+  if (!Number.isInteger(productId) || productId <= 0) throw new Error('Produto inválido.');
+
+  const product = await pg.findById(PRODUTOS_TABLE, productId) as any;
+  if (!product || Number(product.empresa_id) !== empresaId) {
+    throw new Error('O produto não pertence à empresa selecionada ou já foi removido.');
+  }
+
+  const metadataResult = await pg.list(PRODUTOS_METADADOS_TABLE, {
+    where: { produto_id: productId },
+    limit: 100,
+  });
+  for (const metadata of metadataResult.list || []) {
+    const metadataId = (metadata as any).id as number | string | undefined;
+    if (metadataId) await pg.delete(PRODUTOS_METADADOS_TABLE, metadataId);
+  }
+
+  await pg.delete(PRODUTOS_TABLE, productId);
+  return { success: true };
+}
+
 export async function saveMenuProductsForCompany(empresaId: number, untrustedProducts: unknown) {
   await requireAdminSession();
   await findCompany(empresaId);
