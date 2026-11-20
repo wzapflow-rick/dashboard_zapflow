@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import type { FormEvent } from 'react';
+import dynamic from 'next/dynamic';
 import {
   AlertCircle,
   ArrowLeft,
@@ -18,9 +18,13 @@ import {
   extractMenuProductsFromImage,
   getCompanyMenuData,
   saveMenuProductsForCompany,
+  uploadCompanyProductImage,
 } from '@/app/actions/import-menu-from-image';
 import { MobileDrawer } from '@/components/ui/mobile-drawer';
+import { parseCurrency } from '@/lib/utils';
 import { isValidImageFile, processImage } from '@/lib/image-utils';
+
+const ProductFormModal = dynamic(() => import('@/components/menu/product-form-modal'), { ssr: false });
 
 type MenuProduct = {
   id: number;
@@ -30,6 +34,11 @@ type MenuProduct = {
   categoria_id: number | null;
   categoria: string;
   disponivel: boolean;
+  imagem: string;
+  tag?: string | null;
+  tamanhos?: unknown;
+  tamanhos_json?: unknown;
+  recomendacoes?: unknown;
 };
 
 type MenuCategory = {
