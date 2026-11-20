@@ -235,16 +235,16 @@ export default function PaymentForm({ pedidoId, total, empresaId, onSuccess, onE
 
   return (
     <div className="space-y-4">
-      <div className="bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-800 rounded-xl p-4 flex items-center gap-3">
-        <Lock className="size-5 text-violet-500 shrink-0" />
+      <div className="bg-[#22c55e]/10 border border-[#22c55e]/30 rounded-xl p-4 flex items-center gap-3">
+        <Lock className="size-5 text-[#22c55e] shrink-0" />
         <div>
-          <p className="text-sm font-bold text-violet-900 dark:text-violet-300">Pagamento seguro</p>
-          <p className="text-xs text-violet-600 dark:text-violet-400">Seus dados são criptografados pelo Mercado Pago</p>
+          <p className="text-sm font-bold text-white">Pagamento seguro</p>
+          <p className="text-xs text-gray-400">Seus dados são criptografados pelo Mercado Pago</p>
         </div>
       </div>
 
       {!sdkReady && (
-        <div className="flex items-center gap-2 text-sm text-slate-500">
+        <div className="flex items-center gap-2 text-sm text-gray-400">
           <MorphingInfinity className="size-4" />
           Carregando módulo de pagamento...
         </div>
@@ -252,14 +252,14 @@ export default function PaymentForm({ pedidoId, total, empresaId, onSuccess, onE
 
       <div className="space-y-3">
         <div>
-          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Número do cartão</label>
+          <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Número do cartão</label>
           <div className="relative mt-1">
             <input
               type="text"
               value={formData.cardNumber}
               onChange={(e) => handleInputChange('cardNumber', e.target.value)}
               placeholder="0000 0000 0000 0000"
-              className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-violet-500/20"
+              className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#2a2a2a] text-white placeholder:text-gray-600 rounded-xl text-sm outline-none focus:border-[#22c55e] transition-colors"
             />
             <CreditCard className="absolute right-4 top-1/2 -translate-y-1/2 size-5 text-slate-300" />
           </div>
@@ -267,59 +267,59 @@ export default function PaymentForm({ pedidoId, total, empresaId, onSuccess, onE
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Validade</label>
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Validade</label>
             <input
               type="text"
               value={formData.cardExpiration}
               onChange={(e) => handleInputChange('cardExpiration', e.target.value)}
               placeholder="MM/AA"
-              className="w-full mt-1 px-4 py-3 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-violet-500/20"
+              className="w-full mt-1 px-4 py-3 bg-[#1a1a1a] border border-[#2a2a2a] text-white placeholder:text-gray-600 rounded-xl text-sm outline-none focus:border-[#22c55e] transition-colors"
             />
           </div>
           <div>
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">CVV</label>
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">CVV</label>
             <input
               type="password"
               value={formData.cardCvv}
               onChange={(e) => handleInputChange('cardCvv', e.target.value)}
               placeholder="123"
-              className="w-full mt-1 px-4 py-3 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-violet-500/20"
+              className="w-full mt-1 px-4 py-3 bg-[#1a1a1a] border border-[#2a2a2a] text-white placeholder:text-gray-600 rounded-xl text-sm outline-none focus:border-[#22c55e] transition-colors"
             />
           </div>
         </div>
 
         <div>
-          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nome no cartão</label>
+          <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Nome no cartão</label>
           <input
             type="text"
             value={formData.cardHolderName}
             onChange={(e) => setFormData({ ...formData, cardHolderName: e.target.value })}
             placeholder="Como escrito no cartão"
-            className="w-full mt-1 px-4 py-3 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-violet-500/20"
+            className="w-full mt-1 px-4 py-3 bg-[#1a1a1a] border border-[#2a2a2a] text-white placeholder:text-gray-600 rounded-xl text-sm outline-none focus:border-[#22c55e] transition-colors"
           />
         </div>
 
         <div>
-          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">CPF do Titular</label>
+          <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">CPF do Titular</label>
           <input
             type="text"
             value={formData.docNumber}
             onChange={(e) => handleInputChange('docNumber', e.target.value)}
             placeholder="000.000.000-00"
-            className="w-full mt-1 px-4 py-3 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-violet-500/20"
+            className="w-full mt-1 px-4 py-3 bg-[#1a1a1a] border border-[#2a2a2a] text-white placeholder:text-gray-600 rounded-xl text-sm outline-none focus:border-[#22c55e] transition-colors"
           />
         </div>
       </div>
 
       {paymentState === 'error' && (
-        <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-xl flex items-center gap-2 text-red-600 dark:text-red-400 text-sm">
+        <div role="alert" className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-2 text-red-400 text-sm">
           <XCircle className="size-4 shrink-0" />
           {statusMessage || 'Erro ao processar pagamento'}
         </div>
       )}
 
       {paymentState === 'waiting_confirmation' && (
-        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-xl flex items-center gap-2 text-blue-600 dark:text-blue-400 text-sm">
+        <div role="status" className="p-3 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl flex items-center gap-2 text-gray-300 text-sm">
           <MorphingInfinity className="size-4 shrink-0" />
           {statusMessage}
         </div>
@@ -328,7 +328,7 @@ export default function PaymentForm({ pedidoId, total, empresaId, onSuccess, onE
       <button
         onClick={processPayment}
         disabled={loading || !sdkReady}
-        className="w-full py-4 bg-violet-600 hover:bg-violet-700 disabled:bg-slate-300 text-white rounded-xl font-bold text-lg shadow-lg shadow-violet-500/20 transition-all flex items-center justify-center gap-2"
+        className="w-full p-4 bg-[#22c55e] hover:bg-[#1ea34d] disabled:bg-[#1a1a1a] disabled:text-gray-600 text-white font-black rounded-xl shadow-lg shadow-green-900/30 transition-all flex items-center justify-center gap-2"
       >
         {loading ? (
           <>

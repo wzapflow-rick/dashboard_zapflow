@@ -357,6 +357,11 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
       return;
     }
 
+    if (orderId && paymentData.forma === 'cartao' && pagamentoIntegrado) {
+      setShowCardForm(true);
+      return;
+    }
+
     setLoading(true);
     try {
       const orderResult = await createPublicOrder({
@@ -499,7 +504,13 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
                 <div className="flex items-center gap-3">
                   {step !== 'cart' && step !== 'success' && (
                     <button
-                      onClick={() => setStep(step === 'payment' ? 'customer' : 'cart')}
+                      onClick={() => {
+                        if (step === 'payment' && showCardForm) {
+                          setShowCardForm(false);
+                          return;
+                        }
+                        setStep(step === 'payment' ? 'customer' : 'cart');
+                      }}
                       className="p-2 bg-[#1a1a1a] rounded-xl text-gray-400 hover:text-white transition-colors"
                     >
                       <ArrowLeft className="size-5" />
@@ -762,6 +773,17 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
                         </button>
                         <button onClick={checkPixPayment} className="w-full p-4 bg-[#22c55e] text-white font-black rounded-xl shadow-lg shadow-green-900/30 hover:bg-[#1ea34d] transition-colors">JA PAGUEI</button>
                       </div>
+                    ) : showCardForm && orderId ? (
+                      <PaymentForm
+                        pedidoId={orderId}
+                        total={totalFinal}
+                        empresaId={empresaId}
+                        onSuccess={() => {
+                          setShowCardForm(false);
+                          setStep('success');
+                          clearCart();
+                        }}
+                      />
                     ) : (
                       <div className="space-y-3">
                         {!pagamentoIntegrado && (
@@ -814,7 +836,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
               </div>
 
   {/* Footer Button */}
-  {step !== 'success' && !mpQrCode && (
+  {step !== 'success' && !mpQrCode && !showCardForm && (
     <div className="px-5 py-4 sm:p-5 border-t border-[#1a1a1a] bg-[#0a0a0a] pb-8 sm:pb-5">
       <button
         onClick={step === 'cart' ? () => setStep('customer') : step === 'customer' ? () => setStep('payment') : finishOrder}
