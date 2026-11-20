@@ -381,7 +381,22 @@ async function releaseSaudacao(empresaId: number, phone: string): Promise<void> 
 /**
  * Buscar empresa pela instancia Evolution
  */
+// Cache curto em memoria: cada mensagem do WhatsApp chama o webhook, e a empresa
+// e a config do bot quase nunca mudam entre mensagens seguidas. 30s de cache
+// evita 2 consultas ao banco por mensagem; mudancas no painel valem em ate 30s.
+const LOOKUP_TTL_MS = 30_000;
+const empresaCache = new Map<string, { value: any; expires: number }>();
+const botConfigCache = new Map<number, { value: any; expires: number }>();
+
 async function getEmpresaByInstance(instanceName: string): Promise<any> {
+  const cached = empresaCache.get(instanceName);
+  if (cached && cached.expires > Date.now()) return cached.value;
+  const value = await fetchEmpresaByInstance(instanceName);
+  if (value) empresaCache.set(instanceName, { value, expires: Date.now() + LOOKUP_TTL_MS });
+  return value;
+}
+
+async function fetchEmpresaByInstance(instanceName: string): Promise<any> {
   try {
     // Tenta buscar por instancia_evolution exata
     let empresa = await pg.findOne('empresas', {
@@ -411,19 +426,20 @@ async function getEmpresaByInstance(instanceName: string): Promise<any> {
  * Buscar configuracao do bot da empresa
  */
 async function getBotConfig(empresaId: number): Promise<any> {
+  const cached = botConfigCache.get(empresaId);
+  if (cached && cached.expires > Date.now()) return cached.value;
   try {
     const config = await pg.findOne('bot_config', {
       where: { empresa_id: empresaId }
     }) as any;
     
     if (config) {
-      console.log(`[BOT] Config encontrada para empresa ${empresaId}:`, JSON.stringify(config));
       // Normalizar o campo bot_ativo (pode vir com diferentes nomes)
       const botAtivo = config.bot_ativo ?? config['Bot Ativo'] ?? config['bot ativo'] ?? config.Bot_Ativo ?? config.ativo ?? true;
       config.bot_ativo = botAtivo === true || botAtivo === 'true' || botAtivo === 1 || botAtivo === '1';
-      console.log(`[BOT] bot_ativo normalizado: ${config.bot_ativo}`);
     }
     
+    botConfigCache.set(empresaId, { value: config, expires: Date.now() + LOOKUP_TTL_MS });
     return config;
   } catch (error) {
     console.error('[BOT] Erro ao buscar config:', error);
