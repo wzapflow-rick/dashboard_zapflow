@@ -3,7 +3,7 @@
 
 import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState } from 'react';
-import { Search, Plus, Edit3, Trash2, Filter, X, Check, Sparkles, Folder, ImagePlus } from 'lucide-react';
+import { Search, Plus, Edit3, Trash2, Filter, X, Check, Sparkles, Folder } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { type Category } from '@/app/actions/products';
@@ -25,10 +25,6 @@ const BulkComplementModal = dynamic(() => import('@/components/menu/bulk-complem
 });
 
 const CategoryModal = dynamic(() => import('@/components/menu/category-modal'), {
-  ssr: false,
-});
-
-const ImageMenuImportModal = dynamic(() => import('@/components/menu/image-menu-import-modal'), {
   ssr: false,
 });
 
@@ -71,7 +67,6 @@ export default function MenuManagement({ hideCategoryButton }: { hideCategoryBut
   const { startTour } = useDriverTour();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isImageImportOpen, setIsImageImportOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [editingProductInsumos, setEditingProductInsumos] = useState<{ insumo_id: number; quantidade_necessaria: number }[]>([]);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
@@ -169,14 +164,6 @@ export default function MenuManagement({ hideCategoryButton }: { hideCategoryBut
             <Check className="size-4 text-violet-500" />
             Cadastrar em Massa
           </button> */}
-          <button
-            type="button"
-            onClick={() => setIsImageImportOpen(true)}
-            className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2.5 rounded-lg text-sm font-semibold shadow-sm flex items-center gap-2 transition-all active:scale-95 dark:bg-zinc-900/75 dark:text-zinc-200 dark:border-zinc-800/60"
-          >
-            <ImagePlus className="size-4 text-primary" />
-            Importar por foto
-          </button>
           <button
             id="btn-novo-produto"
             onClick={() => { setEditingProduct(null); setEditingProductInsumos([]); setIsModalOpen(true); }}
@@ -314,13 +301,6 @@ export default function MenuManagement({ hideCategoryButton }: { hideCategoryBut
           onSubmit={handleSaveProduct}
         />
       )}
-
-      <ImageMenuImportModal
-        isOpen={isImageImportOpen}
-        onClose={() => setIsImageImportOpen(false)}
-        categories={categories}
-        onImported={fetchData}
-      />
 
       {/* Category Modal */}
       <CategoryModal
