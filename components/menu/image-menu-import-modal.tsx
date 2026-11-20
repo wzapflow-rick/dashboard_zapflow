@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
+  deleteMenuProductForCompany,
   extractMenuProductsFromImage,
   getCompanyMenuData,
   saveMenuProductsForCompany,
@@ -96,6 +97,7 @@ export default function ImageMenuImportModal({
   const [search, setSearch] = useState('');
   const [editingProduct, setEditingProduct] = useState<EditingProduct | null>(null);
   const [isProductFormOpen, setIsProductFormOpen] = useState(false);
+  const [deletingProductId, setDeletingProductId] = useState<number | null>(null);
   const [preferences, setPreferences] = useState('');
   const [categoryPolicy, setCategoryPolicy] = useState<'auto' | 'existing'>('auto');
   const [isLoadingMenu, setIsLoadingMenu] = useState(false);
@@ -312,6 +314,22 @@ export default function ImageMenuImportModal({
     }
   };
 
+  const deleteProduct = async (product: MenuProduct) => {
+    const confirmed = window.confirm(`Excluir “${product.nome}” do cardápio? Essa ação não pode ser desfeita.`);
+    if (!confirmed) return;
+
+    setDeletingProductId(product.id);
+    try {
+      await deleteMenuProductForCompany(empresaId, product.id);
+      await refreshMenu();
+      toast.success('Produto excluído.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Não foi possível excluir o produto.');
+    } finally {
+      setDeletingProductId(null);
+    }
+  };
+
   const startEditing = (product: MenuProduct) => {
     setEditingProduct({ ...product, precoText: String(product.preco) });
     setIsProductFormOpen(true);
@@ -400,7 +418,19 @@ export default function ImageMenuImportModal({
                         <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">{product.categoria || 'Sem categoria'} · R$ {product.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                         {product.descricao && <p className="mt-1 line-clamp-2 text-xs text-slate-500 dark:text-zinc-400">{product.descricao.split('[[SIZES:')[0]}</p>}
                       </div>
-                      <button type="button" onClick={() => startEditing(product)} className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"><Pencil className="size-3.5" /> Editar</button>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <button type="button" onClick={() => startEditing(product)} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"><Pencil className="size-3.5" /> Editar</button>
+                        <button
+                          type="button"
+                          onClick={() => void deleteProduct(product)}
+                          disabled={deletingProductId === product.id}
+                          aria-label={`Excluir ${product.nome}`}
+                          title="Excluir produto"
+                          className="inline-flex items-center justify-center rounded-lg border border-red-200 p-2 text-red-600 transition hover:bg-red-50 disabled:cursor-wait disabled:opacity-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/40"
+                        >
+                          {deletingProductId === product.id ? <LoaderCircle className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+                        </button>
+                      </div>
                     </div>
                   </article>
                 ))}
