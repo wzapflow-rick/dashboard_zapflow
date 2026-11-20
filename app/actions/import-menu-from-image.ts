@@ -88,6 +88,7 @@ export async function getCompanyMenuData(empresaId: number) {
     id: Number(category.id),
     nome: String(category.nome || ''),
     empresa_id: empresaId,
+    ordem: Number(category.ordem || 0),
   }));
   const categoryById = new Map(categories.map((category) => [category.id, category.nome]));
   const products = (productResult.list || []).map((product: any) => {
@@ -248,6 +249,95 @@ export async function deleteMenuProductForCompany(empresaId: number, productId: 
   return { success: true };
 }
 
+export async function saveCompanyCategoryForAdmin(
+  empresaId: number,
+  untrustedCategory: unknown,
+) {
+  await requireAdminSession();
+  await findCompany(empresaId);
+
+  const validation = CategorySchema.safeParse(untrustedCategory);
+  if (!validation.success) throw new Error('Informe um nome de categoria válido.');
+
+  const category = validation.data;
+  const existingCategories = await pg.list(CATEGORIAS_TABLE, {
+    where: { empresa_id: empresaId },
+    limit: 1000,
+  });
+  const existing = category.id
+    ? (existingCategories.list || []).find((item: any) => Number(item.id) === Number(category.id))
+    : null;
+  if (category.id && !existing) {
+    throw new Error('A categoria não pertence à empresa selecionada.');
+  }
+
+  const payload = {
+    nome: category.nome,
+    ordem: Number(category.ordem || 0),
+    empresa_id: empresaId,
+    disponivel: true,
+  };
+  const saved = existing
+    ? await pg.update(CATEGORIAS_TABLE, { id: Number(existing.id), nome: payload.nome, ordem: payload.ordem })
+    : await pg.create(CATEGORIAS_TABLE, payload);
+
+  revalidatePath('/admin/empresas');
+  return {
+    id: Number((saved as any)?.id || existing?.id),
+    nome: category.nome,
+    empresa_id: empresaId,
+    ordem: payload.ordem,
+  };
+}
+
+export async function reorderCompanyCategoriesForAdmin(
+  empresaId: number,
+  untrustedCategoryIds: unknown,
+) {
+  await requireAdminSession();
+  await findCompany(empresaId);
+  if (!Array.isArray(untrustedCategoryIds) || !untrustedCategoryIds.every((id) => Number.isInteger(Number(id)) && Number(id) > 0)) {
+    throw new Error('Lista de categorias inválida.');
+  }
+
+  const existing = await pg.list(CATEGORIAS_TABLE, {
+    where: { empresa_id: empresaId },
+    limit: 1000,
+  });
+  const currentIds = (existing.list || []).map((category: any) => Number(category.id));
+  const orderedIds = untrustedCategoryIds.map(Number);
+  if (
+    orderedIds.length !== currentIds.length ||
+    new Set(orderedIds).size !== currentIds.length ||
+    currentIds.some((id) => !orderedIds.includes(id))
+  ) {
+    throw new Error('A lista de categorias mudou. Atualize e tente novamente.');
+  }
+
+  for (const [index, id] of orderedIds.entries()) {
+    await pg.update(CATEGORIAS_TABLE, { id, ordem: index + 1 });
+  }
+
+  revalidatePath('/admin/empresas');
+  return { success: true };
+}
+
+export async function deleteCompanyCategoryForAdmin(empresaId: number, categoryId: number) {
+  await requireAdminSession();
+  await findCompany(empresaId);
+  if (!Number.isInteger(categoryId) || categoryId <= 0) throw new Error('Categoria inválida.');
+
+  const category = await pg.findById(CATEGORIAS_TABLE, categoryId) as any;
+  if (!category || Number(category.empresa_id) !== empresaId) {
+    throw new Error('A categoria não pertence à empresa selecionada ou já foi removida.');
+  }
+
+  await pg.delete(CATEGORIAS_TABLE, categoryId);
+  revalidatePath('/admin/empresas');
+  return { success: true };
+}
+
+/**
 export async function saveMenuProductsForCompany(empresaId: number, untrustedProducts: unknown) {
   await requireAdminSession();
   await findCompany(empresaId);
