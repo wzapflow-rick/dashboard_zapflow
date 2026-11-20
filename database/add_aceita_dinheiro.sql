@@ -19,6 +19,6 @@ SET aceita_dinheiro = FALSE
 WHERE id = 82;
 
 -- Verificacao
-SELECT id, nome_fantasia, aceita_dinheiro
+SELECT id, aceita_dinheiro
 FROM empresas
-ORDER BY id;
+WHERE id = 82;
