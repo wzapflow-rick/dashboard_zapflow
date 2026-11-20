@@ -23,29 +23,51 @@ const menuProductsSchema = z.object({
 
 const importedProductsSchema = z.array(
   z.object({
+    id: z.number().int().positive().optional(),
     nome: z.string().trim().min(2).max(120),
-    descricao: z.string().trim().max(500).default(''),
-    preco: z.number().finite().min(0),
+    descricao: z.string().trim().max(500).nullable(),
+    preco: z.number().finite().min(0).nullable(),
     categoria: z.string().trim().max(80).nullable(),
+    disponivel: z.boolean().optional(),
   }),
 ).min(1).max(80);
 
-export async function getCompanyMenuCategories(empresaId: number) {
+function isAvailable(value: unknown): boolean {
+  return value !== false && value !== 0 && value !== 'false';
+}
+
+export async function getCompanyMenuData(empresaId: number) {
   await requireAdminSession();
   if (!Number.isInteger(empresaId) || empresaId <= 0) throw new Error('Empresa inválida.');
 
   const empresa = await pg.findById(EMPRESAS_TABLE, empresaId);
   if (!empresa) throw new Error('Empresa não encontrada.');
 
-  const result = await pg.list(CATEGORIAS_TABLE, {
-    where: { empresa_id: empresaId },
-    limit: 1000,
-  });
-  return (result.list || []).map((category: any) => ({
+  const [categoryResult, productResult] = await Promise.all([
+    pg.list(CATEGORIAS_TABLE, { where: { empresa_id: empresaId }, limit: 1000 }),
+    pg.list(PRODUTOS_TABLE, { where: { empresa_id: empresaId }, sort: '-id', limit: 1000 }),
+  ]);
+
+  const categories = (categoryResult.list || []).map((category: any) => ({
     id: Number(category.id),
     nome: String(category.nome || ''),
     empresa_id: empresaId,
   }));
+  const categoryById = new Map(categories.map((category) => [category.id, category.nome]));
+  const products = (productResult.list || []).map((product: any) => {
+    const categoryId = Number(product.categoria_id || product.categorias || 0);
+    return {
+      id: Number(product.id),
+      nome: String(product.nome || ''),
+      descricao: String(product.descricao || ''),
+      preco: Number(product.preco || 0),
+      categoria_id: categoryId || null,
+      categoria: categoryById.get(categoryId) || '',
+      disponivel: isAvailable(product.disponivel),
+    };
+  });
+
+  return { categories, products };
 }
 
 /**
@@ -108,6 +130,10 @@ export async function extractMenuProductsFromImage(formData: FormData) {
   return output.produtos;
 }
 
+/**
+ * Cria produtos novos ou atualiza produtos existentes da empresa selecionada.
+ * A foto nunca remove itens que não aparecem nela.
+ */
 export async function saveMenuProductsForCompany(empresaId: number, untrustedProducts: unknown) {
   await requireAdminSession();
   if (!Number.isInteger(empresaId) || empresaId <= 0) throw new Error('Empresa inválida.');
@@ -120,23 +146,32 @@ export async function saveMenuProductsForCompany(empresaId: number, untrustedPro
     throw new Error('Revise os produtos: há campos inválidos ou a lista é muito grande.');
   }
 
-  const existingCategories = await pg.list(CATEGORIAS_TABLE, {
-    where: { empresa_id: empresaId },
-    limit: 1000,
-  });
+  const [existingCategories, existingProducts] = await Promise.all([
+    pg.list(CATEGORIAS_TABLE, { where: { empresa_id: empresaId }, limit: 1000 }),
+    pg.list(PRODUTOS_TABLE, { where: { empresa_id: empresaId }, limit: 1000 }),
+  ]);
   const categoryMap = new Map<string, any>(
     (existingCategories.list || []).map((category: any) => [
       String(category.nome || '').trim().toLocaleLowerCase('pt-BR'),
       category,
     ]),
   );
+  const productMap = new Map<number, any>(
+    (existingProducts.list || []).map((product: any) => [Number(product.id), product]),
+  );
 
   let created = 0;
+  let updated = 0;
   let withoutPrice = 0;
 
   for (const item of validation.data) {
     try {
-      let categoryId: number | string | null = null;
+      const existing = item.id ? productMap.get(item.id) : undefined;
+      if (item.id && !existing) {
+        throw new Error('O produto não pertence à empresa selecionada ou foi removido.');
+      }
+
+      let categoryId: number | string | null = existing?.categoria_id || existing?.categorias || null;
       const categoryName = item.categoria?.trim();
       if (categoryName) {
         const key = categoryName.toLocaleLowerCase('pt-BR');
@@ -154,35 +189,46 @@ export async function saveMenuProductsForCompany(empresaId: number, untrustedPro
         categoryId = category.id;
       }
 
+      const price = item.preco ?? (existing ? Number(existing.preco || 0) : 0);
+      const available = item.disponivel ?? (
+        existing
+          ? isAvailable(existing.disponivel)
+          : price > 0
+      );
       const parsedProduct = ProductSchema.safeParse({
+        id: existing?.id,
         nome: item.nome,
-        preco: item.preco,
-        descricao: item.descricao,
+        preco: price,
+        descricao: item.descricao ?? existing?.descricao ?? '',
         categoria_id: categoryId,
         categorias: categoryId,
-        disponivel: item.preco > 0,
-        imagem: '',
+        disponivel: available,
+        imagem: existing?.imagem || '',
       });
       if (!parsedProduct.success) throw new Error('Dados de produto inválidos.');
 
-      await pg.create(PRODUTOS_TABLE, {
-        ...parsedProduct.data,
-        empresa_id: empresaId,
-      });
-      created += 1;
-      if (item.preco <= 0) withoutPrice += 1;
+      const { id, ...productData } = parsedProduct.data;
+      if (existing) {
+        await pg.update(PRODUTOS_TABLE, { id: existing.id, ...productData });
+        updated += 1;
+      } else {
+        await pg.create(PRODUTOS_TABLE, { ...productData, empresa_id: empresaId });
+        created += 1;
+      }
+      if (price <= 0) withoutPrice += 1;
     } catch (error) {
       const detail = error instanceof Error ? error.message : 'erro inesperado';
       return {
         success: false,
         created,
+        updated,
         withoutPrice,
-        error: created > 0
-          ? `Falha após salvar ${created} produto(s): ${detail}`
+        error: created + updated > 0
+          ? `Falha após salvar ${created + updated} produto(s): ${detail}`
           : detail,
       };
     }
   }
 
-  return { success: true, created, withoutPrice };
+  return { success: true, created, updated, withoutPrice };
 }

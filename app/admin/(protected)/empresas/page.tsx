@@ -258,7 +258,7 @@ export default function EmpresasAdminPage() {
                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-orange-500/10 px-3 py-2 text-sm font-medium text-orange-300 transition-colors hover:bg-orange-500/20"
               >
                 <ImagePlus className="size-4" />
-                Importar cardápio por foto
+                Gerenciar cardápio
               </button>
             </div>
           ))
@@ -344,7 +344,7 @@ export default function EmpresasAdminPage() {
                         <button
                           onClick={() => setImportMenuEmpresa(empresa)}
                           className="p-2 hover:bg-orange-500/10 rounded-lg text-slate-400 hover:text-orange-300 transition-colors"
-                          title="Importar cardápio por foto"
+                          title="Gerenciar cardápio"
                         >
                           <ImagePlus className="size-4" />
                         </button>
