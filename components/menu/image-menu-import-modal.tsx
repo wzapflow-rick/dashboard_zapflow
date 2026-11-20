@@ -584,15 +584,17 @@ export default function ImageMenuImportModal({
         )}
       </div>
     </MobileDrawer>
-      <ProductFormModal
-        isOpen={isProductFormOpen}
-        onClose={() => { setIsProductFormOpen(false); setEditingProduct(null); }}
-        editingProduct={editingProduct}
-        categories={categories}
-        insumosList={[]}
-        allProducts={products}
-        onSubmit={async (formData, isCreatingCategory) => saveProductForm(formData, isCreatingCategory)}
-      />
+      {isProductFormOpen && (
+        <ProductFormModal
+          isOpen={isProductFormOpen}
+          onClose={() => { setIsProductFormOpen(false); setEditingProduct(null); }}
+          editingProduct={editingProduct}
+          categories={categories}
+          insumosList={[]}
+          allProducts={products}
+          onSubmit={async (formData, isCreatingCategory) => saveProductForm(formData, isCreatingCategory)}
+        />
+      )}
     </>
   );
 }
