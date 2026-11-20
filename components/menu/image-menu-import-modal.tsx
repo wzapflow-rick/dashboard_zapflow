@@ -95,6 +95,9 @@ export default function ImageMenuImportModal({
   const [activeTab, setActiveTab] = useState<'produtos' | 'foto' | 'revisao'>('produtos');
   const [search, setSearch] = useState('');
   const [editingProduct, setEditingProduct] = useState<EditingProduct | null>(null);
+  const [isProductFormOpen, setIsProductFormOpen] = useState(false);
+  const [preferences, setPreferences] = useState('');
+  const [categoryPolicy, setCategoryPolicy] = useState<'auto' | 'existing'>('auto');
   const [isLoadingMenu, setIsLoadingMenu] = useState(false);
   const [isReading, setIsReading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -182,9 +185,13 @@ export default function ImageMenuImportModal({
 
       const formData = new FormData();
       formData.append('image', compressed);
-      const extracted = await extractMenuProductsFromImage(formData);
+      formData.append('preferences', preferences);
+      formData.append('categoryPolicy', categoryPolicy);
+      const extracted = await extractMenuProductsFromImage(empresaId, formData);
       const matchedIds = new Set<number>();
-      setRows(extracted.map((product) => {
+      setRows([...extracted].sort((a, b) =>
+        (a.categoria || 'Sem categoria').localeCompare(b.categoria || 'Sem categoria', 'pt-BR') || a.nome.localeCompare(b.nome, 'pt-BR'),
+      ).map((product) => {
         const match = products.find((existing) =>
           !matchedIds.has(existing.id) && normalizeName(existing.nome) === normalizeName(product.nome),
         );
@@ -261,34 +268,45 @@ export default function ImageMenuImportModal({
     }
   };
 
-  const saveManualEdit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!editingProduct) return;
-    const price = Number(editingProduct.precoText.replace(',', '.'));
-    if (!Number.isFinite(price) || price < 0) {
-      toast.error('Informe um preço válido.');
-      return;
-    }
+  const saveProductForm = async (formData: FormData, isCreatingCategory: boolean) => {
+    const rawCategoryId = String(formData.get('categoria_id') || '');
+    const categoryName = isCreatingCategory
+      ? String(formData.get('new_category_name') || '').trim()
+      : categories.find((category) => String(category.id) === rawCategoryId)?.nome || '';
+    if (!categoryName) { toast.error('Selecione ou informe uma categoria.'); return; }
 
     setIsSaving(true);
     try {
-      const result = await saveMenuProductsForCompany(empresaId, [{
-        id: editingProduct.id,
-        nome: editingProduct.nome.trim(),
-        descricao: editingProduct.descricao,
-        preco: price,
-        categoria: editingProduct.categoria || null,
-        disponivel: editingProduct.disponivel,
-      }]);
-      if (!result.success) {
-        toast.error(result.error);
-        return;
+      let imageUrl = editingProduct?.imagem || '';
+      const imageFile = formData.get('imagem_file');
+      if (imageFile instanceof File && imageFile.size > 0) {
+        if (!isValidImageFile(imageFile)) throw new Error('Use uma imagem JPG, PNG ou WebP de até 10 MB.');
+        const optimizedImage = await processImage(imageFile, { maxWidth: 1200, maxHeight: 1200, quality: 0.82, format: 'jpeg' });
+        const imageData = new FormData();
+        imageData.append('image', optimizedImage);
+        imageUrl = await uploadCompanyProductImage(empresaId, imageData) || imageUrl;
       }
+      const product = {
+        id: editingProduct?.id,
+        nome: String(formData.get('nome') || '').trim(),
+        descricao: String(formData.get('descricao') || '').trim(),
+        preco: parseCurrency(String(formData.get('preco') || '0')),
+        categoria: categoryName,
+        disponivel: editingProduct?.disponivel ?? true,
+        imagem: imageUrl,
+        tag: String(formData.get('tag') || '').trim() || null,
+        tamanhos: String(formData.get('tamanhos') || ''),
+        recomendacoes: String(formData.get('recomendacoes') || '[]'),
+      };
+      const result = await saveMenuProductsForCompany(empresaId, [product]);
+      if (!result.success) throw new Error(result.error);
+      if (!editingProduct && result.createdProductIds.length === 0) throw new Error('O produto não foi criado. Confira os dados e tente novamente.');
       await refreshMenu();
+      setIsProductFormOpen(false);
       setEditingProduct(null);
-      toast.success('Produto atualizado.');
+      toast.success(editingProduct ? 'Produto atualizado.' : 'Produto criado.');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Não foi possível atualizar o produto.');
+      toast.error(error instanceof Error ? error.message : 'Não foi possível salvar o produto.');
     } finally {
       setIsSaving(false);
     }
@@ -296,6 +314,7 @@ export default function ImageMenuImportModal({
 
   const startEditing = (product: MenuProduct) => {
     setEditingProduct({ ...product, precoText: String(product.preco) });
+    setIsProductFormOpen(true);
   };
 
   const filteredProducts = products.filter((product) => {
@@ -307,6 +326,7 @@ export default function ImageMenuImportModal({
   const updateCount = rows.length - newCount;
 
   return (
+    <>
     <MobileDrawer
       isOpen={isOpen}
       onClose={close}
@@ -340,6 +360,7 @@ export default function ImageMenuImportModal({
                 placeholder="Buscar produto ou categoria..."
                 className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none focus:border-primary dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
               />
+              <button type="button" onClick={() => { setEditingProduct(null); setIsProductFormOpen(true); }} className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:border-zinc-700 dark:text-zinc-200"><Plus className="size-4" /> Novo produto</button>
               <button
                 type="button"
                 onClick={() => setActiveTab('foto')}
@@ -369,86 +390,18 @@ export default function ImageMenuImportModal({
               <div className="max-h-[58vh] space-y-2 overflow-y-auto pr-1">
                 {filteredProducts.map((product) => (
                   <article key={product.id} className="rounded-xl border border-slate-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-900">
-                    {editingProduct?.id === product.id ? (
-                      <form onSubmit={saveManualEdit} className="space-y-3">
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          <label className="space-y-1 text-xs font-semibold text-slate-600 dark:text-zinc-300">
-                            Nome
-                            <input
-                              required
-                              value={editingProduct.nome}
-                              onChange={(event) => setEditingProduct({ ...editingProduct, nome: event.target.value })}
-                              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
-                            />
-                          </label>
-                          <label className="space-y-1 text-xs font-semibold text-slate-600 dark:text-zinc-300">
-                            Preço (R$)
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              required
-                              value={editingProduct.precoText}
-                              onChange={(event) => setEditingProduct({ ...editingProduct, precoText: event.target.value })}
-                              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
-                            />
-                          </label>
-                          <label className="space-y-1 text-xs font-semibold text-slate-600 dark:text-zinc-300">
-                            Categoria
-                            <input
-                              value={editingProduct.categoria}
-                              onChange={(event) => setEditingProduct({ ...editingProduct, categoria: event.target.value })}
-                              list="menu-import-categories"
-                              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
-                            />
-                          </label>
-                          <label className="flex items-center gap-2 self-end pb-2 text-sm text-slate-600 dark:text-zinc-300">
-                            <input
-                              type="checkbox"
-                              checked={editingProduct.disponivel}
-                              onChange={(event) => setEditingProduct({ ...editingProduct, disponivel: event.target.checked })}
-                              className="size-4 accent-primary"
-                            />
-                            Disponível no cardápio
-                          </label>
-                          <label className="space-y-1 text-xs font-semibold text-slate-600 dark:text-zinc-300 sm:col-span-2">
-                            Descrição
-                            <textarea
-                              value={editingProduct.descricao}
-                              onChange={(event) => setEditingProduct({ ...editingProduct, descricao: event.target.value })}
-                              rows={2}
-                              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
-                            />
-                          </label>
+                    <div className="flex items-start gap-3">
+                      {product.imagem ? <img src={product.imagem} alt="" className="size-14 shrink-0 rounded-lg object-cover" /> : <div className="flex size-14 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-400 dark:bg-zinc-800"><ImagePlus className="size-5" /></div>}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-semibold text-slate-900 dark:text-white">{product.nome}</span>
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${product.disponivel ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-slate-100 text-slate-500 dark:bg-zinc-800'}`}>{product.disponivel ? 'Disponível' : 'Indisponível'}</span>
                         </div>
-                        <div className="flex justify-end gap-2">
-                          <button type="button" onClick={() => setEditingProduct(null)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold dark:border-zinc-700 dark:text-zinc-200">Cancelar</button>
-                          <button type="submit" disabled={isSaving} className="rounded-lg bg-brand px-4 py-2 text-sm font-bold text-slate-950 disabled:opacity-50">{isSaving ? 'Salvando…' : 'Salvar produto'}</button>
-                        </div>
-                      </form>
-                    ) : (
-                      <div className="flex items-start gap-3">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-semibold text-slate-900 dark:text-white">{product.nome}</span>
-                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${product.disponivel ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-slate-100 text-slate-500 dark:bg-zinc-800'}`}>
-                              {product.disponivel ? 'Disponível' : 'Indisponível'}
-                            </span>
-                          </div>
-                          <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
-                            {product.categoria || 'Sem categoria'} · R$ {product.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </p>
-                          {product.descricao && <p className="mt-1 line-clamp-2 text-xs text-slate-500 dark:text-zinc-400">{product.descricao}</p>}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => startEditing(product)}
-                          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                        >
-                          <Pencil className="size-3.5" /> Editar
-                        </button>
+                        <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">{product.categoria || 'Sem categoria'} · R$ {product.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                        {product.descricao && <p className="mt-1 line-clamp-2 text-xs text-slate-500 dark:text-zinc-400">{product.descricao.split('[[SIZES:')[0]}</p>}
                       </div>
-                    )}
+                      <button type="button" onClick={() => startEditing(product)} className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"><Pencil className="size-3.5" /> Editar</button>
+                    </div>
                   </article>
                 ))}
                 {filteredProducts.length === 0 && <p className="py-8 text-center text-sm text-slate-500">Nenhum produto encontrado.</p>}
@@ -465,6 +418,11 @@ export default function ImageMenuImportModal({
             <div className="flex items-start gap-2 rounded-xl bg-sky-50 p-3 text-xs leading-relaxed text-sky-800 dark:bg-sky-950/40 dark:text-sky-200">
               <AlertCircle className="mt-0.5 size-4 shrink-0" />
               Itens com o mesmo nome serão propostos para atualização. Itens que não aparecem na foto continuarão no cardápio.
+            </div>
+
+            <div className="grid gap-3 rounded-xl border border-slate-200 p-4 dark:border-zinc-700 sm:grid-cols-[minmax(0,1fr)_240px]">
+              <label className="space-y-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-200">Preferências para organizar este cardápio<textarea value={preferences} onChange={(event) => setPreferences(event.target.value)} maxLength={1000} rows={3} placeholder="Ex.: separe bebidas por tipo, use nomes curtos e mantenha combos em uma categoria própria." className="mt-1.5 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-normal dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" /></label>
+              <label className="space-y-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-200">Como definir categorias<select value={categoryPolicy} onChange={(event) => setCategoryPolicy(event.target.value as 'auto' | 'existing')} className="mt-1.5 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"><option value="auto">Organizar e criar categoria quando precisar</option><option value="existing">Usar somente categorias existentes</option></select><span className="block font-normal text-slate-500 dark:text-zinc-400">Categorias sugeridas pela IA aparecem para revisão antes de salvar.</span></label>
             </div>
 
             <input
@@ -626,5 +584,15 @@ export default function ImageMenuImportModal({
         )}
       </div>
     </MobileDrawer>
+      <ProductFormModal
+        isOpen={isProductFormOpen}
+        onClose={() => { setIsProductFormOpen(false); setEditingProduct(null); }}
+        editingProduct={editingProduct}
+        categories={categories}
+        insumosList={[]}
+        allProducts={products}
+        onSubmit={async (formData, isCreatingCategory) => saveProductForm(formData, isCreatingCategory)}
+      />
+    </>
   );
 }
