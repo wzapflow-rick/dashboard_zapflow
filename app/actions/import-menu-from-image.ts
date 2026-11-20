@@ -220,10 +220,6 @@ export async function uploadCompanyProductImage(empresaId: number, formData: For
 }
 
 /**
- * Atualiza produtos selecionados e cria itens que ainda não existem.
- * Produtos ausentes da foto permanecem intactos.
- */
-/**
  * Exclui um produto somente quando ele pertence à empresa selecionada.
  */
 export async function deleteMenuProductForCompany(empresaId: number, productId: number) {
@@ -338,6 +334,9 @@ export async function deleteCompanyCategoryForAdmin(empresaId: number, categoryI
 }
 
 /**
+ * Atualiza produtos selecionados e cria itens que ainda não existem.
+ * Produtos ausentes da foto permanecem intactos.
+ */
 export async function saveMenuProductsForCompany(empresaId: number, untrustedProducts: unknown) {
   await requireAdminSession();
   await findCompany(empresaId);
