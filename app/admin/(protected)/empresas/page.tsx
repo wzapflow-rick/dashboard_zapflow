@@ -562,34 +562,6 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
     senha: '',
   });
 
-  const handleBrandImageUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-    type: 'logo' | 'banner',
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const setUploading = type === 'logo' ? setUploadingLogo : setUploadingBanner;
-    setUploading(true);
-    try {
-      if (!isValidImageFile(file)) throw new Error('Use uma imagem JPG, PNG, WebP ou GIF de até 10 MB.');
-      const processed = await processImage(file, type === 'logo'
-        ? { maxWidth: 512, maxHeight: 512, quality: 0.85, format: 'jpeg' }
-        : { maxWidth: 1200, maxHeight: 600, quality: 0.82, format: 'jpeg' });
-      const payload = new FormData();
-      payload.append('image', processed);
-      const url = await uploadCompanyBrandAssetForAdmin(empresa.id, payload);
-      if (url) {
-        if (type === 'logo') setLogoUrl(url);
-        else setBannerUrl(url);
-      }
-    } catch (uploadError) {
-      toast.error(uploadError instanceof Error ? uploadError.message : 'Não foi possível enviar a imagem.');
-    } finally {
-      setUploading(false);
-      event.target.value = '';
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -774,8 +746,8 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
             </button>
             <button
               type="submit"
-              disabled={loading || uploadingLogo || uploadingBanner}
-              aria-busy={loading || uploadingLogo || uploadingBanner}
+              disabled={loading}
+              aria-busy={loading}
               className="inline-flex flex-1 items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-3 rounded-lg font-medium transition-all disabled:opacity-50"
             >
               {loading && <MorphingInfinity className="size-4" aria-hidden="true" />}
@@ -805,6 +777,34 @@ function EditEmpresaModal({ empresa, onClose, onSuccess }: { empresa: Empresa; o
     email: empresa.email || '',
     telefone: empresa.telefone || empresa.whatsapp || '',
   });
+
+  const handleBrandImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    type: 'logo' | 'banner',
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const setUploading = type === 'logo' ? setUploadingLogo : setUploadingBanner;
+    setUploading(true);
+    try {
+      if (!isValidImageFile(file)) throw new Error('Use uma imagem JPG, PNG, WebP ou GIF de até 10 MB.');
+      const processed = await processImage(file, type === 'logo'
+        ? { maxWidth: 512, maxHeight: 512, quality: 0.85, format: 'jpeg' }
+        : { maxWidth: 1200, maxHeight: 600, quality: 0.82, format: 'jpeg' });
+      const payload = new FormData();
+      payload.append('image', processed);
+      const url = await uploadCompanyBrandAssetForAdmin(empresa.id, payload);
+      if (url) {
+        if (type === 'logo') setLogoUrl(url);
+        else setBannerUrl(url);
+      }
+    } catch (uploadError) {
+      toast.error(uploadError instanceof Error ? uploadError.message : 'Não foi possível enviar a imagem.');
+    } finally {
+      setUploading(false);
+      event.target.value = '';
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -940,8 +940,8 @@ function EditEmpresaModal({ empresa, onClose, onSuccess }: { empresa: Empresa; o
             </button>
             <button
               type="submit"
-              disabled={loading}
-              aria-busy={loading}
+              disabled={loading || uploadingLogo || uploadingBanner}
+              aria-busy={loading || uploadingLogo || uploadingBanner}
               className="inline-flex flex-1 items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-3 rounded-lg font-medium transition-all disabled:opacity-50"
             >
               {loading && <MorphingInfinity className="size-4" aria-hidden="true" />}
