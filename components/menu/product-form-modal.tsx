@@ -18,6 +18,8 @@ interface SizeOption {
     preco: number;
 }
 
+const EMPTY_PRODUCT_INSUMOS: { insumo_id: number; quantidade_necessaria: number }[] = [];
+
 interface ProductFormModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -35,7 +37,7 @@ export default function ProductFormModal({
     editingProduct,
     categories,
     insumosList,
-    productInsumos = [],
+    productInsumos = EMPTY_PRODUCT_INSUMOS,
     allProducts = [],
     onSubmit
 }: ProductFormModalProps) {
