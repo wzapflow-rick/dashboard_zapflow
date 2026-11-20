@@ -1,9 +1,18 @@
 'use server';
 
 import { requireAdminSession } from '@/lib/admin-session';
+import { v2 as cloudinary } from 'cloudinary';
+import { CONFIGURACOES_LOJA_TABLE } from '@/lib/tables';
 
 import db from '@/lib/db';
 import { revalidatePath } from 'next/cache';
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
 
 // ==================== DASHBOARD ====================
 
@@ -114,9 +123,17 @@ export async function getEmpresas(page = 1, limit = 20, search = '') {
     const offset = (page - 1) * limit;
     
     let query = `
-      SELECT e.*, a.plano as assinatura_plano, a.status as assinatura_status,
+      SELECT e.*, config.logo AS config_logo, config.banner AS config_banner,
+             a.plano as assinatura_plano, a.status as assinatura_status,
              a.valor as assinatura_valor, a.data_proxima_cobranca
       FROM empresas e
+      LEFT JOIN LATERAL (
+        SELECT logo, banner
+        FROM ${CONFIGURACOES_LOJA_TABLE}
+        WHERE empresa_id = e.id
+        ORDER BY id DESC
+        LIMIT 1
+      ) config ON true
       LEFT JOIN LATERAL (
         SELECT plano, status, valor, data_proxima_cobranca
         FROM assinaturas
@@ -298,16 +315,38 @@ export async function createEmpresa(data: {
   }
 }
 
+export async function uploadCompanyBrandAssetForAdmin(empresaId: number, formData: FormData) {
+  await requireAdminSession();
+  if (!Number.isInteger(empresaId) || empresaId <= 0) throw new Error('Empresa inválida.');
+  const company = await db.query('SELECT id FROM empresas WHERE id = $1 LIMIT 1', [empresaId]);
+  if (!company.rows.length) throw new Error('Empresa não encontrada.');
+
+  const file = formData.get('image');
+  if (!(file instanceof File) || file.size === 0) throw new Error('Selecione uma imagem.');
+  if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
+    throw new Error('Use uma imagem JPG, PNG, WebP ou GIF.');
+  }
+  if (file.size > 10 * 1024 * 1024) throw new Error('A imagem deve ter até 10 MB.');
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const dataUrl = `data:${file.type};base64,${buffer.toString('base64')}`;
+  const uploaded = await cloudinary.uploader.upload(dataUrl, {
+    folder: `zapflow_company_${empresaId}/branding`,
+  });
+  return uploaded.secure_url;
+}
+
 export async function updateEmpresa(id: number, data: {
   nome_fantasia?: string;
   email?: string;
   telefone?: string;
   ativo?: boolean;
   planos?: string;
+  logo?: string | null;
+  banner?: string | null;
 }) {
   await requireAdminSession();
   try {
-
     const updates: string[] = [];
     const params: any[] = [];
     let paramIndex = 1;
@@ -333,13 +372,52 @@ export async function updateEmpresa(id: number, data: {
       params.push(data.planos);
     }
 
-    updates.push(`updated_at = NOW()`);
-    params.push(id);
+    if (updates.length > 0) {
+      updates.push('updated_at = NOW()');
+      params.push(id);
+      await db.query(
+        `UPDATE empresas SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
+        params,
+      );
+    }
 
-    await db.query(
-      `UPDATE empresas SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
-      params
-    );
+    if (data.logo !== undefined || data.banner !== undefined) {
+      const existingConfig = await db.query(
+        `SELECT id FROM ${CONFIGURACOES_LOJA_TABLE} WHERE empresa_id = $1 ORDER BY id DESC LIMIT 1`,
+        [id],
+      );
+      const brandFields: string[] = [];
+      const brandValues: any[] = [];
+      if (data.logo !== undefined) {
+        brandFields.push('logo');
+        brandValues.push(data.logo);
+      }
+      if (data.banner !== undefined) {
+        brandFields.push('banner');
+        brandValues.push(data.banner);
+      }
+
+      if (existingConfig.rows[0]?.id) {
+        const assignments = brandFields.map((field, index) => `${field} = $${index + 1}`);
+        brandValues.push(existingConfig.rows[0].id);
+        await db.query(
+          `UPDATE ${CONFIGURACOES_LOJA_TABLE} SET ${assignments.join(', ')} WHERE id = $${brandValues.length}`,
+          brandValues,
+        );
+      } else {
+        const maxIdResult = await db.query(
+          `SELECT COALESCE(MAX(id), 0) + 1 AS max_id FROM ${CONFIGURACOES_LOJA_TABLE}`,
+        );
+        const newId = Number(maxIdResult.rows[0]?.max_id || 1);
+        const columns = ['id', 'empresa_id', ...brandFields];
+        const values = [newId, id, ...brandValues];
+        const placeholders = values.map((_, index) => `$${index + 1}`);
+        await db.query(
+          `INSERT INTO ${CONFIGURACOES_LOJA_TABLE} (${columns.join(', ')}) VALUES (${placeholders.join(', ')})`,
+          values,
+        );
+      }
+    }
 
     revalidatePath('/admin/empresas');
     return { success: true };
