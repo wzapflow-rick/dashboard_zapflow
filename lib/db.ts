@@ -24,7 +24,7 @@ export async function query(text: string, params?: any[], retries = 2): Promise<
       console.error(`[DB] Query falhou (tentativa ${attempt}/${retries}):`, error.message);
       
       // Se for erro de conexao e ainda temos retries, tenta novamente
-      if (attempt < retries && (
+      if (attempt < retries && !error.message?.includes('query_wait_timeout') && (
         error.code === 'ECONNREFUSED' ||
         error.code === 'ETIMEDOUT' ||
         error.code === 'ENOTFOUND' ||

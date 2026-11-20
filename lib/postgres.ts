@@ -104,16 +104,19 @@ function createPool(): Pool {
   // SSL desabilitado - PostgreSQL self-hosted sem SSL
   // Para habilitar SSL, configure o PostgreSQL com certificados e mude para:
   // ssl: { rejectUnauthorized: false }
+  // Na Vercel cada instância serverless tem o próprio pool. Com max 10 e
+  // dezenas de instâncias (webhooks + crons + dashboard) o PgBouncer esgotava
+  // o pool do servidor e as queries morriam com `query_wait_timeout`.
+  // Poucas conexões por instância e liberação rápida das ociosas evitam isso.
+  const isServerless = Boolean(process.env.VERCEL);
+  const poolMax = Number(process.env.DB_POOL_MAX) || (isServerless ? 3 : 10);
+
   const newPool = new Pool({
     connectionString,
     ssl: false,
-    max: 10,
+    max: poolMax,
     min: 0,
-    // Mantém a conexão ociosa por 30s. Antes eram 5s, o que fazia praticamente
-    // toda requisição reabrir uma conexão nova (custa caro contra IP público).
-    // O dashboard carrega em rajadas e faz polling a cada 15s, então 30s
-    // mantém a conexão viva e reaproveitada entre as chamadas.
-    idleTimeoutMillis: 30000,
+    idleTimeoutMillis: isServerless ? 10000 : 30000,
     connectionTimeoutMillis: 10000,
     // Mantém a conexão TCP viva para evitar quedas silenciosas.
     keepAlive: true,
@@ -314,8 +317,11 @@ async function executeQuery<T>(
     } catch (error: unknown) {
       const err = error as { code?: string; message?: string };
       console.error(`[PostgreSQL] Query falhou (tentativa ${attempt}/${retries}):`, err.message);
-      
-      if (attempt < retries && (
+
+      // Fila do PgBouncer cheia: repetir só aumenta a fila e atrasa todos.
+      const poolSaturated = err.message?.includes('query_wait_timeout');
+
+      if (attempt < retries && !poolSaturated && (
         err.code === 'ECONNREFUSED' ||
         err.code === 'ETIMEDOUT' ||
         err.code === 'ENOTFOUND' ||
@@ -423,8 +429,18 @@ async function findOne<T = Record<string, unknown>>(
   table: string,
   options: PgListOptions & { where?: string | Record<string, unknown> } = {},
 ): Promise<T | null> {
-  const result = await list<T>(table, { ...options, limit: 1 });
-  return result.list[0] ?? null;
+  let whereClause = '1=1';
+  let whereParams: unknown[] = [];
+  if (typeof options.where === 'string') {
+    ({ clause: whereClause, params: whereParams } = parseLegacyFilter(options.where));
+  } else if (options.where) {
+    ({ clause: whereClause, params: whereParams } = buildWhereClause(options.where));
+  }
+
+  const fields = options.fields?.map(f => `"${f}"`).join(', ') || '*';
+  const query = `SELECT ${fields} FROM "${table}" WHERE ${whereClause} ${buildOrderBy(options.sort)} LIMIT 1`;
+  const rows = await executeQuery<T>(query, whereParams);
+  return rows[0] ?? null;
 }
 
 /**
