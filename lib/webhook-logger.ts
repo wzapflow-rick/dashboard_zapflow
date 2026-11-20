@@ -25,8 +25,14 @@ let tableReady: Promise<void> | null = null;
 
 function ensureTable(): Promise<void> {
   if (!tableReady) {
+    // CREATE TABLE IF NOT EXISTS exige permissao de CREATE no schema mesmo quando a
+    // tabela ja existe; o usuario de producao nao tem essa permissao.
     tableReady = pg
-      .query(
+      .query(`SELECT to_regclass('public.webhook_logs') IS NOT NULL AS existe`)
+      .then((res: any) => {
+        const rows = Array.isArray(res) ? res : res?.rows;
+        if (rows?.[0]?.existe) return;
+        return pg.query(
         `CREATE TABLE IF NOT EXISTS webhook_logs (
            id                 SERIAL PRIMARY KEY,
            provider           TEXT NOT NULL DEFAULT 'mercadopago',
@@ -41,7 +47,8 @@ function ensureTable(): Promise<void> {
          );
          CREATE INDEX IF NOT EXISTS idx_webhook_logs_resource
            ON webhook_logs (resource_id, created_at DESC);`
-      )
+        );
+      })
       .then(() => undefined)
       .catch((error) => {
         tableReady = null;
