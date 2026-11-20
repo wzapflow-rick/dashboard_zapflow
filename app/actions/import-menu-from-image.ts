@@ -3,7 +3,10 @@
 import { generateText, Output } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { z } from 'zod';
-import { requireAdmin } from '@/lib/session-server';
+import { requireAdminSession } from '@/lib/admin-session';
+import { pg } from '@/lib/postgres';
+import { CategorySchema, ProductSchema } from '@/lib/validations';
+import { CATEGORIAS_TABLE, EMPRESAS_TABLE, PRODUTOS_TABLE } from '@/lib/tables';
 
 const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -18,14 +21,39 @@ const menuProductsSchema = z.object({
   ).max(80),
 });
 
-export type MenuProductDraft = z.infer<typeof menuProductsSchema>['produtos'][number];
+const importedProductsSchema = z.array(
+  z.object({
+    nome: z.string().trim().min(2).max(120),
+    descricao: z.string().trim().max(500).default(''),
+    preco: z.number().finite().min(0),
+    categoria: z.string().trim().max(80).nullable(),
+  }),
+).min(1).max(80);
+
+export async function getCompanyMenuCategories(empresaId: number) {
+  await requireAdminSession();
+  if (!Number.isInteger(empresaId) || empresaId <= 0) throw new Error('Empresa inválida.');
+
+  const empresa = await pg.findById(EMPRESAS_TABLE, empresaId);
+  if (!empresa) throw new Error('Empresa não encontrada.');
+
+  const result = await pg.list(CATEGORIAS_TABLE, {
+    where: { empresa_id: empresaId },
+    limit: 1000,
+  });
+  return (result.list || []).map((category: any) => ({
+    id: Number(category.id),
+    nome: String(category.nome || ''),
+    empresa_id: empresaId,
+  }));
+}
 
 /**
- * Lê uma foto de cardápio e devolve produtos para revisão. Nenhum produto é
- * salvo por esta ação; a gravação só acontece depois da confirmação no modal.
+ * Lê uma foto de cardápio e devolve produtos para revisão. Nada é gravado
+ * até o administrador confirmar a lista no modal.
  */
-export async function extractMenuProductsFromImage(formData: FormData): Promise<MenuProductDraft[]> {
-  await requireAdmin();
+export async function extractMenuProductsFromImage(formData: FormData) {
+  await requireAdminSession();
 
   const image = formData.get('image');
   if (!(image instanceof File) || image.size === 0) {
@@ -78,4 +106,83 @@ export async function extractMenuProductsFromImage(formData: FormData): Promise<
   }
 
   return output.produtos;
+}
+
+export async function saveMenuProductsForCompany(empresaId: number, untrustedProducts: unknown) {
+  await requireAdminSession();
+  if (!Number.isInteger(empresaId) || empresaId <= 0) throw new Error('Empresa inválida.');
+
+  const empresa = await pg.findById(EMPRESAS_TABLE, empresaId);
+  if (!empresa) throw new Error('Empresa não encontrada.');
+
+  const validation = importedProductsSchema.safeParse(untrustedProducts);
+  if (!validation.success) {
+    throw new Error('Revise os produtos: há campos inválidos ou a lista é muito grande.');
+  }
+
+  const existingCategories = await pg.list(CATEGORIAS_TABLE, {
+    where: { empresa_id: empresaId },
+    limit: 1000,
+  });
+  const categoryMap = new Map<string, any>(
+    (existingCategories.list || []).map((category: any) => [
+      String(category.nome || '').trim().toLocaleLowerCase('pt-BR'),
+      category,
+    ]),
+  );
+
+  let created = 0;
+  let withoutPrice = 0;
+
+  for (const item of validation.data) {
+    try {
+      let categoryId: number | string | null = null;
+      const categoryName = item.categoria?.trim();
+      if (categoryName) {
+        const key = categoryName.toLocaleLowerCase('pt-BR');
+        let category = categoryMap.get(key);
+        if (!category) {
+          const parsedCategory = CategorySchema.safeParse({ nome: categoryName });
+          if (!parsedCategory.success) throw new Error('Nome de categoria inválido.');
+          category = await pg.create(CATEGORIAS_TABLE, {
+            ...parsedCategory.data,
+            empresa_id: empresaId,
+            disponivel: true,
+          });
+          categoryMap.set(key, category);
+        }
+        categoryId = category.id;
+      }
+
+      const parsedProduct = ProductSchema.safeParse({
+        nome: item.nome,
+        preco: item.preco,
+        descricao: item.descricao,
+        categoria_id: categoryId,
+        categorias: categoryId,
+        disponivel: item.preco > 0,
+        imagem: '',
+      });
+      if (!parsedProduct.success) throw new Error('Dados de produto inválidos.');
+
+      await pg.create(PRODUTOS_TABLE, {
+        ...parsedProduct.data,
+        empresa_id: empresaId,
+      });
+      created += 1;
+      if (item.preco <= 0) withoutPrice += 1;
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : 'erro inesperado';
+      return {
+        success: false,
+        created,
+        withoutPrice,
+        error: created > 0
+          ? `Falha após salvar ${created} produto(s): ${detail}`
+          : detail,
+      };
+    }
+  }
+
+  return { success: true, created, withoutPrice };
 }
