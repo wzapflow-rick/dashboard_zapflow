@@ -131,6 +131,10 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
             throw new Error('Empresa não encontrada');
         }
 
+        if (data.formaPagamento === 'dinheiro' && empresa.aceita_dinheiro === false) {
+            throw new Error('Esta loja não aceita pagamento em dinheiro');
+        }
+
         const tipoEntregaEfetivo: 'delivery' | 'retirada' =
             data.tipoEntrega === 'delivery' && empresa.aceita_delivery !== false
                 ? 'delivery'

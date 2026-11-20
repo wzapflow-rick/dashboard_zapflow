@@ -22,7 +22,7 @@ import LoyaltyManagement from '@/components/management/loyalty-management';
 import DriversManagement from '@/components/management/drivers-management';
 import DeliveryHistory from '@/components/delivery/delivery-history';
 import MercadoPagoConnection from '@/components/management/mercadopago-connection';
-import { CreditCard as PaymentIcon } from 'lucide-react';
+import { CreditCard as PaymentIcon, Banknote } from 'lucide-react';
 import { getBotConfig, saveBotConfig, getCardapioLink, BotConfig } from '@/app/actions/bot';
 import { createEvolutionInstance, getEvolutionQRCode, getInstanceStatus, configureInstanceWebhook } from '@/app/actions/evolution';
 import { PushNotificationsCard } from '@/components/push-notifications-card';
@@ -53,6 +53,8 @@ export default function SettingsPage() {
   const [taxaEntregaFixa, setTaxaEntregaFixa] = React.useState<number>(0);
   const [deliveryEnabled, setDeliveryEnabled] = React.useState(true);
   const [savingDeliveryEnabled, setSavingDeliveryEnabled] = React.useState(false);
+  const [cashEnabled, setCashEnabled] = React.useState(true);
+  const [savingCashEnabled, setSavingCashEnabled] = React.useState(false);
   const [packagingFeeEnabled, setPackagingFeeEnabled] = React.useState(false);
   const [neighborhoods, setNeighborhoods] = React.useState<any[]>([]);
   const [horarios, setHorarios] = React.useState<HorarioItem[]>([]);
@@ -122,6 +124,7 @@ export default function SettingsPage() {
           setValorPorKm(Number(compData.valor_por_km || 0));
           setTaxaEntregaFixa(Number(compData.taxa_entrega_fixa || 0));
           setDeliveryEnabled(compData.aceita_delivery !== false);
+          setCashEnabled(compData.aceita_dinheiro !== false);
           setInventoryControlEnabled(!!compData.controle_estoque);
           setPaymentIntegrationEnabled(compData.pagamento_integrado !== false);
           setNotifyOrderWhatsappEnabled(!!compData.notificar_pedido_whatsapp);
@@ -408,6 +411,28 @@ export default function SettingsPage() {
     } catch (err: any) {
       console.error('Erro ao salvar:', err);
       toast.error(err.message || 'Ocorreu um erro ao salvar.');
+    }
+  };
+
+  const handleToggleCash = async (enabled: boolean) => {
+    const previous = cashEnabled;
+    setCashEnabled(enabled);
+    setSavingCashEnabled(true);
+
+    try {
+      await updateCompany({ aceita_dinheiro: enabled });
+      setCompany((prev: any) => (prev ? { ...prev, aceita_dinheiro: enabled } : prev));
+      toast.success(
+        enabled
+          ? 'Pagamento em dinheiro ativado no cardápio.'
+          : 'Pagamento em dinheiro desativado no cardápio.'
+      );
+    } catch (err: any) {
+      console.error('Erro ao atualizar pagamento em dinheiro:', err);
+      setCashEnabled(previous);
+      toast.error(err.message || 'Não foi possível atualizar o pagamento em dinheiro.');
+    } finally {
+      setSavingCashEnabled(false);
     }
   };
 
@@ -789,6 +814,33 @@ export default function SettingsPage() {
                         plataforma. A cobrança fica por sua conta.
                       </div>
                     )}
+                  </div>
+
+                  <div className="p-6 bg-slate-50 dark:bg-zinc-800 rounded-2xl border border-slate-100 dark:border-zinc-700">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="size-10 bg-white dark:bg-zinc-700 rounded-xl shadow-sm flex items-center justify-center text-slate-600 dark:text-slate-300">
+                          <Banknote className="size-5" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-900 dark:text-white">Aceitar pagamento em dinheiro</p>
+                          <p className="text-sm text-slate-500 dark:text-slate-400">
+                            Desative para remover a opção Dinheiro do cardápio digital.
+                          </p>
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          aria-label="Aceitar pagamento em dinheiro"
+                          checked={cashEnabled}
+                          disabled={savingCashEnabled}
+                          onChange={(e) => handleToggleCash(e.target.checked)}
+                        />
+                        <div className="w-11 h-6 bg-slate-200 dark:bg-zinc-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary peer-disabled:opacity-50"></div>
+                      </label>
+                    </div>
                   </div>
 
                   {paymentIntegrationEnabled && <MercadoPagoConnection />}

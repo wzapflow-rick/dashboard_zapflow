@@ -28,6 +28,7 @@ interface CartProps {
   upsellProducts?: UpsellProduct[];
   pagamentoIntegrado?: boolean;
   aceitaDelivery?: boolean;
+  aceitaDinheiro?: boolean;
   lojaAberta?: boolean;
   proximaAberturaIso?: string | null;
   proximaAberturaLabel?: string | null;
@@ -54,7 +55,7 @@ const formatPhone = (value: string) => {
   return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
 };
 
-export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCidade, empresaEstado, clienteTelefone, upsellProducts = [], pagamentoIntegrado = true, aceitaDelivery = true, lojaAberta = true, proximaAberturaIso = null, proximaAberturaLabel = null }: CartProps) {
+export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCidade, empresaEstado, clienteTelefone, upsellProducts = [], pagamentoIntegrado = true, aceitaDelivery = true, aceitaDinheiro = true, lojaAberta = true, proximaAberturaIso = null, proximaAberturaLabel = null }: CartProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState<CheckoutStep>('cart');
   const [cupomInput, setCupomInput] = useState('');
@@ -772,7 +773,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
                             </p>
                           </div>
                         )}
-                        {['pix', 'cartao', 'dinheiro'].map((method) => (
+                        {(aceitaDinheiro ? ['pix', 'cartao', 'dinheiro'] : ['pix', 'cartao']).map((method) => (
                           <button
                             key={method}
                             onClick={() => setPaymentData({ ...paymentData, forma: method as any })}

@@ -94,6 +94,7 @@ export const CompanyUpdateSchema = z.object({
     instancia_evolution: z.any().optional(),
     nincho: z.any().optional(),
     aceita_delivery: z.boolean().optional(),
+    aceita_dinheiro: z.boolean().optional(),
     raio_entrega_automatico: z.any().optional(),
     valor_por_km: z.any().optional(),
     taxa_entrega_fixa: z.any().optional(),

@@ -22,6 +22,7 @@ interface MenuClientWrapperProps {
   upsellProducts?: UpsellProduct[];
   pagamentoIntegrado?: boolean;
   aceitaDelivery?: boolean;
+  aceitaDinheiro?: boolean;
   lojaAberta?: boolean;
   proximaAberturaIso?: string | null;
   proximaAberturaLabel?: string | null;
@@ -38,6 +39,7 @@ export default function MenuClientWrapper({
   upsellProducts = [],
   pagamentoIntegrado = true,
   aceitaDelivery = true,
+  aceitaDinheiro = true,
   lojaAberta = true,
   proximaAberturaIso = null,
   proximaAberturaLabel = null
@@ -54,6 +56,7 @@ export default function MenuClientWrapper({
         upsellProducts={upsellProducts}
         pagamentoIntegrado={pagamentoIntegrado}
         aceitaDelivery={aceitaDelivery}
+        aceitaDinheiro={aceitaDinheiro}
         lojaAberta={lojaAberta}
         proximaAberturaIso={proximaAberturaIso}
         proximaAberturaLabel={proximaAberturaLabel}
