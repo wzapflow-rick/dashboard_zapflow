@@ -340,8 +340,9 @@ export async function saveMenuProductsForCompany(empresaId: number, untrustedPro
             ? existingMetadata?.recomendacoes ?? null
             : serializeMetadata(parsedRecommendations),
         };
-        if (existingMetadata?.id) {
-          await pg.update(PRODUTOS_METADADOS_TABLE, { id: existingMetadata.id, ...metadata });
+        const existingMetadataId = existingMetadata?.id as number | string | undefined;
+        if (existingMetadataId) {
+          await pg.update(PRODUTOS_METADADOS_TABLE, { id: existingMetadataId, ...metadata });
         } else {
           await pg.create(PRODUTOS_METADADOS_TABLE, metadata);
         }
