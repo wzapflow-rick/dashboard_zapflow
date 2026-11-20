@@ -497,10 +497,8 @@ async function isEmpresaAberta(empresaId: number): Promise<boolean> {
     return aberto;
   } catch (error) {
     console.error('[BOT] Erro ao verificar horario:', error);
-    // Em caso de erro, considera fechado: a saudacao so pode sair com a loja
-    // comprovadamente aberta. Como a trava nao e reivindicada, a proxima
-    // mensagem do cliente tenta de novo.
-    return false;
+    // Em caso de erro, considera aberto para nao bloquear
+    return true;
   }
 }
 
@@ -695,9 +693,18 @@ export async function POST(req: NextRequest) {
       recentContactsCache.set(lockKey, Date.now());
       console.log(`[BOT] Cliente ${maskPhoneForLog(phone)} liberado para receber saudacao`);
     
-      // Saudacao so e enviada com a loja aberta (horario + botoes Abrir/Fechar).
-      const empresaAberta = await isEmpresaAberta(empresa.id);
-      console.log(`[BOT] Empresa aberta: ${empresaAberta}`);
+      // Verificar horario de funcionamento se configurado
+      const respeitar_horario = botConfig.respeitar_horario_funcionamento ?? 
+                                botConfig['respeitar_horario_funcionamento'] ?? 
+                                false;
+      
+      console.log(`[BOT] Respeitar horario funcionamento: ${respeitar_horario}`);
+      
+      let empresaAberta = true;
+      if (respeitar_horario) {
+        empresaAberta = await isEmpresaAberta(empresa.id);
+        console.log(`[BOT] Empresa aberta: ${empresaAberta}`);
+      }
       
       // Gerar link do cardapio
       const linkCardapio = getCardapioLink(empresa);
@@ -713,12 +720,12 @@ export async function POST(req: NextRequest) {
       // Preparar mensagens
       const mensagens: string[] = [];
       
-      if (!empresaAberta) {
-        // Loja fechada: nunca envia as mensagens de saudacao. Nao reivindica a
-        // trava, entao o cliente recebe a saudacao quando escrever com a loja aberta.
-        console.log(`[BOT] Empresa ${empresa.id} fechada — saudacao nao enviada`);
-        return NextResponse.json({ received: true, store_closed: true });
+      // Se empresa esta fechada e tem mensagem de fora de horario
+      if (!empresaAberta && botConfig.mensagem_fora_horario) {
+        console.log(`[BOT] Empresa fechada, enviando mensagem fora de horario`);
+        mensagens.push(processarMensagem(botConfig.mensagem_fora_horario));
       } else {
+        // Empresa aberta ou nao respeita horario - enviar mensagens normais
         if (botConfig.mensagem_1_ativa && botConfig.mensagem_1_texto) {
           mensagens.push(processarMensagem(botConfig.mensagem_1_texto));
         }
