@@ -4,12 +4,13 @@
 import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { getEmpresas, createEmpresa, updateEmpresa, concederTrialGratuito, deleteEmpresa } from '@/app/actions/admin';
+import { getEmpresas, createEmpresa, updateEmpresa, uploadCompanyBrandAssetForAdmin, concederTrialGratuito, deleteEmpresa } from '@/app/actions/admin';
 import { 
   Building2, Search, Plus, Edit2, Gift, ExternalLink, 
-  ChevronLeft, ChevronRight, X, Check, AlertCircle, Trash2, QrCode, ImagePlus
+  ChevronLeft, ChevronRight, X, Check, AlertCircle, Trash2, QrCode, ImagePlus, Upload, LoaderCircle
 } from 'lucide-react';
 import QrCodeGenerator from '@/components/management/qr-code-generator';
+import { isValidImageFile, processImage } from '@/lib/image-utils';
 
 const ImageMenuImportModal = dynamic(() => import('@/components/menu/image-menu-import-modal'), {
   ssr: false,
@@ -33,6 +34,10 @@ interface Empresa {
   conta_teste?: boolean;
   data_proxima_cobranca: string;
   created_at: string;
+  config_logo?: string | null;
+  config_banner?: string | null;
+  logo?: string | null;
+  banner?: string | null;
 }
 
 interface Pagination {
@@ -557,6 +562,34 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
     senha: '',
   });
 
+  const handleBrandImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    type: 'logo' | 'banner',
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const setUploading = type === 'logo' ? setUploadingLogo : setUploadingBanner;
+    setUploading(true);
+    try {
+      if (!isValidImageFile(file)) throw new Error('Use uma imagem JPG, PNG, WebP ou GIF de até 10 MB.');
+      const processed = await processImage(file, type === 'logo'
+        ? { maxWidth: 512, maxHeight: 512, quality: 0.85, format: 'jpeg' }
+        : { maxWidth: 1200, maxHeight: 600, quality: 0.82, format: 'jpeg' });
+      const payload = new FormData();
+      payload.append('image', processed);
+      const url = await uploadCompanyBrandAssetForAdmin(empresa.id, payload);
+      if (url) {
+        if (type === 'logo') setLogoUrl(url);
+        else setBannerUrl(url);
+      }
+    } catch (uploadError) {
+      toast.error(uploadError instanceof Error ? uploadError.message : 'Não foi possível enviar a imagem.');
+    } finally {
+      setUploading(false);
+      event.target.value = '';
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -741,8 +774,8 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
             </button>
             <button
               type="submit"
-              disabled={loading}
-              aria-busy={loading}
+              disabled={loading || uploadingLogo || uploadingBanner}
+              aria-busy={loading || uploadingLogo || uploadingBanner}
               className="inline-flex flex-1 items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-3 rounded-lg font-medium transition-all disabled:opacity-50"
             >
               {loading && <MorphingInfinity className="size-4" aria-hidden="true" />}
@@ -759,6 +792,10 @@ function CreateEmpresaModal({ onClose, onSuccess }: { onClose: () => void; onSuc
 function EditEmpresaModal({ empresa, onClose, onSuccess }: { empresa: Empresa; onClose: () => void; onSuccess: () => void }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [logoUrl, setLogoUrl] = useState(empresa.config_logo || empresa.logo || '');
+  const [bannerUrl, setBannerUrl] = useState(empresa.config_banner || empresa.banner || '');
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
   
   // Usa nome_fantasia como fallback principal ja que alguns registros nao tem campo 'nome'
   const [formData, setFormData] = useState({
@@ -774,7 +811,7 @@ function EditEmpresaModal({ empresa, onClose, onSuccess }: { empresa: Empresa; o
     setLoading(true);
     setError('');
 
-    const result = await updateEmpresa(empresa.id, formData);
+    const result = await updateEmpresa(empresa.id, { ...formData, logo: logoUrl || null, banner: bannerUrl || null });
     
     if (result.success) {
       onSuccess();
@@ -786,7 +823,7 @@ function EditEmpresaModal({ empresa, onClose, onSuccess }: { empresa: Empresa; o
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#111113] border border-[#27272a] rounded-xl w-full max-w-lg">
+      <div className="bg-[#111113] border border-[#27272a] rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-[#27272a]">
           <h2 className="text-xl font-bold text-white">Editar Empresa</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-white">
@@ -800,6 +837,47 @@ function EditEmpresaModal({ empresa, onClose, onSuccess }: { empresa: Empresa; o
               {error}
             </div>
           )}
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-xl border border-[#27272a] bg-[#09090b] p-4">
+              <div className="mb-3 flex items-center gap-3">
+                <div className="relative size-16 overflow-hidden rounded-xl border border-[#27272a] bg-[#18181b]">
+                  {logoUrl ? <img src={logoUrl} alt="Logo da empresa" className="size-full object-contain" /> : <div className="flex size-full items-center justify-center text-xs text-slate-500">Sem logo</div>}
+                  {uploadingLogo && <div className="absolute inset-0 flex items-center justify-center bg-black/60"><LoaderCircle className="size-5 animate-spin text-white" /></div>}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-medium text-white">Logo</p>
+                  <p className="text-xs text-slate-500">Imagem quadrada, até 10 MB</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-orange-500/10 px-3 py-2 text-xs font-semibold text-orange-300 hover:bg-orange-500/20">
+                  <Upload className="size-4" /> {logoUrl ? 'Trocar logo' : 'Enviar logo'}
+                  <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" disabled={uploadingLogo || loading} onChange={(event) => void handleBrandImageUpload(event, 'logo')} />
+                </label>
+                {logoUrl && <button type="button" onClick={() => setLogoUrl('')} className="text-xs font-semibold text-red-400 hover:underline">Remover</button>}
+              </div>
+            </div>
+            <div className="rounded-xl border border-[#27272a] bg-[#09090b] p-4">
+              <div className="mb-3 flex items-center gap-3">
+                <div className="relative h-16 flex-1 overflow-hidden rounded-xl border border-[#27272a] bg-[#18181b]">
+                  {bannerUrl ? <img src={bannerUrl} alt="Banner da empresa" className="size-full object-cover" /> : <div className="flex size-full items-center justify-center text-xs text-slate-500">Sem banner</div>}
+                  {uploadingBanner && <div className="absolute inset-0 flex items-center justify-center bg-black/60"><LoaderCircle className="size-5 animate-spin text-white" /></div>}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-medium text-white">Banner</p>
+                  <p className="text-xs text-slate-500">Formato paisagem</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-orange-500/10 px-3 py-2 text-xs font-semibold text-orange-300 hover:bg-orange-500/20">
+                  <Upload className="size-4" /> {bannerUrl ? 'Trocar banner' : 'Enviar banner'}
+                  <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" disabled={uploadingBanner || loading} onChange={(event) => void handleBrandImageUpload(event, 'banner')} />
+                </label>
+                {bannerUrl && <button type="button" onClick={() => setBannerUrl('')} className="text-xs font-semibold text-red-400 hover:underline">Remover</button>}
+              </div>
+            </div>
+          </div>
 
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">Nome</label>
