@@ -12,7 +12,7 @@ BEGIN;
 
 -- 1) Grupos
 INSERT INTO grupos_complementos (empresa_id, nome, descricao, tipo, max_opcoes, obrigatorio, created_at, updated_at)
-SELECT 82, g.nome, g.descricao, 'multiplo', g.max_opcoes, false, NOW(), NOW()
+SELECT 82, g.nome, g.descricao, 'multipla', g.max_opcoes, false, NOW(), NOW()
 FROM (VALUES
     ('Adicionais', 'Turbine seu pedido', 10),
     ('Adicional sachê', 'Sachês extras', 3)
