@@ -3,12 +3,17 @@
 
 import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { getEmpresas, createEmpresa, updateEmpresa, concederTrialGratuito, deleteEmpresa } from '@/app/actions/admin';
 import { 
   Building2, Search, Plus, Edit2, Gift, ExternalLink, 
-  ChevronLeft, ChevronRight, X, Check, AlertCircle, Trash2, QrCode
+  ChevronLeft, ChevronRight, X, Check, AlertCircle, Trash2, QrCode, ImagePlus
 } from 'lucide-react';
 import QrCodeGenerator from '@/components/management/qr-code-generator';
+
+const ImageMenuImportModal = dynamic(() => import('@/components/menu/image-menu-import-modal'), {
+  ssr: false,
+});
 
 interface Empresa {
   id: number;
@@ -50,6 +55,7 @@ export default function EmpresasAdminPage() {
   const [showTrialModal, setShowTrialModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
+  const [importMenuEmpresa, setImportMenuEmpresa] = useState<Empresa | null>(null);
   const [selectedEmpresa, setSelectedEmpresa] = useState<Empresa | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -247,6 +253,13 @@ export default function EmpresasAdminPage() {
                   <Trash2 className="size-4" />
                 </button>
               </div>
+              <button
+                onClick={() => setImportMenuEmpresa(empresa)}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-orange-500/10 px-3 py-2 text-sm font-medium text-orange-300 transition-colors hover:bg-orange-500/20"
+              >
+                <ImagePlus className="size-4" />
+                Importar cardápio por foto
+              </button>
             </div>
           ))
         )}
@@ -327,6 +340,13 @@ export default function EmpresasAdminPage() {
                           title="QR Code do Cardapio"
                         >
                           <QrCode className="size-4" />
+                        </button>
+                        <button
+                          onClick={() => setImportMenuEmpresa(empresa)}
+                          className="p-2 hover:bg-orange-500/10 rounded-lg text-slate-400 hover:text-orange-300 transition-colors"
+                          title="Importar cardápio por foto"
+                        >
+                          <ImagePlus className="size-4" />
                         </button>
                         <button
                           onClick={() => openDeleteConfirm(empresa)}
@@ -470,6 +490,15 @@ export default function EmpresasAdminPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {importMenuEmpresa && (
+        <ImageMenuImportModal
+          isOpen={true}
+          onClose={() => setImportMenuEmpresa(null)}
+          empresaId={importMenuEmpresa.id}
+          empresaNome={importMenuEmpresa.nome_fantasia || importMenuEmpresa.nome}
+        />
       )}
 
       {/* Modal Confirmar Exclusao */}
