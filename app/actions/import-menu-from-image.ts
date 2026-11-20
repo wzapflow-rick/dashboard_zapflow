@@ -2,13 +2,25 @@
 
 import { generateText, Output } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
+import { v2 as cloudinary } from 'cloudinary';
 import { z } from 'zod';
 import { requireAdminSession } from '@/lib/admin-session';
 import { pg } from '@/lib/postgres';
 import { CategorySchema, ProductSchema } from '@/lib/validations';
-import { CATEGORIAS_TABLE, EMPRESAS_TABLE, PRODUTOS_TABLE } from '@/lib/tables';
+import {
+  CATEGORIAS_TABLE,
+  EMPRESAS_TABLE,
+  PRODUTOS_METADADOS_TABLE,
+  PRODUTOS_TABLE,
+} from '@/lib/tables';
 
 const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const menuProductsSchema = z.object({
   produtos: z.array(
@@ -25,10 +37,22 @@ const importedProductsSchema = z.array(
   z.object({
     id: z.number().int().positive().optional(),
     nome: z.string().trim().min(2).max(120),
-    descricao: z.string().trim().max(500).nullable(),
-    preco: z.number().finite().min(0).nullable(),
-    categoria: z.string().trim().max(80).nullable(),
+    descricao: z.string().trim().max(500).nullable().optional(),
+    preco: z.number().finite().min(0).nullable().optional(),
+    categoria: z.string().trim().max(80).nullable().optional(),
     disponivel: z.boolean().optional(),
+    imagem: z.string().max(2048).optional(),
+    tag: z.string().max(40).nullable().optional(),
+    tamanhos: z.union([
+      z.string().max(4000),
+      z.array(z.object({ nome: z.string().max(80), preco: z.number().nonnegative() })).max(20),
+      z.null(),
+    ]).optional(),
+    recomendacoes: z.union([
+      z.string().max(4000),
+      z.array(z.number().int().positive()).max(100),
+      z.null(),
+    ]).optional(),
   }),
 ).min(1).max(80);
 
@@ -36,16 +60,28 @@ function isAvailable(value: unknown): boolean {
   return value !== false && value !== 0 && value !== 'false';
 }
 
-export async function getCompanyMenuData(empresaId: number) {
-  await requireAdminSession();
-  if (!Number.isInteger(empresaId) || empresaId <= 0) throw new Error('Empresa inválida.');
+function serializeMetadata(value: unknown): string | null {
+  if (value === undefined) return null;
+  if (value === null || value === '') return null;
+  if (typeof value === 'string') return value;
+  return JSON.stringify(value);
+}
 
+async function findCompany(empresaId: number) {
+  if (!Number.isInteger(empresaId) || empresaId <= 0) throw new Error('Empresa inválida.');
   const empresa = await pg.findById(EMPRESAS_TABLE, empresaId);
   if (!empresa) throw new Error('Empresa não encontrada.');
+  return empresa;
+}
 
-  const [categoryResult, productResult] = await Promise.all([
+export async function getCompanyMenuData(empresaId: number) {
+  await requireAdminSession();
+  await findCompany(empresaId);
+
+  const [categoryResult, productResult, metadataList] = await Promise.all([
     pg.list(CATEGORIAS_TABLE, { where: { empresa_id: empresaId }, limit: 1000 }),
     pg.list(PRODUTOS_TABLE, { where: { empresa_id: empresaId }, sort: '-id', limit: 1000 }),
+    pg.listAll(PRODUTOS_METADADOS_TABLE).catch(() => []),
   ]);
 
   const categories = (categoryResult.list || []).map((category: any) => ({
@@ -55,15 +91,31 @@ export async function getCompanyMenuData(empresaId: number) {
   }));
   const categoryById = new Map(categories.map((category) => [category.id, category.nome]));
   const products = (productResult.list || []).map((product: any) => {
+    const productId = Number(product.id);
     const categoryId = Number(product.categoria_id || product.categorias || 0);
+    const metadata = metadataList.find((item: any) => Number(item.produto_id) === productId);
+    let tamanhos = metadata?.tamanhos ?? null;
+    let recomendacoes = metadata?.recomendacoes ?? null;
+    try {
+      if (typeof tamanhos === 'string') tamanhos = JSON.parse(tamanhos);
+      if (typeof recomendacoes === 'string') recomendacoes = JSON.parse(recomendacoes);
+    } catch {
+      /* mantém os metadados originais para não ocultar informação */
+    }
+
     return {
-      id: Number(product.id),
+      id: productId,
       nome: String(product.nome || ''),
       descricao: String(product.descricao || ''),
       preco: Number(product.preco || 0),
+      imagem: String(product.imagem || ''),
       categoria_id: categoryId || null,
       categoria: categoryById.get(categoryId) || '',
       disponivel: isAvailable(product.disponivel),
+      tag: product.tag || null,
+      tamanhos,
+      tamanhos_json: tamanhos,
+      recomendacoes,
     };
   });
 
@@ -74,8 +126,12 @@ export async function getCompanyMenuData(empresaId: number) {
  * Lê uma foto de cardápio e devolve produtos para revisão. Nada é gravado
  * até o administrador confirmar a lista no modal.
  */
-export async function extractMenuProductsFromImage(formData: FormData) {
+export async function extractMenuProductsFromImage(
+  empresaId: number,
+  formData: FormData,
+) {
   await requireAdminSession();
+  await findCompany(empresaId);
 
   const image = formData.get('image');
   if (!(image instanceof File) || image.size === 0) {
@@ -93,24 +149,37 @@ export async function extractMenuProductsFromImage(formData: FormData) {
     throw new Error('A importação por foto precisa da variável OPENAI_API_KEY configurada no servidor.');
   }
 
+  const preferences = String(formData.get('preferences') || '').trim().slice(0, 1000);
+  const categoryPolicy = formData.get('categoryPolicy') === 'existing'
+    ? 'Use somente as categorias já existentes; escolha a mais próxima e não proponha categorias novas.'
+    : 'Prefira as categorias existentes; proponha uma categoria nova apenas quando nenhum grupo atual fizer sentido.';
+  const menuData = await getCompanyMenuData(empresaId);
+  const existingCategories = menuData.categories.map((category) => category.nome).filter(Boolean);
+  const categoryContext = existingCategories.length
+    ? existingCategories.join(', ')
+    : 'Ainda não existem categorias cadastradas.';
+
   const imageBytes = new Uint8Array(await image.arrayBuffer());
   const { output } = await generateText({
     model: openai('gpt-4o-mini'),
     system: [
-      'Você extrai dados de cardápios para um sistema de delivery brasileiro.',
+      'Você organiza cardápios para um sistema de delivery brasileiro.',
       'Leia somente o que estiver visível na imagem. Não invente nomes, descrições, categorias ou preços.',
       'Se um preço não estiver legível ou não existir, retorne null. Valores devem ser números em reais, sem símbolo.',
-      'Separe categorias quando elas estiverem indicadas. Se a imagem tiver apenas fotos sem texto, retorne produtos vazio.',
       'Ignore telefone, endereço, promoções gerais e outros textos que não sejam produtos.',
       'Preserve os nomes e descrições em português do Brasil.',
-    ].join(' '),
+      'Categorias já cadastradas para esta empresa: ' + categoryContext,
+      'Regra de categorias: ' + categoryPolicy,
+      preferences ? 'Preferências adicionais do administrador: ' + preferences : '',
+      'Atribua cada produto a uma categoria apropriada. Se vários itens forem do mesmo grupo, reutilize a mesma categoria.',
+    ].filter(Boolean).join(' '),
     messages: [
       {
         role: 'user',
         content: [
           {
             type: 'text',
-            text: 'Extraia os produtos desta imagem de cardápio. Não estime preços. Agrupe cada item com sua categoria quando ela estiver clara.',
+            text: 'Extraia os produtos da imagem, categorizando e organizando os itens de forma consistente. Não estime preços.',
           },
           {
             type: 'image',
@@ -130,16 +199,32 @@ export async function extractMenuProductsFromImage(formData: FormData) {
   return output.produtos;
 }
 
+export async function uploadCompanyProductImage(empresaId: number, formData: FormData) {
+  await requireAdminSession();
+  await findCompany(empresaId);
+
+  const image = formData.get('image');
+  if (!(image instanceof File) || image.size === 0) return null;
+  if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(image.type)) {
+    throw new Error('Use uma imagem JPG, PNG, WebP ou GIF.');
+  }
+  if (image.size > 10 * 1024 * 1024) throw new Error('A imagem deve ter até 10 MB.');
+
+  const buffer = Buffer.from(await image.arrayBuffer());
+  const dataUrl = `data:${image.type};base64,${buffer.toString('base64')}`;
+  const uploaded = await cloudinary.uploader.upload(dataUrl, {
+    folder: `zapflow_products/company_${empresaId}`,
+  });
+  return uploaded.secure_url;
+}
+
 /**
- * Cria produtos novos ou atualiza produtos existentes da empresa selecionada.
- * A foto nunca remove itens que não aparecem nela.
+ * Atualiza produtos selecionados e cria itens que ainda não existem.
+ * Produtos ausentes da foto permanecem intactos.
  */
 export async function saveMenuProductsForCompany(empresaId: number, untrustedProducts: unknown) {
   await requireAdminSession();
-  if (!Number.isInteger(empresaId) || empresaId <= 0) throw new Error('Empresa inválida.');
-
-  const empresa = await pg.findById(EMPRESAS_TABLE, empresaId);
-  if (!empresa) throw new Error('Empresa não encontrada.');
+  await findCompany(empresaId);
 
   const validation = importedProductsSchema.safeParse(untrustedProducts);
   if (!validation.success) {
@@ -163,6 +248,7 @@ export async function saveMenuProductsForCompany(empresaId: number, untrustedPro
   let created = 0;
   let updated = 0;
   let withoutPrice = 0;
+  const createdProductIds: number[] = [];
 
   for (const item of validation.data) {
     try {
@@ -195,7 +281,22 @@ export async function saveMenuProductsForCompany(empresaId: number, untrustedPro
           ? isAvailable(existing.disponivel)
           : price > 0
       );
-      const parsedProduct = ProductSchema.safeParse({
+      const tamanhos = item.tamanhos === undefined
+        ? undefined
+        : item.tamanhos === null || item.tamanhos === ''
+          ? null
+          : typeof item.tamanhos === 'string'
+            ? item.tamanhos
+            : JSON.stringify(item.tamanhos);
+      const recomendacoes = item.recomendacoes === undefined
+        ? undefined
+        : item.recomendacoes === null || item.recomendacoes === ''
+          ? null
+          : typeof item.recomendacoes === 'string'
+            ? item.recomendacoes
+            : JSON.stringify(item.recomendacoes);
+
+      const productData: any = {
         id: existing?.id,
         nome: item.nome,
         preco: price,
@@ -203,18 +304,49 @@ export async function saveMenuProductsForCompany(empresaId: number, untrustedPro
         categoria_id: categoryId,
         categorias: categoryId,
         disponivel: available,
-        imagem: existing?.imagem || '',
-      });
+        imagem: item.imagem ?? existing?.imagem ?? '',
+        tag: item.tag === undefined ? existing?.tag ?? null : item.tag,
+        tamanhos,
+        recomendacoes,
+      };
+      const parsedProduct = ProductSchema.safeParse(productData);
       if (!parsedProduct.success) throw new Error('Dados de produto inválidos.');
 
-      const { id, ...productData } = parsedProduct.data;
+      const {
+        id,
+        tamanhos: parsedSizes,
+        recomendacoes: parsedRecommendations,
+        ...productFields
+      } = parsedProduct.data as any;
+
+      let savedProduct: any;
       if (existing) {
-        await pg.update(PRODUTOS_TABLE, { id: existing.id, ...productData });
+        savedProduct = await pg.update(PRODUTOS_TABLE, { id: existing.id, ...productFields });
         updated += 1;
       } else {
-        await pg.create(PRODUTOS_TABLE, { ...productData, empresa_id: empresaId });
+        savedProduct = await pg.create(PRODUTOS_TABLE, { ...productFields, empresa_id: empresaId });
         created += 1;
+        if (savedProduct?.id) createdProductIds.push(Number(savedProduct.id));
       }
+
+      if (parsedSizes !== undefined || parsedRecommendations !== undefined) {
+        const existingMetadata = await pg.findOne(PRODUTOS_METADADOS_TABLE, {
+          where: { produto_id: savedProduct?.id || existing?.id },
+        });
+        const metadata = {
+          produto_id: savedProduct?.id || existing?.id,
+          tamanhos: parsedSizes === undefined ? existingMetadata?.tamanhos ?? null : serializeMetadata(parsedSizes),
+          recomendacoes: parsedRecommendations === undefined
+            ? existingMetadata?.recomendacoes ?? null
+            : serializeMetadata(parsedRecommendations),
+        };
+        if (existingMetadata?.id) {
+          await pg.update(PRODUTOS_METADADOS_TABLE, { id: existingMetadata.id, ...metadata });
+        } else {
+          await pg.create(PRODUTOS_METADADOS_TABLE, metadata);
+        }
+      }
+
       if (price <= 0) withoutPrice += 1;
     } catch (error) {
       const detail = error instanceof Error ? error.message : 'erro inesperado';
@@ -223,6 +355,7 @@ export async function saveMenuProductsForCompany(empresaId: number, untrustedPro
         created,
         updated,
         withoutPrice,
+        createdProductIds,
         error: created + updated > 0
           ? `Falha após salvar ${created + updated} produto(s): ${detail}`
           : detail,
@@ -230,5 +363,5 @@ export async function saveMenuProductsForCompany(empresaId: number, untrustedPro
     }
   }
 
-  return { success: true, created, updated, withoutPrice };
+  return { success: true, created, updated, withoutPrice, createdProductIds };
 }
