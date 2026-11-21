@@ -1,7 +1,7 @@
 import { getOrderCreatedMessage, getOwnerNewOrderMessage, getStatusMessage, WhatsAppMessages } from '@/llm/messages';
 import { getTrackingPath } from '@/lib/order-tracking';
 
-const EVO_API_URL = process.env.EVOLUTION_API_URL || 'https://evo.wzapflow.com.br';
+const EVO_API_URL = process.env.EVOLUTION_API_URL || process.env.EVOLUTION_URL || 'https://evo.wzapflow.com.br';
 const EVO_API_KEY = process.env.EVOLUTION_API_KEY || '';
 const EVO_INSTANCE = process.env.EVOLUTION_INSTANCE || 'zapflow_ativacao';
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://cardapio.wzapflow.com.br';
@@ -58,6 +58,69 @@ function formatPhoneForEvolution(phone: string): string {
     return `${normalized}@s.whatsapp.net`;
 }
 
+const SEND_TIMEOUT_MS = 20_000;
+const SEND_MAX_ATTEMPTS = 3;
+// 502/503 vêm do nginx quando a Evolution está reiniciando: a mensagem não
+// chegou a ser processada, então é seguro tentar de novo. Timeout e 504 NÃO
+// entram aqui, porque a Evolution pode ter enviado e a nova tentativa duplicaria.
+const RETRYABLE_STATUS = new Set([502, 503]);
+
+type EvoSendResult = { ok: boolean; status: number; result: any; rawText: string; error: string | null };
+
+async function evoSendText(instanceName: string, number: string, text: string): Promise<EvoSendResult> {
+    const url = `${EVO_API_URL}/message/sendText/${instanceName}`;
+    let last: EvoSendResult = { ok: false, status: 0, result: null, rawText: '', error: 'sem resposta' };
+
+    for (let attempt = 1; attempt <= SEND_MAX_ATTEMPTS; attempt++) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), SEND_TIMEOUT_MS);
+        let retryable = false;
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'apikey': EVO_API_KEY, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ number, text }),
+                cache: 'no-store',
+                signal: controller.signal,
+            });
+
+            const rawText = await response.text();
+            let result: any = rawText;
+            try {
+                result = JSON.parse(rawText);
+            } catch {
+                // nginx devolve HTML em 502/503; mantem o texto cru
+            }
+
+            last = { ok: response.ok, status: response.status, result, rawText, error: response.ok ? null : `HTTP ${response.status}` };
+            if (response.ok) return last;
+            retryable = RETRYABLE_STATUS.has(response.status);
+        } catch (err: any) {
+            if (err?.name === 'AbortError') {
+                return { ok: false, status: 0, result: null, rawText: '', error: `timeout de ${SEND_TIMEOUT_MS / 1000}s na Evolution (${instanceName})` };
+            }
+            // Falha de rede antes de qualquer resposta: a mensagem não saiu.
+            last = { ok: false, status: 0, result: null, rawText: '', error: err?.message || 'erro de rede' };
+            retryable = true;
+        } finally {
+            clearTimeout(timer);
+        }
+
+        if (!retryable || attempt === SEND_MAX_ATTEMPTS) break;
+        console.warn(`[WhatsApp] ${instanceName}: tentativa ${attempt} falhou (${last.error}), tentando de novo`);
+        await new Promise((resolve) => setTimeout(resolve, 1500 * attempt));
+    }
+
+    return last;
+}
+
+function extractEvoError(send: EvoSendResult): string {
+    const r = send.result;
+    const msg = (r && typeof r === 'object' && (r.message || r.error || r.response?.message)) || send.error || `HTTP ${send.status}`;
+    return (typeof msg === 'string' ? msg : JSON.stringify(msg)).substring(0, 300);
+}
+
 /**
  * Enviar mensagem via Evolution API (instancia central da ZapFlash).
  * Retorna detalhes do resultado para que o chamador possa registrar o motivo da falha.
@@ -84,31 +147,16 @@ export async function sendWhatsAppMessageDetailed(
         console.log(`[WhatsApp] Enviando para: ${formattedPhone}`);
         console.log(`[WhatsApp] Mensagem: ${message.substring(0, 50)}...`);
 
-        const url = `${EVO_API_URL}/message/sendText/${EVO_INSTANCE}`;
-
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'apikey': EVO_API_KEY,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                number: formattedPhone,
-                text: message
-            })
-        });
-
-        const rawText = await response.text();
-        let result: any = rawText;
-        try {
-            result = JSON.parse(rawText);
-        } catch {
-            // resposta nao-JSON; mantem texto cru
-        }
-        console.log(`[WhatsApp] Resposta (${response.status}):`, JSON.stringify(result).substring(0, 200));
+        const send = await evoSendText(EVO_INSTANCE, formattedPhone, message);
+        const { result, rawText } = send;
+        const response = { ok: send.ok, status: send.status };
+        console.log(`[WhatsApp] Resposta (${response.status}):`, JSON.stringify(result ?? send.error).substring(0, 200));
 
         if (response.ok) {
             return { success: true, status: response.status, error: null };
+        }
+        if (response.status === 0) {
+            return { success: false, status: 0, error: send.error };
         }
 
         // Caso especifico: Evolution confirma que o numero NAO tem conta no WhatsApp.
@@ -257,28 +305,12 @@ export async function sendWhatsAppMessageWithInstance(
         const formattedPhone = formatPhoneForEvolution(phone);
         const instanceName = `zapflow_${empresaId}`;
 
-        const url = `${EVO_API_URL}/message/sendText/${instanceName}`;
+        const send = await evoSendText(instanceName, formattedPhone, message);
 
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'apikey': EVO_API_KEY,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                number: formattedPhone,
-                text: message
-            })
-        });
-
-        const result = await response.json();
-
-        if (!response.ok) {
-            console.error(`[WhatsApp] Erro ao enviar para ${instanceName}:`, result);
-            return { 
-                success: false, 
-                error: result.message || result.error || `HTTP ${response.status}` 
-            };
+        if (!send.ok) {
+            const error = extractEvoError(send);
+            console.error(`[WhatsApp] Erro ao enviar para ${instanceName}:`, error);
+            return { success: false, error };
         }
 
         return { success: true };
@@ -303,29 +335,11 @@ export async function testWhatsApp(phone: string): Promise<{ success: boolean; f
         console.log(`[WhatsApp Test] API: ${EVO_API_URL}`);
         console.log(`[WhatsApp Test] Instance: ${EVO_INSTANCE}`);
 
-        const url = `${EVO_API_URL}/message/sendText/${EVO_INSTANCE}`;
-        
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'apikey': EVO_API_KEY,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                number: formattedPhone,
-                text: testMessage
-            })
-        });
+        const send = await evoSendText(EVO_INSTANCE, formattedPhone, testMessage);
+        console.log(`[WhatsApp Test] Resposta (${send.status}):`, send.result ?? send.error);
 
-        const result = await response.json();
-        console.log(`[WhatsApp Test] Resposta (${response.status}):`, result);
-        
-        if (!response.ok) {
-            return {
-                success: false,
-                formattedPhone,
-                error: result.message || result.error || `HTTP ${response.status}`
-            };
+        if (!send.ok) {
+            return { success: false, formattedPhone, error: extractEvoError(send) };
         }
 
         return { success: true, formattedPhone };
