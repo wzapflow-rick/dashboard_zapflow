@@ -598,6 +598,7 @@ export async function POST(req: NextRequest) {
     
     // Apenas processa mensagens recebidas
     if (body.event !== 'messages.upsert') {
+      console.log(`[BOT] Evento ${body.event} ignorado (instancia ${instanceName})`);
       return NextResponse.json({ received: true, ignored: body.event });
     }
     
@@ -605,22 +606,26 @@ export async function POST(req: NextRequest) {
     
     // Ignora mensagens enviadas por nos
     if (data.key?.fromMe) {
+      console.log(`[BOT] Ignorado: mensagem enviada pela propria loja (instancia ${instanceName})`);
       return NextResponse.json({ received: true, ignored: 'fromMe' });
     }
     
     // Ignora mensagens de grupo
     if (data.key?.remoteJid?.includes('@g.us')) {
+      console.log(`[BOT] Ignorado: mensagem de grupo (instancia ${instanceName})`);
       return NextResponse.json({ received: true, ignored: 'group' });
     }
 
     // Instancia central da ZapFlash: alimenta somente o CRM, nunca o bot dos restaurantes.
     if (instanceName === CRM_INSTANCE) {
+      console.log(`[BOT] Instancia central ${instanceName}: mensagem enviada ao CRM, sem saudacao`);
       const crm = await tratarMensagemCrm(data, instanceName);
       return NextResponse.json(crm.body, { status: crm.httpStatus });
     }
     
     const phone = resolveSenderPhone(data.key);
     if (!phone) {
+      console.log(`[BOT] Ignorado: remetente nao identificado (remoteJid=${data.key?.remoteJid})`);
       return NextResponse.json({ received: true, ignored: 'no_sender' });
     }
     const messageText = data.message?.conversation || 
