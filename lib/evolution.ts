@@ -45,10 +45,22 @@ async function evoFetch(path: string, method: string = 'GET', body?: any, timeou
         }
 
         if (!res.ok) {
+            const errorMsg = JSON.stringify(data ?? {});
+            const missingConnectionStateInstance =
+                res.status === 404 &&
+                method === 'GET' &&
+                path.startsWith('/instance/connectionState/') &&
+                errorMsg.toLowerCase().includes('instance does not exist');
+
+            // A empresa pode ainda não ter conectado o WhatsApp. Trate a ausência
+            // da instância como desconectada, sem registrar um erro esperado.
+            if (missingConnectionStateInstance) {
+                return { error: null, data: { instance: { state: 'close' }, state: 'close' } };
+            }
+
             console.error(`Evolution API Error [${method} ${path}]:`, data);
 
             // Detecta erros específicos do Prisma/banco de dados
-            const errorMsg = JSON.stringify(data ?? {});
             if (errorMsg.includes('PrismaClient') || errorMsg.includes('database') || res.status === 500) {
                 return {
                     error: 'Servidor WhatsApp temporariamente indisponível. Tente novamente em alguns minutos.',

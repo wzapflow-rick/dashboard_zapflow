@@ -35,28 +35,36 @@ export function useDeliveryCalculation() {
       const fullAddress = `${address}, ${bairro}, ${cidade}`;
       const geocode = await geocodeAddress(fullAddress, cidade);
 
-      if (geocode) {
-        setDeliveryCoords({ lat: geocode.lat, lng: geocode.lng });
-
-        const config = await getDeliveryConfig();
-        if (config) {
-          setDeliveryConfig(config);
-
-          const feeResult = await calculateDeliveryFee({ lat: geocode.lat, lng: geocode.lng });
-          if (feeResult.success) {
-            setDeliveryFee(feeResult.taxa_entrega || 0);
-            setDeliveryInfo({
-              distance_km: feeResult.distance_km,
-              duration_min: feeResult.duration_min
-            });
-          } else {
-            toast.error(feeResult.error || 'Erro ao calcular entrega');
-            setDeliveryFee(0);
-          }
-        }
-      } else {
-        toast.error('Não foi possível calcular a entrega para este endereço');
+      if (!geocode || 'error' in geocode) {
+        toast.error(
+          geocode && 'error' in geocode
+            ? geocode.error
+            : 'Não foi possível calcular a entrega para este endereço.',
+        );
+        setDeliveryCoords(null);
         setDeliveryFee(0);
+        setDeliveryInfo(null);
+        return;
+      }
+
+      const coordinates = { lat: geocode.lat, lng: geocode.lng };
+      setDeliveryCoords(coordinates);
+
+      const config = await getDeliveryConfig();
+      if (config) {
+        setDeliveryConfig(config);
+
+        const feeResult = await calculateDeliveryFee(coordinates);
+        if (feeResult.success) {
+          setDeliveryFee(feeResult.taxa_entrega || 0);
+          setDeliveryInfo({
+            distance_km: feeResult.distance_km,
+            duration_min: feeResult.duration_min
+          });
+        } else {
+          toast.error(feeResult.error || 'Erro ao calcular entrega');
+          setDeliveryFee(0);
+        }
       }
     } catch (error) {
       console.error('Erro ao calcular entrega:', error);

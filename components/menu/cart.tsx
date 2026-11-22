@@ -230,13 +230,21 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
       );
 
       if (!coords) {
-        toast.error('Não foi possível localizar o endereço.');
+        toast.error('Não foi possível localizar o endereço. Confira o endereço e tente novamente.');
+        setDeliveryCoords(null);
         setDeliveryFee(0);
         return;
       }
 
-      setDeliveryCoords(coords);
-      const result = await calculateDeliveryFee(coords, empresaId);
+      if ('error' in coords) {
+        toast.error(coords.error);
+        setDeliveryCoords(null);
+        setDeliveryFee(0);
+        return;
+      }
+
+      setDeliveryCoords({ lat: coords.lat, lng: coords.lng });
+      const result = await calculateDeliveryFee({ lat: coords.lat, lng: coords.lng }, empresaId);
 
       if (result.success && result.taxa_entrega !== undefined) {
         setDeliveryFee(result.taxa_entrega);

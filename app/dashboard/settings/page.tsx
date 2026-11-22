@@ -355,6 +355,40 @@ export default function SettingsPage() {
       }
 
       if (activeSection === 'delivery') {
+        const form = document.getElementById('delivery-form') as HTMLFormElement;
+        const deliveryData = form ? Object.fromEntries(new FormData(form)) : {};
+        const latitudeText = String(deliveryData.lat_loja ?? '').trim();
+        const longitudeText = String(deliveryData.lng_loja ?? '').trim();
+        const latitude = Number(latitudeText);
+        const longitude = Number(longitudeText);
+
+        if (autoRadius && (
+          !latitudeText ||
+          !longitudeText ||
+          !Number.isFinite(latitude) ||
+          !Number.isFinite(longitude) ||
+          latitude < -90 ||
+          latitude > 90 ||
+          longitude < -180 ||
+          longitude > 180
+        )) {
+          throw new Error('Para salvar o cálculo automático, informe coordenadas válidas da loja. A busca automática exige faturamento e Geocoding API habilitados no Google Cloud.');
+        }
+
+        // Salva primeiro as coordenadas e as configurações do cálculo. Isso
+        // mantém a localização salva mesmo que a tabela de taxas por bairro
+        // esteja indisponível ou a conta do banco não permita gravar nela.
+        const locationUpdate: Record<string, unknown> = {
+          raio_entrega_automatico: autoRadius,
+          valor_por_km: valorPorKm,
+          taxa_entrega_fixa: taxaEntregaFixa,
+        };
+        if (latitudeText) locationUpdate.lat_loja = latitude;
+        if (longitudeText) locationUpdate.lng_loja = longitude;
+
+        await updateCompany(locationUpdate);
+        setCompany((current: any) => current ? { ...current, ...locationUpdate } : current);
+
         // Filtra bairros validos antes de enviar
         const bairrosValidos = neighborhoods.filter(n => n.bairro && String(n.bairro).trim() !== '');
         
@@ -364,21 +398,9 @@ export default function SettingsPage() {
         
         const res = await saveDeliveryRatesBatch(bairrosValidos);
         if (!res || !res.success) {
-           // Mostra o motivo real vindo do servidor (ex.: erro de coluna no banco),
-           // em vez de uma mensagem generica.
-           throw new Error(res?.error || 'Falha ao salvar os bairros. Verifique se os dados estão corretos.');
+           // A localização já foi salva acima; informe separadamente a falha das taxas.
+           throw new Error('Localização salva, mas as taxas por bairro falharam: ' + (res?.error || 'verifique a tabela de taxas.'));
         }
-
-        const form = document.getElementById('delivery-form') as HTMLFormElement;
-        const deliveryData = form ? Object.fromEntries(new FormData(form)) : {};
-
-        await updateCompany({
-          raio_entrega_automatico: autoRadius,
-          valor_por_km: valorPorKm,
-          taxa_entrega_fixa: taxaEntregaFixa,
-          lat_loja: deliveryData.lat_loja ? parseFloat(deliveryData.lat_loja as string) : undefined,
-          lng_loja: deliveryData.lng_loja ? parseFloat(deliveryData.lng_loja as string) : undefined,
-        });
 
         // Recarrega os bairros direto do banco para sincronizar o estado:
         // troca os ids "temp-" pelos ids reais e garante que a tela reflita
@@ -1000,7 +1022,9 @@ export default function SettingsPage() {
                   try {
                     const { geocodeAddress } = await import('@/app/actions/delivery');
                     const coords = await geocodeAddress(`${company.endereco}, ${company.cidade}, ${company.estado || 'Brasil'}`);
-                    if (coords) {
+                    if (coords && 'error' in coords) {
+                      toast.error(coords.error, { id: toastId });
+                    } else if (coords) {
                       const latInput = document.querySelector('input[name="lat_loja"]') as HTMLInputElement;
                       const lngInput = document.querySelector('input[name="lng_loja"]') as HTMLInputElement;
                       if (latInput) latInput.value = String(coords.lat);
@@ -1028,6 +1052,9 @@ export default function SettingsPage() {
                                   </div>
                                 </div>
                               </div>
+                              <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                                O endereço pode ser salvo na aba Geral sem buscar coordenadas. Para o cálculo automático, ative o faturamento e as APIs Geocoding e Distance Matrix no Google Cloud; também é possível informar as coordenadas manualmente.
+                              </p>
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
                                   <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Latitude da Loja</label>
