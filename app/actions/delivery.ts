@@ -332,7 +332,7 @@ export async function geocodeAddress(endereco: string, cidade?: string, estado?:
         }
 
         let enderecoLimpo = endereco
-            .replace(/\\s+/g, ' ')
+            .replace(/\s+/g, ' ')
             .replace(/[,.]{2,}/g, ',')
             .trim();
 
