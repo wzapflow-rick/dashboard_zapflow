@@ -1047,6 +1047,9 @@ export default function SettingsPage() {
                                   </div>
                                 </div>
                               </div>
+                              <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                                O endereço pode ser salvo na aba Geral sem buscar coordenadas. Para o cálculo automático, ative o faturamento e as APIs Geocoding e Distance Matrix no Google Cloud; também é possível informar as coordenadas manualmente.
+                              </p>
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
                                   <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Latitude da Loja</label>
