@@ -375,6 +375,20 @@ export default function SettingsPage() {
           throw new Error('Para salvar o cálculo automático, informe coordenadas válidas da loja. A busca automática exige faturamento e Geocoding API habilitados no Google Cloud.');
         }
 
+        // Salva primeiro as coordenadas e as configurações do cálculo. Isso
+        // mantém a localização salva mesmo que a tabela de taxas por bairro
+        // esteja indisponível ou a conta do banco não permita gravar nela.
+        const locationUpdate: Record<string, unknown> = {
+          raio_entrega_automatico: autoRadius,
+          valor_por_km: valorPorKm,
+          taxa_entrega_fixa: taxaEntregaFixa,
+        };
+        if (latitudeText) locationUpdate.lat_loja = latitude;
+        if (longitudeText) locationUpdate.lng_loja = longitude;
+
+        await updateCompany(locationUpdate);
+        setCompany((current: any) => current ? { ...current, ...locationUpdate } : current);
+
         // Filtra bairros validos antes de enviar
         const bairrosValidos = neighborhoods.filter(n => n.bairro && String(n.bairro).trim() !== '');
         
@@ -384,18 +398,9 @@ export default function SettingsPage() {
         
         const res = await saveDeliveryRatesBatch(bairrosValidos);
         if (!res || !res.success) {
-           // Mostra o motivo real vindo do servidor (ex.: erro de coluna no banco),
-           // em vez de uma mensagem generica.
-           throw new Error(res?.error || 'Falha ao salvar os bairros. Verifique se os dados estão corretos.');
+           // A localização já foi salva acima; informe separadamente a falha das taxas.
+           throw new Error('Localização salva, mas as taxas por bairro falharam: ' + (res?.error || 'verifique a tabela de taxas.'));
         }
-
-        await updateCompany({
-          raio_entrega_automatico: autoRadius,
-          valor_por_km: valorPorKm,
-          taxa_entrega_fixa: taxaEntregaFixa,
-          lat_loja: latitudeText ? latitude : undefined,
-          lng_loja: longitudeText ? longitude : undefined,
-        });
 
         // Recarrega os bairros direto do banco para sincronizar o estado:
         // troca os ids "temp-" pelos ids reais e garante que a tela reflita
