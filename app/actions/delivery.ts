@@ -393,32 +393,6 @@ export async function geocodeAddress(endereco: string, cidade?: string, estado?:
     }
 }
 
-// Garante que a tabela de taxas por bairro exista com as colunas esperadas.
-// O banco fica na VPS do cliente e as migracoes eram manuais; se a tabela (ou
-// alguma coluna) nao existisse, o INSERT falhava silenciosamente e os bairros
-// "sumiam". Este passo e idempotente: CREATE/ALTER IF NOT EXISTS nao altera nada
-// quando ja esta tudo certo.
-async function ensureTaxasEntregaSchema() {
-    await pg.raw(`
-        CREATE TABLE IF NOT EXISTS taxas_entrega (
-            id SERIAL PRIMARY KEY,
-            empresa_id INTEGER NOT NULL,
-            bairro TEXT NOT NULL,
-            taxa NUMERIC(10,2) NOT NULL DEFAULT 0,
-            tempo_estimado TEXT,
-            created_at TIMESTAMPTZ DEFAULT NOW()
-        )
-    `);
-    // Garante colunas em bancos onde a tabela ja existia com estrutura antiga.
-    await pg.raw(`ALTER TABLE taxas_entrega ADD COLUMN IF NOT EXISTS empresa_id INTEGER`);
-    await pg.raw(`ALTER TABLE taxas_entrega ADD COLUMN IF NOT EXISTS bairro TEXT`);
-    await pg.raw(`ALTER TABLE taxas_entrega ADD COLUMN IF NOT EXISTS taxa NUMERIC(10,2) DEFAULT 0`);
-    await pg.raw(`ALTER TABLE taxas_entrega ADD COLUMN IF NOT EXISTS tempo_estimado TEXT`);
-    // A coluna tempo_estimado existia como INTEGER e quebrava ao salvar valores
-    // como "20m"/"30min". Converte para TEXT (no-op se ja for TEXT).
-    await pg.raw(`ALTER TABLE taxas_entrega ALTER COLUMN tempo_estimado TYPE TEXT USING tempo_estimado::text`);
-}
-
 export async function saveDeliveryRatesBatch(rates: any[]) {
     try {
         const user = await getMe();
@@ -427,18 +401,6 @@ export async function saveDeliveryRatesBatch(rates: any[]) {
         }
 
         console.log(`[saveDeliveryRatesBatch] Empresa: ${user.empresaId}, Bairros: ${rates.length}`);
-
-        // Garante o schema antes de gravar (auto-cura quando a tabela/coluna falta).
-        try {
-            await ensureTaxasEntregaSchema();
-        } catch (schemaError: any) {
-            console.error('[saveDeliveryRatesBatch] Erro ao garantir schema:', schemaError.message);
-            return {
-                success: false,
-                count: 0,
-                error: `Erro no banco de dados ao preparar a tabela de taxas: ${schemaError.message}`,
-            };
-        }
 
         const results = [];
         const erros: string[] = [];
