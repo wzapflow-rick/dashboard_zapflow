@@ -43,27 +43,29 @@ export function useDeliveryCalculation() {
         );
         setDeliveryCoords(null);
         setDeliveryFee(0);
+        setDeliveryInfo(null);
         return;
       }
 
-      setDeliveryCoords({ lat: geocode.lat, lng: geocode.lng });
+      const coordinates = { lat: geocode.lat, lng: geocode.lng };
+      setDeliveryCoords(coordinates);
 
       const config = await getDeliveryConfig();
-        if (config) {
-          setDeliveryConfig(config);
+      if (config) {
+        setDeliveryConfig(config);
 
-          const feeResult = await calculateDeliveryFee({ lat: geocode.lat, lng: geocode.lng });
-          if (feeResult.success) {
-            setDeliveryFee(feeResult.taxa_entrega || 0);
-            setDeliveryInfo({
-              distance_km: feeResult.distance_km,
-              duration_min: feeResult.duration_min
-            });
-          } else {
-            toast.error(feeResult.error || 'Erro ao calcular entrega');
-            setDeliveryFee(0);
-          }
+        const feeResult = await calculateDeliveryFee(coordinates);
+        if (feeResult.success) {
+          setDeliveryFee(feeResult.taxa_entrega || 0);
+          setDeliveryInfo({
+            distance_km: feeResult.distance_km,
+            duration_min: feeResult.duration_min
+          });
+        } else {
+          toast.error(feeResult.error || 'Erro ao calcular entrega');
+          setDeliveryFee(0);
         }
+      }
     } catch (error) {
       console.error('Erro ao calcular entrega:', error);
       setDeliveryFee(0);
