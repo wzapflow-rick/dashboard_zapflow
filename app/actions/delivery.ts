@@ -154,7 +154,14 @@ async function getDistanceFromGoogle(
     origin: { lat: number; lng: number },
     destination: { lat: number; lng: number }
 ): Promise<{ distance_km: number; duration_min: number }> {
-    const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin.lat},${origin.lng}&destinations=${destination.lat},${destination.lng}&mode=driving&key=${GOOGLE_MAPS_API_KEY}`;
+    if (!GOOGLE_MAPS_API_KEY) {
+        throw new Error('Configure GOOGLE_MAPS_API_KEY para calcular a distância de entrega.');
+    }
+
+    const url = 'https://maps.googleapis.com/maps/api/distancematrix/json?origins=' +
+        origin.lat + ',' + origin.lng +
+        '&destinations=' + destination.lat + ',' + destination.lng +
+        '&mode=driving&key=' + encodeURIComponent(GOOGLE_MAPS_API_KEY);
 
     const response = await fetch(url, {
         next: { revalidate: 3600 },
@@ -163,12 +170,18 @@ async function getDistanceFromGoogle(
     const data = await response.json();
 
     if (data.status !== 'OK') {
-        throw new Error(`Google Maps API Error: ${data.status}`);
+        if (data.status === 'REQUEST_DENIED') {
+            throw new Error('O Google Maps recusou o cálculo de distância. Ative o faturamento e habilite a Distance Matrix API no projeto Google Cloud.');
+        }
+        if (data.status === 'OVER_QUERY_LIMIT') {
+            throw new Error('A cota da Distance Matrix API foi atingida. Verifique o faturamento e os limites no Google Cloud.');
+        }
+        throw new Error('Google Maps API: ' + String(data.status || 'erro desconhecido'));
     }
 
     const element = data.rows?.[0]?.elements?.[0];
     if (!element || element.status !== 'OK') {
-        throw new Error('Não foi possível calcular a distância');
+        throw new Error('Não foi possível calcular a distância entre os endereços informados.');
     }
 
     return {
@@ -308,47 +321,62 @@ export async function calculateDeliveryFee(
     }
 }
 
-export async function geocodeAddress(endereco: string, cidade?: string, estado?: string): Promise<{ lat: number; lng: number; formatted_address?: string } | null> {
-    try {
-        console.log('[Geocoding] API Key configurada:', GOOGLE_MAPS_API_KEY ? 'SIM' : 'NÃO');
+export type GeocodeAddressResult =
+    | { lat: number; lng: number; formatted_address?: string }
+    | { error: string };
 
+export async function geocodeAddress(endereco: string, cidade?: string, estado?: string): Promise<GeocodeAddressResult | null> {
+    try {
         if (!GOOGLE_MAPS_API_KEY) {
-            console.log('[Geocoding] Sem API Key configurada');
-            return null;
+            return { error: 'Configure GOOGLE_MAPS_API_KEY para buscar as coordenadas. Você também pode informar latitude e longitude manualmente.' };
         }
 
         let enderecoLimpo = endereco
-            .replace(/\s+/g, ' ')
+            .replace(/\\s+/g, ' ')
             .replace(/[,.]{2,}/g, ',')
             .trim();
 
         let enderecoCompleto = enderecoLimpo;
 
         if (cidade && !enderecoLimpo.toLowerCase().includes(cidade.toLowerCase())) {
-            enderecoCompleto = `${enderecoCompleto}, ${cidade}`;
+            enderecoCompleto = enderecoCompleto + ', ' + cidade;
         }
 
         if (estado && !enderecoLimpo.toLowerCase().includes(estado.toLowerCase())) {
-            enderecoCompleto = `${enderecoCompleto}, ${estado}`;
+            enderecoCompleto = enderecoCompleto + ', ' + estado;
         }
 
         if (!enderecoCompleto.toLowerCase().includes('brasil')) {
-            enderecoCompleto = `${enderecoCompleto}, Brasil`;
+            enderecoCompleto = enderecoCompleto + ', Brasil';
         }
 
-        const encodedAddress = encodeURIComponent(enderecoCompleto);
-        const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&key=${GOOGLE_MAPS_API_KEY}&region=br&language=pt-BR`;
+        const url = 'https://maps.googleapis.com/maps/api/geocode/json?address=' +
+            encodeURIComponent(enderecoCompleto) +
+            '&key=' + encodeURIComponent(GOOGLE_MAPS_API_KEY) +
+            '&region=br&language=pt-BR';
 
         console.log('[Geocoding] Buscando:', enderecoCompleto);
 
         const response = await fetch(url, { next: { revalidate: 3600 } });
         const data = await response.json();
 
-        console.log('[Geocoding] Status:', data.status, '| Resultados:', data.results?.length || 0);
-
         if (data.status !== 'OK' || !data.results?.length) {
-            console.log('[Geocoding] Falhou:', data.status, data.error_message);
-            return null;
+            if (data.status === 'REQUEST_DENIED') {
+                console.warn('[Geocoding] Google Maps recusou a solicitação: REQUEST_DENIED');
+                return {
+                    error: 'O Google Maps recusou a busca porque o faturamento ou a Geocoding API não está habilitada no projeto. Ative-os no Google Cloud ou informe latitude e longitude manualmente.'
+                };
+            }
+            if (data.status === 'OVER_QUERY_LIMIT') {
+                console.warn('[Geocoding] Cota da Geocoding API atingida.');
+                return { error: 'A cota da Geocoding API foi atingida. Verifique faturamento e limites no Google Cloud.' };
+            }
+            if (data.status === 'ZERO_RESULTS') {
+                console.warn('[Geocoding] Nenhum resultado para o endereço informado.');
+                return null;
+            }
+            console.warn('[Geocoding] Falha:', data.status, data.error_message);
+            return { error: 'Não foi possível buscar as coordenadas (Google Maps: ' + String(data.status || 'erro desconhecido') + ').' };
         }
 
         const result = data.results[0];
@@ -361,7 +389,7 @@ export async function geocodeAddress(endereco: string, cidade?: string, estado?:
         };
     } catch (error) {
         console.error('geocodeAddress error:', error);
-        return null;
+        return { error: 'Não foi possível conectar ao serviço de mapas. Tente novamente.' };
     }
 }
 
