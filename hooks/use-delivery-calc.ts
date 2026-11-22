@@ -35,9 +35,20 @@ export function useDeliveryCalculation() {
       const fullAddress = `${address}, ${bairro}, ${cidade}`;
       const geocode = await geocodeAddress(fullAddress, cidade);
 
-      if (geocode) {
-        setDeliveryCoords({ lat: geocode.lat, lng: geocode.lng });
+      if (!geocode || 'error' in geocode) {
+        toast.error(
+          geocode && 'error' in geocode
+            ? geocode.error
+            : 'Não foi possível calcular a entrega para este endereço.',
+        );
+        setDeliveryCoords(null);
+        setDeliveryFee(0);
+        return;
+      }
 
+      setDeliveryCoords({ lat: geocode.lat, lng: geocode.lng });
+
+      {
         const config = await getDeliveryConfig();
         if (config) {
           setDeliveryConfig(config);
@@ -54,9 +65,6 @@ export function useDeliveryCalculation() {
             setDeliveryFee(0);
           }
         }
-      } else {
-        toast.error('Não foi possível calcular a entrega para este endereço');
-        setDeliveryFee(0);
       }
     } catch (error) {
       console.error('Erro ao calcular entrega:', error);
