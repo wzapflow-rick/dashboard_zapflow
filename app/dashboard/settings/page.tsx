@@ -355,6 +355,26 @@ export default function SettingsPage() {
       }
 
       if (activeSection === 'delivery') {
+        const form = document.getElementById('delivery-form') as HTMLFormElement;
+        const deliveryData = form ? Object.fromEntries(new FormData(form)) : {};
+        const latitudeText = String(deliveryData.lat_loja ?? '').trim();
+        const longitudeText = String(deliveryData.lng_loja ?? '').trim();
+        const latitude = Number(latitudeText);
+        const longitude = Number(longitudeText);
+
+        if (autoRadius && (
+          !latitudeText ||
+          !longitudeText ||
+          !Number.isFinite(latitude) ||
+          !Number.isFinite(longitude) ||
+          latitude < -90 ||
+          latitude > 90 ||
+          longitude < -180 ||
+          longitude > 180
+        )) {
+          throw new Error('Para salvar o cálculo automático, informe coordenadas válidas da loja. A busca automática exige faturamento e Geocoding API habilitados no Google Cloud.');
+        }
+
         // Filtra bairros validos antes de enviar
         const bairrosValidos = neighborhoods.filter(n => n.bairro && String(n.bairro).trim() !== '');
         
@@ -369,15 +389,12 @@ export default function SettingsPage() {
            throw new Error(res?.error || 'Falha ao salvar os bairros. Verifique se os dados estão corretos.');
         }
 
-        const form = document.getElementById('delivery-form') as HTMLFormElement;
-        const deliveryData = form ? Object.fromEntries(new FormData(form)) : {};
-
         await updateCompany({
           raio_entrega_automatico: autoRadius,
           valor_por_km: valorPorKm,
           taxa_entrega_fixa: taxaEntregaFixa,
-          lat_loja: deliveryData.lat_loja ? parseFloat(deliveryData.lat_loja as string) : undefined,
-          lng_loja: deliveryData.lng_loja ? parseFloat(deliveryData.lng_loja as string) : undefined,
+          lat_loja: latitudeText ? latitude : undefined,
+          lng_loja: longitudeText ? longitude : undefined,
         });
 
         // Recarrega os bairros direto do banco para sincronizar o estado:
@@ -1000,7 +1017,9 @@ export default function SettingsPage() {
                   try {
                     const { geocodeAddress } = await import('@/app/actions/delivery');
                     const coords = await geocodeAddress(`${company.endereco}, ${company.cidade}, ${company.estado || 'Brasil'}`);
-                    if (coords) {
+                    if (coords && 'error' in coords) {
+                      toast.error(coords.error, { id: toastId });
+                    } else if (coords) {
                       const latInput = document.querySelector('input[name="lat_loja"]') as HTMLInputElement;
                       const lngInput = document.querySelector('input[name="lng_loja"]') as HTMLInputElement;
                       if (latInput) latInput.value = String(coords.lat);
