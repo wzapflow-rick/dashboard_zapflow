@@ -48,8 +48,7 @@ export function useDeliveryCalculation() {
 
       setDeliveryCoords({ lat: geocode.lat, lng: geocode.lng });
 
-      {
-        const config = await getDeliveryConfig();
+      const config = await getDeliveryConfig();
         if (config) {
           setDeliveryConfig(config);
 
@@ -65,7 +64,6 @@ export function useDeliveryCalculation() {
             setDeliveryFee(0);
           }
         }
-      }
     } catch (error) {
       console.error('Erro ao calcular entrega:', error);
       setDeliveryFee(0);
