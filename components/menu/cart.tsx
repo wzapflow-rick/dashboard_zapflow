@@ -102,6 +102,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
   const [mpQrCodeBase64, setMpQrCodeBase64] = useState<string | null>(null);
   const [mpCopied, setMpCopied] = useState(false);
   const [showCardForm, setShowCardForm] = useState(false);
+  const [cardPaymentPending, setCardPaymentPending] = useState(false);
 
   // Points usage
   const [usePoints, setUsePoints] = useState(false);
@@ -334,6 +335,42 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
     };
   }, [mpQrCode, orderId, step, clearCart]);
 
+  // A confirmação do cartão pode chegar depois da resposta inicial do Mercado Pago.
+  // Mantemos o checkout bloqueado contra uma segunda tentativa e consultamos o pedido.
+  useEffect(() => {
+    if (!cardPaymentPending || !orderId) return;
+
+    let active = true;
+    const checkCardPayment = async () => {
+      try {
+        const { getOrderStatus } = await import('@/app/actions/public-orders');
+        const status = await getOrderStatus(orderId);
+        if (!active) return;
+
+        if (['pendente', 'pago', 'producao', 'pronto'].includes(String(status))) {
+          setCardPaymentPending(false);
+          setShowCardForm(false);
+          setStep('success');
+          clearCart();
+          toast.success('Pagamento confirmado!');
+        } else if (status === 'cancelado') {
+          setCardPaymentPending(false);
+          setShowCardForm(false);
+          toast.error('O pagamento não foi aprovado. Você pode tentar novamente.');
+        }
+      } catch {
+        // Falhas temporarias de consulta nao liberam uma nova tentativa de cobrança.
+      }
+    };
+
+    void checkCardPayment();
+    const interval = setInterval(checkCardPayment, 5000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [cardPaymentPending, orderId, clearCart]);
+
   const checkPixPayment = async () => {
     if (!orderId) return;
     setLoading(true);
@@ -491,7 +528,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => step !== 'success' && setIsOpen(false)}
+              onClick={() => step !== 'success' && !cardPaymentPending && setIsOpen(false)}
               className="absolute inset-0 bg-black/80 backdrop-blur-sm"
             />
 
@@ -510,7 +547,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
               {/* Header */}
               <div className="px-5 py-4 sm:p-5 border-b border-[#1a1a1a] flex items-center justify-between shrink-0 bg-[#0a0a0a]">
                 <div className="flex items-center gap-3">
-                  {step !== 'cart' && step !== 'success' && (
+                  {step !== 'cart' && step !== 'success' && !cardPaymentPending && (
                     <button
                       onClick={() => {
                         if (step === 'payment' && showCardForm) {
@@ -531,7 +568,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
                     {step === 'success' && 'Tudo Pronto!'}
                   </h2>
                 </div>
-                {step !== 'success' && (
+                {step !== 'success' && !cardPaymentPending && (
                   <button
                     onClick={() => setIsOpen(false)}
                     className="p-2.5 bg-[#1a1a1a] rounded-full text-gray-500 hover:text-white transition-colors"
@@ -787,10 +824,12 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
                         total={totalFinal}
                         empresaId={empresaId}
                         onSuccess={() => {
+                          setCardPaymentPending(false);
                           setShowCardForm(false);
                           setStep('success');
                           clearCart();
                         }}
+                        onPendingChange={setCardPaymentPending}
                       />
                     ) : (
                       <div className="space-y-3">
