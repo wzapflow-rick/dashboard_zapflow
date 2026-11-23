@@ -59,7 +59,7 @@ export async function getOnboardingStatus(): Promise<OnboardingStatus | null> {
         [empresaId]
       ) as Promise<any>,
       pg.query(
-        'SELECT COUNT(*) as count FROM horarios WHERE empresa_id = $1',
+        'SELECT COUNT(*) as count FROM horarios WHERE empresa_id = $1 AND COALESCE(fechado_o_dia_todo, false) = false',
         [empresaId]
       ) as Promise<any>,
     ]);
