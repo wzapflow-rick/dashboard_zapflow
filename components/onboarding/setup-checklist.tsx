@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, X, ChevronRight, Store, Package, CreditCard, Rocket } from 'lucide-react';
+import { Check, X, ChevronRight, Store, Package, Clock3, CreditCard, Rocket } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { OnboardingStatus } from '@/app/actions/onboarding-status';
 
@@ -11,7 +11,7 @@ interface SetupChecklistProps {
 }
 
 const STORAGE_KEY = 'zapflow_checklist_minimized';
-const COMPLETED_KEY = 'zapflow_checklist_completed';
+const COMPLETED_KEY = 'zapflow_checklist_completed_v2';
 
 export function SetupChecklist({ initialStatus }: SetupChecklistProps) {
   const router = useRouter();
@@ -63,6 +63,9 @@ export function SetupChecklist({ initialStatus }: SetupChecklistProps) {
       case 'products':
         router.push('/dashboard/menu');
         break;
+      case 'hours':
+        router.push('/dashboard/settings?section=general');
+        break;
       case 'mercadopago':
         router.push('/dashboard/settings?section=payments');
         break;
@@ -90,6 +93,13 @@ export function SetupChecklist({ initialStatus }: SetupChecklistProps) {
       description: 'Adicione seus produtos e preços',
       completed: status.hasProducts,
       icon: Package,
+    },
+    {
+      id: 'hours',
+      label: 'Horários de funcionamento',
+      description: 'Defina quando sua loja recebe pedidos',
+      completed: status.hasHours,
+      icon: Clock3,
     },
     {
       id: 'mercadopago',
