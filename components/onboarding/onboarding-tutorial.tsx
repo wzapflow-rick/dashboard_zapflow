@@ -189,15 +189,6 @@ export default function OnboardingTutorial() {
   const [currentStep, setCurrentStep] = useState(0);
   const [hasSeenTutorial, setHasSeenTutorial] = useState(true);
 
-  useEffect(() => {
-    // Verificar se o usuário já viu o tutorial
-    const seen = localStorage.getItem('zapflow_onboarding_seen');
-    if (!seen) {
-      queueMicrotask(() => setHasSeenTutorial(false));
-      setTimeout(() => setShow(true), 1500);
-    }
-  }, []);
-
   const handleFinish = () => {
     localStorage.setItem('zapflow_onboarding_seen', 'true');
     setHasSeenTutorial(true);
