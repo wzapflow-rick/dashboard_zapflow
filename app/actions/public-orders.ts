@@ -164,7 +164,7 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
             : undefined;
         const subtotalEfetivo = pricing.subtotal;
         const descontoEfetivo = pricing.discount;
-        const telefonePontos = data.clienteTelefone.replace(/\\D/g, '');
+        const telefonePontos = data.clienteTelefone.replace(/\D/g, '');
         if (pricing.pointsUsed > 0) {
             const redemption = await pg.raw<any>(
                 `UPDATE "loyalty_points"
