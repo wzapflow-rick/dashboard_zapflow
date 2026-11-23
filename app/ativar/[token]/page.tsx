@@ -12,6 +12,7 @@ interface SignupData {
   email: string;
   nome: string;
   plano: string;
+  paymentConfirmed: boolean;
 }
 
 export default function AtivarContaPage() {
@@ -21,6 +22,7 @@ export default function AtivarContaPage() {
   
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [checkingPayment, setCheckingPayment] = useState(false);
   const [signupData, setSignupData] = useState<SignupData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -46,6 +48,7 @@ export default function AtivarContaPage() {
           email: data.email,
           nome: data.nome,
           plano: data.plano,
+          paymentConfirmed: data.paymentConfirmed !== false,
         });
       } catch (err) {
         setError('Erro ao carregar dados. Tente novamente.');
@@ -59,6 +62,33 @@ export default function AtivarContaPage() {
     }
   }, [token]);
   
+  async function handleCheckPayment() {
+    setCheckingPayment(true);
+    setError(null);
+    try {
+      const data = await getPendingSignup(token);
+      if (!data) {
+        setError('Não localizamos um cadastro ativo para este link. Entre em contato com o suporte.');
+        return;
+      }
+
+      setSignupData({
+        email: data.email,
+        nome: data.nome,
+        plano: data.plano,
+        paymentConfirmed: data.paymentConfirmed !== false,
+      });
+
+      if (!data.paymentConfirmed) {
+        setError('Ainda estamos aguardando a confirmação do Mercado Pago. Tente novamente em instantes.');
+      }
+    } catch {
+      setError('Não foi possível verificar agora. Tente novamente.');
+    } finally {
+      setCheckingPayment(false);
+    }
+  }
+
   // Submeter formulario
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -158,6 +188,40 @@ export default function AtivarContaPage() {
     );
   }
   
+  // Pagamento do cartão ainda pendente: mantém o cadastro disponível e permite
+  // consultar novamente sem pedir que a pessoa refaça o checkout.
+  if (signupData && !signupData.paymentConfirmed) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4">
+        <div className="bg-[#1a1a1a] rounded-3xl p-8 max-w-md w-full text-center border border-[#2a2a2a]">
+          <div className="size-20 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto mb-6">
+            <MorphingInfinity className="size-10 text-amber-400" />
+          </div>
+          <h1 className="text-2xl font-bold text-white mb-3">Confirmando seu pagamento</h1>
+          <p className="text-gray-400 mb-6">
+            Seu cadastro está salvo. O Mercado Pago ainda não confirmou a assinatura. Assim que confirmar, você poderá criar sua senha e acessar o ZapFlash.
+          </p>
+          {error && (
+            <div role="status" className="mb-4 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-200">
+              {error}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={handleCheckPayment}
+            disabled={checkingPayment}
+            className="w-full bg-primary hover:bg-primary/90 disabled:opacity-50 text-white font-bold py-4 rounded-xl transition-colors"
+          >
+            {checkingPayment ? 'Verificando...' : 'Verificar pagamento'}
+          </button>
+          <p className="text-gray-600 text-xs mt-5">
+            Se você já pagou e a confirmação demorar, fale com nosso suporte. Não faça um novo pagamento.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // Formulario de ativacao
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4">
