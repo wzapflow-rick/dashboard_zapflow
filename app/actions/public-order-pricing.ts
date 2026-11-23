@@ -52,15 +52,15 @@ export async function calculatePublicOrderPricing(input: {
   const empresaId = Number(input.empresaId);
   const [products, groups, options, links, metadata, coupons, loyaltyConfig, points] = await Promise.all([
     pg.listAll(PRODUTOS_TABLE, { where: { empresa_id: empresaId } }),
-    pg.listAll(GRUPOS_COMPLEMENTOS_TABLE, { where: { empresa_id: empresaId } }),
-    pg.listAll(COMPLEMENTOS_TABLE, { where: { empresa_id: empresaId } }),
-    pg.listAll(PRODUTO_GRUPOS_COMPLEMENTOS_TABLE, { where: { empresa_id: empresaId } }),
+    pg.listAll(GRUPOS_COMPLEMENTOS_TABLE, { where: { empresa_id: empresaId } }).catch(() => []),
+    pg.listAll(COMPLEMENTOS_TABLE, { where: { empresa_id: empresaId } }).catch(() => []),
+    pg.listAll(PRODUTO_GRUPOS_COMPLEMENTOS_TABLE, { where: { empresa_id: empresaId } }).catch(() => []),
     pg.raw<any>(
       `SELECT * FROM "${PRODUTOS_METADADOS_TABLE}" WHERE produto_id::text IN (SELECT id::text FROM "${PRODUTOS_TABLE}" WHERE empresa_id = $1)`,
       [empresaId]
-    ),
-    pg.list(CUPONS_TABLE, { where: { empresa_id: empresaId, ativo: true }, limit: 1000 }),
-    pg.findOne(LOYALTY_CONFIG_TABLE, { where: { empresa_id: empresaId } }),
+    ).catch(() => []),
+    pg.list(CUPONS_TABLE, { where: { empresa_id: empresaId, ativo: true }, limit: 1000 }).catch(() => ({ list: [] })),
+    pg.findOne(LOYALTY_CONFIG_TABLE, { where: { empresa_id: empresaId } }).catch(() => null),
     Number(input.pontosUsados || 0) > 0
       ? pg.findOne(LOYALTY_POINTS_TABLE, {
           where: { cliente_telefone: String(input.telefone).replace(/\\D/g, ''), empresa_id: empresaId },
