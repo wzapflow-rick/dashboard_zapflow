@@ -13,6 +13,7 @@ interface PaymentFormProps {
   empresaId?: number; // Novo campo
   onSuccess: () => void;
   onError?: (error: string) => void;
+  onPendingChange?: (pending: boolean) => void;
 }
 
 interface CardFormData {
@@ -34,7 +35,7 @@ declare global {
   }
 }
 
-export default function PaymentForm({ pedidoId, total, empresaId, onSuccess, onError }: PaymentFormProps) {
+export default function PaymentForm({ pedidoId, total, empresaId, onSuccess, onError, onPendingChange }: PaymentFormProps) {
   const [loading, setLoading] = useState(false);
   const [paymentState, setPaymentState] = useState<PaymentState>('idle');
   const [statusMessage, setStatusMessage] = useState('');
@@ -55,6 +56,7 @@ export default function PaymentForm({ pedidoId, total, empresaId, onSuccess, onE
   const waitForPaymentConfirmation = async (paymentId: number, maxAttempts = 10) => {
     setPaymentState('waiting_confirmation');
     setStatusMessage('Aguardando confirmação do pagamento...');
+    onPendingChange?.(true);
     
     let attempts = 0;
     
@@ -69,6 +71,7 @@ export default function PaymentForm({ pedidoId, total, empresaId, onSuccess, onE
         if (statusResult.status === 'approved') {
           setPaymentState('success');
           setStatusMessage('Pagamento aprovado!');
+          onPendingChange?.(false);
           toast.success('Pagamento aprovado!');
           onSuccess();
           return true;
@@ -76,6 +79,7 @@ export default function PaymentForm({ pedidoId, total, empresaId, onSuccess, onE
           const errorMsg = translateStatusDetail(statusResult.statusDetail);
           setPaymentState('error');
           setStatusMessage(errorMsg);
+          onPendingChange?.(false);
           toast.error(errorMsg);
           onError?.(errorMsg);
           return false;
@@ -87,11 +91,11 @@ export default function PaymentForm({ pedidoId, total, empresaId, onSuccess, onE
       attempts++;
     }
     
-    // Timeout - assumir que está pendente
-    setStatusMessage('Aguardando aprovação. Você será notificado quando confirmado.');
-    toast.info('Pagamento em processamento. Atualize a página em alguns minutos para verificar.');
-    onSuccess();
-    return true;
+    // Timeout de consulta nao significa aprovacao. Mantem o pedido em espera
+    // e bloqueia uma nova tentativa para evitar cobrar o cliente duas vezes.
+    setStatusMessage('Ainda aguardando confirmação do Mercado Pago. Não tente pagar novamente; esta tela será atualizada quando houver uma resposta.');
+    toast.info('Pagamento ainda em análise. Aguarde a confirmação antes de tentar novamente.');
+    return false;
   };
 
   // Carrega o SDK v2 e instancia o MercadoPago com a publicKey dinâmica
@@ -263,13 +267,21 @@ export default function PaymentForm({ pedidoId, total, empresaId, onSuccess, onE
       if (result.success) {
         if (result.status === 'approved') {
           setPaymentState('success');
+          onPendingChange?.(false);
           onSuccess();
         } else if (result.status === 'in_process' || result.status === 'pending') {
-          if (result.paymentId) await waitForPaymentConfirmation(result.paymentId);
-          else onSuccess();
+          if (result.paymentId) {
+            await waitForPaymentConfirmation(result.paymentId);
+          } else {
+            setPaymentState('waiting_confirmation');
+            setStatusMessage('O Mercado Pago recebeu o pagamento e ainda não confirmou o resultado. Não tente pagar novamente.');
+            onPendingChange?.(true);
+            toast.info('Pagamento em análise. Aguarde a confirmação antes de tentar novamente.');
+          }
         } else {
           setPaymentState('error');
           setStatusMessage(translateStatusDetail(result.statusDetail));
+          onPendingChange?.(false);
         }
       } else {
         setPaymentState('error');
@@ -377,13 +389,18 @@ export default function PaymentForm({ pedidoId, total, empresaId, onSuccess, onE
 
       <button
         onClick={processPayment}
-        disabled={loading || !sdkReady}
+        disabled={loading || !sdkReady || paymentState === 'waiting_confirmation'}
         className="w-full p-4 bg-[#22c55e] hover:bg-[#1ea34d] disabled:bg-[#1a1a1a] disabled:text-gray-600 text-white font-black rounded-xl shadow-lg shadow-green-900/30 transition-all flex items-center justify-center gap-2"
       >
         {loading ? (
           <>
             <MorphingInfinity className="size-5" />
             Processando...
+          </>
+        ) : paymentState === 'waiting_confirmation' ? (
+          <>
+            <MorphingInfinity className="size-5" />
+            Aguardando confirmação...
           </>
         ) : (
           <>
