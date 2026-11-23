@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, X, ChevronRight, Store, Package, CreditCard, MessageCircle, Rocket } from 'lucide-react';
+import { Check, X, ChevronRight, Store, Package, CreditCard, Rocket } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { OnboardingStatus } from '@/app/actions/onboarding-status';
 
@@ -66,9 +66,6 @@ export function SetupChecklist({ initialStatus }: SetupChecklistProps) {
       case 'mercadopago':
         router.push('/dashboard/settings?section=payments');
         break;
-      case 'whatsapp':
-        router.push('/dashboard/settings?section=bot');
-        break;
     }
   };
 
@@ -89,24 +86,17 @@ export function SetupChecklist({ initialStatus }: SetupChecklistProps) {
     },
     {
       id: 'products',
-      label: 'Cadastrar produtos',
-      description: 'Adicione seu cardapio',
+      label: 'Montar cardápio',
+      description: 'Adicione seus produtos e preços',
       completed: status.hasProducts,
       icon: Package,
     },
     {
       id: 'mercadopago',
-      label: 'Mercado Pago',
-      description: 'Receba pagamentos online',
+      label: 'Ativar pagamentos online',
+      description: 'Conecte sua conta do Mercado Pago',
       completed: status.hasMercadoPago,
       icon: CreditCard,
-    },
-    {
-      id: 'whatsapp',
-      label: 'WhatsApp',
-      description: 'Automacoes e notificacoes',
-      completed: status.hasWhatsApp,
-      icon: MessageCircle,
     },
   ];
 
@@ -192,7 +182,7 @@ export function SetupChecklist({ initialStatus }: SetupChecklistProps) {
       </div>
 
       {/* Steps */}
-      <div className="grid gap-2 p-3 sm:p-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-2 p-3 sm:p-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         {steps.map((step) => {
           const Icon = step.icon;
           return (
