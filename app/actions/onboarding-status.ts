@@ -40,10 +40,10 @@ export async function getOnboardingStatus(): Promise<OnboardingStatus | null> {
       return null;
     }
 
-    // Verificar dados da loja (nome e endereco preenchidos)
+    // O primeiro passo do cadastro pede nome e telefone. O endereço pode ser
+    // configurado depois, sem bloquear a entrada do usuário no painel.
     const hasCompanyData = !!(
-      empresa.nome_fantasia && 
-      empresa.endereco && 
+      empresa.nome_fantasia &&
       empresa.telefone_loja
     );
 
