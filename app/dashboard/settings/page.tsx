@@ -3,7 +3,7 @@
 
 import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React from 'react';
-import { Settings as SettingsIcon, Store, Clock, MapPin, Bell, Shield, Save, ChevronRight, Plus, Trash2, Package, ShoppingBag, Info, Bot, Ticket, Award, Truck, Sparkles, Upload, QrCode, Wifi, WifiOff, RefreshCw, CheckCircle2, Smartphone, Zap } from 'lucide-react';
+import { Settings as SettingsIcon, Store, Clock, MapPin, Bell, Shield, Save, ChevronRight, Plus, Trash2, Package, ShoppingBag, Info, AlertCircle, Bot, Ticket, Award, Truck, Sparkles, Upload, QrCode, Wifi, WifiOff, RefreshCw, CheckCircle2, Smartphone, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import Image from 'next/image';
