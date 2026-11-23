@@ -1,4 +1,5 @@
 import { pg } from '@/lib/postgres';
+import { calculateDeliveryFee, geocodeAddress } from './delivery';
 import {
   COMPLEMENTOS_TABLE,
   CUPONS_TABLE,
@@ -262,8 +263,6 @@ export async function calculatePublicOrderPricing(input: {
     discount: roundMoney(couponDiscount + pointsDiscount),
   };
 }
-
-import { calculateDeliveryFee, geocodeAddress } from './delivery';
 
 export async function calculatePublicDeliveryFee(input: {
   empresaId: number;
