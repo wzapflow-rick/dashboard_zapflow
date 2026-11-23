@@ -196,8 +196,8 @@ export async function configureInstanceWebhook(instanceName: string) {
     const configured = verification.data?.webhook ?? verification.data;
     const actualEvents = Array.isArray(configured?.events) ? configured.events : [];
     const actualByEvents = configured?.webhookByEvents ?? configured?.byEvents;
-    const expectedUrl = webhookUrl.replace(/\\/+$/, '');
-    const actualUrl = typeof configured?.url === 'string' ? configured.url.replace(/\\/+$/, '') : '';
+    const expectedUrl = webhookUrl.replace(/\/+$/, '');
+    const actualUrl = typeof configured?.url === 'string' ? configured.url.replace(/\/+$/, '') : '';
     const valid =
         configured?.enabled === true &&
         actualUrl === expectedUrl &&
