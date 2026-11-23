@@ -406,13 +406,18 @@ async function fetchEmpresaByInstance(instanceName: string): Promise<any> {
     if (empresa) {
       return empresa;
     }
-    
-    // Se nao encontrar, tenta extrair ID do nome (zapflow_ID)
-    const match = instanceName.match(/zapflow_(\d+)/);
+
+    // Compatibilidade com empresas antigas sem instancia_evolution salva:
+    // o sufixo numérico só pode ser usado quando a empresa não tem outra
+    // instância vinculada. Isso evita encaminhar eventos à empresa errada.
+    const match = instanceName.match(/^zapflow_(\d+)$/);
     if (match) {
       const empresaId = Number(match[1]);
       empresa = await pg.findById('empresas', empresaId) as any;
-      return empresa;
+      if (!empresa?.instancia_evolution || empresa.instancia_evolution === instanceName) {
+        return empresa;
+      }
+      console.error(`[BOT] Instancia ${instanceName} nao corresponde a empresa ${empresaId} (configurada: ${empresa.instancia_evolution})`);
     }
     
     return null;
@@ -648,7 +653,9 @@ export async function POST(req: NextRequest) {
     
     if (!empresa) {
       console.log(`[BOT] Empresa nao encontrada para instancia ${instanceName}`);
-      return NextResponse.json({ received: true, error: 'empresa_not_found' });
+      // Não confirmar eventos de instâncias desconhecidas: a Evolution pode
+      // tentar novamente após corrigir uma associação temporariamente ausente.
+      return NextResponse.json({ received: false, error: 'empresa_not_found', retryable: true }, { status: 503 });
     }
     
     console.log(`[BOT] Empresa encontrada: ${empresa.nome_fantasia} (ID: ${empresa.id})`);
@@ -681,8 +688,13 @@ export async function POST(req: NextRequest) {
       // Buscar configuracao do bot
       const botConfig = await getBotConfig(empresa.id);
       
-      if (!botConfig || !botConfig.bot_ativo) {
-        console.log(`[BOT] Bot desativado ou nao configurado para empresa ${empresa.id}`);
+      if (!botConfig) {
+        console.error(`[BOT] Configuracao do bot indisponivel para empresa ${empresa.id}; solicitando reenvio do webhook`);
+        return NextResponse.json({ received: false, retryable: true, reason: 'bot_config_unavailable' }, { status: 503 });
+      }
+
+      if (!botConfig.bot_ativo) {
+        console.log(`[BOT] Bot desativado para empresa ${empresa.id}`);
         return NextResponse.json({ received: true, bot_disabled: true });
       }
       
@@ -782,7 +794,9 @@ export async function POST(req: NextRequest) {
         console.error(`[BOT] Nenhuma mensagem enviada para ${maskPhoneForLog(phone)} — revertendo trava para permitir nova tentativa`);
         await releaseSaudacao(empresa.id, phone);
         recentContactsCache.delete(lockKey);
-        return NextResponse.json({ received: true, messages_sent: 0, send_failed: true }, { status: 200 });
+        // 5xx sinaliza falha transitória para a Evolution aplicar as tentativas
+      // configuradas no servidor (retry/backoff). O claim foi revertido acima.
+      return NextResponse.json({ received: false, messages_sent: 0, send_failed: true, retryable: true }, { status: 503 });
       }
 
       // Marcar cliente como contatado (persistir no banco)
