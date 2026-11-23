@@ -455,6 +455,9 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
           quantidade: item.quantidade,
           complementos: item.complementos,
           tamanho: item.tamanho,
+          isComposite: item.isComposite,
+          sabores: item.sabores,
+          observacao: item.observacao,
         })),
         subtotal,
         desconto: desconto + descontoPontos,
@@ -477,6 +480,12 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
 
       const newOrderId = orderResult.orderId;
       setOrderId(newOrderId);
+      if (typeof orderResult.taxaEntrega === 'number') {
+        setDeliveryFee(orderResult.taxaEntrega);
+      }
+      if (orderResult.taxaEntregaFallback) {
+        toast.warning('Não foi possível confirmar a taxa de entrega agora; usamos a taxa fixa configurada pela loja.');
+      }
 
       // Pagamento integrado DESATIVADO: o cliente escolhe a forma de pagamento,
       // mas a cobranca online e pulada. O pedido ja foi criado como 'pendente'
@@ -493,8 +502,8 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
         setStep('success');
         clearCart();
       }
-    } catch (error) {
-      toast.error('Erro ao finalizar pedido');
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao finalizar pedido');
     } finally {
       setLoading(false);
     }

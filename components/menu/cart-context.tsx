@@ -22,6 +22,7 @@ export interface CartItem {
     }[];
   }[];
   isComposite?: boolean;
+  sabores?: number[];
   grupoId?: number;
   isAvulso?: boolean;
 }

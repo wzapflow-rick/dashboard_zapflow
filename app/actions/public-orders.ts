@@ -3,16 +3,20 @@
 import { notifyNewOrder } from '@/lib/push';
 import { revalidatePath } from 'next/cache';
 import { incrementCouponUsage } from './coupons';
-import { deductPointsForOrder } from './loyalty';
 import { sendOrderCreatedMessage, sendOwnerNewOrderMessage } from '@/lib/whatsapp';
 import { pg } from '@/lib/postgres';
 import { getMe } from '@/lib/session-server';
+import { calculatePublicDeliveryFee, calculatePublicOrderPricing } from './public-order-pricing';
 
 interface OrderItem {
     id: number;
     nome: string;
     preco: number;
     quantidade: number;
+    tamanho?: string;
+    isComposite?: boolean;
+    sabores?: number[];
+    observacao?: string;
     complementos?: {
         grupoId: number;
         grupoNome: string;
@@ -115,6 +119,8 @@ async function ensureCliente(empresaId: number, telefone: string, nome: string, 
 }
 
 export async function createPublicOrder(data: CreatePublicOrderData) {
+    let redeemedPoints: { empresaId: number; telefone: string; points: number } | null = null;
+    let orderCreated = false;
     try {
         if (!data.empresaId || !data.clienteTelefone || !data.itens?.length) {
             throw new Error('Dados incompletos para criar pedido');
@@ -129,42 +135,60 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
             throw new Error('Esta loja não aceita pagamento em dinheiro');
         }
 
+        const pricing = await calculatePublicOrderPricing({
+            empresaId: Number(data.empresaId),
+            telefone: data.clienteTelefone,
+            itens: data.itens,
+            cupomCodigo: data.cupomCodigo,
+            pontosUsados: data.pontosUsados,
+        });
+
         const tipoEntregaEfetivo: 'delivery' | 'retirada' =
             data.tipoEntrega === 'delivery' && empresa.aceita_delivery !== false
                 ? 'delivery'
                 : 'retirada';
-        const taxaEntregaEfetiva = tipoEntregaEfetivo === 'delivery'
-            ? Math.max(0, Number(data.taxaEntrega) || 0)
-            : 0;
+        const deliveryPricing = await calculatePublicDeliveryFee({
+            empresaId: Number(data.empresaId),
+            empresa,
+            tipoEntrega: tipoEntregaEfetivo,
+            endereco: data.clienteEndereco,
+            bairro: data.clienteBairro,
+        });
+        const taxaEntregaEfetiva = deliveryPricing.taxa;
         const clienteEnderecoEfetivo = tipoEntregaEfetivo === 'delivery'
             ? data.clienteEndereco
             : undefined;
         const clienteBairroEfetivo = tipoEntregaEfetivo === 'delivery'
             ? data.clienteBairro
             : undefined;
-        for (const item of data.itens) {
-            const qtd = Number(item.quantidade);
-            const preco = Number(item.preco);
-            if (!Number.isInteger(qtd) || qtd <= 0 || qtd > 999) {
-                throw new Error('Quantidade invalida no pedido');
-            }
-            if (!Number.isFinite(preco) || preco < 0) {
-                throw new Error('Preco invalido no pedido');
-            }
+        const subtotalEfetivo = pricing.subtotal;
+        const descontoEfetivo = pricing.discount;
+        const telefonePontos = data.clienteTelefone.replace(/\D/g, '');
+        if (pricing.pointsUsed > 0) {
+            const redemption = await pg.raw<any>(
+                `UPDATE "loyalty_points"
+                 SET pontos_acumulados = COALESCE(pontos_acumulados, 0) - $3
+                 WHERE empresa_id = $1 AND cliente_telefone = $2
+                   AND COALESCE(pontos_acumulados, 0) >= $3
+                   AND COALESCE(pontos_acumulados, 0) - COALESCE(pontos_gastos, 0) >= $3
+                 RETURNING id`,
+                [Number(data.empresaId), telefonePontos, pricing.pointsUsed]
+            );
+            if (!redemption?.length) throw new Error('Os pontos acabaram de ser utilizados. Atualize o carrinho.');
+            redeemedPoints = { empresaId: Number(data.empresaId), telefone: telefonePontos, points: pricing.pointsUsed };
         }
-        const subtotalEfetivo = Math.round(
-            data.itens.reduce((sum, item) => sum + Number(item.preco) * Number(item.quantidade), 0) * 100
-        ) / 100;
-        const descontoEfetivo = Math.min(
-            subtotalEfetivo,
-            Math.max(0, Number(data.desconto) || 0)
-        );
         const totalEfetivo = Math.max(
             0,
             subtotalEfetivo - descontoEfetivo + taxaEntregaEfetiva
         );
         const dadosEfetivos: CreatePublicOrderData = {
             ...data,
+            itens: pricing.itens,
+            cupomId: pricing.couponId,
+            cupomCodigo: pricing.couponCode,
+            pontosUsados: pricing.pointsUsed,
+            descontoPontos: pricing.pointsDiscount,
+            pontosGanhos: pricing.pointsEarned,
             subtotal: subtotalEfetivo,
             desconto: descontoEfetivo,
             tipoEntrega: tipoEntregaEfetivo,
@@ -263,18 +287,13 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
         });
 
         const order = await pg.create('pedidos', orderPayload) as any;
+        orderCreated = true;
+        redeemedPoints = null;
 
-        if (data.cupomId) {
-            incrementCouponUsage(data.cupomId).catch(err =>
+        if (pricing.couponId) {
+            incrementCouponUsage(pricing.couponId).catch(err =>
                 console.error('Erro ao incrementar uso do cupom:', err)
             );
-        }
-
-        if (data.pontosUsados && data.pontosUsados > 0) {
-            deductPointsForOrder(
-                data.clienteTelefone.replace(/\D/g, ''),
-                data.pontosUsados
-            ).catch(err => console.error('Erro ao deduzir pontos:', err));
         }
 
         sendOrderCreatedMessage(dadosEfetivos.clienteTelefone, order.id, dadosEfetivos.total, dadosEfetivos.dataAgendamento, itensFormatados, dadosEfetivos.empresaId)
@@ -296,9 +315,23 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
         return {
             success: true,
             orderId: order.id,
+            taxaEntrega: taxaEntregaEfetiva,
+            taxaEntregaFallback: deliveryPricing.fallback,
             message: 'Pedido criado com sucesso!',
         };
     } catch (error: any) {
+        if (redeemedPoints && !orderCreated) {
+            try {
+                await pg.raw<any>(
+                    `UPDATE "loyalty_points"
+                     SET pontos_acumulados = COALESCE(pontos_acumulados, 0) + $3
+                     WHERE empresa_id = $1 AND cliente_telefone = $2`,
+                    [redeemedPoints.empresaId, redeemedPoints.telefone, redeemedPoints.points]
+                );
+            } catch (rollbackError) {
+                console.error('Erro ao restaurar pontos após falha no pedido:', rollbackError);
+            }
+        }
         console.error('Erro ao criar pedido público:', error);
         throw new Error(error.message || 'Erro ao criar pedido');
     }
