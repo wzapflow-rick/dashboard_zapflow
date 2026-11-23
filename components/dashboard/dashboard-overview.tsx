@@ -141,6 +141,7 @@ export default function DashboardOverview() {
   const stats = dashboardData?.stats || DEFAULT_STATS;
   const pedidosCount = stats[1]?.value ?? '0';
   const firstName = (user?.nome || 'Usuário').split(' ')[0];
+  const needsSetup = !!onboardingStatus && onboardingStatus.completedSteps < onboardingStatus.totalSteps;
 
   return (
     <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-8 pb-8">
@@ -154,12 +155,13 @@ export default function DashboardOverview() {
             Olá, {firstName}
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400 sm:text-base">
-            Aqui está o resumo da sua operação.
+            {needsSetup ? 'Vamos deixar sua loja pronta, um passo de cada vez.' : 'Aqui está o resumo da sua operação.'}
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="mr-1 hidden text-xs font-medium capitalize text-slate-400 dark:text-slate-500 sm:block">
+        {!needsSetup && (
+          <div className="flex items-center gap-2">
+            <span className="mr-1 hidden text-xs font-medium capitalize text-slate-400 dark:text-slate-500 sm:block">
             {todayLabel()}
           </span>
           <label htmlFor="dashboard-period" className="sr-only">
@@ -192,8 +194,9 @@ export default function DashboardOverview() {
             title="Atualizar dados"
           >
             <RefreshCw className={cn('size-4', isRefreshing && 'animate-spin')} aria-hidden="true" />
-          </motion.button>
-        </div>
+            </motion.button>
+          </div>
+        )}
       </motion.header>
 
       {onboardingStatus && onboardingStatus.completedSteps < onboardingStatus.totalSteps && (
@@ -214,6 +217,8 @@ export default function DashboardOverview() {
         )}
       </AnimatePresence>
 
+      {!needsSetup && (
+        <>
       <SectionBoundary name="as métricas">
         <MetricStrip stats={stats} lowPower={lowPower} />
       </SectionBoundary>
@@ -247,6 +252,8 @@ export default function DashboardOverview() {
       <SectionBoundary name="os pedidos recentes">
         <RecentOrders orders={orders} onOpenModal={handleOpenModal} />
       </SectionBoundary>
+        </>
+      )}
 
       {isModalOpen && (
         <OrderDetailsModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} order={selectedOrder} />
