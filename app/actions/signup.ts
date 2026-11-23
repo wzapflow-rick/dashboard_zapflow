@@ -356,7 +356,7 @@ export async function getPendingSignup(token: string): Promise<PendingSignup | n
       limit: 1,
     });
 
-    const signup = result?.list?.[0] as PendingSignup | undefined;
+    const signup = result?.list?.[0] as unknown as PendingSignup | undefined;
 
     if (!signup) {
       return null;
