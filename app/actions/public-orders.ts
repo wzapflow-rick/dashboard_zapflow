@@ -6,7 +6,7 @@ import { incrementCouponUsage } from './coupons';
 import { sendOrderCreatedMessage, sendOwnerNewOrderMessage } from '@/lib/whatsapp';
 import { pg } from '@/lib/postgres';
 import { getMe } from '@/lib/session-server';
-import { calculatePublicOrderPricing } from './public-order-pricing';
+import { calculatePublicDeliveryFee, calculatePublicOrderPricing } from './public-order-pricing';
 
 interface OrderItem {
     id: number;
@@ -153,9 +153,14 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
             data.tipoEntrega === 'delivery' && empresa.aceita_delivery !== false
                 ? 'delivery'
                 : 'retirada';
-        const taxaEntregaEfetiva = tipoEntregaEfetivo === 'delivery'
-            ? Math.max(0, Number(data.taxaEntrega) || 0)
-            : 0;
+        const deliveryPricing = await calculatePublicDeliveryFee({
+            empresaId: Number(data.empresaId),
+            empresa,
+            tipoEntrega: tipoEntregaEfetivo,
+            endereco: data.clienteEndereco,
+            bairro: data.clienteBairro,
+        });
+        const taxaEntregaEfetiva = deliveryPricing.taxa;
         const clienteEnderecoEfetivo = tipoEntregaEfetivo === 'delivery'
             ? data.clienteEndereco
             : undefined;
@@ -316,6 +321,8 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
         return {
             success: true,
             orderId: order.id,
+            taxaEntrega: taxaEntregaEfetiva,
+            taxaEntregaFallback: deliveryPricing.fallback,
             message: 'Pedido criado com sucesso!',
         };
     } catch (error: any) {
