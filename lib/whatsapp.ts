@@ -323,7 +323,10 @@ export async function sendWhatsAppMessageWithInstance(
 /**
  * Testar envio de WhatsApp (para debug)
  */
-export async function testWhatsApp(phone: string): Promise<{ success: boolean; formattedPhone: string; error?: string }> {
+export async function testWhatsApp(
+    phone: string,
+    instanceName: string = EVO_INSTANCE
+): Promise<{ success: boolean; formattedPhone: string; error?: string }> {
     try {
         const formattedPhone = formatPhoneForEvolution(phone);
         
@@ -333,9 +336,9 @@ export async function testWhatsApp(phone: string): Promise<{ success: boolean; f
 
         console.log(`[WhatsApp Test] Enviando para: ${formattedPhone}`);
         console.log(`[WhatsApp Test] API: ${EVO_API_URL}`);
-        console.log(`[WhatsApp Test] Instance: ${EVO_INSTANCE}`);
+        console.log(`[WhatsApp Test] Instance: ${instanceName}`);
 
-        const send = await evoSendText(EVO_INSTANCE, formattedPhone, testMessage);
+        const send = await evoSendText(instanceName, formattedPhone, testMessage);
         console.log(`[WhatsApp Test] Resposta (${send.status}):`, send.result ?? send.error);
 
         if (!send.ok) {
