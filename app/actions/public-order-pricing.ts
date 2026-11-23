@@ -180,8 +180,6 @@ export async function calculatePublicOrderPricing(input: {
 
     price = roundMoney(price);
     if (!Number.isFinite(price) || price < 0) throw new Error('Preço inválido no cardápio.');
-    const additionNames = canonicalGroups.flatMap(group => group.items.map((option: any) => option.nome));
-    if (additionNames.length) productName += ` (${additionNames.join(', ')})`;
     subtotal += price * quantity;
     canonicalItems.push({
       id: productId,
@@ -238,7 +236,7 @@ export async function calculatePublicOrderPricing(input: {
     const redeemableBlocks = Math.min(requestedPoints / blockSize, Math.floor(remainingDiscount / blockDiscount));
     pointsUsed = redeemableBlocks * blockSize;
     pointsDiscount = roundMoney(redeemableBlocks * blockDiscount);
-    if (pointsUsed <= 0 || desiredDiscount !== pointsDiscount) {
+    if (pointsUsed <= 0 || roundMoney(desiredDiscount) !== pointsDiscount) {
       throw new Error('O desconto por pontos mudou. Atualize o carrinho.');
     }
   }
@@ -251,6 +249,9 @@ export async function calculatePublicOrderPricing(input: {
     couponCode,
     pointsUsed,
     pointsDiscount,
+    pointsEarned: loyaltyConfig && (loyaltyConfig as any).ativo === true
+      ? Math.max(0, Math.floor(subtotal * asNumber((loyaltyConfig as any).pontos_por_real, 1)))
+      : 0,
     discount: roundMoney(couponDiscount + pointsDiscount),
   };
 }
