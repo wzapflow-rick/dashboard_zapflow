@@ -8,6 +8,7 @@ import {
   PRODUTOS_METADADOS_TABLE,
   PRODUTOS_TABLE,
   PRODUTO_GRUPOS_COMPLEMENTOS_TABLE,
+  TAXAS_ENTREGA_TABLE,
 } from '@/lib/tables';
 
 type SelectedOption = { id: number; nome?: string; preco?: number; fator_proporcao?: number };
@@ -260,4 +261,76 @@ export async function calculatePublicOrderPricing(input: {
       : 0,
     discount: roundMoney(couponDiscount + pointsDiscount),
   };
+}
+
+import { calculateDeliveryFee, geocodeAddress } from './delivery';
+
+export async function calculatePublicDeliveryFee(input: {
+  empresaId: number;
+  empresa: any;
+  tipoEntrega: 'delivery' | 'retirada';
+  endereco?: string;
+  bairro?: string;
+}): Promise<{ taxa: number; fallback: boolean }> {
+  if (input.tipoEntrega !== 'delivery') return { taxa: 0, fallback: false };
+
+  const fixedFee = Math.max(0, asNumber(input.empresa?.taxa_entrega_fixa));
+  const autoRadius = input.empresa?.raio_entrega_automatico === true ||
+    input.empresa?.raio_entrega_automatico === 't' ||
+    input.empresa?.raio_entrega_automatico === 1;
+
+  if (!autoRadius) {
+    try {
+      const rates = await pg.list(TAXAS_ENTREGA_TABLE, {
+        where: { empresa_id: Number(input.empresaId) },
+        limit: 1000,
+      });
+      const availableRates = rates.list || [];
+      if (availableRates.length > 0) {
+        const normalizedNeighborhood = String(input.bairro || '').trim().toLowerCase();
+        const match = availableRates.find((rate: any) =>
+          String(rate.bairro || '').trim().toLowerCase() === normalizedNeighborhood
+        ) || availableRates.find((rate: any) => {
+          const rateNeighborhood = String(rate.bairro || '').trim().toLowerCase();
+          return rateNeighborhood && normalizedNeighborhood &&
+            (rateNeighborhood.includes(normalizedNeighborhood) || normalizedNeighborhood.includes(rateNeighborhood));
+        });
+        if (!match) throw new Error('Este bairro não está na área de entrega da loja.');
+        return { taxa: Math.max(0, asNumber(match.taxa)), fallback: false };
+      }
+    } catch (error: any) {
+      if (error?.message === 'Este bairro não está na área de entrega da loja.') throw error;
+      console.error('[PublicOrder] Não foi possível ler as taxas por bairro; usando taxa fixa:', error);
+    }
+    return { taxa: fixedFee, fallback: false };
+  }
+
+  const fullAddress = [input.endereco, input.bairro].map(value => String(value || '').trim()).filter(Boolean).join(', ');
+  if (!fullAddress) return { taxa: fixedFee, fallback: true };
+
+  const geocode = await geocodeAddress(
+    fullAddress,
+    typeof input.empresa?.cidade === 'string' ? input.empresa.cidade : undefined,
+    typeof input.empresa?.estado === 'string' ? input.empresa.estado : undefined,
+  );
+  if (!geocode) throw new Error('Não foi possível localizar o endereço. Confira os dados e tente novamente.');
+  if ('error' in geocode) {
+    // Billing/quota/provider failures must not block checkout; use the company's
+    // configured fixed fee until the map service is healthy again.
+    console.warn('[PublicOrder] Geocodificação indisponível; usando taxa fixa da loja.');
+    return { taxa: fixedFee, fallback: true };
+  }
+
+  const calculated = await calculateDeliveryFee(geocode, Number(input.empresaId));
+  if (calculated.success && calculated.taxa_entrega !== undefined) {
+    return { taxa: Math.max(0, asNumber(calculated.taxa_entrega)), fallback: false };
+  }
+
+  const errorMessage = String(calculated.error || '');
+  if (/fora da área|máx:|localização da loja não configurada|coordenadas inválidas|distância inválida/i.test(errorMessage)) {
+    throw new Error(errorMessage || 'Endereço fora da área de entrega.');
+  }
+
+  console.warn('[PublicOrder] Distância indisponível; usando taxa fixa da loja.');
+  return { taxa: fixedFee, fallback: true };
 }
