@@ -41,7 +41,11 @@ async function getCompanyMPCredentials(empresaId: number) {
             where: { empresa_id: empresaId }
         }) as any;
 
-        if (config && config.mp_access_token) {
+        if (config) {
+            if (!config.mp_access_token) {
+                throw new Error(`Credenciais do Mercado Pago incompletas para empresa #${empresaId}`);
+            }
+
             console.log(`[MercadoPago] Usando credenciais próprias da empresa #${empresaId}`);
             return {
                 accessToken: config.mp_access_token,
@@ -50,6 +54,7 @@ async function getCompanyMPCredentials(empresaId: number) {
         }
     } catch (error) {
         console.error(`[MercadoPago] Erro ao buscar config para empresa #${empresaId}:`, error);
+        throw new Error('Não foi possível confirmar as credenciais do Mercado Pago da empresa.');
     }
 
     console.log(`[MercadoPago] Usando credenciais de fallback para empresa #${empresaId}`);
@@ -76,7 +81,17 @@ export async function checkPixAvailability(): Promise<{ available: boolean; reas
         return { available: false, reason: 'Nao autorizado' };
     }
 
-    const { accessToken } = await getCompanyMPCredentials(me.empresaId);
+    let accessToken: string;
+    try {
+        ({ accessToken } = await getCompanyMPCredentials(me.empresaId));
+    } catch (error) {
+        console.error('[MercadoPago] Nao foi possivel confirmar credenciais para verificacao PIX:', error);
+        return {
+            available: false,
+            reason: 'Não foi possível confirmar a conexão com o Mercado Pago. Tente novamente.'
+        };
+    }
+
     if (!accessToken) {
         return { available: false, reason: 'Conta do Mercado Pago nao conectada' };
     }
