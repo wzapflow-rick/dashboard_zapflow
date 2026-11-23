@@ -161,6 +161,7 @@ export default function CompositeProductModal({
                 nome: `${product.nome} (${saborNomes})`,
                 preco: finalPrice,
                 complementos,
+                sabores: selectedFlavors.map((flavor: any) => Number(flavor.id)),
                 observacao,
             });
             toast.success('Item atualizado!');
@@ -173,6 +174,7 @@ export default function CompositeProductModal({
                 complementos,
                 observacao,
                 isComposite: true,
+                sabores: selectedFlavors.map((flavor: any) => Number(flavor.id)),
                 grupoId: product._grupoId
             });
             toast.success('Adicionado ao carrinho!');
