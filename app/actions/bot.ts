@@ -139,7 +139,7 @@ export async function testBotGreeting(phone: string): Promise<{
             return { success: false, sent: 0, total: 0, error: 'Não autorizado' };
         }
 
-        const digits = String(phone || '').replace(/\\D/g, '');
+        const digits = String(phone || '').replace(/\D/g, '');
         if (digits.length < 10 || digits.length > 15) {
             return { success: false, sent: 0, total: 0, error: 'Informe um telefone válido com DDD.' };
         }
@@ -166,13 +166,13 @@ export async function testBotGreeting(phone: string): Promise<{
         const slug = (empresa.nome_fantasia || empresa.nome || 'loja')
             .toLowerCase()
             .normalize('NFD')
-            .replace(/[\\u0300-\\u036f]/g, '')
+            .replace(/[\u0300-\u036f]/g, '')
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/^-+|-+$/g, '');
         const menuUrl = `https://cardapio.wzapflow.com.br/menu/${slug}`;
         const processMessage = (text: string) => text
             .replace('{LINK_CARDAPIO}', menuUrl)
-            .replace(/\\/loja\\//g, '/menu/');
+            .replace(/\/loja\//g, '/menu/');
 
         const messages = [
             config.mensagem_1_ativa && config.mensagem_1_texto ? processMessage(config.mensagem_1_texto) : '',
