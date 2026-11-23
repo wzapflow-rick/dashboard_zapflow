@@ -412,6 +412,12 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
 
       const newOrderId = orderResult.orderId;
       setOrderId(newOrderId);
+      if (typeof orderResult.taxaEntrega === 'number') {
+        setDeliveryFee(orderResult.taxaEntrega);
+      }
+      if (orderResult.taxaEntregaFallback) {
+        toast.warning('Não foi possível calcular a distância agora; usamos a taxa fixa configurada pela loja.');
+      }
 
       // Pagamento integrado DESATIVADO: o cliente escolhe a forma de pagamento,
       // mas a cobranca online e pulada. O pedido ja foi criado como 'pendente'
