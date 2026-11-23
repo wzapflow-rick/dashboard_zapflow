@@ -42,7 +42,7 @@ const recentContactsCache = new Map<string, number>();
 const processingLock = new Map<string, boolean>();
 
 // Tempo minimo entre saudacoes para o mesmo contato (em horas)
-const COOLDOWN_HOURS = 6;
+const COOLDOWN_HOURS = 1;
 
 /**
  * Formatar numero de telefone para Evolution API
@@ -362,7 +362,7 @@ async function tryClaimSaudacao(
  * Libera (faz rollback) a trava de saudacao.
  *
  * Usado quando reivindicamos o claim mas TODAS as tentativas de envio falharam.
- * Remove o registro para que o cliente NAO fique bloqueado por 6 horas sem ter
+ * Remove o registro para que o cliente NAO fique bloqueado por 1 hora sem ter
  * recebido nenhuma mensagem — assim a proxima mensagem dele dispara nova
  * tentativa de saudacao.
  */
@@ -698,7 +698,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ received: true, bot_disabled: true });
       }
       
-      // 4. Verificar se ja foi contatado recentemente (verificacao completa no banco - 6 horas)
+      // 4. Verificar se ja foi contatado recentemente (verificacao completa no banco - 1 hora)
       const fullCheckResult = await wasRecentlyContacted(empresa.id, phone);
       if (fullCheckResult) {
         // Preenche o cache para evitar consultas repetidas ao banco
@@ -789,7 +789,7 @@ export async function POST(req: NextRequest) {
 
       // Se NENHUMA mensagem foi enviada (ex.: Evolution fora do ar), faz rollback
       // da trava e limpa o cache para que a proxima mensagem do cliente tente de
-      // novo — em vez de deixa-lo bloqueado por 6h sem ter recebido nada.
+      // novo — em vez de deixa-lo bloqueado por 1h sem ter recebido nada.
       if (enviadas === 0) {
         console.error(`[BOT] Nenhuma mensagem enviada para ${maskPhoneForLog(phone)} — revertendo trava para permitir nova tentativa`);
         await releaseSaudacao(empresa.id, phone);

@@ -23,7 +23,7 @@ import DriversManagement from '@/components/management/drivers-management';
 import DeliveryHistory from '@/components/delivery/delivery-history';
 import MercadoPagoConnection from '@/components/management/mercadopago-connection';
 import { CreditCard as PaymentIcon, Banknote } from 'lucide-react';
-import { getBotConfig, saveBotConfig, getCardapioLink, BotConfig } from '@/app/actions/bot';
+import { getBotConfig, saveBotConfig, getCardapioLink, testBotGreeting, BotConfig } from '@/app/actions/bot';
 import { createEvolutionInstance, getEvolutionQRCode, getInstanceStatus, configureInstanceWebhook } from '@/app/actions/evolution';
 import { PushNotificationsCard } from '@/components/push-notifications-card';
 
@@ -83,6 +83,8 @@ export default function SettingsPage() {
   const [cardapioLink, setCardapioLink] = React.useState<string>('');
   const [savingBot, setSavingBot] = React.useState(false);
   const [savingBotToggle, setSavingBotToggle] = React.useState(false);
+  const [botTestPhone, setBotTestPhone] = React.useState('');
+  const [isTestingBotGreeting, setIsTestingBotGreeting] = React.useState(false);
   
   // Estados da Conexao WhatsApp
   const [whatsappStatus, setWhatsappStatus] = React.useState<'checking' | 'connected' | 'disconnected' | 'connecting'>('checking');
@@ -1739,6 +1741,59 @@ export default function SettingsPage() {
                         />
                       </div>
                     )}
+                  </div>
+
+                  <div className="p-4 bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 rounded-xl space-y-3">
+                    <div>
+                      <h4 className="text-sm font-bold text-violet-900 dark:text-violet-200">Testar saudação agora</h4>
+                      <p className="text-xs text-violet-700 dark:text-violet-300 mt-1">
+                        Envia as mensagens salvas pela instância desta loja sem consumir o intervalo de 1 hora.
+                      </p>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <input
+                        type="tel"
+                        inputMode="tel"
+                        value={botTestPhone}
+                        onChange={(e) => setBotTestPhone(e.target.value)}
+                        placeholder="Número com DDD (ex.: 34999887766)"
+                        aria-label="Número para testar a saudação"
+                        className="flex-1 px-4 py-2.5 bg-white dark:bg-zinc-900 border border-violet-200 dark:border-violet-700 rounded-xl outline-none focus:ring-2 focus:ring-violet-500/20 text-sm dark:text-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (isTestingBotGreeting) return;
+                          if (botTestPhone.replace(/\D/g, '').length < 10) {
+                            toast.error('Informe um número válido com DDD.');
+                            return;
+                          }
+
+                          setIsTestingBotGreeting(true);
+                          try {
+                            const result = await testBotGreeting(botTestPhone);
+                            if (result.success) {
+                              toast.success(`Teste enviado: ${result.sent} mensagem(ns) pela instância da loja.`);
+                            } else {
+                              toast.error(`Falha no teste (${result.sent}/${result.total}): ${result.error || 'Erro desconhecido'}`);
+                            }
+                          } catch (error: any) {
+                            toast.error(`Erro ao testar saudação: ${error.message || 'Erro desconhecido'}`);
+                          } finally {
+                            setIsTestingBotGreeting(false);
+                          }
+                        }}
+                        disabled={whatsappStatus !== 'connected' || isTestingBotGreeting}
+                        aria-busy={isTestingBotGreeting}
+                        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-sm font-bold transition-colors disabled:opacity-50"
+                      >
+                        {isTestingBotGreeting && <MorphingInfinity className="size-4" aria-hidden="true" />}
+                        {isTestingBotGreeting ? 'Enviando teste...' : 'Testar saudação'}
+                      </button>
+                    </div>
+                    <p className="text-xs text-violet-700 dark:text-violet-300">
+                      O teste usa a configuração salva e não altera o histórico do contato.
+                    </p>
                   </div>
 
                   {/* Botao Salvar */}

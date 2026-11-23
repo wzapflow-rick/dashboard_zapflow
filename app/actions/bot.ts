@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { getMe } from '@/lib/session-server';
 import { pg } from '@/lib/postgres';
+import { sendWhatsAppMessageFromInstance } from '@/lib/whatsapp';
 
 // ============================================================
 // TIPOS PARA CONFIGURACAO DO BOT DE SAUDACAO
@@ -118,6 +119,94 @@ export async function getCardapioLink(): Promise<string> {
     } catch (error) {
         console.error('[getCardapioLink] Erro:', error);
         return '';
+    }
+}
+
+/**
+ * Envia as mensagens configuradas do bot para um número de teste.
+ * A ação é restrita ao admin e não cria/atualiza cooldown nem histórico
+ * de saudação, permitindo testar novamente sem esperar o intervalo normal.
+ */
+export async function testBotGreeting(phone: string): Promise<{
+    success: boolean;
+    sent: number;
+    total: number;
+    error?: string;
+}> {
+    try {
+        const user = await getMe();
+        if (!user?.empresaId || user.role !== 'admin') {
+            return { success: false, sent: 0, total: 0, error: 'Não autorizado' };
+        }
+
+        const digits = String(phone || '').replace(/\D/g, '');
+        if (digits.length < 10 || digits.length > 15) {
+            return { success: false, sent: 0, total: 0, error: 'Informe um telefone válido com DDD.' };
+        }
+
+        const [config, empresa] = await Promise.all([
+            getBotConfig(),
+            pg.findById<{ id: number; nome_fantasia?: string; nome?: string; instancia_evolution?: string | null }>(
+                'empresas',
+                user.empresaId,
+            ),
+        ]);
+
+        if (!config) {
+            return { success: false, sent: 0, total: 0, error: 'Não foi possível carregar a configuração do bot.' };
+        }
+        if (!config.bot_ativo) {
+            return { success: false, sent: 0, total: 0, error: 'Ative o bot antes de testar a saudação.' };
+        }
+        if (!empresa) {
+            return { success: false, sent: 0, total: 0, error: 'Empresa não encontrada.' };
+        }
+
+        const instanceName = empresa.instancia_evolution || `zapflow_${user.empresaId}`;
+        const slug = (empresa.nome_fantasia || empresa.nome || 'loja')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+        const menuUrl = `https://cardapio.wzapflow.com.br/menu/${slug}`;
+        const processMessage = (text: string) => text
+            .replace('{LINK_CARDAPIO}', menuUrl)
+            .replace(/\/loja\//g, '/menu/');
+
+        const messages = [
+            config.mensagem_1_ativa && config.mensagem_1_texto ? processMessage(config.mensagem_1_texto) : '',
+            config.mensagem_2_ativa && config.mensagem_2_texto ? processMessage(config.mensagem_2_texto) : '',
+            config.mensagem_3_ativa && config.mensagem_3_texto ? processMessage(config.mensagem_3_texto) : '',
+        ].filter(Boolean);
+
+        if (messages.length === 0) {
+            return { success: false, sent: 0, total: 0, error: 'Não há mensagens ativas configuradas para testar.' };
+        }
+
+        let sent = 0;
+        let lastError: string | undefined;
+        for (let index = 0; index < messages.length; index++) {
+            const result = await sendWhatsAppMessageFromInstance(phone, messages[index], instanceName);
+            if (result.success) {
+                sent++;
+            } else {
+                lastError = result.error || 'Falha ao enviar mensagem de teste.';
+                console.error(`[Bot Test] Falha na mensagem ${index + 1}/${messages.length} via ${instanceName}:`, lastError);
+            }
+
+            const delayMs = Math.min(Math.max(Number(config.delay_entre_mensagens) || 2, 1), 10) * 1000;
+            if (index < messages.length - 1) {
+                await new Promise((resolve) => setTimeout(resolve, delayMs));
+            }
+        }
+
+        return sent === messages.length
+            ? { success: true, sent, total: messages.length }
+            : { success: false, sent, total: messages.length, error: lastError || 'Uma ou mais mensagens não foram enviadas.' };
+    } catch (error: any) {
+        console.error('[testBotGreeting] Erro:', error);
+        return { success: false, sent: 0, total: 0, error: error.message || 'Erro ao testar a saudação.' };
     }
 }
 
