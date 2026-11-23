@@ -63,7 +63,7 @@ export async function calculatePublicOrderPricing(input: {
     pg.findOne(LOYALTY_CONFIG_TABLE, { where: { empresa_id: empresaId } }).catch(() => null),
     Number(input.pontosUsados || 0) > 0
       ? pg.findOne(LOYALTY_POINTS_TABLE, {
-          where: { cliente_telefone: String(input.telefone).replace(/\\D/g, ''), empresa_id: empresaId },
+          where: { cliente_telefone: String(input.telefone).replace(/\D/g, ''), empresa_id: empresaId },
         })
       : Promise.resolve(null),
   ]);
@@ -97,7 +97,7 @@ export async function calculatePublicOrderPricing(input: {
     const metadata = metadataByProduct.get(productId);
     let sizes: any = parseJson(metadata?.tamanhos);
     if (!sizes && String(product.descricao || '').includes('[[SIZES:')) {
-      const match = String(product.descricao).match(/\\[\\[SIZES:(.*)\\]\\]/);
+      const match = String(product.descricao).match(/\[\\\[SIZES:(.*)\]\\\]\/);
       if (match?.[1]) sizes = parseJson(match[1]);
     }
 
@@ -180,6 +180,10 @@ export async function calculatePublicOrderPricing(input: {
 
     price = roundMoney(price);
     if (!Number.isFinite(price) || price < 0) throw new Error('Preço inválido no cardápio.');
+    if ((!isComposite || (Array.isArray(item.sabores) && item.sabores.length > 0)) &&
+        Math.abs(asNumber(item.preco) - price) > 0.01) {
+      throw new Error(`O preço de "${productName}" mudou. Atualize o carrinho para continuar.`);
+    }
     subtotal += price * quantity;
     canonicalItems.push({
       id: productId,
