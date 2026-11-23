@@ -51,39 +51,33 @@ interface CreatePublicOrderData {
 
 export async function checkCustomerByPhone(empresaId: number, telefone: string) {
     try {
-        const cleanPhone = telefone.replace(/\D/g, '');
+        if (!Number.isInteger(Number(empresaId)) || Number(empresaId) <= 0 || typeof telefone !== 'string') {
+            return null;
+        }
 
-        const phoneVariations = [
+        const cleanPhone = telefone.replace(/\\D/g, '');
+        if (cleanPhone.length < 10 || cleanPhone.length > 15) {
+            return null;
+        }
+
+        const phoneVariations = [...new Set([
             cleanPhone,
             cleanPhone.slice(-11),
             cleanPhone.slice(-10),
-            '55' + cleanPhone,
-        ];
+            `55${cleanPhone}`,
+        ])];
 
-        for (const phone of phoneVariations) {
-            const data = await pg.query(
-                `SELECT * FROM clientes WHERE empresa_id = $1 AND telefone LIKE $2 LIMIT 1`,
-                [empresaId, `%${phone}%`]
-            );
+        const data = await pg.query(
+            `SELECT id, nome, endereco, bairro_entrega, cidade
+             FROM clientes
+             WHERE empresa_id = $1
+               AND regexp_replace(COALESCE(telefone, ''), '[^0-9]', '', 'g') = ANY($2::text[])
+             ORDER BY id DESC
+             LIMIT 1`,
+            [Number(empresaId), phoneVariations]
+        );
 
-            if (data.rows && data.rows.length > 0) {
-                return data.rows[0];
-            }
-        }
-
-        // Última tentativa: buscar todos e filtrar manualmente
-        const allClientsData = await pg.list('clientes', {
-            where: { empresa_id: empresaId },
-            limit: 1000,
-        });
-        const allClients = allClientsData.list || [];
-
-        const found = allClients.find((c: any) => {
-            const clientPhone = (c.telefone || '').replace(/\D/g, '');
-            return phoneVariations.some(p => clientPhone.includes(p) || p.includes(clientPhone));
-        });
-
-        return found || null;
+        return data.rows?.[0] || null;
     } catch (error) {
         console.error('Erro ao verificar cliente:', error);
         return null;
