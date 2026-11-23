@@ -3,7 +3,7 @@
 
 import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React from 'react';
-import { Settings as SettingsIcon, Store, Clock, MapPin, Bell, Shield, Save, ChevronRight, Plus, Trash2, Package, ShoppingBag, Info, Bot, Ticket, Award, Truck, Sparkles, Upload, QrCode, Wifi, WifiOff, RefreshCw, CheckCircle2, Smartphone, Zap } from 'lucide-react';
+import { Settings as SettingsIcon, Store, Clock, MapPin, Bell, Shield, Save, ChevronRight, Plus, Trash2, Package, ShoppingBag, Info, AlertCircle, Bot, Ticket, Award, Truck, Sparkles, Upload, QrCode, Wifi, WifiOff, RefreshCw, CheckCircle2, Smartphone, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import Image from 'next/image';
@@ -89,6 +89,7 @@ export default function SettingsPage() {
   
   // Estados da Conexao WhatsApp
   const [whatsappStatus, setWhatsappStatus] = React.useState<'checking' | 'connected' | 'disconnected' | 'connecting'>('checking');
+  const [whatsappWebhookStatus, setWhatsappWebhookStatus] = React.useState<'unknown' | 'checking' | 'ready' | 'error'>('unknown');
   const [qrCode, setQrCode] = React.useState<string | null>(null);
   const [instanceName, setInstanceName] = React.useState<string>('');
   const [loadingQr, setLoadingQr] = React.useState(false);
@@ -152,36 +153,65 @@ export default function SettingsPage() {
     const instName = company.instancia_evolution || `zapflow_${company.id}`;
     setInstanceName(instName);
     setWhatsappStatus('checking');
+    setWhatsappWebhookStatus('unknown');
     
     try {
       const statusResult = await getInstanceStatus(instName);
       
       if (statusResult.error) {
         setWhatsappStatus('disconnected');
+        setWhatsappWebhookStatus('unknown');
         return;
       }
       
       if (statusResult.state === 'open' || statusResult.state === 'connected') {
-        // Um estado "connected" não garante que a Evolution ainda esteja
-        // enviando eventos ao nosso endpoint. Reaplica o webhook ao abrir
-        // as configurações para recuperar instâncias conectadas sem MESSAGES_UPSERT.
+        // O estado da sessão e do webhook são verificados separadamente:
+        // WhatsApp conectado não garante que mensagens recebidas cheguem ao bot.
+        setWhatsappWebhookStatus('checking');
         const webhookResult = await configureInstanceWebhook(instName);
         if (webhookResult.error) {
           console.error('[WhatsApp] Instância conectada, mas o webhook não foi configurado:', instName, webhookResult.error);
-          toast.error('WhatsApp conectado, mas não foi possível ativar o webhook de mensagens. Tente atualizar a conexão.');
+          setWhatsappWebhookStatus('error');
+          toast.error('WhatsApp conectado, mas o webhook de mensagens não pôde ser verificado.');
         } else {
           console.log('[WhatsApp] Webhook MESSAGES_UPSERT configurado para', instName);
+          setWhatsappWebhookStatus('ready');
         }
 
         setWhatsappStatus('connected');
         setQrCode(null);
       } else {
         setWhatsappStatus('disconnected');
+        setWhatsappWebhookStatus('unknown');
       }
     } catch (error) {
       setWhatsappStatus('disconnected');
+      setWhatsappWebhookStatus('unknown');
     }
   }, [company]);
+
+  const handleRepairWhatsAppWebhook = async () => {
+    if (!instanceName) {
+      toast.error('Instância WhatsApp não identificada.');
+      return;
+    }
+
+    setWhatsappWebhookStatus('checking');
+    try {
+      const result = await configureInstanceWebhook(instanceName);
+      if (result.error) {
+        setWhatsappWebhookStatus('error');
+        toast.error('Não foi possível configurar o recebimento de mensagens. Tente novamente.');
+        return;
+      }
+
+      setWhatsappWebhookStatus('ready');
+      toast.success('Recebimento de mensagens configurado e verificado.');
+    } catch {
+      setWhatsappWebhookStatus('error');
+      toast.error('Falha ao verificar o webhook. Tente novamente.');
+    }
+  };
 
   // Funcao para gerar/reconectar WhatsApp
   const handleConnectWhatsApp = async () => {
@@ -192,6 +222,7 @@ export default function SettingsPage() {
     
     setLoadingQr(true);
     setWhatsappStatus('connecting');
+    setWhatsappWebhookStatus('checking');
     setQrCode(null);
     
     try {
@@ -216,6 +247,10 @@ export default function SettingsPage() {
       const webhookResult = await configureInstanceWebhook(instName);
       if (webhookResult.error) {
         console.error('[v0] Falha ao configurar webhook da instancia:', webhookResult.error);
+        setWhatsappWebhookStatus('error');
+        toast.error('O WhatsApp pode conectar, mas o recebimento de mensagens não está pronto. Corrija o webhook depois de conectar.');
+      } else {
+        setWhatsappWebhookStatus('ready');
       }
       
       // Persiste a instancia no banco (mesmo se ja estiver conectada), para que o
@@ -1433,11 +1468,44 @@ export default function SettingsPage() {
                     )}
 
                     {whatsappStatus === 'connected' && !qrCode && (
-                      <div className="flex items-center gap-3 p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
-                        <CheckCircle2 className="size-5 text-green-600" />
-                        <p className="text-sm text-green-700 dark:text-green-300">
-                          Seu WhatsApp esta conectado e pronto para enviar mensagens!
-                        </p>
+                      <div className={cn(
+                        "flex items-start gap-3 p-3 rounded-xl",
+                        whatsappWebhookStatus === 'error'
+                          ? "bg-amber-100 dark:bg-amber-900/30"
+                          : "bg-green-100 dark:bg-green-900/30"
+                      )}>
+                        {whatsappWebhookStatus === 'error' ? (
+                          <AlertCircle className="size-5 text-amber-600 shrink-0" />
+                        ) : whatsappWebhookStatus === 'checking' ? (
+                          <MorphingInfinity className="size-5 text-amber-600 shrink-0" />
+                        ) : (
+                          <CheckCircle2 className="size-5 text-green-600 shrink-0" />
+                        )}
+                        <div className="flex-1 space-y-2">
+                          <p className={cn(
+                            "text-sm",
+                            whatsappWebhookStatus === 'error'
+                              ? "text-amber-800 dark:text-amber-300"
+                              : "text-green-700 dark:text-green-300"
+                          )}>
+                            {whatsappWebhookStatus === 'ready'
+                              ? 'WhatsApp conectado; webhook de mensagens configurado e verificado.'
+                              : whatsappWebhookStatus === 'checking'
+                                ? 'WhatsApp conectado; verificando o recebimento de mensagens...'
+                                : whatsappWebhookStatus === 'error'
+                                  ? 'WhatsApp conectado, mas o recebimento de mensagens não está pronto. A saudação automática pode não funcionar.'
+                                  : 'WhatsApp conectado; status do recebimento de mensagens ainda não verificado.'}
+                          </p>
+                          {whatsappWebhookStatus === 'error' && (
+                            <button
+                              type="button"
+                              onClick={handleRepairWhatsAppWebhook}
+                              className="text-xs font-bold text-amber-800 dark:text-amber-300 hover:underline"
+                            >
+                              Reconfigurar recebimento de mensagens
+                            </button>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
