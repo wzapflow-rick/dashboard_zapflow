@@ -49,6 +49,7 @@ export default function SettingsPage() {
   const initialSection = searchParams?.get('section') || 'general';
   const [activeSection, setActiveSection] = React.useState(initialSection);
   const [autoRadius, setAutoRadius] = React.useState(false);
+  const [raioMaximoKm, setRaioMaximoKm] = React.useState<number>(10);
   const [valorPorKm, setValorPorKm] = React.useState<number>(0);
   const [taxaEntregaFixa, setTaxaEntregaFixa] = React.useState<number>(0);
   const [deliveryEnabled, setDeliveryEnabled] = React.useState(true);
@@ -123,6 +124,7 @@ export default function SettingsPage() {
           setPackagingFeeEnabled(!!compData.cobra_embalagem);
           setValorEmbalagem(Number(compData.valor_embalagem || 0));
           setAutoRadius(!!compData.raio_entrega_automatico);
+          setRaioMaximoKm(Number(compData.raio_maximo_km ?? 10));
           setValorPorKm(Number(compData.valor_por_km || 0));
           setTaxaEntregaFixa(Number(compData.taxa_entrega_fixa || 0));
           setDeliveryEnabled(compData.aceita_delivery !== false);
@@ -388,11 +390,16 @@ export default function SettingsPage() {
           throw new Error('Para salvar o cálculo automático, informe coordenadas válidas da loja. A busca automática exige faturamento e Geocoding API habilitados no Google Cloud.');
         }
 
+        if (autoRadius && (!Number.isFinite(raioMaximoKm) || raioMaximoKm < 0 || raioMaximoKm > 500)) {
+          throw new Error('Informe um raio máximo entre 0 e 500 km.');
+        }
+
         // Salva primeiro as coordenadas e as configurações do cálculo. Isso
         // mantém a localização salva mesmo que a tabela de taxas por bairro
         // esteja indisponível ou a conta do banco não permita gravar nela.
         const locationUpdate: Record<string, unknown> = {
           raio_entrega_automatico: autoRadius,
+          raio_maximo_km: raioMaximoKm,
           valor_por_km: valorPorKm,
           taxa_entrega_fixa: taxaEntregaFixa,
         };
@@ -970,10 +977,13 @@ export default function SettingsPage() {
                                 type="number"
                                 step="0.1"
                                 min="0"
-                                defaultValue={company?.raio_maximo_km || 10}
+                                max="500"
+                                value={raioMaximoKm}
+                                onChange={(event) => setRaioMaximoKm(Number(event.target.value))}
                                 className="w-full px-4 py-2 bg-white dark:bg-zinc-700 border border-slate-200 dark:border-zinc-600 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all dark:text-white"
                                 placeholder="Ex: 10"
                               />
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400">Use 0 para não limitar o raio de entrega.</p>
                             </div>
                             <form id="delivery-form" className="sm:col-span-2 space-y-4">
                               <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
