@@ -12,7 +12,7 @@ import { encrypt } from '@/lib/session';
 import { cookies } from 'next/headers';
 import { v4 as uuidv4 } from 'uuid';
 import { setupEvolutionInstance } from '@/lib/evolution';
-import { notifyNewCompany, notifyError } from '@/lib/discord';
+import { createTrialAccount as createCanonicalTrialAccount } from '@/app/actions/signup-trial';
 import { registrarLeadDoCadastro } from '@/lib/funil-leads';
 
 // Helper para hash de senha
@@ -42,6 +42,7 @@ interface PendingSignup {
   plano: string;
   mp_payment_id?: string;
   mp_subscription_id?: string;
+  paymentConfirmed?: boolean;
   status: 'pending' | 'completed' | 'expired';
   criado_em: string;
   expira_em: string;
@@ -130,6 +131,33 @@ export async function createCheckoutSession(data: CheckoutData) {
     
     const mpData = await response.json();
     console.log('[v0] MP Data success:', JSON.stringify(mpData));
+
+    // Salva o vínculo antes de devolver o checkout. A página de ativação
+    // consulta o estado real desta assinatura na API do Mercado Pago.
+    const pendingSignup = await createPendingSignup({
+      token,
+      email,
+      nome,
+      telefone,
+      plano,
+      mp_subscription_id: String(mpData.id),
+    });
+
+    if (!pendingSignup) {
+      try {
+        await fetch(`https://api.mercadopago.com/preapproval/${mpData.id}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${MP_ACCESS_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ status: 'canceled' }),
+        });
+      } catch (cancelError) {
+        console.error('[Signup] Não foi possível cancelar assinatura sem cadastro pendente:', cancelError);
+      }
+      return { success: false, error: 'Não foi possível preparar sua ativação. Tente novamente.' };
+    }
     
     return {
       success: true,
@@ -254,183 +282,25 @@ export async function createPixCheckoutSession(data: CheckoutData) {
 }
 
 // ============================================================
-// CRIAR CONTA TRIAL (PARCERIA - 7 dias gratis)
+// COMPATIBILIDADE COM CHAMADAS LEGADAS DO CADASTRO TRIAL
 // ============================================================
 
+/**
+ * Mantém a assinatura antiga (campo "senha") e encaminha para a ação oficial
+ * usada pelo cadastro atual, evitando duas implementações divergentes.
+ */
 export async function createTrialAccount(data: {
   email: string;
   nome: string;
   telefone: string;
   senha: string;
 }) {
-  console.log('[v0] createTrialAccount iniciado:', data.email);
-  
-  try {
-    const { email, nome, telefone, senha } = data;
-    
-    if (!email || !nome || !telefone || !senha) {
-      return { success: false, error: 'Todos os campos sao obrigatorios' };
-    }
-    
-    if (senha.length < 6) {
-      return { success: false, error: 'Senha deve ter no minimo 6 caracteres' };
-    }
-    
-    const existingCompany = await pg.list('empresas', {
-      where: { email },
-      limit: 1,
-    });
-    
-    if (existingCompany?.list?.length > 0) {
-      return { success: false, error: 'Este email ja esta cadastrado. Faca login.' };
-    }
-    
-    const hashedPassword = hashPassword(senha);
-    
-    const cleanPhone = telefone.replace(/\D/g, '');
-    
-    const empresa = await pg.create('empresas', {
-      email: email,
-      senha_hash: hashedPassword,
-      login: email,
-      nome_admin: nome,
-      nome_fantasia: nome,
-      telefone_loja: cleanPhone,
-      nincho: 'Outros',
-      instancia_evolution: '',
-      planos: 'start',
-      ativo: true,
-    }) as any;
-    
-    if (!empresa?.id) {
-      return { success: false, error: 'Erro ao criar conta' };
-    }
-    
-    const empresaId = empresa.id;
-    
-    try {
-      const hoje = new Date();
-      const fimTrial = new Date(hoje);
-      fimTrial.setDate(fimTrial.getDate() + 7);
-      
-      const proximaCobranca = new Date(fimTrial);
-      
-      await db.query(`
-        INSERT INTO assinaturas (
-          empresa_id, plano, status, valor, 
-          mp_subscription_id, mp_preapproval_plan_id,
-          data_inicio, data_proxima_cobranca,
-          trial_end_date,
-          cartao_ultimos_digitos, cartao_bandeira,
-          created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
-      `, [
-        empresaId,
-        'start',
-        'trialing',
-        29.90,
-        'trial_' + Date.now(),
-        'start',
-        hoje.toISOString(),
-        proximaCobranca.toISOString(),
-        fimTrial.toISOString(),
-        'TRIAL',
-        'TRIAL'
-      ]);
-      
-      console.log('[v0] Assinatura trial criada com sucesso');
-    } catch (subError) {
-      console.error('[v0] Erro ao criar assinatura trial:', subError);
-    }
-    
-    // Criar instancia Evolution automaticamente
-    try {
-      console.log('[Signup] Criando instancia Evolution para empresa:', empresaId);
-      const evolutionResult = await setupEvolutionInstance(empresaId);
-      
-      if (evolutionResult.error) {
-        console.error('[Signup] Erro ao criar instancia Evolution:', evolutionResult.error);
-      } else {
-        // Atualizar empresa com o nome da instancia
-        await pg.update('empresas', empresaId, {
-          instancia_evolution: evolutionResult.instanceName
-        });
-        console.log('[Signup] Instancia Evolution criada:', evolutionResult.instanceName, 
-          'webhook:', evolutionResult.webhookConfigured ? 'configurado' : 'pendente');
-      }
-    } catch (evoError) {
-      console.error('[Signup] Erro ao configurar Evolution:', evoError);
-      // Nao bloqueia o cadastro se falhar
-    }
-    
-    const session = await encrypt({
-      userId: empresaId,
-      email: email,
-      empresaId,
-      nome: nome,
-      onboarded: false,
-      controle_estoque: false,
-      role: 'admin',
-      source: 'empresa',
-      bloqueado: false,
-    });
-    
-    const cookieStore = await cookies();
-    const isProduction = process.env.NODE_ENV === 'production';
-    cookieStore.set('session', session, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24,
-      path: '/',
-    });
-    
-    try {
-      const { sendWelcomeMessage } = await import('@/lib/whatsapp');
-      await sendWelcomeMessage(cleanPhone, nome, email, 'start', senha);
-    } catch (waError) {
-      console.error('[Signup] Erro ao enviar WhatsApp:', waError);
-    }
-    
-    console.log('[v0] Conta trial criada com sucesso:', empresaId);
-    
-    // Notificar no Discord
-    console.log('[v0] Tentando notificar Discord sobre nova empresa...');
-    try {
-      await notifyNewCompany({
-        empresaId,
-        nomeFantasia: nome,
-        email,
-        telefone: cleanPhone,
-        plano: 'Trial - Start',
-      });
-      console.log('[v0] Notificacao Discord enviada');
-    } catch (discordError) {
-      console.error('[Signup] Erro ao notificar Discord:', discordError);
-    }
-    
-    return {
-      success: true,
-      empresaId,
-      email,
-      nome,
-      plano: 'start',
-      trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    };
-    
-  } catch (error: any) {
-    console.error('[Signup] Erro ao criar conta trial:', error);
-    
-    // Notificar erro no Discord
-    await notifyError({
-      titulo: 'Erro ao Criar Conta Trial',
-      erro: error.message || String(error),
-      local: 'createTrialAccount',
-      detalhes: `Email: ${data.email}`,
-    });
-    
-    return { success: false, error: 'Erro interno ao criar conta' };
-  }
+  return createCanonicalTrialAccount({
+    email: data.email,
+    nome: data.nome,
+    telefone: data.telefone,
+    password: data.senha,
+  });
 }
 
 // ============================================================
@@ -480,33 +350,71 @@ export async function getPendingSignup(token: string): Promise<PendingSignup | n
     if (!token) {
       return null;
     }
-    
+
     const result = await pg.list('pending_signups', {
       where: { token },
       limit: 1,
     });
-    
-    const signup = result?.list?.[0];
-    
+
+    const signup = result?.list?.[0] as PendingSignup | undefined;
+
     if (!signup) {
       return null;
     }
-    
+
     const expiraEm = new Date(signup.expira_em as string);
     const signupId = signup.id as number;
-    
+
     if (expiraEm < new Date()) {
-      await pg.update('pending_signups', signupId, {
-        status: 'expired',
-      });
+      await pg.update('pending_signups', signupId, { status: 'expired' });
       return null;
     }
-    
+
     if (signup.status === 'completed') {
       return null;
     }
-    
-    return signup as unknown as PendingSignup;
+
+    // PIX só cria esse registro depois do pagamento aprovado. Links internos
+    // do painel também não têm assinatura MP; nesses casos a regra existente vale.
+    // Para checkout por cartão, confirmamos pelo recurso oficial antes de liberar
+    // a criação da conta.
+    if (!signup.mp_subscription_id) {
+      return { ...signup, paymentConfirmed: true };
+    }
+
+    let paymentConfirmed = false;
+    try {
+      const response = await fetch(
+        `https://api.mercadopago.com/preapproval/${encodeURIComponent(signup.mp_subscription_id)}`,
+        {
+          headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
+          cache: 'no-store',
+        }
+      );
+
+      if (response.ok) {
+        const subscription = await response.json();
+        let reference: Record<string, unknown> | null = null;
+        try {
+          reference = JSON.parse(String(subscription.external_reference || ''));
+        } catch {
+          reference = null;
+        }
+
+        paymentConfirmed =
+          subscription.status === 'authorized' &&
+          reference?.token === token &&
+          String(reference?.email || '').toLowerCase() === signup.email.toLowerCase() &&
+          reference?.plano === signup.plano;
+      } else {
+        console.warn('[Signup] Mercado Pago ainda não confirmou a assinatura:', response.status);
+      }
+    } catch (paymentError) {
+      // Falha temporária da API não invalida o link; a pessoa pode verificar de novo.
+      console.error('[Signup] Erro ao verificar assinatura do Mercado Pago:', paymentError);
+    }
+
+    return { ...signup, paymentConfirmed };
   } catch (error) {
     console.error('[Signup] Erro ao buscar pending signup:', error);
     return null;
@@ -523,6 +431,13 @@ export async function completeSignup(token: string, password: string) {
     
     if (!signup) {
       return { success: false, error: 'Link invalido ou expirado' };
+    }
+
+    if (signup.mp_subscription_id && !signup.paymentConfirmed) {
+      return {
+        success: false,
+        error: 'Pagamento ainda não confirmado. Aguarde alguns instantes e verifique novamente.',
+      };
     }
     
     if (!password || password.length < 6) {
