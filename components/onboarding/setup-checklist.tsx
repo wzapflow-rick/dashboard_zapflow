@@ -58,16 +58,16 @@ export function SetupChecklist({ initialStatus }: SetupChecklistProps) {
   const handleStepClick = (step: string) => {
     switch (step) {
       case 'company':
-        router.push('/dashboard/settings?tab=loja');
+        router.push('/dashboard/settings?section=general');
         break;
       case 'products':
         router.push('/dashboard/menu');
         break;
       case 'mercadopago':
-        router.push('/dashboard/settings?tab=pagamentos');
+        router.push('/dashboard/settings?section=payments');
         break;
       case 'whatsapp':
-        router.push('/dashboard/settings?tab=whatsapp');
+        router.push('/dashboard/settings?section=bot');
         break;
     }
   };
