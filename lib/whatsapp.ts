@@ -296,15 +296,13 @@ export async function sendOrderStatusMessage(
  * Enviar mensagem via Evolution API usando instancia especifica da empresa
  * Cada empresa tem sua propria instancia: zapflow_{empresaId}
  */
-export async function sendWhatsAppMessageWithInstance(
-    phone: string, 
-    message: string, 
-    empresaId: number | string
+export async function sendWhatsAppMessageFromInstance(
+    phone: string,
+    message: string,
+    instanceName: string,
 ): Promise<{ success: boolean; error?: string }> {
     try {
         const formattedPhone = formatPhoneForEvolution(phone);
-        const instanceName = `zapflow_${empresaId}`;
-
         const send = await evoSendText(instanceName, formattedPhone, message);
 
         if (!send.ok) {
@@ -318,6 +316,14 @@ export async function sendWhatsAppMessageWithInstance(
         console.error('[WhatsApp] Erro ao enviar:', error);
         return { success: false, error: error.message || 'Erro desconhecido' };
     }
+}
+
+export async function sendWhatsAppMessageWithInstance(
+    phone: string, 
+    message: string, 
+    empresaId: number | string
+): Promise<{ success: boolean; error?: string }> {
+    return sendWhatsAppMessageFromInstance(phone, message, `zapflow_${empresaId}`);
 }
 
 /**
