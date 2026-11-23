@@ -158,6 +158,17 @@ export default function SettingsPage() {
       }
       
       if (statusResult.state === 'open' || statusResult.state === 'connected') {
+        // Um estado "connected" não garante que a Evolution ainda esteja
+        // enviando eventos ao nosso endpoint. Reaplica o webhook ao abrir
+        // as configurações para recuperar instâncias conectadas sem MESSAGES_UPSERT.
+        const webhookResult = await configureInstanceWebhook(instName);
+        if (webhookResult.error) {
+          console.error('[WhatsApp] Instância conectada, mas o webhook não foi configurado:', instName, webhookResult.error);
+          toast.error('WhatsApp conectado, mas não foi possível ativar o webhook de mensagens. Tente atualizar a conexão.');
+        } else {
+          console.log('[WhatsApp] Webhook MESSAGES_UPSERT configurado para', instName);
+        }
+
         setWhatsappStatus('connected');
         setQrCode(null);
       } else {
