@@ -300,6 +300,7 @@ export async function calculatePublicDeliveryFee(input: {
     } catch (error: any) {
       if (error?.message === 'Este bairro não está na área de entrega da loja.') throw error;
       console.error('[PublicOrder] Não foi possível ler as taxas por bairro; usando taxa fixa:', error);
+      return { taxa: fixedFee, fallback: true };
     }
     return { taxa: fixedFee, fallback: false };
   }
