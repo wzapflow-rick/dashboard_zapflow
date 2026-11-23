@@ -309,7 +309,12 @@ export async function createPayment(input: CreatePaymentInput): Promise<CreatePa
             paymentPayload.installments = 1;
         }
 
-        const idempotencyKey = `${pedidoId}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        // Mantenha a mesma chave ao repetir a tentativa enquanto o ID ainda não foi salvo.
+        // Assim, se o MP criar a cobrança e a gravação no banco falhar, repetir a
+        // chamada recupera o pagamento original em vez de criar outra cobrança.
+        // Um pagamento anterior encerrado diferencia a próxima tentativa.
+        const previousPaymentId = pedido.payment_id || 'initial';
+        const idempotencyKey = `zapflow-${pedidoId}-${paymentMethodId}-${previousPaymentId}`;
 
         const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
             method: 'POST',
