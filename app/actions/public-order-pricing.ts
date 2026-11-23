@@ -97,7 +97,7 @@ export async function calculatePublicOrderPricing(input: {
     const metadata = metadataByProduct.get(productId);
     let sizes: any = parseJson(metadata?.tamanhos);
     if (!sizes && String(product.descricao || '').includes('[[SIZES:')) {
-      const match = String(product.descricao).match(/\[\\\[SIZES:(.*)\]\\\]\/);
+      const match = String(product.descricao).match(/\[\[SIZES:(.*)\]\]/);
       if (match?.[1]) sizes = parseJson(match[1]);
     }
 
@@ -153,7 +153,9 @@ export async function calculatePublicOrderPricing(input: {
       if (!selectedOptions.length) continue;
 
       const prices = selectedOptions.map((o: any) => asNumber(o.preco));
-      if (group.tipo_calculo === 'fixo') {
+      if (isComposite) {
+        price += prices.reduce((sum: number, value: number) => sum + value, 0);
+      } else if (group.tipo_calculo === 'fixo') {
         price += asNumber(group.preco_fixo);
       } else if (group.cobrar_mais_caro || group.tipo_calculo === 'maior_valor') {
         price = Math.max(price, ...prices);
