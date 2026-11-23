@@ -42,7 +42,7 @@ const recentContactsCache = new Map<string, number>();
 const processingLock = new Map<string, boolean>();
 
 // Tempo minimo entre saudacoes para o mesmo contato (em horas)
-const COOLDOWN_HOURS = 6;
+const COOLDOWN_HOURS = 1;
 
 /**
  * Formatar numero de telefone para Evolution API
