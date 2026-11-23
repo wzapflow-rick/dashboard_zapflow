@@ -112,8 +112,9 @@ export async function getOnboardingStatus(): Promise<OnboardingStatus | null> {
       }
     }
 
-    // Calcular progresso
-    const steps = [hasCompanyData, hasProducts, hasMercadoPago, hasWhatsApp];
+    // WhatsApp continua opcional no checklist, como no onboarding.
+    // O progresso principal cobre apenas o essencial para publicar a loja.
+    const steps = [hasCompanyData, hasProducts, hasMercadoPago];
     const completedSteps = steps.filter(Boolean).length;
     const totalSteps = steps.length;
 
