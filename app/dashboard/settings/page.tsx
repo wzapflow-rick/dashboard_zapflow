@@ -1490,8 +1490,7 @@ export default function SettingsPage() {
                             <button
                               type="button"
                               onClick={handleRepairWhatsAppWebhook}
-                              disabled={whatsappWebhookStatus === 'checking'}
-                              className="text-xs font-bold text-amber-800 dark:text-amber-300 hover:underline disabled:opacity-50"
+                              className="text-xs font-bold text-amber-800 dark:text-amber-300 hover:underline"
                             >
                               Reconfigurar recebimento de mensagens
                             </button>
