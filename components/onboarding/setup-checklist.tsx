@@ -80,7 +80,7 @@ export function SetupChecklist({ initialStatus }: SetupChecklistProps) {
     {
       id: 'company',
       label: 'Dados da loja',
-      description: 'Nome, endereco e telefone',
+      description: 'Nome e telefone da loja',
       completed: status.hasCompanyData,
       icon: Store,
     },
