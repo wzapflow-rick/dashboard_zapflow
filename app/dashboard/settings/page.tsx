@@ -1764,7 +1764,7 @@ export default function SettingsPage() {
                         type="button"
                         onClick={async () => {
                           if (isTestingBotGreeting) return;
-                          if (botTestPhone.replace(/\\D/g, '').length < 10) {
+                          if (botTestPhone.replace(/\D/g, '').length < 10) {
                             toast.error('Informe um número válido com DDD.');
                             return;
                           }
