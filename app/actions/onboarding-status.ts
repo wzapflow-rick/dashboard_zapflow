@@ -6,6 +6,7 @@ import { getMe } from '@/lib/session-server';
 export interface OnboardingStatus {
   hasCompanyData: boolean;
   hasProducts: boolean;
+  hasHours: boolean;
   hasMercadoPago: boolean;
   hasWhatsApp: boolean;
   whatsAppStatus: 'connected' | 'disconnected' | 'not_configured';
@@ -48,7 +49,7 @@ export async function getOnboardingStatus(): Promise<OnboardingStatus | null> {
     );
 
     // Produtos e config de pagamento são independentes: rodam em paralelo.
-    const [produtosResult, mpResult] = await Promise.all([
+    const [produtosResult, mpResult, horariosResult] = await Promise.all([
       pg.query(
         'SELECT COUNT(*) as count FROM produtos WHERE empresa_id = $1 AND disponivel = true',
         [empresaId]
@@ -57,10 +58,16 @@ export async function getOnboardingStatus(): Promise<OnboardingStatus | null> {
         'SELECT mp_access_token FROM pagamentos_config WHERE empresa_id = $1',
         [empresaId]
       ) as Promise<any>,
+      pg.query(
+        'SELECT COUNT(*) as count FROM horarios WHERE empresa_id = $1',
+        [empresaId]
+      ) as Promise<any>,
     ]);
 
     const produtosCount = parseInt(produtosResult?.rows?.[0]?.count || produtosResult?.[0]?.count || '0');
     const hasProducts = produtosCount > 0;
+    const horariosCount = parseInt(horariosResult?.rows?.[0]?.count || horariosResult?.[0]?.count || '0');
+    const hasHours = horariosCount > 0;
 
     const mpConfig = mpResult?.rows?.[0] || mpResult?.[0];
     // Se o pagamento integrado estiver desativado, a etapa do Mercado Pago e
@@ -114,13 +121,14 @@ export async function getOnboardingStatus(): Promise<OnboardingStatus | null> {
 
     // WhatsApp continua opcional no checklist, como no onboarding.
     // O progresso principal cobre apenas o essencial para publicar a loja.
-    const steps = [hasCompanyData, hasProducts, hasMercadoPago];
+    const steps = [hasCompanyData, hasProducts, hasHours, hasMercadoPago];
     const completedSteps = steps.filter(Boolean).length;
     const totalSteps = steps.length;
 
     return {
       hasCompanyData,
       hasProducts,
+      hasHours,
       hasMercadoPago,
       hasWhatsApp,
       whatsAppStatus,
