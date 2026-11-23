@@ -438,8 +438,8 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
         setStep('success');
         clearCart();
       }
-    } catch (error) {
-      toast.error('Erro ao finalizar pedido');
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao finalizar pedido');
     } finally {
       setLoading(false);
     }
