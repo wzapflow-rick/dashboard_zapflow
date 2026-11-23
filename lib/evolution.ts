@@ -167,16 +167,16 @@ export async function configureInstanceWebhook(instanceName: string) {
     
     console.log('[Evolution] Configurando webhook para', instanceName, '-> URL:', webhookUrl);
     
+    const expectedEvents = ['MESSAGES_UPSERT', 'CONNECTION_UPDATE'];
     const result = await evoFetch(`/webhook/set/${instanceName}`, 'POST', {
         webhook: {
             enabled: true,
             url: webhookUrl,
-            webhookByEvents: false,
-            webhookBase64: false,
-            events: [
-                'MESSAGES_UPSERT',
-                'CONNECTION_UPDATE'
-            ]
+            // A Evolution espera byEvents e base64 neste endpoint.
+            // webhookByEvents e webhookBase64 são nomes da resposta/DB.
+            byEvents: false,
+            base64: false,
+            events: expectedEvents,
         }
     });
     
@@ -184,8 +184,38 @@ export async function configureInstanceWebhook(instanceName: string) {
         console.error('[Evolution] Erro ao configurar webhook:', result.error);
         return { error: result.error };
     }
+
+    // HTTP 201 confirma que a configuração foi aceita; lê de volta para
+    // detectar URL/eventos divergentes antes de mostrar a instância como pronta.
+    const verification = await evoFetch(`/webhook/find/${instanceName}`);
+    if (verification.error) {
+        console.error('[Evolution] Webhook foi salvo, mas não pôde ser verificado:', verification.error);
+        return { error: `Webhook salvo, mas a verificação falhou: ${verification.error}` };
+    }
+
+    const configured = verification.data?.webhook ?? verification.data;
+    const actualEvents = Array.isArray(configured?.events) ? configured.events : [];
+    const actualByEvents = configured?.webhookByEvents ?? configured?.byEvents;
+    const expectedUrl = webhookUrl.replace(/\/+$/, '');
+    const actualUrl = typeof configured?.url === 'string' ? configured.url.replace(/\/+$/, '') : '';
+    const valid =
+        configured?.enabled === true &&
+        actualUrl === expectedUrl &&
+        expectedEvents.every((event) => actualEvents.includes(event)) &&
+        actualByEvents !== true;
+
+    if (!valid) {
+        const details = {
+            enabled: configured?.enabled,
+            url: actualUrl || null,
+            events: actualEvents,
+            byEvents: actualByEvents ?? null,
+        };
+        console.error('[Evolution] Configuração do webhook diverge do esperado:', instanceName, details);
+        return { error: 'A Evolution aceitou a configuração, mas a leitura confirmou URL ou eventos incorretos.' };
+    }
     
-    console.log('[Evolution] Webhook configurado com sucesso');
+    console.log('[Evolution] Webhook verificado para', instanceName, { url: actualUrl, events: actualEvents });
     return { success: true };
 }
 
