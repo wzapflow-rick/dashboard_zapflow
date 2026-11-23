@@ -983,6 +983,7 @@ export default function SettingsPage() {
                                 className="w-full px-4 py-2 bg-white dark:bg-zinc-700 border border-slate-200 dark:border-zinc-600 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all dark:text-white"
                                 placeholder="Ex: 10"
                               />
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400">Use 0 para não limitar o raio de entrega.</p>
                             </div>
                             <form id="delivery-form" className="sm:col-span-2 space-y-4">
                               <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
