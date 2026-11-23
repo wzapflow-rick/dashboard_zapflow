@@ -55,7 +55,7 @@ export async function checkCustomerByPhone(empresaId: number, telefone: string) 
             return null;
         }
 
-        const cleanPhone = telefone.replace(/\\D/g, '');
+        const cleanPhone = telefone.replace(/\D/g, '');
         if (cleanPhone.length < 10 || cleanPhone.length > 15) {
             return null;
         }
