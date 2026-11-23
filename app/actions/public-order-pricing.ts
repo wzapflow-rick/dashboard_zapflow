@@ -92,7 +92,7 @@ export async function calculatePublicOrderPricing(input: {
 
     const isComposite = product.tipo === 'composto';
     const allowedGroupIds = new Set(
-      linkedGroups.get(productId) || parseIds(product.complementos_ids)
+      linkedGroups.get(productId) || parseIds(isComposite ? (product.completamentos_ids ?? product.complementos_ids) : product.complementos_ids)
     );
     const metadata = metadataByProduct.get(productId);
     let sizes: any = parseJson(metadata?.tamanhos);
