@@ -19,6 +19,12 @@ const MONITORED_CRONS = [
         description: 'Cobra clientes PIX em atraso e bloqueia após 5 dias de inadimplência.',
         path: '/api/cron/check-payments',
     },
+    {
+        jobName: 'evolution-watchdog',
+        label: 'Watchdog do WhatsApp (Evolution)',
+        description: 'Reinicia sozinho instâncias desconectadas ou travadas (sem receber mensagens) e reaplica o webhook.',
+        path: '/api/cron/evolution-watchdog',
+    },
 ] as const;
 
 export interface CronStatus {

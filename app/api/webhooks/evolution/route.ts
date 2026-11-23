@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { touchInstanceEvent } from '@/lib/evolution-health';
 import { pg } from '@/lib/postgres';
 import { notifyWhatsAppConnected, notifyWhatsAppDisconnected, notifyError } from '@/lib/discord';
 import { getStatusLoja, type Horario } from '@/lib/horarios';
@@ -567,6 +568,7 @@ export async function POST(req: NextRequest) {
     console.log('[BOT] Event:', body.event);
     
     const instanceName = body.instance;
+    await touchInstanceEvent(instanceName);
     
     // Tratar evento de conexao/desconexao
     if (body.event === 'connection.update') {

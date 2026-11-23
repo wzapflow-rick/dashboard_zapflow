@@ -56,9 +56,11 @@ END_MARK="# <<< zapflow-crons <<<"
 # Linhas de cron:
 #   09:00 -> verifica pagamentos vencidos e bloqueia inadimplentes
 #   09:05 -> envia lembretes de renovacao/cobranca por WhatsApp
+#   a cada 10 min -> watchdog das instancias Evolution (reinicia sessoes travadas)
 CRON_LINES="$BEGIN_MARK
 0 9 * * * curl -s -X POST -H \"x-cron-key: $CRON_SECRET\" $APP_URL/api/cron/check-payments >/dev/null 2>&1
 5 9 * * * curl -s -X POST -H \"x-cron-key: $CRON_SECRET\" $APP_URL/api/cron/billing-reminder >/dev/null 2>&1
+*/10 * * * * curl -s -m 290 -X POST -H \"x-cron-key: $CRON_SECRET\" $APP_URL/api/cron/evolution-watchdog >/dev/null 2>&1
 $END_MARK"
 
 # Remove qualquer bloco anterior e injeta o novo.

@@ -158,6 +158,32 @@ export async function getInstanceStatus(instanceName: string) {
 }
 
 /**
+ * Reinicia a sessao de uma instancia sem apagar as credenciais salvas, entao o
+ * WhatsApp reconecta sozinho, sem novo QR Code. Resolve a sessao "zumbi" em que
+ * a Evolution mostra "open" mas parou de receber mensagens.
+ * A v2 usa POST; versoes antigas usam PUT, por isso o fallback.
+ */
+export async function restartEvolutionInstance(instanceName: string) {
+    let result = await evoFetch(`/instance/restart/${instanceName}`, 'POST', undefined, 30000);
+    if (result.error) {
+        result = await evoFetch(`/instance/restart/${instanceName}`, 'PUT', undefined, 30000);
+    }
+    if (result.error) return { error: result.error };
+    return { success: true };
+}
+
+/**
+ * Pede para a instancia reconectar usando a sessao salva. Se as credenciais
+ * ainda forem validas, conecta sem QR; caso contrario a Evolution devolve um QR.
+ */
+export async function reconnectEvolutionInstance(instanceName: string) {
+    const result = await evoFetch(`/instance/connect/${instanceName}`, 'GET', undefined, 30000);
+    if (result.error) return { error: result.error, needsQr: false };
+    const needsQr = Boolean(result.data?.base64 || result.data?.qrcode?.base64 || result.data?.code);
+    return { success: true, needsQr };
+}
+
+/**
  * Configura o webhook de uma instância para receber mensagens.
  */
 export async function configureInstanceWebhook(instanceName: string) {
