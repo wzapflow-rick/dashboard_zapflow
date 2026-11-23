@@ -13,12 +13,14 @@ interface PedidoData {
     telefone_cliente: string;
     itens: string;
     empresa_id: number;
+    payment_id?: string | null;
 }
 
 interface MPPaymentResponse {
     id: number;
     status: string;
     status_detail: string;
+    payment_method_id?: string;
     transaction_details?: {
         total_paid_amount: number;
     };
@@ -210,6 +212,57 @@ export async function createPayment(input: CreatePaymentInput): Promise<CreatePa
         // Busca credenciais dinâmicas da empresa
         const { accessToken } = await getCompanyMPCredentials(pedido.empresa_id);
 
+        // Se uma tentativa anterior chegou ao Mercado Pago, consulte-a antes
+        // de criar outra cobrança para o mesmo pedido.
+        if (pedido.payment_id) {
+            let existingPayment: MPPaymentResponse;
+            try {
+                const existingResponse = await fetch(
+                    `https://api.mercadopago.com/v1/payments/${encodeURIComponent(pedido.payment_id)}`,
+                    { headers: { Authorization: `Bearer ${accessToken}` } }
+                );
+                if (!existingResponse.ok) {
+                    return {
+                        success: false,
+                        error: 'Já existe uma tentativa de pagamento para este pedido, mas não foi possível confirmar o resultado. Aguarde alguns instantes antes de tentar novamente.'
+                    };
+                }
+                existingPayment = await existingResponse.json() as MPPaymentResponse;
+            } catch (error) {
+                console.error('[MercadoPago] Falha ao consultar pagamento existente:', error);
+                return {
+                    success: false,
+                    error: 'Não foi possível confirmar a tentativa de pagamento anterior. Aguarde alguns instantes antes de tentar novamente.'
+                };
+            }
+
+            if (existingPayment.status === 'rejected' || existingPayment.status === 'cancelled') {
+                // Tentativa encerrada sem aprovação: permite uma nova cobrança.
+            } else if (['approved', 'pending', 'in_process', 'authorized', 'in_mediation'].includes(existingPayment.status)) {
+                if (existingPayment.payment_method_id && existingPayment.payment_method_id !== paymentMethodId) {
+                    return {
+                        success: false,
+                        error: 'Já existe um pagamento aguardando confirmação nesta forma de pagamento. Aguarde a resposta antes de escolher outra.'
+                    };
+                }
+
+                return {
+                    success: true,
+                    paymentId: existingPayment.id,
+                    status: existingPayment.status,
+                    statusDetail: existingPayment.status_detail,
+                    qrCode: existingPayment.point_of_interaction?.transaction_data?.qr_code,
+                    qrCodeBase64: existingPayment.point_of_interaction?.transaction_data?.qr_code_base64,
+                    ticketUrl: existingPayment.point_of_interaction?.transaction_data?.ticket_url,
+                };
+            } else {
+                return {
+                    success: false,
+                    error: 'O Mercado Pago já registrou uma tentativa para este pedido. Confira o status antes de tentar outro pagamento.'
+                };
+            }
+        }
+
         const amount = Number(pedido.valor_total);
 
         if (!amount || amount <= 0 || isNaN(amount)) {
@@ -271,7 +324,12 @@ export async function createPayment(input: CreatePaymentInput): Promise<CreatePa
             paymentPayload.installments = 1;
         }
 
-        const idempotencyKey = `${pedidoId}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        // Mantenha a mesma chave ao repetir a tentativa enquanto o ID ainda não foi salvo.
+        // Assim, se o MP criar a cobrança e a gravação no banco falhar, repetir a
+        // chamada recupera o pagamento original em vez de criar outra cobrança.
+        // Um pagamento anterior encerrado diferencia a próxima tentativa.
+        const previousPaymentId = pedido.payment_id || 'initial';
+        const idempotencyKey = `zapflow-${pedidoId}-${paymentMethodId}-${previousPaymentId}`;
 
         const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
             method: 'POST',

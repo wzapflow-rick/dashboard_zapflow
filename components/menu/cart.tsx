@@ -396,6 +396,32 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
     }
   };
 
+  const requestPixPayment = async (pedidoId: number) => {
+    const paymentResult = await createPayment({
+      pedidoId,
+      paymentMethodId: 'pix',
+    });
+
+    if (!paymentResult.success) {
+      toast.error(paymentResult.error || 'Erro ao gerar PIX');
+      return;
+    }
+
+    if (paymentResult.status === 'approved') {
+      setStep('success');
+      clearCart();
+      toast.success('Pagamento confirmado!');
+      return;
+    }
+
+    setMpQrCode(paymentResult.qrCode || null);
+    setMpQrCodeBase64(paymentResult.qrCodeBase64 || null);
+
+    if (!paymentResult.qrCode) {
+      toast.info('Já existe uma tentativa de pagamento em análise. Aguarde a confirmação antes de tentar outra forma.');
+    }
+  };
+
   const finishOrder = async () => {
     if (!empresaId) {
       toast.error('Erro: empresa não identificada');
@@ -409,6 +435,11 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
 
     setLoading(true);
     try {
+      if (orderId && paymentData.forma === 'pix' && pagamentoIntegrado) {
+        await requestPixPayment(orderId);
+        return;
+      }
+
       const orderResult = await createPublicOrder({
         empresaId,
         clienteTelefone: customerData.telefone.replace(/\D/g, ''),
@@ -454,17 +485,7 @@ export default function Cart({ whatsappNumber, empresaNome, empresaId, empresaCi
         setStep('success');
         clearCart();
       } else if (paymentData.forma === 'pix') {
-        const paymentResult = await createPayment({
-          pedidoId: newOrderId,
-          paymentMethodId: 'pix',
-        });
-
-        if (paymentResult.success) {
-          setMpQrCode(paymentResult.qrCode || null);
-          setMpQrCodeBase64(paymentResult.qrCodeBase64 || null);
-        } else {
-          toast.error(paymentResult.error || 'Erro ao gerar PIX');
-        }
+        await requestPixPayment(newOrderId);
       } else if (paymentData.forma === 'cartao') {
         setShowCardForm(true);
       } else {
