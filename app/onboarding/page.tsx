@@ -186,13 +186,13 @@ function OnboardingContent() {
           </div>
         )}
         <div className="mx-auto grid max-w-5xl items-stretch gap-5 lg:grid-cols-[.82fr_1.18fr]">
-          <motion.aside initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} className="relative min-h-[190px] overflow-hidden rounded-[2rem] border border-white/10 bg-[#0D1912] sm:min-h-[235px] lg:min-h-[600px]" style={{ boxShadow: '0 25px 100px ' + persona.glow }}>
+          <motion.aside initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} className="relative min-h-[410px] overflow-hidden rounded-[2rem] border border-white/10 bg-[#0D1912] sm:min-h-[450px] lg:min-h-[600px]" style={{ boxShadow: '0 25px 100px ' + persona.glow }}>
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_100%,rgba(163,230,53,.13),transparent_62%)]" />
             <div className="absolute left-5 top-5 z-20 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/25 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.16em] text-slate-300 backdrop-blur"><Sparkles className="size-3" style={{ color: persona.accent }} />Seu guia ZapFlash</div>
-            <div className="absolute bottom-0 left-0 right-0 top-10 sm:top-8">
+            <div className="absolute bottom-32 left-0 right-0 top-14 sm:bottom-36 sm:top-12">
               <Image src={persona.image} alt={'Personagem do plano ' + persona.label} fill priority sizes="(max-width: 1024px) 100vw, 40vw" className={cn('object-contain object-bottom', persona.label !== 'Parceria' && 'mix-blend-screen')} />
             </div>
-            <AnimatePresence mode="wait"><motion.div key={step} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className="absolute bottom-4 left-4 right-4 z-20 rounded-2xl border border-white/10 bg-[#09120D]/90 p-3 shadow-xl backdrop-blur sm:bottom-5 sm:left-5 sm:right-5 sm:p-4">
+            <AnimatePresence mode="wait"><motion.div key={step} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className="absolute bottom-3 left-4 right-4 z-20 rounded-2xl border border-white/10 bg-[#09120D]/95 p-3 shadow-xl backdrop-blur sm:bottom-4 sm:left-5 sm:right-5 sm:p-4">
               <p className="mb-1 text-[10px] font-bold uppercase tracking-[.16em]" style={{ color: persona.accent }}>{step === 1 ? 'Vamos começar' : step === 2 ? 'Muito bem!' : step === 3 ? 'Último passo' : 'Conseguimos!'}</p>
               <p className="text-xs leading-relaxed text-slate-200 sm:text-sm">{characterLine}</p>
             </motion.div></AnimatePresence>
