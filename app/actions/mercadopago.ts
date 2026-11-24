@@ -383,10 +383,14 @@ export async function createPayment(input: CreatePaymentInput): Promise<CreatePa
 
         const mpPayment = await mpResponse.json() as MPPaymentResponse;
 
-        await pg.update('pedidos', pedidoId, {
+        const paymentUpdate: Record<string, unknown> = {
             payment_id: String(mpPayment.id),
-            status_pagamento: 'pendente',
-        });
+        };
+        // Não sobrescreve aprovação que o webhook possa ter processado em paralelo.
+        if (mpPayment.status !== 'approved') {
+            paymentUpdate.status_pagamento = 'pendente';
+        }
+        await pg.update('pedidos', pedidoId, paymentUpdate);
         if (mpPayment.status === 'approved') {
             await confirmPublicOrderPayment(pedidoId);
         }
