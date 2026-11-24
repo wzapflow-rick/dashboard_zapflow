@@ -3,7 +3,7 @@
 import { notifyNewOrder } from '@/lib/push';
 import { revalidatePath } from 'next/cache';
 import { incrementCouponUsage } from './coupons';
-import { sendOrderCreatedMessage, sendOwnerNewOrderMessage } from '@/lib/whatsapp';
+import { sendOrderCreatedMessage, sendOrderStatusMessage, sendOwnerNewOrderMessage } from '@/lib/whatsapp';
 import { pg } from '@/lib/postgres';
 import { getMe } from '@/lib/session-server';
 import { calculatePublicDeliveryFee, calculatePublicOrderPricing } from './public-order-pricing';
@@ -255,11 +255,9 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
             // Quando o pagamento integrado esta DESATIVADO, a loja recebe o pagamento por fora,
             // entao o pedido vai direto para o painel (Kanban) como 'pendente', sem etapa de cobranca online.
             // Quando ATIVADO, mantem o comportamento anterior: dinheiro vai direto, demais aguardam pagamento.
-            status: dadosEfetivos.dataAgendamento
-                ? 'agendado'
-                : (dadosEfetivos.pagamentoIntegrado === false || dadosEfetivos.formaPagamento === 'dinheiro'
-                    ? 'pendente'
-                    : 'pagamento_pendente'),
+            status: dadosEfetivos.pagamentoIntegrado !== false && dadosEfetivos.formaPagamento !== 'dinheiro'
+                ? 'pagamento_pendente'
+                : (dadosEfetivos.dataAgendamento ? 'agendado' : 'pendente'),
             origem: 'cardapio_publico',
             criado_em: new Date().toISOString(),
             endereco_entrega: enderecoCompleto,
@@ -296,19 +294,24 @@ export async function createPublicOrder(data: CreatePublicOrderData) {
             );
         }
 
-        sendOrderCreatedMessage(dadosEfetivos.clienteTelefone, order.id, dadosEfetivos.total, dadosEfetivos.dataAgendamento, itensFormatados, dadosEfetivos.empresaId)
-            .catch(err => console.error('Erro ao enviar mensagem WhatsApp:', err));
+        const aguardaPagamento = orderPayload.status === 'pagamento_pendente';
+        const mensagemCliente = aguardaPagamento
+            ? sendOrderStatusMessage(dadosEfetivos.clienteTelefone, order.id, 'pagamento_pendente', dadosEfetivos.empresaId, dadosEfetivos.tipoEntrega)
+            : sendOrderCreatedMessage(dadosEfetivos.clienteTelefone, order.id, dadosEfetivos.total, dadosEfetivos.dataAgendamento, itensFormatados, dadosEfetivos.empresaId);
+        mensagemCliente.catch(err => console.error('Erro ao enviar mensagem WhatsApp:', err));
 
-        // Avisar o DONO da loja sobre o novo pedido (opt-in), pelo numero central da ZapFlash.
-        // Best-effort: nunca bloqueia ou derruba a criacao do pedido.
-        notifyOwnerNewOrder(dadosEfetivos, order.id, itensFormatados, enderecoCompleto)
-            .catch(err => console.error('Erro ao notificar dono sobre novo pedido:', err));
+        // Pedidos com pagamento integrado ficam visíveis em "Aguardando pagamento".
+        // O lojista só é avisado depois que a confirmação do pagamento chegar.
+        if (!aguardaPagamento) {
+            notifyOwnerNewOrder(dadosEfetivos, order.id, itensFormatados, enderecoCompleto)
+                .catch(err => console.error('Erro ao notificar dono sobre novo pedido:', err));
 
-        notifyNewOrder(Number(dadosEfetivos.empresaId), {
-            id: order.id,
-            clienteNome: dadosEfetivos.clienteNome,
-            total: dadosEfetivos.total,
-        });
+            notifyNewOrder(Number(dadosEfetivos.empresaId), {
+                id: order.id,
+                clienteNome: dadosEfetivos.clienteNome,
+                total: dadosEfetivos.total,
+            });
+        }
 
         revalidatePath('/dashboard/expedition');
 

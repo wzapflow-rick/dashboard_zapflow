@@ -622,35 +622,15 @@ async function handleOrderPayment(paymentId: string, ctx: WebhookLogContext): Pr
     return NextResponse.json({ received: true, ignored: 'order_not_found' });
   }
 
-  const statusPagamentoAtual = (order as OrderData & { status_pagamento?: string }).status_pagamento;
-  if (paymentData.status === 'approved' && statusPagamentoAtual === 'aprovado') {
-    console.log(`[Webhook] Pedido ${orderId} ja aprovado — notificacao duplicada ignorada`);
-    return NextResponse.json({ received: true, processed: 'order_duplicate' });
-  }
-
   if (paymentData.status === 'approved') {
-    // status_pagamento: controle interno; status 'pendente' move o pedido para "Novo Pedido" no Kanban
-    await pg.update('pedidos', {
-      id: orderId,
-      status_pagamento: 'aprovado',
-      status: 'pendente'
-    });
-
-    console.log(`[MercadoPago Webhook] Pagamento aprovado para pedido ${orderId} - status atualizado para 'pendente'`);
-
-    try {
-      const { sendOrderStatusMessage } = await import('@/lib/whatsapp');
-      if (order.telefone_cliente) {
-        await sendOrderStatusMessage(
-          order.telefone_cliente,
-          orderId,
-          'aprovado',
-          Number(order.empresa_id)
-        );
-      }
-    } catch (waError) {
-      console.error('[MercadoPago Webhook] Erro ao enviar WhatsApp:', waError);
+    const { confirmPublicOrderPayment } = await import('@/lib/order-payment-confirmation');
+    const applied = await confirmPublicOrderPayment(orderId);
+    if (applied) {
+      console.log(`[MercadoPago Webhook] Pagamento aprovado para pedido ${orderId}; cliente e lojista notificados`);
+    } else {
+      console.log(`[Webhook] Pedido ${orderId} ja aprovado — notificacao duplicada ignorada`);
     }
+    return NextResponse.json({ received: true, processed: applied ? 'order_approved' : 'order_duplicate' });
   } else if (paymentData.status === 'rejected' || paymentData.status === 'cancelled') {
     await pg.update('pedidos', {
       id: orderId,

@@ -2,6 +2,7 @@
 
 import { pg } from '@/lib/postgres';
 import { getPlatformMpAccessToken } from '@/lib/mercadopago-token';
+import { confirmPublicOrderPayment } from '@/lib/order-payment-confirmation';
 
 const MP_ACCESS_TOKEN_FALLBACK = getPlatformMpAccessToken();
 const MP_PUBLIC_KEY_FALLBACK = process.env.MP_PUBLIC_KEY || '';
@@ -246,6 +247,10 @@ export async function createPayment(input: CreatePaymentInput): Promise<CreatePa
                     };
                 }
 
+                if (existingPayment.status === 'approved') {
+                    await confirmPublicOrderPayment(pedidoId);
+                }
+
                 return {
                     success: true,
                     paymentId: existingPayment.id,
@@ -378,10 +383,17 @@ export async function createPayment(input: CreatePaymentInput): Promise<CreatePa
 
         const mpPayment = await mpResponse.json() as MPPaymentResponse;
 
-        await pg.update('pedidos', pedidoId, {
+        const paymentUpdate: Record<string, unknown> = {
             payment_id: String(mpPayment.id),
-            status_pagamento: mpPayment.status === 'approved' ? 'aprovado' : 'pendente',
-        });
+        };
+        // Não sobrescreve aprovação que o webhook possa ter processado em paralelo.
+        if (mpPayment.status !== 'approved') {
+            paymentUpdate.status_pagamento = 'pendente';
+        }
+        await pg.update('pedidos', pedidoId, paymentUpdate);
+        if (mpPayment.status === 'approved') {
+            await confirmPublicOrderPayment(pedidoId);
+        }
 
         return {
             success: true,
@@ -428,6 +440,9 @@ export async function getPaymentStatus(paymentId: number): Promise<{
         }
 
         const payment = await mpResponse.json() as MPPaymentResponse;
+        if (payment.status === 'approved' && order?.id) {
+            await confirmPublicOrderPayment(Number(order.id));
+        }
 
         return {
             success: true,
