@@ -45,9 +45,15 @@ _Qualquer dúvida, é só chamar! 😊_
 
   status: {
     pagamento_pendente: [
-      'Estamos aguardando a confirmação do seu pagamento para liberar o pedido para a cozinha. Assim que for aprovado, começamos o preparo imediatamente! 💳⏳',
-      'Quase lá! Seu pagamento está em processamento. Assim que recebermos o sinal verde, seu pedido entra direto na produção. ✅',
-      'Falta pouco! Só precisamos da confirmação do pagamento para dar início ao seu pedido. Já estamos com tudo pronto para começar! 🚀'
+      'Seu pedido foi recebido e registrado, mas o pagamento ainda está pendente. Assim que ele for confirmado, a loja poderá iniciar o preparo. 💳⏳',
+      'Pedido anotado! Falta apenas a confirmação do pagamento para liberar o preparo. Você receberá uma nova mensagem assim que estiver tudo certo. ✅',
+      'Recebemos seu pedido! O pagamento ainda está aguardando confirmação; assim que aprovado, avisaremos e ele seguirá para a loja. 🚀'
+    ],
+
+    aprovado: [
+      'Pagamento confirmado! ✅ Seu pedido foi liberado para a loja e em breve seguirá para o preparo.',
+      'Deu certo: recebemos a confirmação do pagamento do seu pedido. A loja já pode começar a preparar tudo com carinho! 🎉',
+      'Pagamento aprovado! Seu pedido está confirmado e foi encaminhado para a loja. Fique de olho nas próximas atualizações. 🙌'
     ],
 
     pendente: {
@@ -201,7 +207,8 @@ export function getStatusMessage(
   empresaId?: number
 ): string {
   const statusConfig: Record<string, { emoji: string; title: string }> = {
-    'pagamento_pendente': { emoji: '⏳', title: 'Aguardando Pagamento' },
+    'pagamento_pendente': { emoji: '⏳', title: 'Pagamento Pendente' },
+    'aprovado': { emoji: '✅', title: 'Pagamento Confirmado!' },
     'pendente': { emoji: '✅', title: 'Pedido Confirmado!' },
     'preparando': { emoji: '👨‍🍳', title: 'Em Preparo' },
     'entrega': { 
@@ -223,7 +230,11 @@ export function getStatusMessage(
   const variationIndex = orderId % (statusVariations as string[]).length;
   const description = (statusVariations as string[])[variationIndex];
 
-  const deliveryNote = isDelivery ? '\n📍 *Entrega em andamento*' : '\n🏪 *Retirada no local*';
+  const deliveryNote = status === 'pagamento_pendente'
+    ? '\n⏳ *Pedido aguardando pagamento*'
+    : status === 'aprovado'
+      ? (isDelivery ? '\n🛵 *Modalidade: entrega*' : '\n🏪 *Modalidade: retirada*')
+      : isDelivery ? '\n📍 *Entrega em andamento*' : '\n🏪 *Retirada no local*';
 
   let message = `${config.emoji} *Pedido #${orderId} — ${config.title}*
 
