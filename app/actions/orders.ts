@@ -111,6 +111,27 @@ export async function getPendingOrderIds(): Promise<number[]> {
     }
 }
 
+const EXPEDITION_STALE_AFTER_MS = 48 * 60 * 60 * 1000;
+
+/**
+ * Esconde da expedição pedidos que já perderam a validade operacional.
+ * Os registros permanecem no banco para manter o histórico e relatórios.
+ */
+function isStaleExpeditionOrder(
+    order: PedidoRow & { data_agendamento?: string | Date | null }
+): boolean {
+    let referenceDate: Date | null = null;
+
+    if (order.status === 'pagamento_pendente' && order.criado_em) {
+        referenceDate = new Date(order.criado_em);
+    } else if (order.status === 'agendado' && order.data_agendamento) {
+        referenceDate = new Date(order.data_agendamento);
+    }
+
+    if (!referenceDate || Number.isNaN(referenceDate.getTime())) return false;
+    return Date.now() - referenceDate.getTime() >= EXPEDITION_STALE_AFTER_MS;
+}
+
 export async function getOrders(): Promise<OrderWithClient[]> {
     try {
         const user = await getMe();
@@ -121,7 +142,7 @@ export async function getOrders(): Promise<OrderWithClient[]> {
             sort: '-id',
             limit: 1000,
         });
-        const orders = ordersData.list || [];
+        const orders = (ordersData.list || []).filter((order) => !isStaleExpeditionOrder(order));
 
         if (orders.length === 0) return [];
 
