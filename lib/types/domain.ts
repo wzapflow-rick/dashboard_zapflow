@@ -49,6 +49,7 @@ export interface PedidoRow {
   status: string;
   valor_total: Numeric | null;
   criado_em: string | Date | null;
+  data_agendamento?: string | Date | null;
   telefone_cliente: string | null;
   cliente_nome?: string | null;
   endereco_entrega?: string | null;
