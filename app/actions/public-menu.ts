@@ -31,7 +31,7 @@ function decodePublicMenuSlug(value: string): string {
 function normalizePublicMenuSlug(value: string): string {
     return decodePublicMenuSlug(value)
         .normalize('NFD')
-        .replace(/[\\u0300-\\u036f]/g, '')
+        .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '');
@@ -102,8 +102,8 @@ async function loadPublicMenu(slug: string) {
         }
 
         // TENTATIVA 5: Fallback para ID numerico (se slug for numero)
-        if (!empresa && /^\d+$/.test(slug)) {
-            empresa = await pg.findById(EMPRESAS_TABLE, parseInt(slug));
+        if (!empresa && /^\d+$/.test(requestedSlug)) {
+            empresa = await pg.findById(EMPRESAS_TABLE, parseInt(requestedSlug));
             if (empresa) {
             }
         }
