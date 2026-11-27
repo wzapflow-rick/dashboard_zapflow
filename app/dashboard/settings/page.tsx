@@ -1335,6 +1335,8 @@ export default function SettingsPage() {
                 <div className="space-y-6">
                   <PushNotificationsCard />
 
+                  {planAccess.features.whatsappAutomation && (
+                    <>
                   <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <Bell className="size-5 text-primary" />
                     Notificacoes WhatsApp
@@ -1577,6 +1579,8 @@ export default function SettingsPage() {
                       </div>
                     )}
                   </div>
+                    </>
+                  )}
                 </div>
               )}
 
