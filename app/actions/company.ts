@@ -40,6 +40,30 @@ export async function getCompanyDetails() {
 }
 
 /**
+ * Carrega apenas os campos necessários para iniciar a jornada de configuração.
+ * Mantém dados internos da empresa fora da resposta serializada para o navegador.
+ */
+export async function getOnboardingCompany() {
+    try {
+        const user = await getMe();
+        if (!user?.empresaId) return null;
+
+        const company = await pg.findById(EMPRESAS_TABLE, user.empresaId) as any;
+        if (!company?.id) return null;
+
+        return {
+            id: company.id,
+            nome_fantasia: company.nome_fantasia || '',
+            nincho: company.nincho || '',
+            planos: company.planos || company.plano || 'start',
+        };
+    } catch (error) {
+        console.error('[Onboarding] Erro ao carregar dados básicos da loja:', error);
+        return null;
+    }
+}
+
+/**
  * Atualiza os dados da empresa e a logo.
  * Também atualiza a sessão JWT para refletir mudanças no nome da unidade.
  */
