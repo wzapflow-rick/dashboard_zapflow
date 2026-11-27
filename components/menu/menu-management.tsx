@@ -3,7 +3,7 @@
 
 import { MorphingInfinity } from '@/components/ui/morphing-infinity';
 import React, { useState } from 'react';
-import { Search, Plus, Edit3, Trash2, Filter, X, Check, Sparkles, Folder } from 'lucide-react';
+import { Search, Plus, Edit3, Trash2, Filter, X, Check, Sparkles, Folder, ImagePlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { type Category } from '@/app/actions/products';
@@ -25,6 +25,10 @@ const BulkComplementModal = dynamic(() => import('@/components/menu/bulk-complem
 });
 
 const CategoryModal = dynamic(() => import('@/components/menu/category-modal'), {
+  ssr: false,
+});
+
+const ImageMenuImportModal = dynamic(() => import('@/components/menu/image-menu-import-modal'), {
   ssr: false,
 });
 
@@ -71,6 +75,7 @@ export default function MenuManagement({ hideCategoryButton }: { hideCategoryBut
   const [editingProductInsumos, setEditingProductInsumos] = useState<{ insumo_id: number; quantidade_necessaria: number }[]>([]);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [isImageImportOpen, setIsImageImportOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
   const handleEditInit = async (product: any) => {
@@ -132,6 +137,13 @@ export default function MenuManagement({ hideCategoryButton }: { hideCategoryBut
     return cat ? cat.nome : 'Sem Categoria';
   };
 
+  const menuChecklist = [
+    { label: 'Adicionar pelo menos um produto', complete: products.length > 0 },
+    { label: 'Definir preço dos produtos', complete: products.length > 0 && products.every((product) => Number(product.preco) > 0) },
+    { label: 'Organizar produtos em categorias', complete: products.length > 0 && products.every((product) => Number(product.categoria_id || product.categorias || 0) > 0) },
+  ];
+  const completedMenuChecks = menuChecklist.filter((item) => item.complete).length;
+
   return (
     <div className="space-y-8">
       <header id="menu-header" className="flex flex-wrap items-center justify-between gap-4">
@@ -164,6 +176,16 @@ export default function MenuManagement({ hideCategoryButton }: { hideCategoryBut
             <Check className="size-4 text-violet-500" />
             Cadastrar em Massa
           </button> */}
+          {Number(user?.empresaId) > 0 && (
+            <button
+              type="button"
+              onClick={() => setIsImageImportOpen(true)}
+              className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2.5 rounded-lg text-sm font-semibold shadow-sm flex items-center gap-2 transition-all active:scale-95 dark:bg-zinc-900/75 dark:text-zinc-200 dark:border-zinc-800/60"
+            >
+              <ImagePlus className="size-4 text-primary" />
+              Importar por foto
+            </button>
+          )}
           <button
             id="btn-novo-produto"
             onClick={() => { setEditingProduct(null); setEditingProductInsumos([]); setIsModalOpen(true); }}
@@ -174,6 +196,33 @@ export default function MenuManagement({ hideCategoryButton }: { hideCategoryBut
           </button>
         </div>
       </header>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-zinc-800/60 dark:bg-zinc-900/75 sm:flex sm:items-center sm:justify-between sm:gap-6">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="font-bold text-slate-900 dark:text-zinc-100">
+              {completedMenuChecks === menuChecklist.length ? 'Cardápio pronto para começar' : 'Vamos deixar seu cardápio pronto?'}
+            </h2>
+            <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">{completedMenuChecks}/{menuChecklist.length} etapas</span>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
+            {menuChecklist.map((item) => (
+              <span key={item.label} className={`inline-flex items-center gap-1.5 text-xs ${item.complete ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-500 dark:text-zinc-400'}`}>
+                <Check className="size-3.5" /> {item.label}
+              </span>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-slate-500 dark:text-zinc-400">Fotos dos produtos são opcionais, mas deixam o cardápio mais atrativo.</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsImageImportOpen(true)}
+          disabled={!Number(user?.empresaId)}
+          className="mt-4 inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50 sm:mt-0"
+        >
+          <ImagePlus className="size-4" /> {products.length > 0 ? 'Revisar por foto' : 'Começar pelo cardápio'}
+        </button>
+      </section>
 
       {/* Filters & Search */}
       <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 dark:bg-zinc-900/75 dark:border-zinc-800/60">
@@ -287,6 +336,18 @@ export default function MenuManagement({ hideCategoryButton }: { hideCategoryBut
         onToggleAvailability={toggleDisponibilidade}
         user={user}
       />
+
+      {Number(user?.empresaId) > 0 && (
+        <ImageMenuImportModal
+          isOpen={isImageImportOpen}
+          onClose={() => {
+            setIsImageImportOpen(false);
+            void fetchData();
+          }}
+          empresaId={Number(user.empresaId)}
+          empresaNome={String(user?.empresaNome || user?.nome || 'Minha loja')}
+        />
+      )}
 
       {isModalOpen && (
         <ProductFormModal

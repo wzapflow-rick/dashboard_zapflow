@@ -44,6 +44,10 @@ export async function upsertGrupoComplemento(grupo: any) {
 
         let data;
         if (payload.id) {
+            const existing = await pg.findOne<any>(GRUPOS_COMPLEMENTOS_TABLE, {
+                where: { id: Number(payload.id), empresa_id: user.empresaId },
+            });
+            if (!existing) throw new Error('Grupo não encontrado');
             data = await pg.update(GRUPOS_COMPLEMENTOS_TABLE, payload);
         } else {
             delete payload.id;
@@ -81,12 +85,26 @@ export async function getItensDoGrupo(grupoId: number) {
 
 export async function upsertItemComplemento(item: any) {
     try {
+        const user = await getMe();
+        if (!user?.empresaId) throw new Error('Não autorizado');
+
         const payload: any = { ...item };
+        const grupoId = Number(payload.grupo_id);
+        if (!Number.isInteger(grupoId) || grupoId <= 0) throw new Error('Grupo inválido');
+
+        const grupo = await pg.findOne<any>(GRUPOS_COMPLEMENTOS_TABLE, {
+            where: { id: grupoId, empresa_id: user.empresaId },
+        });
+        if (!grupo) throw new Error('Grupo de adicionais não encontrado');
 
         delete payload.Id;
 
         let data;
         if (payload.id) {
+            const existing = await pg.findOne<any>(COMPLEMENTOS_TABLE, {
+                where: { id: Number(payload.id), grupo_id: grupoId },
+            });
+            if (!existing) throw new Error('Opção não encontrada neste grupo');
             data = await pg.update(COMPLEMENTOS_TABLE, payload);
         } else {
             delete payload.id;

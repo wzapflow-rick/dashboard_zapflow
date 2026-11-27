@@ -94,8 +94,9 @@ export default function ImageMenuImportModal({
   empresaNome,
 }: ImageMenuImportModalProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [image, setImage] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [images, setImages] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
+  const [companyNiche, setCompanyNiche] = useState('');
   const [products, setProducts] = useState<MenuProduct[]>([]);
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [rows, setRows] = useState<DraftRow[]>([]);
@@ -125,6 +126,7 @@ export default function ImageMenuImportModal({
         if (!active) return;
         setProducts(data.products as MenuProduct[]);
         setCategories(data.categories as MenuCategory[]);
+        setCompanyNiche(String(data.niche || ''));
       })
       .catch((error) => {
         if (active) toast.error(error instanceof Error ? error.message : 'Não foi possível carregar o cardápio.');
@@ -133,15 +135,11 @@ export default function ImageMenuImportModal({
     return () => { active = false; };
   }, [empresaId, isOpen]);
 
-  useEffect(() => {
-    return () => {
-      if (preview) URL.revokeObjectURL(preview);
-    };
-  }, [preview]);
+  useEffect(() => () => previews.forEach((url) => URL.revokeObjectURL(url)), [previews]);
 
   const resetPhoto = () => {
-    setImage(null);
-    setPreview(null);
+    setImages([]);
+    setPreviews([]);
     setRows([]);
     if (inputRef.current) inputRef.current.value = '';
   };
@@ -160,45 +158,60 @@ export default function ImageMenuImportModal({
     setCategories(data.categories as MenuCategory[]);
   };
 
-  const handleImageChange = (file?: File) => {
-    if (!file) return;
-    if (!isValidImageFile(file)) {
-      toast.error('Use uma imagem JPG, PNG ou WebP de até 10 MB.');
+  const handleImagesChange = (fileList?: FileList | null) => {
+    const selected = Array.from(fileList || []);
+    if (inputRef.current) inputRef.current.value = '';
+    if (selected.length === 0) return;
+    if (selected.length > 6) {
+      toast.error('Envie no máximo 6 páginas por análise.');
+      if (inputRef.current) inputRef.current.value = '';
       return;
     }
-    setImage(file);
-    setPreview(URL.createObjectURL(file));
+    const invalidFile = selected.find((file) => !isValidImageFile(file));
+    if (invalidFile) {
+      toast.error('Use imagens JPG, PNG ou WebP de até 10 MB cada.');
+      if (inputRef.current) inputRef.current.value = '';
+      return;
+    }
+    setImages(selected);
+    setPreviews(selected.map((file) => URL.createObjectURL(file)));
     setRows([]);
   };
 
   const extract = async () => {
-    if (!image) {
-      toast.error('Escolha uma foto do cardápio primeiro.');
+    if (images.length === 0) {
+      toast.error('Escolha pelo menos uma página do cardápio.');
       return;
     }
 
     setIsReading(true);
     try {
-      let compressed = await processImage(image, {
-        maxWidth: 1800,
-        maxHeight: 1800,
-        quality: 0.72,
-        format: 'jpeg',
-      });
-      if (compressed.size > 750 * 1024) {
-        compressed = await processImage(image, {
-          maxWidth: 1200,
-          maxHeight: 1200,
-          quality: 0.55,
+      const compressedImages = await Promise.all(images.map(async (image) => {
+        let compressed = await processImage(image, {
+          maxWidth: 1800,
+          maxHeight: 1800,
+          quality: 0.72,
           format: 'jpeg',
         });
-      }
-      if (compressed.size > 750 * 1024) {
-        throw new Error('A imagem ficou grande demais. Tente uma foto menor.');
+        if (compressed.size > 750 * 1024) {
+          compressed = await processImage(image, {
+            maxWidth: 1200,
+            maxHeight: 1200,
+            quality: 0.55,
+            format: 'jpeg',
+          });
+        }
+        if (compressed.size > 750 * 1024) {
+          throw new Error('Uma página ficou grande demais. Tente uma imagem menor ou mais comprimida.');
+        }
+        return compressed;
+      }));
+      if (compressedImages.reduce((total, file) => total + file.size, 0) > 4.5 * 1024 * 1024) {
+        throw new Error('As imagens ultrapassaram 4,5 MB no total. Envie menos páginas.');
       }
 
       const formData = new FormData();
-      formData.append('image', compressed);
+      compressedImages.forEach((file) => formData.append('images', file));
       formData.append('preferences', preferences);
       formData.append('categoryPolicy', categoryPolicy);
       const extracted = await extractMenuProductsFromImage(empresaId, formData);
@@ -225,6 +238,53 @@ export default function ImageMenuImportModal({
     } finally {
       setIsReading(false);
     }
+  };
+
+  const applyMenuTemplate = () => {
+    const niche = normalizeName(companyNiche);
+    const examples: Array<{ nome: string; descricao: string; categoria: string }> =
+      niche.includes('acai') || niche.includes('acaiteria')
+        ? [
+            { nome: 'Açaí 300 ml', descricao: 'Monte seu açaí com os acompanhamentos disponíveis.', categoria: 'Açaí' },
+            { nome: 'Açaí 500 ml', descricao: 'Monte seu açaí com os acompanhamentos disponíveis.', categoria: 'Açaí' },
+            { nome: 'Açaí 700 ml', descricao: 'Monte seu açaí com os acompanhamentos disponíveis.', categoria: 'Açaí' },
+          ]
+        : niche.includes('pizza') || niche.includes('pizzaria')
+          ? [
+              { nome: 'Pizza de muçarela', descricao: 'Pizza tradicional. Complete os ingredientes e o preço.', categoria: 'Pizzas' },
+              { nome: 'Pizza de calabresa', descricao: 'Pizza tradicional. Complete os ingredientes e o preço.', categoria: 'Pizzas' },
+              { nome: 'Pizza portuguesa', descricao: 'Pizza tradicional. Complete os ingredientes e o preço.', categoria: 'Pizzas' },
+            ]
+          : niche.includes('hamburg') || niche.includes('lanchonete')
+            ? [
+                { nome: 'X-Burger', descricao: 'Descreva os ingredientes do seu hambúrguer.', categoria: 'Hambúrgueres' },
+                { nome: 'X-Bacon', descricao: 'Descreva os ingredientes do seu hambúrguer.', categoria: 'Hambúrgueres' },
+                { nome: 'X-Salada', descricao: 'Descreva os ingredientes do seu hambúrguer.', categoria: 'Hambúrgueres' },
+              ]
+            : [
+                { nome: 'Produto da casa', descricao: 'Descreva este produto para seus clientes.', categoria: 'Mais pedidos' },
+                { nome: 'Bebida', descricao: 'Informe o tamanho ou sabor da bebida.', categoria: 'Bebidas' },
+                { nome: 'Combo da casa', descricao: 'Descreva o que acompanha este combo.', categoria: 'Combos' },
+              ];
+
+    const matchedIds = new Set<number>();
+    setRows(examples.map((example) => {
+      const match = products.find((product) =>
+        !matchedIds.has(product.id) && normalizeName(product.nome) === normalizeName(example.nome),
+      );
+      if (match) matchedIds.add(match.id);
+      return {
+        ...example,
+        preco: null,
+        id: crypto.randomUUID(),
+        matchedProductId: match?.id,
+        matchedProductName: match?.nome,
+        precoText: match ? String(match.preco) : '',
+        selecionado: true,
+      };
+    }));
+    setActiveTab('revisao');
+    toast.success('Modelo pronto para personalizar. Confira os preços antes de salvar.');
   };
 
   const updateRow = (id: string, changes: Partial<DraftRow>) => {
@@ -596,6 +656,16 @@ export default function ImageMenuImportModal({
               Itens com o mesmo nome serão propostos para atualização. Itens que não aparecem na foto continuarão no cardápio.
             </div>
 
+            <div className="flex flex-col gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-bold text-slate-900 dark:text-white">Quer começar sem foto?</p>
+                <p className="mt-1 text-xs text-slate-600 dark:text-zinc-400">Use um modelo de {companyNiche || 'delivery'} e complete nomes, descrições e preços antes de salvar.</p>
+              </div>
+              <button type="button" onClick={applyMenuTemplate} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-primary/30 bg-white px-4 py-2.5 text-sm font-semibold text-primary hover:bg-primary/5 dark:bg-zinc-900">
+                <Sparkles className="size-4" /> Usar modelo básico
+              </button>
+            </div>
+
             <div className="grid gap-3 rounded-xl border border-slate-200 p-4 dark:border-zinc-700 sm:grid-cols-[minmax(0,1fr)_240px]">
               <label className="space-y-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-200">Preferências para organizar este cardápio<textarea value={preferences} onChange={(event) => setPreferences(event.target.value)} maxLength={1000} rows={3} placeholder="Ex.: separe bebidas por tipo, use nomes curtos e mantenha combos em uma categoria própria." className="mt-1.5 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-normal dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" /></label>
               <label className="space-y-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-200">Como definir categorias<select value={categoryPolicy} onChange={(event) => setCategoryPolicy(event.target.value as 'auto' | 'existing')} className="mt-1.5 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"><option value="auto">Organizar e criar categoria quando precisar</option><option value="existing">Usar somente categorias existentes</option></select><span className="block font-normal text-slate-500 dark:text-zinc-400">Categorias sugeridas pela IA aparecem para revisão antes de salvar.</span></label>
@@ -606,19 +676,26 @@ export default function ImageMenuImportModal({
               type="file"
               accept="image/jpeg,image/png,image/webp"
               className="hidden"
-              onChange={(event) => handleImageChange(event.target.files?.[0])}
+              multiple
+              onChange={(event) => handleImagesChange(event.target.files)}
             />
 
-            {preview ? (
-              <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 dark:border-zinc-700 dark:bg-zinc-900">
-                <img src={preview} alt="Prévia da foto do cardápio" className="max-h-64 w-full object-contain" />
-                <button
-                  type="button"
-                  onClick={() => inputRef.current?.click()}
-                  className="absolute bottom-3 right-3 inline-flex items-center gap-2 rounded-lg bg-white/95 px-3 py-2 text-xs font-semibold text-slate-700 shadow dark:bg-zinc-800 dark:text-white"
-                >
-                  <ImagePlus className="size-4" /> Trocar foto
-                </button>
+            {previews.length > 0 ? (
+              <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-zinc-700 dark:bg-zinc-900">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {previews.map((url, index) => (
+                    <div key={url} className="relative overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-zinc-700 dark:bg-black">
+                      <img src={url} alt={`Página ${index + 1} do cardápio`} className="h-32 w-full object-contain" />
+                      <span className="absolute bottom-1.5 left-1.5 rounded-md bg-black/70 px-2 py-1 text-[10px] font-semibold text-white">Página {index + 1}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-xs text-slate-500 dark:text-zinc-400">{images.length} página(s) selecionada(s)</span>
+                  <button type="button" onClick={() => inputRef.current?.click()} className="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow dark:bg-zinc-800 dark:text-white">
+                    <ImagePlus className="size-4" /> Trocar imagens
+                  </button>
+                </div>
               </div>
             ) : (
               <button
@@ -627,19 +704,19 @@ export default function ImageMenuImportModal({
                 className="flex min-h-48 w-full flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 text-center transition hover:border-primary hover:bg-primary/5 dark:border-zinc-700 dark:bg-zinc-900"
               >
                 <span className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Upload className="size-6" /></span>
-                <span className="font-semibold text-slate-800 dark:text-zinc-100">Escolher foto do cardápio</span>
-                <span className="text-xs text-slate-500 dark:text-zinc-400">JPG, PNG ou WebP • até 10 MB</span>
+                <span className="font-semibold text-slate-800 dark:text-zinc-100">Escolher páginas do cardápio</span>
+                <span className="text-xs text-slate-500 dark:text-zinc-400">JPG, PNG ou WebP • até 6 imagens de 10 MB</span>
               </button>
             )}
 
             <button
               type="button"
               onClick={extract}
-              disabled={!image || isReading}
+              disabled={images.length === 0 || isReading}
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isReading ? <LoaderCircle className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-              {isReading ? 'Lendo produtos da foto…' : 'Ler e comparar com o cardápio'}
+              {isReading ? `Lendo ${images.length} página(s)…` : 'Ler e comparar com o cardápio'}
             </button>
           </div>
         )}
