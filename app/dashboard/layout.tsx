@@ -2,9 +2,12 @@ import DashboardClientLayout from '@/components/dashboard/dashboard-client-layou
 import { BlockScreen } from '@/components/dashboard/block-screen';
 import { getMe } from '@/lib/session-server';
 import { getBillingStatus } from '@/app/actions/billing';
+import { EMPRESAS_TABLE } from '@/lib/tables';
+import { pg } from '@/lib/postgres';
+import { getPlanAccess, isTestCompanyRecord } from '@/lib/plan-access';
 
-// Sempre renderiza dinamicamente: precisamos checar o bloqueio no banco a cada
-// requisicao (nao pode ficar em cache), inclusive para quem ja esta logado.
+// Sempre renderiza dinamicamente: precisamos checar o bloqueio e o plano no banco
+// a cada requisicao, inclusive para quem ja esta logado.
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardSegmentLayout({
@@ -13,16 +16,30 @@ export default async function DashboardSegmentLayout({
   children: React.ReactNode;
 }) {
   const user = await getMe();
+  // A sessão não carrega plano; usamos os dados atuais da empresa no banco.
+  let planAccess = getPlanAccess('iniciante');
 
-  // Checagem FRESCA no banco: mesmo que o JWT da sessao diga o contrario,
-  // consultamos o estado atual de `bloqueado` da empresa. Assim o bloqueio
-  // vale imediatamente para quem ja estava logado quando o cron marcou.
+  // Checagem FRESCA no banco: o bloqueio e os recursos do plano refletem
+  // imediatamente o estado atual da empresa, sem depender de um JWT antigo.
   if (user?.empresaId) {
-    const billing = await getBillingStatus(user.empresaId);
+    const [billing, company] = await Promise.all([
+      getBillingStatus(user.empresaId),
+      pg.findById(EMPRESAS_TABLE, user.empresaId) as Promise<Record<string, unknown> | null>,
+    ]);
+
     if (billing?.bloqueado) {
       return <BlockScreen empresaId={user.empresaId} nome={user.nome} />;
     }
+
+    const companyPlan =
+      typeof company?.planos === 'string' ? company.planos : null;
+    const activePlan =
+      billing?.assinatura_status === 'authorized'
+        ? billing.plano_assinatura
+        : billing?.plano || companyPlan || 'iniciante';
+
+    planAccess = getPlanAccess(activePlan, isTestCompanyRecord(company));
   }
 
-  return <DashboardClientLayout>{children}</DashboardClientLayout>;
+  return <DashboardClientLayout planAccess={planAccess}>{children}</DashboardClientLayout>;
 }

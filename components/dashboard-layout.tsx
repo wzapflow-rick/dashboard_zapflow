@@ -1,6 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import type { PlanAccess } from '@/lib/plan-access';
+import { getPlanAccess } from '@/lib/plan-access';
 import { AppSidebar } from './layout/app-sidebar';
 import { cn } from '@/lib/utils';
 import { Header } from './layout/header';
@@ -70,6 +72,11 @@ interface SidebarContextType {
 }
 
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
+const PlanAccessContext = createContext<PlanAccess>(getPlanAccess('iniciante'));
+
+export function usePlanAccess() {
+  return useContext(PlanAccessContext);
+}
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(true);
@@ -86,7 +93,13 @@ export function useSidebar() {
   return context;
 }
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({
+  children,
+  planAccess,
+}: {
+  children: React.ReactNode;
+  planAccess: PlanAccess;
+}) {
   const { isOpen, setIsOpen } = useSidebar();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -100,7 +113,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     // estava saturado — removida.
     import('@/app/actions/auth').then(({ getMe }) => {
       getMe().then((userData) => {
-        setUser(userData);
+        setUser(userData ? {
+          ...userData,
+          plan: planAccess.plan,
+          isTestAccount: planAccess.isTestAccount,
+          planFeatures: planAccess.features,
+        } : userData);
         setIsLoading(false);
       }).catch((err) => {
         console.error('[v0] Error loading user:', err);
@@ -112,7 +130,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       setError('Erro ao carregar modulo de autenticacao');
       setIsLoading(false);
     });
-  }, []);
+  }, [planAccess]);
 
   const isCozinheiro = user?.role === 'cozinheiro';
 
@@ -141,6 +159,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
+    <PlanAccessContext.Provider value={planAccess}>
     <div className="flex min-h-screen bg-background-light dark:bg-[#09090b]">
       {!isLoading && !isCozinheiro && (
         <AppSidebar user={user} collapsed={!isOpen} onToggle={() => setIsOpen(!isOpen)} />
@@ -152,7 +171,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {user?.empresaId && <PaymentAlert empresaId={user.empresaId} />}
           {user && (
             <TrialWarningBanner 
-              plano={user.plano} 
+              plano={planAccess.plan} 
               dataInicio={user.dataInicio || user.created_at} 
               empresaId={user.empresaId} 
             />
@@ -175,5 +194,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Banner de instalacao do PWA - so aparece apos login */}
       {!isLoading && user && <InstallPrompt />}
     </div>
+  </PlanAccessContext.Provider>
   );
 }

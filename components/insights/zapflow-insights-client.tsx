@@ -38,6 +38,7 @@ import { ScoreRing } from './score-ring';
 import { ComparativosSection } from './comparativos-section';
 import { ZapflowChat } from './zapflow-chat';
 import { Skeleton } from '@/components/ui/skeleton';
+import { usePlanAccess } from '@/components/dashboard-layout';
 
 const fmtMoeda = (value: number) => `R$ ${(value ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 
@@ -49,6 +50,13 @@ const ACAO_INFO: Record<TipoAcao, { label: string; icon: typeof Megaphone; toast
   clientes: { label: 'Recuperar clientes', icon: Users, toastMsg: 'Abrindo sua base de clientes...', href: '/dashboard/customers' },
   geral: { label: 'Ver detalhes', icon: ArrowRight, toastMsg: 'Ação registrada.' },
 };
+
+function acaoDisponivel(tipo: TipoAcao, features: ReturnType<typeof usePlanAccess>['features']): boolean {
+  if (tipo === 'campanha') return features.campaigns;
+  if (tipo === 'whatsapp') return features.whatsappAutomation;
+  if (tipo === 'cupom') return features.coupons;
+  return true;
+}
 
 function executarAcao(router: ReturnType<typeof useRouter>, tipo: TipoAcao, descricao: string) {
   const info = ACAO_INFO[tipo] ?? ACAO_INFO.geral;
@@ -215,6 +223,7 @@ interface ZapflowInsightsClientProps {
 
 export function ZapflowInsightsClient({ initialData, operationContent }: ZapflowInsightsClientProps) {
   const router = useRouter();
+  const planAccess = usePlanAccess();
   const { mutate: mutateComparativosCache } = useSWRConfig();
   const [data, setData] = useState<ZapflowInsightsResult | null>(initialData ?? null);
   const [carregando, setCarregando] = useState(!initialData);
@@ -312,6 +321,10 @@ export function ZapflowInsightsClient({ initialData, operationContent }: Zapflow
   }
 
   const { ai, score, metrics } = data;
+  const oportunidadesDisponiveis = ai.oportunidades.filter((item) =>
+    acaoDisponivel(item.tipoAcao, planAccess.features),
+  );
+  const sugestaoPrincipalDisponivel = acaoDisponivel(ai.sugestaoPrincipal.tipoAcao, planAccess.features);
   const primeiroNome = data.nome?.split(' ')[0] || 'lojista';
   const geradoEm = new Date(data.geradoEm);
   const horarioGeracao = Number.isNaN(geradoEm.getTime())
@@ -397,6 +410,7 @@ export function ZapflowInsightsClient({ initialData, operationContent }: Zapflow
             <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-200">{ai.destaquePositivo}</p>
           </motion.article>
 
+          {sugestaoPrincipalDisponivel && (
           <motion.article
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -421,6 +435,7 @@ export function ZapflowInsightsClient({ initialData, operationContent }: Zapflow
               {ai.sugestaoPrincipal.acaoSugerida}
             </button>
           </motion.article>
+          )}
         </div>
 
         {ai.alertas.length > 0 && (
@@ -453,14 +468,14 @@ export function ZapflowInsightsClient({ initialData, operationContent }: Zapflow
           </div>
         )}
 
-        {ai.oportunidades.length > 0 && (
+        {oportunidadesDisponiveis.length > 0 && (
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-2">
               <Lightbulb className="size-5 text-primary" aria-hidden="true" />
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">Oportunidades para vender mais</h3>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              {ai.oportunidades.map((oportunidade, index) => {
+              {oportunidadesDisponiveis.map((oportunidade, index) => {
                 const info = ACAO_INFO[oportunidade.tipoAcao] ?? ACAO_INFO.geral;
                 const Icon = info.icon;
 
