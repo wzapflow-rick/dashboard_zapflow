@@ -24,10 +24,12 @@ export default async function ReportsPage() {
         getBillingStatus(user.empresaId),
         pg.findById(EMPRESAS_TABLE, user.empresaId) as Promise<Record<string, unknown> | null>,
     ]);
+    const companyPlan =
+        typeof company?.planos === 'string' ? company.planos : null;
     const activePlan =
         billing?.assinatura_status === 'authorized'
             ? billing.plano_assinatura
-            : billing?.plano || user.plano;
+            : billing?.plano || companyPlan || 'iniciante';
     const planAccess = getPlanAccess(activePlan, isTestCompanyRecord(company));
 
     if (!planAccess.features.performanceReports) notFound();
