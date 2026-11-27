@@ -1,5 +1,6 @@
 'use server';
 
+import { after } from 'next/server';
 import { pg } from '@/lib/postgres';
 import bcrypt from 'bcryptjs';
 import { encrypt } from '@/lib/session';
@@ -7,8 +8,8 @@ import { cookies } from 'next/headers';
 import { createAssinatura } from '@/lib/assinaturas';
 import { notifyNewCompany, notifyError } from '@/lib/discord';
 
-function hashPassword(password: string): string {
-  return bcrypt.hashSync(password, 10);
+async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, 10);
 }
 
 interface TrialAccountData {
@@ -42,7 +43,7 @@ export async function createTrialAccount(data: TrialAccountData) {
       return { success: false, error: 'Este email ja esta cadastrado. Faca login.' };
     }
     
-    const hashedPassword = hashPassword(password);
+    const hashedPassword = await hashPassword(password);
     
     // Usar apenas colunas que existem na tabela empresas
     const empresa = await pg.create('empresas', {
@@ -113,25 +114,27 @@ export async function createTrialAccount(data: TrialAccountData) {
       path: '/',
     });
     
-    try {
-      const { sendTrialWelcomeMessage } = await import('@/lib/whatsapp');
-      await sendTrialWelcomeMessage(telefone, nome, email, password);
-    } catch (waError) {
-      console.error('[TrialSignup] Erro ao enviar WhatsApp:', waError);
-    }
-    
-    // Notificar no Discord
-    try {
-      await notifyNewCompany({
+    // Notificações externas não devem atrasar a entrada do cliente no tutorial.
+    // A senha nunca é enviada por WhatsApp; o usuário acabou de defini-la no cadastro.
+    after(async () => {
+      const welcomeTask = import('@/lib/whatsapp')
+        .then(({ sendTrialWelcomeMessage }) => sendTrialWelcomeMessage(telefone, nome, email))
+        .catch((waError) => {
+          console.error('[TrialSignup] Erro ao enviar WhatsApp de boas-vindas:', waError);
+        });
+
+      const discordTask = notifyNewCompany({
         empresaId,
         nomeFantasia: nome,
         email,
         telefone,
         plano: 'Trial - Parceria',
+      }).catch((discordError) => {
+        console.error('[TrialSignup] Erro ao notificar Discord:', discordError);
       });
-    } catch (discordError) {
-      console.error('[TrialSignup] Erro ao notificar Discord:', discordError);
-    }
+
+      await Promise.all([welcomeTask, discordTask]);
+    });
     
     return {
       success: true,

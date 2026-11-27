@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { updateOnboarding } from '@/app/actions/auth';
 import { saveHorariosFuncionamento } from '@/app/actions/horarios';
-import { getCompanyDetails, updateCompany } from '@/app/actions/company';
+import { getOnboardingCompany, updateCompany } from '@/app/actions/company';
 import { upsertCategory, upsertProduct } from '@/app/actions/products';
 
 type DaySchedule = { id: number; label: string; open: boolean; start: string; end: string };
@@ -63,12 +63,12 @@ function OnboardingContent() {
     let active = true;
     async function loadCompany() {
       try {
-        const company = await getCompanyDetails();
+        const company = await getOnboardingCompany();
         if (!active) return;
         if (!company?.id) { window.location.href = '/login?from=/onboarding'; return; }
         setCompanyName(nameFromQuery || String(company.nome_fantasia || ''));
         setNiche(String(company.nincho || ''));
-        setPlan(String(company.planos || company.plano || 'start'));
+        setPlan(String(company.planos || 'start'));
         const existing = niches.find((item) => item.id === String(company.nincho || ''));
         if (existing) setCategoryName(existing.category);
       } catch (error) {
@@ -154,10 +154,6 @@ function OnboardingContent() {
   }
   async function handleDefer() { await completeJourney(true); }
 
-  if (companyLoading) {
-    return <main className="min-h-screen bg-[#07100B] flex items-center justify-center p-6"><div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm text-slate-300"><span className="size-2 animate-pulse rounded-full bg-lime-400" />Preparando sua jornada…</div></main>;
-  }
-
   return (
     <main className="min-h-screen overflow-hidden bg-[#07100B] text-white selection:bg-lime-300/30">
       <div className="pointer-events-none fixed inset-0 opacity-80" aria-hidden="true">
@@ -201,11 +197,11 @@ function OnboardingContent() {
             <AnimatePresence mode="wait">
               {step === 1 && <motion.div key="store" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} className="flex h-full flex-col">
                 <div className="mb-7"><div className="mb-4 flex size-11 items-center justify-center rounded-2xl bg-white/5" style={{ color: persona.accent }}><Store className="size-5" /></div><p className="mb-2 text-xs font-bold uppercase tracking-[.18em]" style={{ color: persona.accent }}>Etapa 1 · Sua loja</p><h1 className="text-2xl font-black tracking-tight sm:text-3xl">Como vamos chamar sua loja?</h1><p className="mt-2 max-w-lg text-sm leading-relaxed text-slate-400">Esse nome aparece no seu cardápio. Você poderá mudar depois.</p></div>
-                <label className="mb-6 block"><span className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-400">Nome da loja</span><input value={companyName} onChange={(event) => setCompanyName(event.target.value)} placeholder="Ex.: Cantinho da Pizza" maxLength={80} className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-4 text-base font-semibold text-white outline-none transition placeholder:text-slate-600 focus:border-lime-300/60 focus:ring-4 focus:ring-lime-300/10" /><span className="mt-2 block text-xs text-slate-500">Se esse nome não for o da sua loja, é só trocar aqui.</span></label>
+                <label className="mb-6 block"><span className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-400">Nome da loja</span><input value={companyName} onChange={(event) => setCompanyName(event.target.value)} disabled={companyLoading} placeholder="Ex.: Cantinho da Pizza" maxLength={80} className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-4 text-base font-semibold text-white outline-none transition placeholder:text-slate-600 focus:border-lime-300/60 focus:ring-4 focus:ring-lime-300/10" /><span className="mt-2 block text-xs text-slate-500">Se esse nome não for o da sua loja, é só trocar aqui.</span></label>
                 <div className="mb-7"><span className="mb-3 block text-xs font-bold uppercase tracking-wider text-slate-400">O que você vende?</span><div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {niches.map((item) => { const Icon = item.icon; const selected = niche === item.id; return <button key={item.id} type="button" onClick={() => { setNiche(item.id); setCategoryName(item.category); }} className={cn('flex min-h-20 flex-col items-start justify-center gap-2 rounded-2xl border p-3 text-left transition hover:-translate-y-0.5', selected ? 'bg-white/[.07]' : 'border-white/10 bg-white/[.02] hover:border-white/20')} style={selected ? { borderColor: persona.accent, boxShadow: '0 0 0 3px ' + persona.glow } : undefined}><Icon className="size-4" style={{ color: selected ? persona.accent : '#94A3B8' }} /><span className={cn('text-xs font-semibold', selected ? 'text-white' : 'text-slate-300')}>{item.label}</span></button>; })}
+                  {niches.map((item) => { const Icon = item.icon; const selected = niche === item.id; return <button key={item.id} type="button" disabled={companyLoading} onClick={() => { setNiche(item.id); setCategoryName(item.category); }} className={cn('flex min-h-20 flex-col items-start justify-center gap-2 rounded-2xl border p-3 text-left transition hover:-translate-y-0.5', selected ? 'bg-white/[.07]' : 'border-white/10 bg-white/[.02] hover:border-white/20')} style={selected ? { borderColor: persona.accent, boxShadow: '0 0 0 3px ' + persona.glow } : undefined}><Icon className="size-4" style={{ color: selected ? persona.accent : '#94A3B8' }} /><span className={cn('text-xs font-semibold', selected ? 'text-white' : 'text-slate-300')}>{item.label}</span></button>; })}
                 </div></div>
-                <div className="mt-auto flex flex-col gap-3 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-between"><span className="text-xs text-slate-500">Leva menos de 2 minutos</span><button type="button" onClick={handleStoreContinue} disabled={saving || !companyName.trim()} className="inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3.5 text-sm font-black text-[#10200F] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45" style={{ background: persona.accent }}>{saving ? 'Salvando…' : 'Continuar'} <ArrowRight className="size-4" /></button></div>
+                <div className="mt-auto flex flex-col gap-3 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-between"><span className="text-xs text-slate-500">Leva menos de 2 minutos</span><button type="button" onClick={handleStoreContinue} disabled={companyLoading || saving || !companyName.trim()} className="inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3.5 text-sm font-black text-[#10200F] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45" style={{ background: persona.accent }}>{companyLoading ? 'Carregando loja…' : saving ? 'Salvando…' : 'Continuar'} <ArrowRight className="size-4" /></button></div>
               </motion.div>}
               {step === 2 && <motion.div key="product" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} className="flex h-full flex-col">
                 <div className="mb-6"><div className="mb-4 flex size-11 items-center justify-center rounded-2xl bg-white/5" style={{ color: persona.accent }}><PackagePlus className="size-5" /></div><p className="mb-2 text-xs font-bold uppercase tracking-[.18em]" style={{ color: persona.accent }}>Etapa 2 · Primeiro produto</p><h1 className="text-2xl font-black tracking-tight sm:text-3xl">Vamos colocar um campeão no cardápio</h1><p className="mt-2 text-sm leading-relaxed text-slate-400">Comece com um produto. Foto e detalhes podem ser adicionados depois.</p></div>
