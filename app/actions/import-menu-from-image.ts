@@ -145,22 +145,34 @@ export async function extractMenuProductsFromImage(
   await requireCompanyMenuAccess(empresaId);
   await findCompany(empresaId);
 
-  const submittedImages = formData.getAll('images').filter((value): value is File => value instanceof File && value.size > 0);
-  const images = submittedImages.length > 0
-    ? submittedImages
-    : [formData.get('image')].filter((value): value is File => value instanceof File && value.size > 0);
+  const submittedFiles = formData.getAll('files').filter((value): value is File => value instanceof File && value.size > 0);
+  const legacyImages = formData.getAll('images').filter((value): value is File => value instanceof File && value.size > 0);
+  const legacyImage = formData.get('image');
+  const files = submittedFiles.length > 0
+    ? submittedFiles
+    : legacyImages.length > 0
+      ? legacyImages
+      : [legacyImage].filter((value): value is File => value instanceof File && value.size > 0);
 
-  if (images.length === 0) throw new Error('Selecione pelo menos uma imagem do cardápio.');
-  if (images.length > 6) throw new Error('Envie no máximo 6 imagens por análise.');
+  if (files.length === 0) throw new Error('Selecione pelo menos uma imagem ou um PDF do cardápio.');
+  if (files.length > 6) throw new Error('Envie no máximo 6 arquivos por análise.');
 
-  const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+  const allowedImageTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
   let combinedSize = 0;
-  for (const image of images) {
-    if (!allowedTypes.has(image.type)) throw new Error('Use imagens JPG, PNG ou WebP.');
-    if (image.size > 750 * 1024) throw new Error('Cada imagem deve ter até 750 KB após a compressão.');
-    combinedSize += image.size;
+  for (const file of files) {
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    if (isPdf) {
+      const pdfHeader = new TextDecoder().decode(new Uint8Array(await file.slice(0, 5).arrayBuffer()));
+      if (pdfHeader !== '%PDF-') throw new Error('O arquivo selecionado não parece ser um PDF válido.');
+      if (file.size > 4 * 1024 * 1024) throw new Error('O PDF deve ter até 4 MB. Comprima o arquivo e tente novamente.');
+    } else if (!allowedImageTypes.has(file.type)) {
+      throw new Error('Use imagens JPG, PNG, WebP ou arquivos PDF.');
+    } else if (file.size > 750 * 1024) {
+      throw new Error('Cada imagem deve ter até 750 KB após a compressão.');
+    }
+    combinedSize += file.size;
   }
-  if (combinedSize > 4.5 * 1024 * 1024) throw new Error('O conjunto das imagens ultrapassou 4,5 MB. Envie menos páginas.');
+  if (combinedSize > 4 * 1024 * 1024) throw new Error('Os arquivos ultrapassaram 4 MB no total. Envie menos páginas.');
   if (!process.env.OPENAI_API_KEY) {
     throw new Error('A importação por foto precisa da variável OPENAI_API_KEY configurada no servidor.');
   }
@@ -175,16 +187,22 @@ export async function extractMenuProductsFromImage(
     ? existingCategories.join(', ')
     : 'Ainda não existem categorias cadastradas.';
 
-  const imageParts = await Promise.all(images.map(async (image) => ({
-    type: 'image' as const,
-    image: new Uint8Array(await image.arrayBuffer()),
-    mediaType: image.type,
-  })));
+  const fileParts = await Promise.all(files.map(async (file) => {
+    const data = new Uint8Array(await file.arrayBuffer());
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+
+    if (isPdf) {
+      const filename = file.name.split(/[\\/]/).pop()?.slice(0, 120) || 'cardapio.pdf';
+      return { type: 'file' as const, data, mediaType: 'application/pdf', filename };
+    }
+
+    return { type: 'image' as const, image: data, mediaType: file.type };
+  }));
   const { output } = await generateText({
     model: openai('gpt-4o-mini'),
     system: [
       'Você organiza cardápios para um sistema de delivery brasileiro.',
-      'Leia todas as páginas enviadas como partes do mesmo cardápio. Não repita itens entre páginas e não invente nomes, descrições, categorias ou preços.',
+      'Leia todas as páginas e arquivos enviados como partes do mesmo cardápio. Não repita itens entre páginas e não invente nomes, descrições, categorias ou preços.',
       'Se um preço não estiver legível ou não existir, retorne null. Valores devem ser números em reais, sem símbolo.',
       'Ignore telefone, endereço, promoções gerais e outros textos que não sejam produtos.',
       'Preserve os nomes e descrições em português do Brasil.',
@@ -199,9 +217,9 @@ export async function extractMenuProductsFromImage(
         content: [
           {
             type: 'text',
-            text: 'Analise todas as páginas do cardápio e extraia os produtos, categorizando e organizando os itens de forma consistente. Não estime preços.',
+            text: 'Analise todas as páginas e arquivos do cardápio e extraia os produtos, categorizando e organizando os itens de forma consistente. Não estime preços.',
           },
-          ...imageParts,
+          ...fileParts,
         ],
       },
     ],
@@ -209,7 +227,7 @@ export async function extractMenuProductsFromImage(
   });
 
   if (!output || output.produtos.length === 0) {
-    throw new Error('Não encontrei produtos legíveis nessa imagem. Tente uma foto mais nítida ou cadastre os itens manualmente.');
+    throw new Error('Não encontrei produtos legíveis nos arquivos enviados. Tente imagens mais nítidas ou cadastre os itens manualmente.');
   }
 
   return output.produtos;

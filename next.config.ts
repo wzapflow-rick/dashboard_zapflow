@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   // Tree-shake bibliotecas grandes (icones e animacao) para reduzir o JS enviado ao cliente.
   experimental: {
     optimizePackageImports: ['lucide-react', 'motion', 'recharts', 'date-fns'],
+    serverActions: { bodySizeLimit: '5mb' },
   },
   eslint: {
     ignoreDuringBuilds: true,
