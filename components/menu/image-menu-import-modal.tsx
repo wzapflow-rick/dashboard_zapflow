@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   ArrowUp,
   ImagePlus,
+  FileText,
   LoaderCircle,
   Pencil,
   Plus,
@@ -94,8 +95,8 @@ export default function ImageMenuImportModal({
   empresaNome,
 }: ImageMenuImportModalProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [images, setImages] = useState<File[]>([]);
-  const [previews, setPreviews] = useState<string[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<Array<string | null>>([]);
   const [companyNiche, setCompanyNiche] = useState('');
   const [products, setProducts] = useState<MenuProduct[]>([]);
   const [categories, setCategories] = useState<MenuCategory[]>([]);
@@ -135,10 +136,10 @@ export default function ImageMenuImportModal({
     return () => { active = false; };
   }, [empresaId, isOpen]);
 
-  useEffect(() => () => previews.forEach((url) => URL.revokeObjectURL(url)), [previews]);
+  useEffect(() => () => previews.forEach((url) => { if (url) URL.revokeObjectURL(url); }), [previews]);
 
   const resetPhoto = () => {
-    setImages([]);
+    setSelectedFiles([]);
     setPreviews([]);
     setRows([]);
     if (inputRef.current) inputRef.current.value = '';
@@ -158,43 +159,58 @@ export default function ImageMenuImportModal({
     setCategories(data.categories as MenuCategory[]);
   };
 
-  const handleImagesChange = (fileList?: FileList | null) => {
+  const handleFilesChange = (fileList?: FileList | null) => {
     const selected = Array.from(fileList || []);
     if (inputRef.current) inputRef.current.value = '';
     if (selected.length === 0) return;
     if (selected.length > 6) {
-      toast.error('Envie no máximo 6 páginas por análise.');
-      if (inputRef.current) inputRef.current.value = '';
+      toast.error('Envie no máximo 6 arquivos por análise.');
       return;
     }
-    const invalidFile = selected.find((file) => !isValidImageFile(file));
+
+    const invalidFile = selected.find((file) => {
+      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      return isPdf ? file.size > 4 * 1024 * 1024 : !isValidImageFile(file);
+    });
     if (invalidFile) {
-      toast.error('Use imagens JPG, PNG ou WebP de até 10 MB cada.');
-      if (inputRef.current) inputRef.current.value = '';
+      toast.error('Use imagens JPG, PNG ou WebP de até 10 MB, ou PDF de até 4 MB.');
       return;
     }
-    setImages(selected);
-    setPreviews(selected.map((file) => URL.createObjectURL(file)));
+    const selectedPdfSize = selected.filter((file) => file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')).reduce((total, file) => total + file.size, 0);
+    if (selectedPdfSize > 4 * 1024 * 1024) {
+      toast.error('Os PDFs ultrapassaram 4 MB no total. Selecione menos arquivos.');
+      return;
+    }
+
+    setSelectedFiles(selected);
+    setPreviews(selected.map((file) =>
+      file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+        ? null
+        : URL.createObjectURL(file),
+    ));
     setRows([]);
   };
 
   const extract = async () => {
-    if (images.length === 0) {
-      toast.error('Escolha pelo menos uma página do cardápio.');
+    if (selectedFiles.length === 0) {
+      toast.error('Escolha pelo menos uma imagem ou um PDF do cardápio.');
       return;
     }
 
     setIsReading(true);
     try {
-      const compressedImages = await Promise.all(images.map(async (image) => {
-        let compressed = await processImage(image, {
+      const filesToUpload = await Promise.all(selectedFiles.map(async (file) => {
+        const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+        if (isPdf) return file;
+
+        let compressed = await processImage(file, {
           maxWidth: 1800,
           maxHeight: 1800,
           quality: 0.72,
           format: 'jpeg',
         });
         if (compressed.size > 750 * 1024) {
-          compressed = await processImage(image, {
+          compressed = await processImage(file, {
             maxWidth: 1200,
             maxHeight: 1200,
             quality: 0.55,
@@ -206,12 +222,12 @@ export default function ImageMenuImportModal({
         }
         return compressed;
       }));
-      if (compressedImages.reduce((total, file) => total + file.size, 0) > 4.5 * 1024 * 1024) {
-        throw new Error('As imagens ultrapassaram 4,5 MB no total. Envie menos páginas.');
+      if (filesToUpload.reduce((total, file) => total + file.size, 0) > 4 * 1024 * 1024) {
+        throw new Error('Os arquivos ultrapassaram 4 MB no total. Envie menos páginas.');
       }
 
       const formData = new FormData();
-      compressedImages.forEach((file) => formData.append('images', file));
+      filesToUpload.forEach((file) => formData.append('files', file, file.name));
       formData.append('preferences', preferences);
       formData.append('categoryPolicy', categoryPolicy);
       const extracted = await extractMenuProductsFromImage(empresaId, formData);
@@ -674,26 +690,31 @@ export default function ImageMenuImportModal({
             <input
               ref={inputRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp"
+              accept="image/jpeg,image/png,image/webp,application/pdf,.pdf"
               className="hidden"
               multiple
-              onChange={(event) => handleImagesChange(event.target.files)}
+              onChange={(event) => handleFilesChange(event.target.files)}
             />
 
-            {previews.length > 0 ? (
+            {selectedFiles.length > 0 ? (
               <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-zinc-700 dark:bg-zinc-900">
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {previews.map((url, index) => (
-                    <div key={url} className="relative overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-zinc-700 dark:bg-black">
-                      <img src={url} alt={`Página ${index + 1} do cardápio`} className="h-32 w-full object-contain" />
-                      <span className="absolute bottom-1.5 left-1.5 rounded-md bg-black/70 px-2 py-1 text-[10px] font-semibold text-white">Página {index + 1}</span>
+                  {selectedFiles.map((file, index) => (
+                    <div key={`${file.name}-${index}`} className="relative flex min-h-32 flex-col items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white p-2 dark:border-zinc-700 dark:bg-black">
+                      {previews[index] ? (
+                        <img src={previews[index] || undefined} alt={`Página ${index + 1} do cardápio`} className="h-24 w-full object-contain" />
+                      ) : (
+                        <FileText className="size-10 text-red-500" />
+                      )}
+                      <span className="mt-1 w-full truncate text-center text-xs font-medium text-slate-700 dark:text-zinc-200">{file.name}</span>
+                      <span className="text-[10px] text-slate-500">{file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf') ? 'PDF' : `Página ${index + 1}`}</span>
                     </div>
                   ))}
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-xs text-slate-500 dark:text-zinc-400">{images.length} página(s) selecionada(s)</span>
+                  <span className="text-xs text-slate-500 dark:text-zinc-400">{selectedFiles.length} arquivo(s) selecionado(s)</span>
                   <button type="button" onClick={() => inputRef.current?.click()} className="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow dark:bg-zinc-800 dark:text-white">
-                    <ImagePlus className="size-4" /> Trocar imagens
+                    <ImagePlus className="size-4" /> Trocar arquivos
                   </button>
                 </div>
               </div>
@@ -704,19 +725,19 @@ export default function ImageMenuImportModal({
                 className="flex min-h-48 w-full flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 text-center transition hover:border-primary hover:bg-primary/5 dark:border-zinc-700 dark:bg-zinc-900"
               >
                 <span className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Upload className="size-6" /></span>
-                <span className="font-semibold text-slate-800 dark:text-zinc-100">Escolher páginas do cardápio</span>
-                <span className="text-xs text-slate-500 dark:text-zinc-400">JPG, PNG ou WebP • até 6 imagens de 10 MB</span>
+                <span className="font-semibold text-slate-800 dark:text-zinc-100">Escolher imagens ou PDF do cardápio</span>
+                <span className="text-xs text-slate-500 dark:text-zinc-400">JPG, PNG, WebP ou PDF • até 6 arquivos e 4 MB no total</span>
               </button>
             )}
 
             <button
               type="button"
               onClick={extract}
-              disabled={images.length === 0 || isReading}
+              disabled={selectedFiles.length === 0 || isReading}
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isReading ? <LoaderCircle className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-              {isReading ? `Lendo ${images.length} página(s)…` : 'Ler e comparar com o cardápio'}
+              {isReading ? `Analisando ${selectedFiles.length} arquivo(s)…` : 'Ler e comparar com o cardápio'}
             </button>
           </div>
         )}
