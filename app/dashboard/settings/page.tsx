@@ -47,7 +47,7 @@ const DIAS_SEMANA = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'
 
 export default function SettingsPage() {
   const planAccess = usePlanAccess();
-  const visibleSections = sections.filter((section) => !('feature' in section) || planAccess.features[section.feature]);
+  const visibleSections = sections.filter((section) => section.feature === undefined || planAccess.features[section.feature]);
   const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
   const initialSection = searchParams?.get('section') || 'general';
   const [activeSection, setActiveSection] = React.useState(initialSection);
