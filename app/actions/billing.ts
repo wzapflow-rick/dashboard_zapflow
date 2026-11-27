@@ -25,6 +25,8 @@ export interface BillingStatus {
    * `empresas.planos = 'iniciante'`). Use este para exibir o plano contratado.
    */
   plano_assinatura: string | null;
+  /** Status da assinatura mais recente, usado para definir o plano ativo. */
+  assinatura_status: string | null;
   /** Data da proxima cobranca (renovacao automatica no cartao), vinda da tabela assinaturas */
   data_proxima_cobranca: string | null;
   /** Valor da assinatura */
@@ -50,6 +52,7 @@ export async function getBillingStatus(empresaId: number): Promise<BillingStatus
               e.bloqueado,
               e.planos,
               a.plano                 AS assinatura_plano,
+              a.status                AS assinatura_status,
               a.valor                 AS assinatura_valor,
               a.data_proxima_cobranca AS assinatura_data_proxima_cobranca,
               a.cartao_ultimos_digitos AS assinatura_cartao_ultimos_digitos
@@ -76,6 +79,7 @@ export async function getBillingStatus(empresaId: number): Promise<BillingStatus
       bloqueado: row.bloqueado || false,
       plano: row.planos || row.assinatura_plano || null,
       plano_assinatura: row.assinatura_plano || null,
+      assinatura_status: row.assinatura_status || null,
       data_proxima_cobranca: row.assinatura_data_proxima_cobranca || null,
       valor: row.assinatura_valor != null ? Number(row.assinatura_valor) : null,
       cartao_ultimos_digitos: row.assinatura_cartao_ultimos_digitos || null,
