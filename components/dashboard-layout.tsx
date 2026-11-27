@@ -130,7 +130,7 @@ export default function DashboardLayout({
       setError('Erro ao carregar modulo de autenticacao');
       setIsLoading(false);
     });
-  }, []);
+  }, [planAccess]);
 
   const isCozinheiro = user?.role === 'cozinheiro';
 
@@ -171,7 +171,7 @@ export default function DashboardLayout({
           {user?.empresaId && <PaymentAlert empresaId={user.empresaId} />}
           {user && (
             <TrialWarningBanner 
-              plano={user.plano} 
+              plano={planAccess.plan} 
               dataInicio={user.dataInicio || user.created_at} 
               empresaId={user.empresaId} 
             />
