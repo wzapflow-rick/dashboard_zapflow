@@ -88,7 +88,7 @@ export function getPlanAccess(
   planValue: string | null | undefined,
   isTestAccount = false,
 ): PlanAccess {
-  const normalized = normalizePlanName(planValue).trim().toLowerCase();
+  const normalized = normalizePlanName(planValue?.trim().toLowerCase()).trim().toLowerCase();
   const plan = (normalized in PLAN_FEATURES ? normalized : 'iniciante') as SubscriptionPlanId;
   const features = { ...PLAN_FEATURES[plan] };
 
