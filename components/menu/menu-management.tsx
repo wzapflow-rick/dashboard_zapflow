@@ -337,8 +337,7 @@ export default function MenuManagement({ hideCategoryButton }: { hideCategoryBut
         user={user}
       />
 
-      {isModalOpen && (
-        {Number(user?.empresaId) > 0 && (
+      {Number(user?.empresaId) > 0 && (
         <ImageMenuImportModal
           isOpen={isImageImportOpen}
           onClose={() => {
@@ -350,7 +349,8 @@ export default function MenuManagement({ hideCategoryButton }: { hideCategoryBut
         />
       )}
 
-      <ProductFormModal
+      {isModalOpen && (
+        <ProductFormModal
           key={`product-modal-${categories.length}-${categories.map(c => c.id).join(',')}`}
           isOpen={isModalOpen}
           onClose={() => { setIsModalOpen(false); setEditingProduct(null); setEditingProductInsumos([]); }}
