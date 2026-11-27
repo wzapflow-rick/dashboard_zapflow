@@ -20,48 +20,70 @@ import { getStatusLoja, type Horario } from '@/lib/horarios';
 // requisicao; sem isso todas as queries rodavam 2x por acesso ao cardapio.
 export const getPublicMenu = cache(loadPublicMenu);
 
+function decodePublicMenuSlug(value: string): string {
+    try {
+        return decodeURIComponent(value);
+    } catch {
+        return value;
+    }
+}
+
+function normalizePublicMenuSlug(value: string): string {
+    return decodePublicMenuSlug(value)
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
+
 async function loadPublicMenu(slug: string) {
     
     try {
         let empresa: any = null;
         
-        // Converter slug para nome (vr-pizza-show -> VR Pizza Show)
-        const possibleName = slug
-            .split('-')
-            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(' ');
-        
-        // Converter slug para nome lowercase (vr-pizza-show -> vr pizza show)
-        const possibleNameLower = slug.replace(/-/g, ' ');
+        const requestedSlug = decodePublicMenuSlug(slug);
+        const normalizedSlug = normalizePublicMenuSlug(requestedSlug);
+        const possibleNameLower = requestedSlug.replace(/-/g, ' ');
 
         
-        // TENTATIVA 1: Busca exata por coluna slug
+        // TENTATIVA 1: Busca slug original ou normalizado (sem acentos).
         const empresaBySlug = await pg.raw<any>(
-            `SELECT * FROM "${EMPRESAS_TABLE}" WHERE slug = $1 LIMIT 1`,
-            [slug]
+            `SELECT * FROM "${EMPRESAS_TABLE}"
+             WHERE LOWER(COALESCE(slug, '')) IN (LOWER($1), LOWER($2))
+             LIMIT 1`,
+            [requestedSlug, normalizedSlug]
         );
         if (empresaBySlug.length > 0) {
             empresa = empresaBySlug[0];
         }
-        
-        // TENTATIVA 2: Busca exata por instancia_evolution (zapflow_ID)
-        if (!empresa && slug.startsWith('zapflow_')) {
+
+        // TENTATIVA 2: Busca exata por instancia_evolution (zapflow_ID).
+        if (!empresa && requestedSlug.startsWith('zapflow_')) {
             const empresaByInstance = await pg.raw<any>(
                 `SELECT * FROM "${EMPRESAS_TABLE}" WHERE instancia_evolution = $1 LIMIT 1`,
-                [slug]
+                [requestedSlug]
             );
             if (empresaByInstance.length > 0) {
                 empresa = empresaByInstance[0];
             }
         }
 
-        // TENTATIVA 3: Busca exata por nome_fantasia (case insensitive)
-        if (!empresa) {
+        // TENTATIVA 3: Compara o slug sem acentos com o nome fantasia normalizado.
+        // Não depende da extensão PostgreSQL unaccent.
+        if (!empresa && normalizedSlug) {
             const empresasByFantasia = await pg.raw<any>(
-                `SELECT * FROM "${EMPRESAS_TABLE}" WHERE LOWER(REPLACE(nome_fantasia, ' ', '-')) = LOWER($1) OR LOWER(nome_fantasia) = LOWER($2) LIMIT 1`,
-                [slug, possibleNameLower]
+                `SELECT * FROM "${EMPRESAS_TABLE}"
+                 WHERE TRIM(BOTH '-' FROM REGEXP_REPLACE(
+                     TRANSLATE(LOWER(COALESCE(nome_fantasia, '')),
+                         'áàâãäåéèêëíìîïóòôõöúùûüçñýÿ',
+                         'aaaaaaeeeeiiiiooooouuuucnyy'),
+                     '[^a-z0-9]+', '-', 'g'
+                 )) = $1
+                 LIMIT 1`,
+                [normalizedSlug]
             );
-            
+
             if (empresasByFantasia.length > 0) {
                 empresa = empresasByFantasia[0];
             }
@@ -80,8 +102,8 @@ async function loadPublicMenu(slug: string) {
         }
 
         // TENTATIVA 5: Fallback para ID numerico (se slug for numero)
-        if (!empresa && /^\d+$/.test(slug)) {
-            empresa = await pg.findById(EMPRESAS_TABLE, parseInt(slug));
+        if (!empresa && /^\d+$/.test(requestedSlug)) {
+            empresa = await pg.findById(EMPRESAS_TABLE, parseInt(requestedSlug));
             if (empresa) {
             }
         }
@@ -95,7 +117,7 @@ async function loadPublicMenu(slug: string) {
         }
 
         if (!empresa) {
-            console.error(`[MENU_DEBUG] Nenhuma empresa encontrada para slug: ${slug}`);
+            console.error(`[MENU_DEBUG] Nenhuma empresa encontrada para slug: ${requestedSlug}`);
             return null;
         }
 
