@@ -26,28 +26,37 @@ import { CreditCard as PaymentIcon, Banknote } from 'lucide-react';
 import { getBotConfig, saveBotConfig, getCardapioLink, testBotGreeting, BotConfig } from '@/app/actions/bot';
 import { createEvolutionInstance, getEvolutionQRCode, getInstanceStatus, configureInstanceWebhook } from '@/app/actions/evolution';
 import { PushNotificationsCard } from '@/components/push-notifications-card';
+import { usePlanAccess } from '@/components/dashboard-layout';
 
 const sections = [
   { id: 'general', name: 'Geral', icon: Store },
   { id: 'hours', name: 'Horários', icon: Clock },
   { id: 'payments', name: 'Pagamentos', icon: PaymentIcon },
   { id: 'delivery', name: 'Entrega', icon: MapPin },
-  { id: 'drivers', name: 'Entregadores', icon: Truck },
+  { id: 'drivers', name: 'Entregadores', icon: Truck, feature: 'drivers' as const },
   { id: 'deliveryHistory', name: 'Histórico', icon: Package },
   { id: 'generalRules', name: 'Regras Gerais', icon: Package },
-  { id: 'coupons', name: 'Cupons', icon: Ticket },
-  { id: 'loyalty', name: 'Fidelidade', icon: Award },
+  { id: 'coupons', name: 'Cupons', icon: Ticket, feature: 'coupons' as const },
+  { id: 'loyalty', name: 'Fidelidade', icon: Award, feature: 'loyalty' as const },
   { id: 'notifications', name: 'Notificações', icon: Bell },
   { id: 'security', name: 'Segurança', icon: Shield },
-  { id: 'bot', name: 'Bot', icon: Bot },
+  { id: 'bot', name: 'Bot', icon: Bot, feature: 'whatsappAutomation' as const },
 ];
 
 const DIAS_SEMANA = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
 export default function SettingsPage() {
+  const planAccess = usePlanAccess();
+  const visibleSections = sections.filter((section) => !('feature' in section) || planAccess.features[section.feature]);
   const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
   const initialSection = searchParams?.get('section') || 'general';
   const [activeSection, setActiveSection] = React.useState(initialSection);
+
+  React.useEffect(() => {
+    if (!visibleSections.some((section) => section.id === activeSection)) {
+      setActiveSection('general');
+    }
+  }, [activeSection, visibleSections]);
   const [autoRadius, setAutoRadius] = React.useState(false);
   const [raioMaximoKm, setRaioMaximoKm] = React.useState<number>(10);
   const [valorPorKm, setValorPorKm] = React.useState<number>(0);
@@ -640,7 +649,7 @@ export default function SettingsPage() {
           <div className="flex flex-col lg:flex-row gap-8">
             <aside className="w-full lg:w-64 shrink-0">
               <nav className="flex lg:flex-col gap-1 overflow-x-auto pb-2 lg:pb-0 no-scrollbar">
-                {sections.map((section) => (
+                {visibleSections.map((section) => (
                   <button
                     key={section.id}
                     onClick={() => setActiveSection(section.id)}
@@ -958,6 +967,7 @@ export default function SettingsPage() {
                     )}
                   </div>
 
+                  {planAccess.features.deliveryMaps && (
                   <div className="p-6 bg-slate-50 dark:bg-zinc-800 rounded-2xl border border-slate-100 dark:border-zinc-700 space-y-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -1129,6 +1139,7 @@ export default function SettingsPage() {
                       )}
                     </AnimatePresence>
                   </div>
+                  )}
 
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
@@ -1304,15 +1315,15 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              {activeSection === 'coupons' && (
+              {activeSection === 'coupons' && planAccess.features.coupons && (
                 <CouponsManagement />
               )}
 
-              {activeSection === 'loyalty' && (
+              {activeSection === 'loyalty' && planAccess.features.loyalty && (
                 <LoyaltyManagement />
               )}
 
-              {activeSection === 'drivers' && (
+              {activeSection === 'drivers' && planAccess.features.drivers && (
                 <DriversManagement />
               )}
 
@@ -1627,7 +1638,7 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              {activeSection === 'bot' && (
+              {activeSection === 'bot' && planAccess.features.whatsappAutomation && (
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
