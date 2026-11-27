@@ -10,6 +10,7 @@ import { pg } from '@/lib/postgres';
 import { EMPRESAS_TABLE, USUARIOS_TABLE } from '@/lib/tables';
 import { checkRateLimit, clearRateLimitAttempts, checkLoginRateLimit, clearLoginRateLimits, getClientIp } from '@/lib/rate-limit';
 import { notifySecurityRateLimitBlocked } from '@/lib/discord';
+import { requireAdmin } from '@/lib/session-server';
 
 export async function login(data: any) {
     try {
@@ -180,36 +181,39 @@ export async function register(formData: FormData) {
     return { success: true };
 }
 
-export async function updateOnboarding(onboardingData: any) {
+export async function updateOnboarding(onboardingData: unknown) {
+    const user = await requireAdmin();
+    const input = onboardingData && typeof onboardingData === 'object'
+        ? onboardingData as Record<string, unknown>
+        : {};
+    const nome = typeof input.nome === 'string' ? input.nome.trim() : '';
+    const nicho = typeof input.nicho === 'string' ? input.nicho.trim() : '';
+
+    if (!nome || nome.length > 80 || nicho.length > 50) {
+        return { error: 'Dados da loja inválidos' };
+    }
+
     const sessionValue = (await cookies()).get('session')?.value;
     if (!sessionValue) return { error: 'Não autorizado' };
 
     const payload = await decrypt(sessionValue);
     if (!payload) return { error: 'Sessão inválida' };
 
-    const empresaId = payload.empresaId;
-
-    const updateBody: any = {
-        id: empresaId,
-        nome_fantasia: onboardingData.nome,
+    const updateBody: Record<string, unknown> = {
+        id: user.empresaId,
+        nome_fantasia: nome,
     };
 
-    if (onboardingData.nicho) {
-        updateBody.nincho = onboardingData.nicho;
-    }
-
-    if (onboardingData.instancia_evolution) {
-        updateBody.instancia_evolution = onboardingData.instancia_evolution;
-    }
+    if (nicho) updateBody.nincho = nicho;
 
     await pg.update(EMPRESAS_TABLE, updateBody);
 
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
     const newSession = await encrypt({
         ...payload,
-        nome: onboardingData.nome,
+        nome,
         onboarded: true,
-        controle_estoque: !!onboardingData.controle_estoque
+        controle_estoque: input.controle_estoque === true
     });
     const isProduction = process.env.NODE_ENV === 'production';
     (await cookies()).set('session', newSession, {
