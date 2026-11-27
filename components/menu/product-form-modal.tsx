@@ -13,7 +13,8 @@ import { MobileDrawer } from '@/components/ui/mobile-drawer';
 import { toast } from 'sonner';
 import { parseCurrency } from '@/lib/utils';
 import useSWR from 'swr';
-import { getGruposComplementos, getGruposDoProduto } from '@/app/actions/complements';
+import { getGruposComplementos, getGruposDoProduto, upsertGrupoComplemento, upsertItemComplemento } from '@/app/actions/complements';
+import { getCompanyDetails } from '@/app/actions/company';
 
 interface SizeOption {
     nome: string;
@@ -60,13 +61,19 @@ export default function ProductFormModal({
     const [selectedRecommendations, setSelectedRecommendations] = useState<number[]>([]);
 
     // Adicionais (grupos de complementos). null = o usuário ainda não mexeu.
-    const { data: gruposList = [] } = useSWR('grupos-complementos', () => getGruposComplementos());
+    const { data: gruposList = [], mutate: refreshGrupos } = useSWR('grupos-complementos', () => getGruposComplementos());
     const editingId = editingProduct?.id ? Number(editingProduct.id) : null;
     const { data: gruposDoProduto } = useSWR(
         editingId ? ['grupos-do-produto', editingId] : null,
         () => getGruposDoProduto(editingId as number)
     );
     const [selectedGrupos, setSelectedGrupos] = useState<number[] | null>(null);
+    const [storeNiche, setStoreNiche] = useState('');
+    const [showQuickGroupForm, setShowQuickGroupForm] = useState(false);
+    const [quickGroupName, setQuickGroupName] = useState('');
+    const [quickGroupMax, setQuickGroupMax] = useState(10);
+    const [quickOptions, setQuickOptions] = useState([{ nome: '', preco: '0' }]);
+    const [savingQuickGroup, setSavingQuickGroup] = useState(false);
     const gruposMarcados = selectedGrupos ?? gruposDoProduto ?? [];
     const toggleGrupo = (id: number) => {
         setSelectedGrupos(
@@ -80,6 +87,90 @@ export default function ProductFormModal({
         });
     }, []);
 
+    useEffect(() => {
+        if (!isOpen) return;
+        getCompanyDetails().then((company) => {
+            setStoreNiche(String(company?.nincho || ''));
+        });
+    }, [isOpen]);
+
+    const nicheKey = storeNiche.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+    const isAcaiShop = nicheKey.includes('acai');
+    const isPizzeria = nicheKey.includes('pizza');
+    const isBurgerShop = nicheKey.includes('hamburg');
+    const optionSectionTitle = isAcaiShop ? 'Acompanhamentos' : isPizzeria ? 'Bordas e adicionais' : isBurgerShop ? 'Adicionais do lanche' : 'Personalizações';
+    const optionSectionHelp = isAcaiShop
+        ? 'Escolha o que o cliente pode colocar no açaí, como frutas, cremes e complementos.'
+        : isPizzeria
+            ? 'Configure bordas e adicionais da pizza com os nomes que seus clientes já conhecem.'
+            : isBurgerShop
+                ? 'Cadastre os extras que o cliente pode adicionar ao lanche.'
+                : 'Escolha os extras que o cliente poderá adicionar a este produto.';
+    const quickGroupTemplates = isAcaiShop ? ['Acompanhamentos'] : isPizzeria ? ['Bordas', 'Adicionais'] : ['Adicionais'];
+    const startQuickGroup = (name: string) => {
+        setQuickGroupName(name);
+        setQuickGroupMax(name.toLowerCase().includes('borda') ? 1 : 10);
+        setQuickOptions([{ nome: '', preco: '0' }]);
+        setShowQuickGroupForm(true);
+    };
+    const addQuickOption = () => setQuickOptions((options) => [...options, { nome: '', preco: '0' }]);
+    const updateQuickOption = (index: number, field: 'nome' | 'preco', value: string) => {
+        setQuickOptions((options) => options.map((option, i) => i === index ? { ...option, [field]: value } : option));
+    };
+    const removeQuickOption = (index: number) => setQuickOptions((options) => options.filter((_, i) => i !== index));
+
+    const handleCreateQuickGroup = async () => {
+        const options = quickOptions
+            .map((option) => ({ nome: option.nome.trim(), preco: parseCurrency(option.preco) }))
+            .filter((option) => option.nome);
+        if (!quickGroupName.trim() || options.length === 0) {
+            toast.error('Informe o nome do grupo e pelo menos uma opção.');
+            return;
+        }
+
+        try {
+            setSavingQuickGroup(true);
+            const savedGroup = await upsertGrupoComplemento({
+                nome: quickGroupName.trim(),
+                obrigatorio: false,
+                minimo: 0,
+                maximo: Math.max(1, quickGroupMax),
+                tipo_calculo: 'soma',
+                cobrar_mais_caro: false,
+                total_slots: Math.max(1, quickGroupMax),
+                produto_composto: false,
+                descricao: '',
+                imagem: '',
+            });
+            const groupId = Number(savedGroup?.id);
+            if (!Number.isInteger(groupId) || groupId <= 0) throw new Error('Não foi possível identificar o grupo criado.');
+
+            for (const option of options) {
+                await upsertItemComplemento({
+                    grupo_id: groupId,
+                    nome: option.nome,
+                    preco: option.preco,
+                    descricao: '',
+                    status: true,
+                    fator_proporcao: 1,
+                });
+            }
+
+            setSelectedGrupos([...new Set([...gruposMarcados, groupId])]);
+            await refreshGrupos();
+            setShowQuickGroupForm(false);
+            setQuickGroupName('');
+            setQuickOptions([{ nome: '', preco: '0' }]);
+            toast.success('Grupo criado e vinculado a este produto.');
+        } catch (error) {
+            console.error('Erro ao criar grupo rápido de adicionais:', error);
+            await refreshGrupos();
+            toast.error(error instanceof Error ? error.message : 'Não foi possível criar o grupo.');
+        } finally {
+            setSavingQuickGroup(false);
+        }
+    };
+
 
 
     useEffect(() => {
@@ -88,6 +179,8 @@ export default function ProductFormModal({
         // Se nao existem categorias, automaticamente mostrar campo para criar nova
         queueMicrotask(() => {
         setIsCreatingCategory(categories.length === 0);
+        setSelectedGrupos(null);
+        setShowQuickGroupForm(false);
         setIsSubmitting(false);
         setImagePreview(editingProduct?.imagem || null);
 
@@ -529,41 +622,90 @@ export default function ProductFormModal({
                             </div>
                         </div>
 
-                        {/* Adicionais Section */}
+                        {/* Opções por ramo: atalhos simples, mantendo compatibilidade com grupos já existentes. */}
                         <fieldset className="pt-4 border-t border-slate-100 dark:border-zinc-800/60">
-                            <legend className="sr-only">Adicionais</legend>
-                            <div className="mb-3">
-                                <div className="text-sm font-bold text-slate-900 dark:text-white">Adicionais</div>
-                                <div className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">
-                                    Escolha os grupos de adicionais que o cliente pode adicionar a este produto.
+                            <legend className="sr-only">{optionSectionTitle}</legend>
+                            <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+                                <div>
+                                    <div className="text-sm font-bold text-slate-900 dark:text-white">{optionSectionTitle}</div>
+                                    <div className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">{optionSectionHelp}</div>
                                 </div>
+                                <button type="button" onClick={() => startQuickGroup(quickGroupTemplates[0])} className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 px-3 py-2 text-xs font-bold text-primary transition hover:bg-primary/5">
+                                    <Plus className="size-3.5" /> Criar {isAcaiShop ? 'acompanhamentos' : 'opções'}
+                                </button>
                             </div>
-                            {gruposList.length === 0 ? (
-                                <p className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-zinc-800 rounded-xl p-3 border border-slate-100 dark:border-zinc-700">
-                                    Nenhum grupo de adicionais cadastrado. Crie em Cardápio &gt; Complementos.
-                                </p>
-                            ) : (
-                                <div className="flex flex-wrap gap-2">
+
+                            {gruposList.length > 0 && (
+                                <div className="mb-3 flex flex-wrap gap-2">
                                     {gruposList.map((g: any) => {
                                         const id = Number(g.id);
                                         const ativo = gruposMarcados.includes(id);
                                         return (
-                                            <button
-                                                key={id}
-                                                type="button"
-                                                aria-pressed={ativo}
-                                                onClick={() => toggleGrupo(id)}
-                                                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-bold transition-colors ${
-                                                    ativo
-                                                        ? 'bg-primary/10 border-primary text-primary'
-                                                        : 'bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-slate-300 hover:border-primary/50'
-                                                }`}
-                                            >
+                                            <button key={id} type="button" aria-pressed={ativo} onClick={() => toggleGrupo(id)}
+                                                className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-bold transition-colors ${
+                                                    ativo ? 'bg-primary/10 border-primary text-primary' : 'bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-slate-300 hover:border-primary/50'
+                                                }`}>
                                                 {ativo ? <Check className="size-3.5" aria-hidden="true" /> : <Plus className="size-3.5" aria-hidden="true" />}
                                                 {g.nome}
                                             </button>
                                         );
                                     })}
+                                </div>
+                            )}
+
+                            {gruposList.length === 0 && !showQuickGroupForm && (
+                                <p className="mb-3 rounded-xl border border-slate-100 bg-slate-50 p-3 text-xs text-slate-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-slate-400">
+                                    Ainda não há opções cadastradas. Crie o primeiro grupo aqui, sem sair do produto.
+                                </p>
+                            )}
+
+                            {showQuickGroupForm && (
+                                <div className="space-y-3 rounded-xl border border-primary/20 bg-primary/[.03] p-3 sm:p-4">
+                                    <div className="flex flex-wrap gap-2">
+                                        {quickGroupTemplates.map((template) => (
+                                            <button key={template} type="button" onClick={() => startQuickGroup(template)}
+                                                className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold ${
+                                                    quickGroupName === template ? 'border-primary bg-primary/10 text-primary' : 'border-slate-200 text-slate-600 dark:border-zinc-700 dark:text-slate-300'
+                                                }`}>{template}</button>
+                                        ))}
+                                    </div>
+                                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                        Nome do grupo
+                                        <input value={quickGroupName} onChange={(event) => setQuickGroupName(event.target.value)} maxLength={60}
+                                            placeholder={isAcaiShop ? 'Ex.: Acompanhamentos' : isPizzeria ? 'Ex.: Bordas ou Adicionais' : 'Ex.: Adicionais'}
+                                            className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-primary dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" />
+                                    </label>
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Opções para o cliente escolher</span>
+                                            <span className="text-[10px] text-slate-500">Preço adicional · use 0 para incluir sem custo</span>
+                                        </div>
+                                        {quickOptions.map((option, index) => (
+                                            <div key={index} className="grid grid-cols-[1fr_110px_32px] gap-2">
+                                                <input value={option.nome} onChange={(event) => updateQuickOption(index, 'nome', event.target.value)} maxLength={80}
+                                                    placeholder={isAcaiShop ? 'Ex.: Morango, leite em pó' : 'Ex.: Catupiry, bacon'}
+                                                    className="min-w-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-primary dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" />
+                                                <input inputMode="decimal" value={option.preco} onChange={(event) => updateQuickOption(index, 'preco', event.target.value.replace(/[^\d,.]/g, ''))}
+                                                    aria-label={`Preço adicional da opção ${index + 1}`} placeholder="0,00"
+                                                    className="min-w-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-primary dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" />
+                                                <button type="button" onClick={() => removeQuickOption(index)} disabled={quickOptions.length === 1}
+                                                    aria-label="Remover opção" className="flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 disabled:opacity-40 dark:border-zinc-700"><Trash2 className="size-4" /></button>
+                                            </div>
+                                        ))}
+                                        <button type="button" onClick={addQuickOption} className="inline-flex items-center gap-1 text-xs font-bold text-primary"><Plus className="size-3.5" /> Adicionar outra opção</button>
+                                    </div>
+                                    <label className="block max-w-[220px] text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                        Quantidade máxima por pedido
+                                        <select value={quickGroupMax} onChange={(event) => setQuickGroupMax(Number(event.target.value))}
+                                            className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white">
+                                            {[1, 2, 3, 5, 10, 20].map((value) => <option key={value} value={value}>{value}</option>)}
+                                        </select>
+                                    </label>
+                                    <div className="flex justify-end gap-2 border-t border-slate-200 pt-3 dark:border-zinc-700">
+                                        <button type="button" onClick={() => setShowQuickGroupForm(false)} disabled={savingQuickGroup} className="rounded-lg px-3 py-2 text-xs font-semibold text-slate-500">Cancelar</button>
+                                        <button type="button" onClick={handleCreateQuickGroup} disabled={savingQuickGroup || !quickGroupName.trim() || !quickOptions.some((option) => option.nome.trim())}
+                                            className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-white disabled:opacity-50">{savingQuickGroup ? 'Salvando…' : 'Criar e vincular'}</button>
+                                    </div>
                                 </div>
                             )}
                         </fieldset>
