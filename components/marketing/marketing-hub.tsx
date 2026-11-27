@@ -11,6 +11,7 @@ import {
   type MarketingTab,
 } from '@/lib/marketing-navigation';
 import { cn } from '@/lib/utils';
+import { usePlanAccess } from '@/components/dashboard-layout';
 
 const TAB_OPTIONS = [
   { value: 'divulgacao', label: 'Divulgação', icon: Share2 },
@@ -22,7 +23,13 @@ interface MarketingHubProps {
 }
 
 export function MarketingHub({ initialTab }: MarketingHubProps) {
-  const [activeTab, setActiveTab] = useState<MarketingTab>(initialTab);
+  const planAccess = usePlanAccess();
+  const availableTabs = TAB_OPTIONS.filter(
+    ({ value }) => value !== 'campanhas' || planAccess.features.campaigns,
+  );
+  const safeInitialTab =
+    initialTab === 'campanhas' && !planAccess.features.campaigns ? 'divulgacao' : initialTab;
+  const [activeTab, setActiveTab] = useState<MarketingTab>(safeInitialTab);
   const tabRefs = useRef<Record<MarketingTab, HTMLButtonElement | null>>({
     divulgacao: null,
     campanhas: null,
@@ -30,33 +37,35 @@ export function MarketingHub({ initialTab }: MarketingHubProps) {
 
   useEffect(() => {
     const handlePopState = () => {
-      const tab = new URL(window.location.href).searchParams.get('tab');
-      setActiveTab(normalizeMarketingTab(tab));
+      const tab = normalizeMarketingTab(new URL(window.location.href).searchParams.get('tab'));
+      setActiveTab(tab === 'campanhas' && !planAccess.features.campaigns ? 'divulgacao' : tab);
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+  }, [planAccess.features.campaigns]);
 
   function activateTab(nextTab: MarketingTab) {
     if (nextTab === activeTab) return;
+    if (nextTab === 'campanhas' && !planAccess.features.campaigns) return;
 
     setActiveTab(nextTab);
     window.history.pushState(window.history.state, '', getMarketingPath(nextTab));
   }
 
   function handleTabKeyDown(event: KeyboardEvent<HTMLButtonElement>, currentTab: MarketingTab) {
-    const currentIndex = MARKETING_TABS.indexOf(currentTab);
+    const tabOrder = availableTabs.map(({ value }) => value);
+    const currentIndex = tabOrder.indexOf(currentTab);
     let nextIndex: number | null = null;
 
-    if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % MARKETING_TABS.length;
-    if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + MARKETING_TABS.length) % MARKETING_TABS.length;
+    if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % tabOrder.length;
+    if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + tabOrder.length) % tabOrder.length;
     if (event.key === 'Home') nextIndex = 0;
-    if (event.key === 'End') nextIndex = MARKETING_TABS.length - 1;
+    if (event.key === 'End') nextIndex = tabOrder.length - 1;
     if (nextIndex === null) return;
 
     event.preventDefault();
-    const nextTab = MARKETING_TABS[nextIndex];
+    const nextTab = tabOrder[nextIndex];
     activateTab(nextTab);
     requestAnimationFrame(() => tabRefs.current[nextTab]?.focus());
   }
@@ -74,16 +83,16 @@ export function MarketingHub({ initialTab }: MarketingHubProps) {
           </div>
         </div>
         <p className="max-w-2xl text-pretty text-sm leading-relaxed text-muted-foreground">
-          Compartilhe seu cardápio e mantenha seus clientes próximos com campanhas automáticas.
+          {planAccess.features.campaigns ? 'Compartilhe seu cardápio e mantenha seus clientes próximos com campanhas automáticas.' : 'Compartilhe seu cardápio e facilite novos pedidos dos seus clientes.'}
         </p>
       </header>
 
       <div
         aria-label="Áreas de marketing"
-        className="grid w-full grid-cols-2 gap-1 rounded-xl border border-border-dark bg-surface-dark p-1 shadow-inner sm:w-fit"
+        className={cn('grid w-full gap-1 rounded-xl border border-border-dark bg-surface-dark p-1 shadow-inner sm:w-fit', availableTabs.length > 1 ? 'grid-cols-2' : 'grid-cols-1')}
         role="tablist"
       >
-        {TAB_OPTIONS.map(({ value, label, icon: Icon }) => {
+        {availableTabs.map(({ value, label, icon: Icon }) => {
           const isActive = activeTab === value;
 
           return (
@@ -131,16 +140,18 @@ export function MarketingHub({ initialTab }: MarketingHubProps) {
         <DisclosurePanel />
       </section>
 
-      <section
-        aria-labelledby="marketing-tab-campanhas"
-        className="min-w-0 outline-none"
-        hidden={activeTab !== 'campanhas'}
-        id="marketing-panel-campanhas"
-        role="tabpanel"
-        tabIndex={0}
-      >
-        <CampaignsPanel />
-      </section>
+      {planAccess.features.campaigns && (
+        <section
+          aria-labelledby="marketing-tab-campanhas"
+          className="min-w-0 outline-none"
+          hidden={activeTab !== 'campanhas'}
+          id="marketing-panel-campanhas"
+          role="tabpanel"
+          tabIndex={0}
+        >
+          <CampaignsPanel />
+        </section>
+      )}
     </div>
   );
 }
