@@ -58,7 +58,7 @@ export async function getBillingStatus(empresaId: number): Promise<BillingStatus
               a.cartao_ultimos_digitos AS assinatura_cartao_ultimos_digitos
        FROM empresas e
        LEFT JOIN LATERAL (
-         SELECT plano, valor, data_proxima_cobranca, cartao_ultimos_digitos
+         SELECT plano, status, valor, data_proxima_cobranca, cartao_ultimos_digitos
          FROM assinaturas
          WHERE empresa_id = e.id
          ORDER BY id DESC
