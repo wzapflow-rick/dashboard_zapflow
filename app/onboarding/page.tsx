@@ -68,7 +68,7 @@ function OnboardingContent() {
         if (!company?.id) { window.location.href = '/login?from=/onboarding'; return; }
         setCompanyName(nameFromQuery || String(company.nome_fantasia || ''));
         setNiche(String(company.nincho || ''));
-        setPlan(String(company.planos || company.plano || 'start'));
+        setPlan(String(company.planos || 'start'));
         const existing = niches.find((item) => item.id === String(company.nincho || ''));
         if (existing) setCategoryName(existing.category);
       } catch (error) {
