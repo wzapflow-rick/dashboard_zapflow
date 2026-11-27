@@ -16,7 +16,8 @@ export default async function DashboardSegmentLayout({
   children: React.ReactNode;
 }) {
   const user = await getMe();
-  let planAccess = getPlanAccess(user?.plano);
+  // A sessão não carrega plano; usamos os dados atuais da empresa no banco.
+  let planAccess = getPlanAccess('iniciante');
 
   // Checagem FRESCA no banco: o bloqueio e os recursos do plano refletem
   // imediatamente o estado atual da empresa, sem depender de um JWT antigo.
@@ -30,10 +31,12 @@ export default async function DashboardSegmentLayout({
       return <BlockScreen empresaId={user.empresaId} nome={user.nome} />;
     }
 
+    const companyPlan =
+      typeof company?.planos === 'string' ? company.planos : null;
     const activePlan =
       billing?.assinatura_status === 'authorized'
         ? billing.plano_assinatura
-        : billing?.plano || user.plano;
+        : billing?.plano || companyPlan || 'iniciante';
 
     planAccess = getPlanAccess(activePlan, isTestCompanyRecord(company));
   }
