@@ -6,6 +6,7 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { v2 as cloudinary } from 'cloudinary';
 import { z } from 'zod';
 import { requireAdminSession } from '@/lib/admin-session';
+import { getMe } from '@/lib/session-server';
 import { pg } from '@/lib/postgres';
 import { CategorySchema, ProductSchema } from '@/lib/validations';
 import {
@@ -68,6 +69,12 @@ function serializeMetadata(value: unknown): string | null {
   return JSON.stringify(value);
 }
 
+async function requireCompanyMenuAccess(empresaId: number) {
+  const user = await getMe();
+  if (Number(user?.empresaId) === empresaId) return;
+  await requireAdminSession();
+}
+
 async function findCompany(empresaId: number) {
   if (!Number.isInteger(empresaId) || empresaId <= 0) throw new Error('Empresa inválida.');
   const empresa = await pg.findById(EMPRESAS_TABLE, empresaId);
@@ -76,8 +83,8 @@ async function findCompany(empresaId: number) {
 }
 
 export async function getCompanyMenuData(empresaId: number) {
-  await requireAdminSession();
-  await findCompany(empresaId);
+  await requireCompanyMenuAccess(empresaId);
+  const company = await findCompany(empresaId);
 
   const [categoryResult, productResult, metadataList] = await Promise.all([
     pg.list(CATEGORIAS_TABLE, { where: { empresa_id: empresaId }, limit: 1000 }),
@@ -124,7 +131,7 @@ export async function getCompanyMenuData(empresaId: number) {
     };
   });
 
-  return { categories, products };
+  return { categories, products, niche: String(company.nincho || '') };
 }
 
 /**
@@ -135,21 +142,25 @@ export async function extractMenuProductsFromImage(
   empresaId: number,
   formData: FormData,
 ) {
-  await requireAdminSession();
+  await requireCompanyMenuAccess(empresaId);
   await findCompany(empresaId);
 
-  const image = formData.get('image');
-  if (!(image instanceof File) || image.size === 0) {
-    throw new Error('Selecione uma imagem para importar.');
-  }
+  const submittedImages = formData.getAll('images').filter((value): value is File => value instanceof File && value.size > 0);
+  const images = submittedImages.length > 0
+    ? submittedImages
+    : [formData.get('image')].filter((value): value is File => value instanceof File && value.size > 0);
+
+  if (images.length === 0) throw new Error('Selecione pelo menos uma imagem do cardápio.');
+  if (images.length > 6) throw new Error('Envie no máximo 6 imagens por análise.');
 
   const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
-  if (!allowedTypes.has(image.type)) {
-    throw new Error('Use uma imagem JPG, PNG ou WebP.');
+  let combinedSize = 0;
+  for (const image of images) {
+    if (!allowedTypes.has(image.type)) throw new Error('Use imagens JPG, PNG ou WebP.');
+    if (image.size > 750 * 1024) throw new Error('Cada imagem deve ter até 750 KB após a compressão.');
+    combinedSize += image.size;
   }
-  if (image.size > 750 * 1024) {
-    throw new Error('A imagem continua grande. Tente uma foto menor ou mais comprimida.');
-  }
+  if (combinedSize > 4.5 * 1024 * 1024) throw new Error('O conjunto das imagens ultrapassou 4,5 MB. Envie menos páginas.');
   if (!process.env.OPENAI_API_KEY) {
     throw new Error('A importação por foto precisa da variável OPENAI_API_KEY configurada no servidor.');
   }
@@ -164,12 +175,16 @@ export async function extractMenuProductsFromImage(
     ? existingCategories.join(', ')
     : 'Ainda não existem categorias cadastradas.';
 
-  const imageBytes = new Uint8Array(await image.arrayBuffer());
+  const imageParts = await Promise.all(images.map(async (image) => ({
+    type: 'image' as const,
+    image: new Uint8Array(await image.arrayBuffer()),
+    mediaType: image.type,
+  })));
   const { output } = await generateText({
     model: openai('gpt-4o-mini'),
     system: [
       'Você organiza cardápios para um sistema de delivery brasileiro.',
-      'Leia somente o que estiver visível na imagem. Não invente nomes, descrições, categorias ou preços.',
+      'Leia todas as páginas enviadas como partes do mesmo cardápio. Não repita itens entre páginas e não invente nomes, descrições, categorias ou preços.',
       'Se um preço não estiver legível ou não existir, retorne null. Valores devem ser números em reais, sem símbolo.',
       'Ignore telefone, endereço, promoções gerais e outros textos que não sejam produtos.',
       'Preserve os nomes e descrições em português do Brasil.',
@@ -184,13 +199,9 @@ export async function extractMenuProductsFromImage(
         content: [
           {
             type: 'text',
-            text: 'Extraia os produtos da imagem, categorizando e organizando os itens de forma consistente. Não estime preços.',
+            text: 'Analise todas as páginas do cardápio e extraia os produtos, categorizando e organizando os itens de forma consistente. Não estime preços.',
           },
-          {
-            type: 'image',
-            image: imageBytes,
-            mediaType: image.type,
-          },
+          ...imageParts,
         ],
       },
     ],
@@ -205,7 +216,7 @@ export async function extractMenuProductsFromImage(
 }
 
 export async function uploadCompanyProductImage(empresaId: number, formData: FormData) {
-  await requireAdminSession();
+  await requireCompanyMenuAccess(empresaId);
   await findCompany(empresaId);
 
   const image = formData.get('image');
@@ -227,7 +238,7 @@ export async function uploadCompanyProductImage(empresaId: number, formData: For
  * Exclui um produto somente quando ele pertence à empresa selecionada.
  */
 export async function deleteMenuProductForCompany(empresaId: number, productId: number) {
-  await requireAdminSession();
+  await requireCompanyMenuAccess(empresaId);
   await findCompany(empresaId);
   if (!Number.isInteger(productId) || productId <= 0) throw new Error('Produto inválido.');
 
@@ -253,7 +264,7 @@ export async function saveCompanyCategoryForAdmin(
   empresaId: number,
   untrustedCategory: unknown,
 ) {
-  await requireAdminSession();
+  await requireCompanyMenuAccess(empresaId);
   await findCompany(empresaId);
 
   const validation = CategorySchema.safeParse(untrustedCategory);
@@ -294,7 +305,7 @@ export async function reorderCompanyCategoriesForAdmin(
   empresaId: number,
   untrustedCategoryIds: unknown,
 ) {
-  await requireAdminSession();
+  await requireCompanyMenuAccess(empresaId);
   await findCompany(empresaId);
   if (!Array.isArray(untrustedCategoryIds) || !untrustedCategoryIds.every((id) => Number.isInteger(Number(id)) && Number(id) > 0)) {
     throw new Error('Lista de categorias inválida.');
@@ -323,7 +334,7 @@ export async function reorderCompanyCategoriesForAdmin(
 }
 
 export async function deleteCompanyCategoryForAdmin(empresaId: number, categoryId: number) {
-  await requireAdminSession();
+  await requireCompanyMenuAccess(empresaId);
   await findCompany(empresaId);
   if (!Number.isInteger(categoryId) || categoryId <= 0) throw new Error('Categoria inválida.');
 
@@ -342,7 +353,7 @@ export async function deleteCompanyCategoryForAdmin(empresaId: number, categoryI
  * Produtos ausentes da foto permanecem intactos.
  */
 export async function saveMenuProductsForCompany(empresaId: number, untrustedProducts: unknown) {
-  await requireAdminSession();
+  await requireCompanyMenuAccess(empresaId);
   await findCompany(empresaId);
 
   const validation = importedProductsSchema.safeParse(untrustedProducts);
