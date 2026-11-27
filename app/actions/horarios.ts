@@ -17,7 +17,10 @@ export type HorarioItem = {
 export async function saveHorariosFuncionamento(horarios: HorarioItem[], nomeEmpresa: string) {
     try {
         const user = await getMe();
-        if (!user) return { error: 'Não autorizado' };
+        const empresaId = Number(user?.empresaId);
+        if (!Number.isSafeInteger(empresaId) || empresaId <= 0) {
+            return { error: 'Não autorizado' };
+        }
 
         const validated = HorariosArraySchema.safeParse(horarios);
         if (!validated.success) {
@@ -25,32 +28,43 @@ export async function saveHorariosFuncionamento(horarios: HorarioItem[], nomeEmp
             return { error: `Dados inválidos: ${errorMsg}` };
         }
 
-        const empresaId = user.empresaId;
+        const client = await pg.getClient();
+        try {
+            await client.query('BEGIN');
+            // Serializa atualizações concorrentes da mesma loja para não misturar
+            // horários de duas gravações simultâneas.
+            await client.query('SELECT pg_advisory_xact_lock($1::bigint)', [empresaId]);
+            await client.query('DELETE FROM horarios WHERE empresa_id = $1', [empresaId]);
 
-        // Deletar registros existentes
-        const existing = await pg.list('horarios', {
-            where: { empresa_id: empresaId },
-        });
-
-        if (existing.list && existing.list.length > 0) {
-            for (const r of existing.list) {
-                await pg.delete('horarios', (r as any).id);
-            }
-        }
-
-        // Inserir novos horários
-        for (const h of validated.data) {
-            await pg.create('horarios', {
-                empresa_id: empresaId,
-                nome_empresa: nomeEmpresa,
-                dia_semana: h.dia_semana,
-                hora_abertura: h.hora_abertura,
-                hora_fechamento: h.hora_fechamento,
-                fechado_o_dia_todo: h.fechado_o_dia_todo,
+            const values: unknown[] = [];
+            const rows = validated.data.map((h, index) => {
+                const offset = index * 6;
+                values.push(
+                    empresaId,
+                    nomeEmpresa,
+                    h.dia_semana,
+                    h.hora_abertura,
+                    h.hora_fechamento,
+                    h.fechado_o_dia_todo ?? false,
+                );
+                return `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6})`;
             });
-        }
 
-        return { success: true };
+            await client.query(
+                `INSERT INTO horarios (
+                    empresa_id, nome_empresa, dia_semana, hora_abertura,
+                    hora_fechamento, fechado_o_dia_todo
+                ) VALUES ${rows.join(', ')}`,
+                values,
+            );
+            await client.query('COMMIT');
+            return { success: true };
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
     } catch (err: any) {
         console.error('saveHorariosFuncionamento ERROR:', err);
         return { error: 'Erro ao salvar horários: ' + (err?.message || 'desconhecido') };
